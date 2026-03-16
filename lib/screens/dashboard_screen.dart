@@ -100,47 +100,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              "Today's Calendar",
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const Spacer(),
-                            TextButton.icon(
-                              onPressed: _showAddAppointmentDialog,
-                              style: TextButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                backgroundColor: Colors.white.withOpacity(0.08),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isCompact = constraints.maxWidth < 360;
+
+                            return Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  "Today's Calendar",
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: isCompact ? 15 : 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                                TextButton.icon(
+                                  onPressed: _showAddAppointmentDialog,
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Colors.white.withOpacity(0.08),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: isCompact ? 10 : 12,
+                                      vertical: 8,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  icon: Icon(
+                                    Icons.add_rounded,
+                                    size: isCompact ? 16 : 18,
+                                  ),
+                                  label: Text(
+                                    'Add Appointment',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: isCompact ? 11 : 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              icon: const Icon(Icons.add_rounded, size: 18),
-                              label: Text(
-                                'Add Appointment',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
+                                Icon(
+                                  Icons.calendar_today_outlined,
+                                  color: Colors.white.withOpacity(0.72),
+                                  size: isCompact ? 18 : 20,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Icon(
-                              Icons.calendar_today_outlined,
-                              color: Colors.white.withOpacity(0.72),
-                              size: 20,
-                            ),
-                          ],
+                              ],
+                            );
+                          },
                         ),
                         const SizedBox(height: 18),
                         for (var i = 0; i < _appointments.length; i++) ...[
