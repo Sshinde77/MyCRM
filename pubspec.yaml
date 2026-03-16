@@ -1,0 +1,35 @@
+# Basic package information for the Flutter app.
+name: mycrm
+description: "A new Flutter CRM project."
+publish_to: 'none'
+
+# App version shown in release builds.
+version: 1.0.0+1
+
+# Minimum Dart SDK required for this project.
+environment:
+  sdk: ^3.9.2
+
+# Packages used by the app at runtime.
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  get: ^4.6.6
+  dio: ^5.7.0
+  shared_preferences: ^2.3.5
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+
+# Packages used only during development and testing.
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+# Flutter-specific configuration such as bundled assets.
+flutter:
+  uses-material-design: true
+  assets:
+    # Bundle the full assets folder so renamed images are picked up consistently.
+    - assets/
