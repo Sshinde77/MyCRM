@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../routes/app_routes.dart';
+import '../models/user_model.dart';
+    import '../routes/app_routes.dart';
+import '../services/api_service.dart';
+import '../widgets/app_bottom_navigation.dart';
 
 /// Main CRM dashboard shown after a successful login.
 class DashboardScreen extends StatefulWidget {
@@ -13,6 +17,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  final ApiService _apiService = ApiService.instance;
   final List<_Appointment> _appointments = [
     _Appointment(
       title: 'Quarterly Review',
@@ -32,6 +37,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ),
   ];
 
+  UserModel? _currentUser;
+  bool _isLoggingOut = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser();
+  }
+
+  Future<void> _loadCurrentUser() async {
+    final storedUser = await _apiService.getStoredUser();
+    if (!mounted) {
+      return;
+    }
+
+    if (storedUser != null) {
+      setState(() {
+        _currentUser = storedUser;
+      });
+    }
+
+    try {
+      final user = await _apiService.getCurrentUser();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _currentUser = user;
+      });
+    } on DioException {
+      // Keep showing the cached user if profile refresh fails.
+    } catch (_) {
+      // Ignore non-critical profile refresh failures on dashboard load.
+    }
+  }
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) {
+      return;
+    }
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await _apiService.logout();
+      if (!mounted) {
+        return;
+      }
+      Get.offAllNamed(AppRoutes.login);
+      Get.snackbar(
+        'Logged out',
+        'You have been signed out successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF153A63),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final responseData = error.response?.data;
+      String message = 'Unable to logout right now.';
+
+      if (responseData is Map<String, dynamic>) {
+        final apiMessage = responseData['message'] ?? responseData['error'];
+        if (apiMessage != null && apiMessage.toString().trim().isNotEmpty) {
+          message = apiMessage.toString();
+        }
+      }
+
+      Get.snackbar(
+        'Logout failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      Get.snackbar(
+        'Logout failed',
+        'Something went wrong while signing out.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingOut = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const pageBackground = Color(0xFFF5F7FB);
@@ -41,13 +150,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: pageBackground,
-      bottomNavigationBar: _DashboardBottomNav(
-        onTap: (index) {
+      bottomNavigationBar: MagicBottomNavigation(
+        items: const [
+          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
+          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
+          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
+          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
+          MagicNavItem(label: 'Support', icon: Icons.headset_mic_rounded),
+        ],
+        initialIndex: 0,
+        onChanged: (index) {
+          if (index == 0) return;
           if (index == 1) {
             Get.toNamed(AppRoutes.leads);
           } else if (index == 2) {
             Get.toNamed(AppRoutes.projects);
           } else if (index == 3) {
+            Get.toNamed(AppRoutes.tasks);
+          } else if (index == 4) {
             Get.toNamed(AppRoutes.support);
           }
         },
@@ -61,7 +181,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const _HeaderSection(),
+                  _HeaderSection(
+                    user: _currentUser,
+                    onLogout: _logout,
+                    isLoggingOut: _isLoggingOut,
+                  ),
                   const SizedBox(height: 18),
                   const _AlertBanner(),
                   const SizedBox(height: 20),
@@ -489,10 +613,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _HeaderSection extends StatelessWidget {
-  const _HeaderSection();
+  const _HeaderSection({
+    this.user,
+    required this.onLogout,
+    required this.isLoggingOut,
+  });
+
+  final UserModel? user;
+  final VoidCallback onLogout;
+  final bool isLoggingOut;
 
   @override
   Widget build(BuildContext context) {
+    final displayName = user?.name.trim().isNotEmpty == true
+        ? user!.name.trim()
+        : 'MyCRM User';
+    final role = user?.role?.trim().isNotEmpty == true
+        ? user!.role!.trim()
+        : 'Team Member';
+    final avatarLetter = displayName.isNotEmpty
+        ? displayName.characters.first.toUpperCase()
+        : 'M';
+
     return Row(
       children: [
         Container(
@@ -503,11 +645,11 @@ class _HeaderSection extends StatelessWidget {
             borderRadius: BorderRadius.circular(18),
           ),
           alignment: Alignment.center,
-          child: const CircleAvatar(
+          child: CircleAvatar(
             radius: 19,
-            backgroundColor: Color(0xFFB9C7DA),
+            backgroundColor: const Color(0xFFB9C7DA),
             child: Text(
-              'S',
+              avatarLetter,
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -521,7 +663,7 @@ class _HeaderSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Shubham Shinde',
+                displayName,
                 style: GoogleFonts.poppins(
                   color: const Color(0xFF1B2237),
                   fontSize: 18,
@@ -530,7 +672,7 @@ class _HeaderSection extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'App Developer',
+                role,
                 style: GoogleFonts.poppins(
                   color: const Color(0xFF7F90A9),
                   fontSize: 10.5,
@@ -553,6 +695,12 @@ class _HeaderSection extends StatelessWidget {
               icon: Icons.notifications_none_rounded,
               size: 25,
               onTap: () {},
+            ),
+            const SizedBox(width: 10),
+            _HeaderActionButton(
+              icon: isLoggingOut ? Icons.hourglass_top_rounded : Icons.logout_rounded,
+              size: 22,
+              onTap: isLoggingOut ? () {} : onLogout,
             ),
           ],
         ),
@@ -706,12 +854,9 @@ class _RenewalSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: const [
-        Row(
-          children: [
-            _SectionTitle(title: 'Upcoming Renewals'),
-            Spacer(),
-            _SectionActionLabel(label: 'View All'),
-          ],
+        _ResponsiveSectionHeader(
+          title: 'Upcoming Renewals',
+          trailing: _SectionActionLabel(label: 'View All'),
         ),
         SizedBox(height: 18),
         _RenewalTile(
@@ -787,128 +932,168 @@ class _RenewalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE9EEF6)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF1F5FA),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.center,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: logoColor,
-                borderRadius: BorderRadius.circular(2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 320;
+
+        return Container(
+          padding: EdgeInsets.all(isCompact ? 12 : 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFE9EEF6)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F0F172A),
+                blurRadius: 10,
+                offset: Offset(0, 6),
               ),
-              alignment: Alignment.center,
-              child: Text(
-                initials,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: isCompact ? 48 : 52,
+                height: isCompact ? 48 : 52,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5FA),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.center,
+                child: Container(
+                  width: isCompact ? 32 : 36,
+                  height: isCompact ? 32 : 36,
+                  decoration: BoxDecoration(
+                    color: logoColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initials,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              SizedBox(width: isCompact ? 10 : 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
+                    if (isCompact) ...[
+                      Text(
                         company,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
                           color: const Color(0xFF1E263B),
-                          fontSize: 14,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      amount,
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF1E263B),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
+                      const SizedBox(height: 4),
+                      Text(
+                        amount,
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF1E263B),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.calendar_month_outlined,
-                      color: Color(0xFF91A2BD),
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      date,
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF7587A3),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: tagColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                    ] else
+                      Row(
                         children: [
-                          Icon(Icons.circle, size: 7, color: tagColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            tagLabel,
-                            style: GoogleFonts.poppins(
-                              color: tagColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
+                          Expanded(
+                            child: Text(
+                              company,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF1E263B),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              amount,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF1E263B),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ],
                       ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.calendar_month_outlined,
+                              color: Color(0xFF91A2BD),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              date,
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF7587A3),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: tagColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.circle, size: 7, color: tagColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                tagLabel,
+                                style: GoogleFonts.poppins(
+                                  color: tagColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -921,12 +1106,9 @@ class _ProjectSummarySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const _SectionTitle(title: 'Projects Summary'),
-            const Spacer(),
-            const _SectionMenuButton(),
-          ],
+        const _ResponsiveSectionHeader(
+          title: 'Projects Summary',
+          trailing: _SectionMenuButton(),
         ),
         const SizedBox(height: 14),
         Row(
@@ -961,18 +1143,20 @@ class _ProjectSummarySection extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const _ChartLegendChip(
                         label: 'Projects',
                         color: Color(0xFF2D9CDB),
                       ),
-                      const SizedBox(width: 8),
                       const _ChartLegendChip(
                         label: 'Tasks',
                         color: Color(0xFFFFB020),
                       ),
-                      const Spacer(),
                       _CurrentMonthBadge(
                         label: 'Current: ${_monthShortLabel(DateTime.now())}',
                       ),
@@ -1021,12 +1205,9 @@ class _TaskSummarySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const _SectionTitle(title: 'Task Summary'),
-            const Spacer(),
-            const _SectionMenuButton(),
-          ],
+        const _ResponsiveSectionHeader(
+          title: 'Task Summary',
+          trailing: _SectionMenuButton(),
         ),
         const SizedBox(height: 6),
         Text(
@@ -1595,73 +1776,6 @@ String _formatTimeNumber(TimeOfDay time) {
   return '$hour:$minute';
 }
 
-class _DashboardBottomNav extends StatelessWidget {
-  const _DashboardBottomNav({required this.onTap});
-
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    const items = [
-      ('Home', Icons.grid_view_rounded),
-      ('Leads', Icons.horizontal_rule_rounded),
-      ('Projects', Icons.assignment_rounded),
-      ('More', Icons.more_horiz_rounded),
-    ];
-
-    return Container(
-      height: 86,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x110F172A),
-            blurRadius: 16,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(items.length, (index) {
-          final item = items[index];
-          final isActive = index == 0 || index == 2;
-          return InkWell(
-            onTap: () => onTap(index),
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    item.$2,
-                    color: isActive
-                        ? const Color(0xFF1769F3)
-                        : const Color(0xFFA0AEC2),
-                    size: 23,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.$1,
-                    style: GoogleFonts.poppins(
-                      color: isActive
-                          ? const Color(0xFF1769F3)
-                          : const Color(0xFF95A4B9),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}
-
 class _LegendDot extends StatelessWidget {
   const _LegendDot({
     required this.label,
@@ -2024,6 +2138,47 @@ class _SectionTitle extends StatelessWidget {
         fontSize: 16,
         fontWeight: FontWeight.w700,
       ),
+    );
+  }
+}
+
+class _ResponsiveSectionHeader extends StatelessWidget {
+  const _ResponsiveSectionHeader({
+    required this.title,
+    required this.trailing,
+  });
+
+  final String title;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 320;
+
+        if (isCompact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectionTitle(title: title),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: trailing,
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            _SectionTitle(title: title),
+            const Spacer(),
+            trailing,
+          ],
+        );
+      },
     );
   }
 }

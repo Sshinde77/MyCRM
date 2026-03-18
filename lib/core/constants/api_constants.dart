@@ -1,10 +1,11 @@
 /// API configuration shared across network calls.
 class ApiConstants {
-  static const String baseUrl = 'https://api.example.com/v1';
+  static const String baseUrl = 'https://mycrm.technofra.com/api/v1';
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
 
   // Endpoints
-  static const String login = '/login';
-  static const String dashboard = '/dashboard';
+  static const String login = '$baseUrl/login';
+  static const String user = '$baseUrl/me';
+  static const String logout = '$baseUrl/logout';
 }

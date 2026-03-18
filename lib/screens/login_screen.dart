@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mycrm/core/constants/app_colors.dart';
 
 import '../routes/app_routes.dart';
+import '../services/api_service.dart';
+import '../utils/validators.dart';
 
 /// Login page styled to match the provided reference design.
 class LoginScreen extends StatefulWidget {
@@ -14,15 +17,13 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Demo credentials used by the current placeholder login flow.
-  static const String _dummyEmail = 'demo@mycrm.com';
-  static const String _dummyPassword = 'crm@123';
-
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: _dummyEmail);
-  final _passwordController = TextEditingController(text: _dummyPassword);
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final ApiService _apiService = ApiService.instance;
 
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -31,42 +32,90 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  /// Validates the form and routes to the dashboard on a successful demo login.
-  void _login() {
+  /// Validates the form and signs the user in through the API.
+  Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
+    FocusScope.of(context).unfocus();
+
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email == _dummyEmail && password == _dummyPassword) {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final response = await _apiService.login(
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
       Get.offNamed(AppRoutes.dashboard);
       Get.snackbar(
         'Login successful',
-        'Welcome back to MyCRM.',
+        response.message?.trim().isNotEmpty == true
+            ? response.message!
+            : 'Welcome back ${response.user.name.isNotEmpty ? response.user.name : 'to MyCRM'}.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFF153A63),
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
       );
-      return;
-    }
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
 
-    Get.snackbar(
-      'Invalid login',
-      'Use demo@mycrm.com and crm@123',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFFB3261E),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-    );
+      final responseData = error.response?.data;
+      String message = 'Unable to login. Please try again.';
+
+      if (responseData is Map<String, dynamic>) {
+        final apiMessage = responseData['message'] ?? responseData['error'];
+        if (apiMessage != null && apiMessage.toString().trim().isNotEmpty) {
+          message = apiMessage.toString();
+        }
+      }
+
+      Get.snackbar(
+        'Login failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      Get.snackbar(
+        'Login failed',
+        'Something went wrong while signing in.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     const cyan = Color(0xFF18C6D3);
-    const titleOrange = Color(0xFFDB8A1E);
     const inputIcon = Color(0xFF74D8D3);
     const cardBorder = Color(0xFFE7EDF5);
 
@@ -159,10 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               fontSize: 15,
                             ),
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Enter your email';
-                              }
-                              return null;
+                              return Validators.validateEmail(value?.trim());
                             },
                             decoration: _fieldDecoration(
                               hintText: 'Username',
@@ -185,10 +231,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               fontSize: 15,
                             ),
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Enter your password';
-                              }
-                              return null;
+                              return Validators.validateRequired(
+                                value?.trim(),
+                                'Password',
+                              );
                             },
                             decoration: _fieldDecoration(
                               hintText: 'Password',
@@ -253,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                             ),
                             child: ElevatedButton(
-                              onPressed: _login,
+                              onPressed: _isSubmitting ? null : _login,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -262,14 +308,26 @@ class _LoginScreenState extends State<LoginScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              child: Text(
-                                'Sign In',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                              child: _isSubmitting
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      'Sign In',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           ),
                         ),
