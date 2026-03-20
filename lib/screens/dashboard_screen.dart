@@ -4,7 +4,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../models/user_model.dart';
-    import '../routes/app_routes.dart';
+import '../routes/app_routes.dart';
+import '../screens/to_do_list.dart' as to_do;
 import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 
@@ -156,7 +157,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
           MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
           MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Support', icon: Icons.headset_mic_rounded),
+          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
         ],
         initialIndex: 0,
         onChanged: (index) {
@@ -168,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           } else if (index == 3) {
             Get.toNamed(AppRoutes.tasks);
           } else if (index == 4) {
-            Get.toNamed(AppRoutes.support);
+            Get.toNamed(AppRoutes.profile);
           }
         },
       ),
@@ -688,7 +689,7 @@ class _HeaderSection extends StatelessWidget {
               _HeaderActionButton(
                 icon: Icons.checklist_rounded,
                 size: 24,
-                onTap: () => Get.toNamed(AppRoutes.tasks),
+                onTap: () => Get.to(() => const to_do.ToDoListScreen()),
               ),
             const SizedBox(width: 10),
             _HeaderActionButton(
@@ -862,7 +863,7 @@ class _RenewalSection extends StatelessWidget {
         _RenewalTile(
           initials: 'AE',
           company: 'Acme Corporation',
-          amount: '\$12,500',
+          amount: '₹12,500',
           date: 'Oct 15, 2023',
           tagLabel: '7 DAYS LEFT',
           tagColor: Color(0xFFF5A623),
@@ -872,7 +873,7 @@ class _RenewalSection extends StatelessWidget {
         _RenewalTile(
           initials: 'GT',
           company: 'Global Tech Solut',
-          amount: '\$12,500',
+          amount: '₹12,500',
           date: 'Oct 15, 2023',
           tagLabel: 'EARLY BIRD',
           tagColor: Color(0xFF20BF7A),
@@ -882,7 +883,7 @@ class _RenewalSection extends StatelessWidget {
         _RenewalTile(
           initials: 'NX',
           company: 'Acme Corporation',
-          amount: '\$12,500',
+          amount: '₹12,500',
           date: 'Oct 15, 2023',
           tagLabel: '7 DAYS LEFT',
           tagColor: Color(0xFFF5A623),

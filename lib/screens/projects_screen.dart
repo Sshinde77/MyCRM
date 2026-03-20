@@ -25,7 +25,7 @@ class ProjectsScreen extends StatelessWidget {
           MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
           MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
           MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Support', icon: Icons.headset_mic_rounded),
+          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
         ],
         initialIndex: 2,
         onChanged: (index) {
@@ -37,7 +37,7 @@ class ProjectsScreen extends StatelessWidget {
           } else if (index == 3) {
             Get.toNamed(AppRoutes.tasks);
           } else if (index == 4) {
-            Get.toNamed(AppRoutes.support);
+            Get.toNamed(AppRoutes.profile);
           }
         },
       ),

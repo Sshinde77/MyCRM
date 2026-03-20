@@ -23,7 +23,7 @@ class LeadsScreen extends StatelessWidget {
           MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
           MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
           MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Support', icon: Icons.headset_mic_rounded),
+          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
         ],
         initialIndex: 1,
         onChanged: (index) {
@@ -31,7 +31,7 @@ class LeadsScreen extends StatelessWidget {
           if (index == 0) Get.toNamed(AppRoutes.dashboard);
           if (index == 2) Get.toNamed(AppRoutes.projects);
           if (index == 3) Get.toNamed(AppRoutes.tasks);
-          if (index == 4) Get.toNamed(AppRoutes.support);
+          if (index == 4) Get.toNamed(AppRoutes.profile);
         },
       ),
       body: SafeArea(
@@ -212,7 +212,7 @@ class LeadsScreen extends StatelessWidget {
                 id: '#LD-9928',
                 name: 'Alex Sterling',
                 company: 'Quantum Solutions',
-                amount: '\$12,500',
+                amount: '₹12,500',
                 status: 'NEGOTIATION',
                 email: 'alex.s@quantum.com',
                 phone: '+1 234 567 890',
@@ -226,7 +226,7 @@ class LeadsScreen extends StatelessWidget {
                 id: '#LD-9930',
                 name: 'Sarah Chen',
                 company: 'Apex Dynamics',
-                amount: '\$8,200',
+                amount: '₹8,200',
                 status: 'INITIAL CONTACT',
                 email: 'sarah.c@apexdyn.io',
                 phone: '+1 987 654 321',

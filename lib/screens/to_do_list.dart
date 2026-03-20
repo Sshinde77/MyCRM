@@ -2,18 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
-
 /// Mobile-first tasks screen inspired by the provided mockup.
-class TasksScreen extends StatefulWidget {
-  const TasksScreen({super.key});
+class ToDoListScreen extends StatefulWidget {
+  const ToDoListScreen({super.key});
 
   @override
-  State<TasksScreen> createState() => _TasksScreenState();
+  State<ToDoListScreen> createState() => _ToDoListScreenState();
 }
 
-class _TasksScreenState extends State<TasksScreen> {
+class _ToDoListScreenState extends State<ToDoListScreen> {
   final List<_TodoTask> _unfinishedTasks = [];
   final List<_TodoTask> _completedTasks = [];
 
@@ -28,27 +25,21 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 3,
-        onChanged: (index) {
-          if (index == 3) return;
-          if (index == 0) {
-            Get.toNamed(AppRoutes.dashboard);
-          } else if (index == 1) {
-            Get.toNamed(AppRoutes.leads);
-          } else if (index == 2) {
-            Get.toNamed(AppRoutes.projects);
-          } else if (index == 4) {
-            Get.toNamed(AppRoutes.profile);
-          }
-        },
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        leadingWidth: 76,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8),
+          child: _HeaderCircleButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            onTap: () => Get.back(),
+            size: 42,
+          ),
+        ),
       ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -150,12 +141,6 @@ class _TasksHeader extends StatelessWidget {
 
         return Row(
           children: [
-            _HeaderCircleButton(
-              icon: Icons.arrow_back_ios_new_rounded,
-              onTap: () => Get.back(),
-              size: buttonSize,
-            ),
-            SizedBox(width: isCompact ? 10 : 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

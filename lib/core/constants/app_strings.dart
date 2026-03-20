@@ -6,5 +6,5 @@ class AppStrings {
   static const String dashboard = 'Dashboard';
   static const String leads = 'Leads';
   static const String projects = 'Projects';
-  static const String support = 'Support';
+  static const String profile = 'Profile';
 }

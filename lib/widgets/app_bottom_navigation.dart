@@ -57,7 +57,7 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
           final width = constraints.maxWidth;
           final horizontalMargin = width < 360 ? 12.0 : 16.0;
           final barWidth = width - (horizontalMargin * 2);
-          final itemWidth = barWidth / widget.items.length;
+          final itemWidth = (barWidth - 16) / widget.items.length;
           final barHeight = width < 360 ? 60.0 : 66.0;
           final bubbleSize = (itemWidth * 0.7).clamp(40.0, 54.0);
           final labelFontSize = width < 360 ? 9.5 : 10.5;
@@ -90,7 +90,8 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
-                  left: horizontalMargin +
+                  left: horizontalMargin + 
+                  8 +
                       (itemWidth * _currentIndex) +
                       (itemWidth - bubbleSize) / 2,
                   top: 0,
@@ -125,9 +126,11 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                   ),
                 ),
                 Positioned(
-                  left: 0,
-                  right: 0,
+                  left: horizontalMargin,
+                  right: horizontalMargin,
                   bottom: 6,
+                  child: Padding(
+                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
                     children: List.generate(widget.items.length, (index) {
                       final item = widget.items[index];
@@ -162,7 +165,13 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                                       fontSize: labelFontSize,
                                       fontWeight: FontWeight.w600,
                                     ),
-                                    child: Text(item.label),
+                                    child: Text(
+                                      item.label,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -172,6 +181,7 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                       );
                     }),
                   ),
+                ),
                 ),
               ],
             ),
