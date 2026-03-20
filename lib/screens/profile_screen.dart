@@ -11,56 +11,48 @@ class ProfileScreen extends StatelessWidget {
   static const List<_ProfileAction> _actions = [
     _ProfileAction(
       title: 'Personal Information',
-      subtitle: 'View and update your account details.',
       icon: Icons.badge_outlined,
       routeName: AppRoutes.personalInformation,
       accentColor: Color(0xFF1D6FEA),
     ),
     _ProfileAction(
       title: 'Renewal Master',
-      subtitle: 'Track contracts, reminders, and renewals.',
       icon: Icons.autorenew_rounded,
       routeName: AppRoutes.renewalMaster,
       accentColor: Color(0xFF0F766E),
     ),
     _ProfileAction(
       title: 'Leads',
-      subtitle: 'Open the main leads dashboard.',
       icon: Icons.person_outline_rounded,
       routeName: AppRoutes.leads,
       accentColor: Color(0xFF7C3AED),
     ),
     _ProfileAction(
       title: 'Raise Issue',
-      subtitle: 'Create and review support requests.',
       icon: Icons.report_gmailerrorred_rounded,
       routeName: AppRoutes.raiseIssue,
       accentColor: Color(0xFFDC2626),
     ),
     _ProfileAction(
       title: 'Staff',
-      subtitle: 'Manage team members and responsibilities.',
       icon: Icons.groups_rounded,
       routeName: AppRoutes.staff,
       accentColor: Color(0xFFEA580C),
     ),
     _ProfileAction(
       title: 'Clients',
-      subtitle: 'Jump into your client workspace.',
       icon: Icons.apartment_rounded,
       routeName: AppRoutes.clients,
       accentColor: Color(0xFF2563EB),
     ),
     _ProfileAction(
       title: 'Access Control',
-      subtitle: 'Manage roles, permissions, and visibility.',
       icon: Icons.lock_outline_rounded,
       routeName: AppRoutes.accessControl,
       accentColor: Color(0xFF475569),
     ),
     _ProfileAction(
       title: 'Settings',
-      subtitle: 'Adjust app preferences and notifications.',
       icon: Icons.settings_outlined,
       routeName: AppRoutes.settings,
       accentColor: Color(0xFF0891B2),
@@ -69,6 +61,9 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = screenWidth <= 320 ? 14.0 : 20.0;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
       bottomNavigationBar: _AppProfileNavigation(
@@ -87,7 +82,12 @@ class ProfileScreen extends StatelessWidget {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              16,
+              horizontalPadding,
+              24,
+            ),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 460),
@@ -95,22 +95,25 @@ class ProfileScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _ProfileHeader(actionsCount: _actions.length),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
                     const _ProfileHeroCard(),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final isCompact = constraints.maxWidth < 380;
+                        final spacing = constraints.maxWidth <= 320 ? 12.0 : 16.0;
+                        final cardHeight =
+                            constraints.maxWidth <= 320 ? 170.0 : 182.0;
+
                         return GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _actions.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: isCompact ? 1 : 2,
-                            mainAxisSpacing: 14,
-                            crossAxisSpacing: 14,
-                            childAspectRatio: isCompact ? 2.15 : 0.94,
+                            crossAxisCount: 2,
+                            mainAxisSpacing: spacing,
+                            crossAxisSpacing: spacing,
+                            mainAxisExtent: cardHeight,
                           ),
                           itemBuilder: (context, index) {
                             final action = _actions[index];
@@ -279,9 +282,13 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const CircleAvatar(
-          radius: 26,
-          backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=12'),
+        Container(
+          height: 52,
+          width: 52,
+          decoration: const BoxDecoration(
+            color: Color(0xFF1E3A6D),
+            shape: BoxShape.circle,
+          ),
         ),
         const SizedBox(width: 14),
         Expanded(
@@ -292,7 +299,7 @@ class _ProfileHeader extends StatelessWidget {
                 'Profile',
                 style: GoogleFonts.poppins(
                   color: const Color(0xFF162033),
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -320,13 +327,13 @@ class _ProfileHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(32),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF153A63), Color(0xFF1D6FEA)],
+          colors: [Color(0xFF224F93), Color(0xFF2B6FDE)],
         ),
         boxShadow: const [
           BoxShadow(
@@ -343,7 +350,7 @@ class _ProfileHeroCard extends StatelessWidget {
             'Workspace Control Center',
             style: GoogleFonts.poppins(
               color: Colors.white,
-              fontSize: 22,
+              fontSize: 19,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -352,8 +359,8 @@ class _ProfileHeroCard extends StatelessWidget {
             'Open client tools, issue reporting, renewal tracking, and account settings from one place.',
             style: GoogleFonts.poppins(
               color: const Color(0xFFD9E7FF),
-              fontSize: 13,
-              height: 1.6,
+              fontSize: 12.5,
+              height: 1.55,
             ),
           ),
         ],
@@ -369,13 +376,21 @@ class _ProfileActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cardWidth = MediaQuery.of(context).size.width;
+    final isNarrow = cardWidth <= 320;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => Get.toNamed(action.routeName),
         borderRadius: BorderRadius.circular(24),
         child: Ink(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.fromLTRB(
+            isNarrow ? 14 : 18,
+            isNarrow ? 14 : 18,
+            isNarrow ? 14 : 18,
+            isNarrow ? 12 : 16,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -392,34 +407,31 @@ class _ProfileActionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 50,
-                width: 50,
+                height: isNarrow ? 46 : 52,
+                width: isNarrow ? 46 : 52,
                 decoration: BoxDecoration(
                   color: action.accentColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(action.icon, color: action.accentColor, size: 24),
+                child: Icon(
+                  action.icon,
+                  color: action.accentColor,
+                  size: isNarrow ? 21 : 23,
+                ),
               ),
               const Spacer(),
               Text(
                 action.title,
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF162033),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                action.subtitle,
-                maxLines: 3,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
-                  color: const Color(0xFF64748B),
-                  fontSize: 12,
-                  height: 1.5,
+                  color: const Color(0xFF162033),
+                  fontSize: isNarrow ? 14 : 15,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
                 ),
               ),
+              const SizedBox(height: 2),
             ],
           ),
         ),
@@ -480,14 +492,12 @@ class _AppProfileNavigation extends StatelessWidget {
 class _ProfileAction {
   const _ProfileAction({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.routeName,
     required this.accentColor,
   });
 
   final String title;
-  final String subtitle;
   final IconData icon;
   final String routeName;
   final Color accentColor;
