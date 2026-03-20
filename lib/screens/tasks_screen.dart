@@ -1214,7 +1214,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             const SizedBox(width: 10),
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _repeatUnit,
+                initialValue: _repeatUnit,
                 decoration: _taskInputDecoration(),
                 items: const [
                   DropdownMenuItem(value: 'Day', child: Text('Day')),
