@@ -12,6 +12,7 @@ import '../screens/issue_management_screen.dart';
 import '../screens/renewal_master_screen.dart';
 import '../screens/client_renewal_screen.dart';
 import '../screens/vendor_renewal_screen.dart';
+import '../screens/staff_screen.dart';
 
 /// Builds screens for every named route in the app.
 class RouteGenerator {
@@ -71,15 +72,7 @@ class RouteGenerator {
       case AppRoutes.raiseIssue:
         return MaterialPageRoute(builder: (_) => const IssueManagementScreen());
       case AppRoutes.staff:
-        return MaterialPageRoute(
-          builder: (_) => const ProfileSectionScreen(
-            title: 'Staff',
-            description:
-                'Manage team members, assignments, and workspace ownership in one place.',
-            icon: Icons.groups_rounded,
-            accentColor: Color(0xFFEA580C),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const StaffScreen());
       case AppRoutes.clients:
         return MaterialPageRoute(builder: (_) => const ClientsScreen());
       case AppRoutes.accessControl:
