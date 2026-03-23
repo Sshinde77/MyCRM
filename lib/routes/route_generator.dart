@@ -8,6 +8,10 @@ import '../screens/projects_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/task.dart';
 import '../screens/leads_screen.dart';
+import '../screens/issue_management_screen.dart';
+import '../screens/renewal_master_screen.dart';
+import '../screens/client_renewal_screen.dart';
+import '../screens/vendor_renewal_screen.dart';
 
 /// Builds screens for every named route in the app.
 class RouteGenerator {
@@ -32,34 +36,46 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => const ProfileSectionScreen(
             title: 'Personal Information',
-            description: 'Review your profile details, contact information, and account identity settings.',
+            description:
+                'Review your profile details, contact information, and account identity settings.',
             icon: Icons.badge_outlined,
             accentColor: Color(0xFF1D6FEA),
           ),
         );
       case AppRoutes.renewalMaster:
+        return MaterialPageRoute(builder: (_) => const RenewalMasterScreen());
+      case AppRoutes.clientRenewal:
+        return MaterialPageRoute(builder: (_) => const ClientRenewalScreen());
+      case AppRoutes.vendorRenewal:
+        return MaterialPageRoute(builder: (_) => const VendorRenewalScreen());
+      case AppRoutes.renewalClient:
         return MaterialPageRoute(
-          builder: (_) => const ProfileSectionScreen(
-            title: 'Renewal Master',
-            description: 'Keep renewals visible with contract dates, ownership, and reminder checkpoints.',
-            icon: Icons.autorenew_rounded,
-            accentColor: Color(0xFF0F766E),
+          builder: (_) => const RenewalDetailScreen(
+            title: 'Client',
+            description:
+                'Open client renewal records and review account-linked renewal information.',
+            icon: Icons.apartment_rounded,
+            accentColor: Color(0xFF7C3AED),
+          ),
+        );
+      case AppRoutes.renewalVendor:
+        return MaterialPageRoute(
+          builder: (_) => const RenewalDetailScreen(
+            title: 'Vendor',
+            description:
+                'Open vendor renewal records and manage vendor-specific renewal workflows.',
+            icon: Icons.local_shipping_outlined,
+            accentColor: Color(0xFFEA580C),
           ),
         );
       case AppRoutes.raiseIssue:
-        return MaterialPageRoute(
-          builder: (_) => const ProfileSectionScreen(
-            title: 'Raise Issue',
-            description: 'Create support tickets, share status updates, and follow issue resolution history.',
-            icon: Icons.report_gmailerrorred_rounded,
-            accentColor: Color(0xFFDC2626),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const IssueManagementScreen());
       case AppRoutes.staff:
         return MaterialPageRoute(
           builder: (_) => const ProfileSectionScreen(
             title: 'Staff',
-            description: 'Manage team members, assignments, and workspace ownership in one place.',
+            description:
+                'Manage team members, assignments, and workspace ownership in one place.',
             icon: Icons.groups_rounded,
             accentColor: Color(0xFFEA580C),
           ),
@@ -70,7 +86,8 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => const ProfileSectionScreen(
             title: 'Access Control',
-            description: 'Handle permission rules, role visibility, and admin access policies.',
+            description:
+                'Handle permission rules, role visibility, and admin access policies.',
             icon: Icons.lock_outline_rounded,
             accentColor: Color(0xFF475569),
           ),
@@ -79,7 +96,8 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => const ProfileSectionScreen(
             title: 'Settings',
-            description: 'Configure preferences, app behavior, and notification options for your account.',
+            description:
+                'Configure preferences, app behavior, and notification options for your account.',
             icon: Icons.settings_outlined,
             accentColor: Color(0xFF0891B2),
           ),
@@ -91,11 +109,13 @@ class RouteGenerator {
 
   /// Generic fallback page for unknown routes.
   static Route<dynamic> _errorRoute() {
-    return MaterialPageRoute(builder: (_) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
-        body: const Center(child: Text('Page not found')),
-      );
-    });
+    return MaterialPageRoute(
+      builder: (_) {
+        return Scaffold(
+          appBar: AppBar(title: const Text('Error')),
+          body: const Center(child: Text('Page not found')),
+        );
+      },
+    );
   }
 }

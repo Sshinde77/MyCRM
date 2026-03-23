@@ -9,6 +9,10 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String personalInformation = '/profile/personal-information';
   static const String renewalMaster = '/profile/renewal-master';
+  static const String clientRenewal = '/profile/renewal-master/client-renewal';
+  static const String vendorRenewal = '/profile/renewal-master/vendor-renewal';
+  static const String renewalClient = '/profile/renewal-master/client';
+  static const String renewalVendor = '/profile/renewal-master/vendor';
   static const String raiseIssue = '/profile/raise-issue';
   static const String staff = '/profile/staff';
   static const String clients = '/profile/clients';

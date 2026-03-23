@@ -131,7 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFB3261E),
         colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(16), 
       );
     } finally {
       if (mounted) {
