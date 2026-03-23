@@ -268,110 +268,114 @@ class _StaffCard extends StatelessWidget {
         ? const Color(0xFF166534)
         : const Color(0xFF64748B);
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(compact ? 16 : 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x120F172A),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _AvatarBadge(member: member, compact: compact),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      member.name,
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF162033),
-                        fontSize: compact ? 15 : 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: member.accentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        member.role,
+    return InkWell(
+      onTap: () => Get.toNamed(AppRoutes.staffDetail),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(compact ? 16 : 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x120F172A),
+              blurRadius: 18,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _AvatarBadge(member: member, compact: compact),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        member.name,
                         style: GoogleFonts.poppins(
-                          color: member.accentColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF162033),
+                          fontSize: compact ? 15 : 16,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: statusBackground,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  member.isActive ? 'ACTIVE' : 'INACTIVE',
-                  style: GoogleFonts.poppins(
-                    color: statusColor,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: member.accentColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          member.role,
+                          style: GoogleFonts.poppins(
+                            color: member.accentColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: compact ? 14 : 16),
-          _InfoRow(
-            icon: Icons.email_outlined,
-            text: member.email,
-            compact: compact,
-          ),
-          SizedBox(height: compact ? 10 : 12),
-          _InfoRow(
-            icon: Icons.schedule_rounded,
-            text: 'Last login: ${member.lastLogin}',
-            compact: compact,
-          ),
-          SizedBox(height: compact ? 14 : 16),
-          const Divider(height: 1, color: Color(0xFFEAF0F6)),
-          SizedBox(height: compact ? 12 : 14),
-          Row(
-            children: const [
-              Expanded(child: _CardAction(icon: Icons.remove_red_eye_outlined)),
-              _ActionDivider(),
-              Expanded(child: _CardAction(icon: Icons.edit_outlined)),
-              _ActionDivider(),
-              Expanded(child: _CardAction(icon: Icons.mail_outline_rounded)),
-              _ActionDivider(),
-              Expanded(child: _CardAction(icon: Icons.delete_outline_rounded)),
-            ],
-          ),
-        ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusBackground,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    member.isActive ? 'ACTIVE' : 'INACTIVE',
+                    style: GoogleFonts.poppins(
+                      color: statusColor,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: compact ? 14 : 16),
+            _InfoRow(
+              icon: Icons.email_outlined,
+              text: member.email,
+              compact: compact,
+            ),
+            SizedBox(height: compact ? 10 : 12),
+            _InfoRow(
+              icon: Icons.schedule_rounded,
+              text: 'Last login: ${member.lastLogin}',
+              compact: compact,
+            ),
+            SizedBox(height: compact ? 14 : 16),
+            const Divider(height: 1, color: Color(0xFFEAF0F6)),
+            SizedBox(height: compact ? 12 : 14),
+            Row(
+              children: [
+                Expanded(child: _CardAction(icon: Icons.remove_red_eye_outlined, onTap: () => Get.toNamed(AppRoutes.staffDetail))),
+                _ActionDivider(),
+                Expanded(child: _CardAction(icon: Icons.edit_outlined, onTap: () {})),
+                _ActionDivider(),
+                Expanded(child: _CardAction(icon: Icons.mail_outline_rounded, onTap: () {})),
+                _ActionDivider(),
+                Expanded(child: _CardAction(icon: Icons.delete_outline_rounded, onTap: () {})),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -446,13 +450,17 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _CardAction extends StatelessWidget {
-  const _CardAction({required this.icon});
+  const _CardAction({required this.icon, this.onTap});
 
   final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: Icon(icon, color: const Color(0xFF64748B), size: 24));
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(icon, color: const Color(0xFF64748B), size: 24),
+    );
   }
 }
 

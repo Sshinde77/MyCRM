@@ -13,6 +13,8 @@ import '../screens/renewal_master_screen.dart';
 import '../screens/client_renewal_screen.dart';
 import '../screens/vendor_renewal_screen.dart';
 import '../screens/staff_screen.dart';
+import '../screens/roles_screen.dart';
+import '../screens/staff_detail_screen.dart';
 
 /// Builds screens for every named route in the app.
 class RouteGenerator {
@@ -73,18 +75,12 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const IssueManagementScreen());
       case AppRoutes.staff:
         return MaterialPageRoute(builder: (_) => const StaffScreen());
+      case AppRoutes.staffDetail:
+        return MaterialPageRoute(builder: (_) => const StaffDetailScreen());
       case AppRoutes.clients:
         return MaterialPageRoute(builder: (_) => const ClientsScreen());
       case AppRoutes.accessControl:
-        return MaterialPageRoute(
-          builder: (_) => const ProfileSectionScreen(
-            title: 'Access Control',
-            description:
-                'Handle permission rules, role visibility, and admin access policies.',
-            icon: Icons.lock_outline_rounded,
-            accentColor: Color(0xFF475569),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const RolesScreen());
       case AppRoutes.settings:
         return MaterialPageRoute(
           builder: (_) => const ProfileSectionScreen(

@@ -15,6 +15,7 @@ class AppRoutes {
   static const String renewalVendor = '/profile/renewal-master/vendor';
   static const String raiseIssue = '/profile/raise-issue';
   static const String staff = '/profile/staff';
+  static const String staffDetail = '/profile/staff/detail';
   static const String clients = '/profile/clients';
   static const String accessControl = '/profile/access-control';
   static const String settings = '/profile/settings';
