@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/constants/api_constants.dart';
-import '../models/login_request_model.dart';
 import '../models/login_response_model.dart';
 import '../models/user_model.dart';
 import 'storage_service.dart';
@@ -59,10 +58,35 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final request = LoginRequestModel(email: email, password: password);
-    final response = await post(ApiConstants.login, data: request.toJson());
-    final body = _normalizeMap(response.data);
-    final loginResponse = LoginResponseModel.fromJson(body);
+    // final request = LoginRequestModel(email: email, password: password);
+    // final response = await post(ApiConstants.login, data: request.toJson());
+    // final body = _normalizeMap(response.data);
+    if (email != ApiConstants.dummyLoginEmail ||
+        password != ApiConstants.dummyLoginPassword) {
+      throw DioException(
+        requestOptions: RequestOptions(path: ApiConstants.login),
+        response: Response(
+          requestOptions: RequestOptions(path: ApiConstants.login),
+          statusCode: 401,
+          data: <String, dynamic>{
+            'message':
+                'Use ${ApiConstants.dummyLoginEmail} / ${ApiConstants.dummyLoginPassword} to login.',
+          },
+        ),
+        type: DioExceptionType.badResponse,
+      );
+    }
+
+    final loginResponse = LoginResponseModel.fromJson(<String, dynamic>{
+      'message': 'Logged in with local dummy credentials.',
+      'token': 'dummy-auth-token',
+      'user': <String, dynamic>{
+        'id': '1',
+        'name': 'Demo User',
+        'email': ApiConstants.dummyLoginEmail,
+        'role': 'admin',
+      },
+    });
 
     await _persistAuth(loginResponse);
     return loginResponse;
