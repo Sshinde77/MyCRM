@@ -549,170 +549,177 @@ class _ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE2E9F2)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x120F172A),
-            blurRadius: 18,
-            offset: Offset(0, 10),
+        onTap: () => Get.toNamed(AppRoutes.projectDetail),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFE2E9F2)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x120F172A),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 5,
-            height: 170,
-            decoration: BoxDecoration(
-              color: data.accentColor,
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(22)),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+          child: Row(
+            children: [
+              Container(
+                width: 5,
+                height: 170,
+                decoration: BoxDecoration(
+                  color: data.accentColor,
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(22)),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          data.title,
-                          style: GoogleFonts.poppins(
-                            color: const Color(0xFF1E2A3B),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              data.title,
+                              style: GoogleFonts.poppins(
+                                color: const Color(0xFF1E2A3B),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: data.accentColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          data.status,
-                          style: GoogleFonts.poppins(
-                            color: data.accentColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: data.accentColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              data.status,
+                              style: GoogleFonts.poppins(
+                                color: data.accentColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        data.client,
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF76839A),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    data.client,
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF76839A),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      _ProjectInfoItem(
-                        icon: Icons.calendar_today_rounded,
-                        label: data.startDate,
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          _ProjectInfoItem(
+                            icon: Icons.calendar_today_rounded,
+                            label: data.startDate,
+                          ),
+                          const SizedBox(width: 20),
+                          _ProjectInfoItem(
+                            icon: Icons.event_rounded,
+                            label: data.deadline,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 20),
-                      _ProjectInfoItem(
-                        icon: Icons.event_rounded,
-                        label: data.deadline,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  'Progress',
-                                  style: GoogleFonts.poppins(
-                                    color: const Color(0xFF76839A),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Progress',
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF76839A),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      '${(data.progress * 100).toInt()}%',
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF1E2A3B),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const Spacer(),
-                                Text(
-                                  '${(data.progress * 100).toInt()}%',
-                                  style: GoogleFonts.poppins(
-                                    color: const Color(0xFF1E2A3B),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: data.progress,
+                                    backgroundColor: const Color(0xFFF0F4F9),
+                                    valueColor: AlwaysStoppedAnimation(data.accentColor),
+                                    minHeight: 6,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 6),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: data.progress,
-                                backgroundColor: const Color(0xFFF0F4F9),
-                                valueColor: AlwaysStoppedAnimation(data.accentColor),
-                                minHeight: 6,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      SizedBox(
-                        height: 32,
-                        width: 60,
-                        child: Stack(
-                          children: [
-                            for (var i = 0; i < 3; i++)
-                              Positioned(
-                                left: i * 14.0,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: [
-                                      const Color(0xFF1D6FEA),
-                                      const Color(0xFF8B5CF6),
-                                      const Color(0xFF10B981),
-                                    ][i],
-                                    child: Text(
-                                      ['S', 'A', 'M'][i],
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
+                          ),
+                          const SizedBox(width: 24),
+                          SizedBox(
+                            height: 32,
+                            width: 60,
+                            child: Stack(
+                              children: [
+                                for (var i = 0; i < 3; i++)
+                                  Positioned(
+                                    left: i * 14.0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 2),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 14,
+                                        backgroundColor: [
+                                          const Color(0xFF1D6FEA),
+                                          const Color(0xFF8B5CF6),
+                                          const Color(0xFF10B981),
+                                        ][i],
+                                        child: Text(
+                                          ['S', 'A', 'M'][i],
+                                          style: const TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                          ],
-                        ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

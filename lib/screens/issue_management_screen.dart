@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../routes/app_routes.dart';
 
 class IssueManagementScreen extends StatefulWidget {
   const IssueManagementScreen({super.key});
@@ -419,64 +420,71 @@ class _IssueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(compact ? 14 : 16, compact ? 14 : 16, compact ? 14 : 16, compact ? 14 : 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 20 : 24),
-        border: Border.all(color: const Color(0xFFE6ECF5)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0x0D0F172A),
-            blurRadius: compact ? 10 : 14,
-            offset: Offset(0, compact ? 5 : 7),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Flexible(
-                child: _Pill(issue.code, const Color(0xFFF1F5F9), const Color(0xFF64748B), compact: compact),
-              ),
-              const Spacer(),
-              Icon(Icons.calendar_today_outlined, size: compact ? 15 : 16, color: const Color(0xFF94A3B8)),
-              SizedBox(width: compact ? 5 : 6),
-              Text(issue.date, style: _ts(const Color(0xFF94A3B8), compact ? 12 : 13, FontWeight.w500)),
-            ],
-          ),
-          SizedBox(height: compact ? 14 : 18),
-          Text(issue.project.toUpperCase(), style: _ts(const Color(0xFF3B82F6), compact ? 11 : 12, FontWeight.w700, letterSpacing: 0.2)),
-          SizedBox(height: compact ? 6 : 8),
-          Text(issue.title, style: _ts(const Color(0xFF17213A), compact ? 18 : 19, FontWeight.w700, height: 1.22)),
-          SizedBox(height: compact ? 6 : 8),
-          Text('Client: ${issue.client}', style: _ts(const Color(0xFF64748B), compact ? 14 : 15, FontWeight.w500)),
-          SizedBox(height: compact ? 14 : 16),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          SizedBox(height: compact ? 12 : 14),
-          Wrap(
-            spacing: compact ? 8 : 10,
-            runSpacing: compact ? 8 : 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              _Pill(issue.priority, issue.priorityBg, issue.priorityFg, compact: compact),
-              _Pill(issue.status, issue.statusBg, issue.statusFg, compact: compact),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.remove_red_eye_outlined, color: const Color(0xFF94A3B8), size: compact ? 20 : 22),
-                  SizedBox(width: compact ? 12 : 14),
-                  Icon(Icons.edit_outlined, color: const Color(0xFF94A3B8), size: compact ? 18 : 20),
-                  SizedBox(width: compact ? 12 : 14),
-                  Icon(Icons.delete_outline_rounded, color: const Color(0xFF94A3B8), size: compact ? 20 : 22),
-                ],
-              ),
-            ],
-          ),
-        ],
+    return InkWell(
+      onTap: () => Get.toNamed(AppRoutes.issueDetail),
+      borderRadius: BorderRadius.circular(compact ? 20 : 24),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.fromLTRB(compact ? 14 : 16, compact ? 14 : 16, compact ? 14 : 16, compact ? 14 : 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(compact ? 20 : 24),
+          border: Border.all(color: const Color(0xFFE6ECF5)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0x0D0F172A),
+              blurRadius: compact ? 10 : 14,
+              offset: Offset(0, compact ? 5 : 7),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Flexible(
+                  child: _Pill(issue.code, const Color(0xFFF1F5F9), const Color(0xFF64748B), compact: compact),
+                ),
+                const Spacer(),
+                Icon(Icons.calendar_today_outlined, size: compact ? 15 : 16, color: const Color(0xFF94A3B8)),
+                SizedBox(width: compact ? 5 : 6),
+                Text(issue.date, style: _ts(const Color(0xFF94A3B8), compact ? 12 : 13, FontWeight.w500)),
+              ],
+            ),
+            SizedBox(height: compact ? 14 : 18),
+            Text(issue.project.toUpperCase(), style: _ts(const Color(0xFF3B82F6), compact ? 11 : 12, FontWeight.w700, letterSpacing: 0.2)),
+            SizedBox(height: compact ? 6 : 8),
+            Text(issue.title, style: _ts(const Color(0xFF17213A), compact ? 18 : 19, FontWeight.w700, height: 1.22)),
+            SizedBox(height: compact ? 6 : 8),
+            Text('Client: ${issue.client}', style: _ts(const Color(0xFF64748B), compact ? 14 : 15, FontWeight.w500)),
+            SizedBox(height: compact ? 14 : 16),
+            const Divider(height: 1, color: Color(0xFFF1F5F9)),
+            SizedBox(height: compact ? 12 : 14),
+            Wrap(
+              spacing: compact ? 8 : 10,
+              runSpacing: compact ? 8 : 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _Pill(issue.priority, issue.priorityBg, issue.priorityFg, compact: compact),
+                _Pill(issue.status, issue.statusBg, issue.statusFg, compact: compact),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.remove_red_eye_outlined, color: const Color(0xFF94A3B8), size: compact ? 20 : 22),
+                      onPressed: () => Get.toNamed(AppRoutes.issueDetail),
+                    ),
+                    SizedBox(width: compact ? 12 : 14),
+                    Icon(Icons.edit_outlined, color: const Color(0xFF94A3B8), size: compact ? 18 : 20),
+                    SizedBox(width: compact ? 12 : 14),
+                    Icon(Icons.delete_outline_rounded, color: const Color(0xFF94A3B8), size: compact ? 20 : 22),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

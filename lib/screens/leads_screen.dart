@@ -340,140 +340,150 @@ class _LeadCard extends StatelessWidget {
     const Color textLight = Color(0xFF76839A);
     const Color textDark = Color(0xFF1E2A3B);
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        onTap: () => Get.toNamed(AppRoutes.leadDetail),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      id,
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF2CB1FF),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      name,
-                      style: GoogleFonts.poppins(
-                        color: textDark,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      company,
-                      style: GoogleFonts.poppins(
-                        color: textLight,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    amount,
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFF2CB1FF),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          id,
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF2CB1FF),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          name,
+                          style: GoogleFonts.poppins(
+                            color: textDark,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          company,
+                          style: GoogleFonts.poppins(
+                            color: textLight,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      status,
-                      style: GoogleFonts.poppins(
-                        color: statusTextColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        amount,
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFF2CB1FF),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          status,
+                          style: GoogleFonts.poppins(
+                            color: statusTextColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _IconInfoRow(icon: Icons.mail_outline_rounded, text: email),
+                  ),
+                  Expanded(
+                    child: _IconInfoRow(icon: Icons.share_outlined, text: 'LinkedIn'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _IconInfoRow(icon: Icons.call_outlined, text: phone),
+                  ),
+                  Expanded(
+                    child: _IconInfoRow(icon: Icons.calendar_today_outlined, text: date),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 12,
+                    backgroundImage: NetworkImage('https://i.pravatar.cc/100?u=john'),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Assigned: ',
+                    style: GoogleFonts.poppins(
+                      color: textLight,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                  Text(
+                    assignedTo,
+                    style: GoogleFonts.poppins(
+                      color: textDark,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  _ActionIcon(
+                    icon: Icons.visibility_outlined,
+                    onTap: () => Get.toNamed(AppRoutes.leadDetail),
+                  ),
+                  const SizedBox(width: 12),
+                  const _ActionIcon(icon: Icons.edit_outlined),
+                  const SizedBox(width: 12),
+                  _ActionIcon(icon: Icons.delete_outline_rounded, color: Colors.red.shade400),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _IconInfoRow(icon: Icons.mail_outline_rounded, text: email),
-              ),
-              Expanded(
-                child: _IconInfoRow(icon: Icons.share_outlined, text: 'LinkedIn'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: _IconInfoRow(icon: Icons.call_outlined, text: phone),
-              ),
-              Expanded(
-                child: _IconInfoRow(icon: Icons.calendar_today_outlined, text: date),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              const CircleAvatar(
-                radius: 12,
-                backgroundImage: NetworkImage('https://i.pravatar.cc/100?u=john'),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Assigned: ',
-                style: GoogleFonts.poppins(
-                  color: textLight,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                assignedTo,
-                style: GoogleFonts.poppins(
-                  color: textDark,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              _ActionIcon(icon: Icons.visibility_outlined),
-              const SizedBox(width: 12),
-              _ActionIcon(icon: Icons.edit_outlined),
-              const SizedBox(width: 12),
-              _ActionIcon(icon: Icons.delete_outline_rounded, color: Colors.red.shade400),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -511,11 +521,23 @@ class _IconInfoRow extends StatelessWidget {
 class _ActionIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
+  final VoidCallback? onTap;
 
-  const _ActionIcon({required this.icon, this.color = const Color(0xFF64748B)});
+  const _ActionIcon({
+    required this.icon,
+    this.color = const Color(0xFF64748B),
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Icon(icon, size: 18, color: color);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Icon(icon, size: 18, color: color),
+      ),
+    );
   }
 }

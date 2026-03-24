@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'app_routes.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/clients.dart';
+import '../screens/client_detail_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/projects_screen.dart';
+import '../screens/project_detail_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/task.dart';
 import '../screens/leads_screen.dart';
+import '../screens/lead_detail_screen.dart';
 import '../screens/issue_management_screen.dart';
+import '../screens/issue_detail_screen.dart';
 import '../screens/renewal_master_screen.dart';
 import '../screens/client_renewal_screen.dart';
 import '../screens/vendor_renewal_screen.dart';
@@ -31,8 +35,12 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const TasksScreen());
       case AppRoutes.leads:
         return MaterialPageRoute(builder: (_) => const LeadsScreen());
+      case AppRoutes.leadDetail:
+        return MaterialPageRoute(builder: (_) => const LeadDetailScreen());
       case AppRoutes.projects:
         return MaterialPageRoute(builder: (_) => const ProjectsScreen());
+      case AppRoutes.projectDetail:
+        return MaterialPageRoute(builder: (_) => const ProjectDetailScreen());
       case AppRoutes.profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case AppRoutes.personalInformation:
@@ -73,12 +81,16 @@ class RouteGenerator {
         );
       case AppRoutes.raiseIssue:
         return MaterialPageRoute(builder: (_) => const IssueManagementScreen());
+      case AppRoutes.issueDetail:
+        return MaterialPageRoute(builder: (_) => const IssueDetailScreen());
       case AppRoutes.staff:
         return MaterialPageRoute(builder: (_) => const StaffScreen());
       case AppRoutes.staffDetail:
         return MaterialPageRoute(builder: (_) => const StaffDetailScreen());
       case AppRoutes.clients:
         return MaterialPageRoute(builder: (_) => const ClientsScreen());
+      case AppRoutes.clientDetail:
+        return MaterialPageRoute(builder: (_) => const ClientDetailScreen());
       case AppRoutes.accessControl:
         return MaterialPageRoute(builder: (_) => const RolesScreen());
       case AppRoutes.settings:

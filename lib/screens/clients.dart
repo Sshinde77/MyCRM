@@ -172,6 +172,14 @@ class ClientsScreen extends StatelessWidget {
                 child: ListView(
                   children: const [
                     _ClientCard(
+                      name: "Arnav",
+                      role: "CEO • Arnav Pants",
+                      email: "vkpants@gmail.com",
+                      industry: "Technology",
+                      website: "technofra.com/oceanic",
+                      active: true,
+                    ),
+                    _ClientCard(
                       name: "Acme Corporation",
                       role: "CEO • Jane Doe",
                       email: "j.doe@acmecorp.com",
@@ -186,14 +194,6 @@ class ClientsScreen extends StatelessWidget {
                       industry: "E-commerce & Retail",
                       website: "www.stellar.co",
                       active: false,
-                    ),
-                    _ClientCard(
-                      name: "NexGen Logistics",
-                      role: "Manager • Sarah Lee",
-                      email: "slee@nexgen.io",
-                      industry: "Supply Chain",
-                      website: "www.nexgen.io",
-                      active: true,
                     ),
                   ],
                 ),
@@ -293,73 +293,78 @@ class _ClientCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = active ? Colors.green : Colors.grey;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// TOP
-          Row(
-            children: [
-              const CircleAvatar(radius: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+    return InkWell(
+      onTap: () {
+        Get.toNamed(AppRoutes.clientDetail);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// TOP
+            Row(
+              children: [
+                const CircleAvatar(radius: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                    Text(role, style: const TextStyle(color: Colors.grey)),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  active ? "ACTIVE" : "INACTIVE",
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 12,
+                      Text(role, style: const TextStyle(color: Colors.grey)),
+                    ],
                   ),
                 ),
-              )
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          _infoRow(Icons.email, email),
-          _infoRow(Icons.business, industry),
-          _infoRow(Icons.link, website, isLink: true),
-
-          const Divider(height: 20),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: const [
-              Icon(Icons.remove_red_eye, color: Colors.grey),
-              SizedBox(width: 16),
-              Icon(Icons.edit, color: Colors.grey),
-              SizedBox(width: 16),
-              Icon(Icons.delete, color: Colors.grey),
-            ],
-          )
-        ],
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    active ? "ACTIVE" : "INACTIVE",
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                )
+              ],
+            ),
+  
+            const SizedBox(height: 12),
+  
+            _infoRow(Icons.email, email),
+            _infoRow(Icons.business, industry),
+            _infoRow(Icons.link, website, isLink: true),
+  
+            const Divider(height: 20),
+  
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: const [
+                Icon(Icons.remove_red_eye, color: Colors.grey),
+                SizedBox(width: 16),
+                Icon(Icons.edit, color: Colors.grey),
+                SizedBox(width: 16),
+                Icon(Icons.delete, color: Colors.grey),
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
