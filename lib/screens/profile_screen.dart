@@ -1,12 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
+import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final ApiService _apiService = ApiService.instance;
+  bool _isLoggingOut = false;
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) {
+      return;
+    }
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await _apiService.logout();
+      if (!mounted) {
+        return;
+      }
+      Get.offAllNamed(AppRoutes.login);
+      Get.snackbar(
+        'Logged out',
+        'You have been signed out successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF153A63),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final responseData = error.response?.data;
+      String message = 'Unable to logout right now.';
+
+      if (responseData is Map<String, dynamic>) {
+        final apiMessage = responseData['message'] ?? responseData['error'];
+        if (apiMessage != null && apiMessage.toString().trim().isNotEmpty) {
+          message = apiMessage.toString();
+        }
+      }
+
+      Get.snackbar(
+        'Logout failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      Get.snackbar(
+        'Logout failed',
+        'Something went wrong while signing out.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingOut = false;
+        });
+      }
+    }
+  }
 
   static const List<_ProfileAction> _actions = [
     _ProfileAction(
@@ -96,7 +174,10 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     _ProfileHeader(actionsCount: _actions.length),
                     const SizedBox(height: 20),
-                    const _ProfileHeroCard(),
+                    _ProfileHeroCard(
+                      isLoggingOut: _isLoggingOut,
+                      onLogout: _logout,
+                    ),
                     const SizedBox(height: 20),
                     LayoutBuilder(
                       builder: (context, constraints) {
@@ -321,7 +402,13 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _ProfileHeroCard extends StatelessWidget {
-  const _ProfileHeroCard();
+  const _ProfileHeroCard({
+    required this.isLoggingOut,
+    required this.onLogout,
+  });
+
+  final bool isLoggingOut;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -361,6 +448,36 @@ class _ProfileHeroCard extends StatelessWidget {
               color: const Color(0xFFD9E7FF),
               fontSize: 12.5,
               height: 1.55,
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 44,
+            child: ElevatedButton.icon(
+              onPressed: isLoggingOut ? null : onLogout,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF1F4E96),
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              icon: Icon(
+                isLoggingOut
+                    ? Icons.hourglass_top_rounded
+                    : Icons.logout_rounded,
+                size: 18,
+              ),
+              label: Text(
+                isLoggingOut ? 'Logging out...' : 'Logout',
+                style: AppTextStyles.style(
+                  color: const Color(0xFF1F4E96),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ],

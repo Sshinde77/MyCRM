@@ -39,8 +39,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   ];
 
   UserModel? _currentUser;
-  bool _isLoggingOut = false;
-
   @override
   void initState() {
     super.initState();
@@ -71,74 +69,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       // Keep showing the cached user if profile refresh fails.
     } catch (_) {
       // Ignore non-critical profile refresh failures on dashboard load.
-    }
-  }
-
-  Future<void> _logout() async {
-    if (_isLoggingOut) {
-      return;
-    }
-
-    setState(() {
-      _isLoggingOut = true;
-    });
-
-    try {
-      await _apiService.logout();
-      if (!mounted) {
-        return;
-      }
-      Get.offAllNamed(AppRoutes.login);
-      Get.snackbar(
-        'Logged out',
-        'You have been signed out successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-      );
-    } on DioException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      final responseData = error.response?.data;
-      String message = 'Unable to logout right now.';
-
-      if (responseData is Map<String, dynamic>) {
-        final apiMessage = responseData['message'] ?? responseData['error'];
-        if (apiMessage != null && apiMessage.toString().trim().isNotEmpty) {
-          message = apiMessage.toString();
-        }
-      }
-
-      Get.snackbar(
-        'Logout failed',
-        message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-      );
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      Get.snackbar(
-        'Logout failed',
-        'Something went wrong while signing out.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16), 
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoggingOut = false;
-        });
-      }
     }
   }
 
@@ -184,8 +114,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _HeaderSection(
                     user: _currentUser,
-                    onLogout: _logout,
-                    isLoggingOut: _isLoggingOut,
                   ),
                   const SizedBox(height: 18),
                   const _AlertBanner(),
@@ -609,13 +537,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 class _HeaderSection extends StatelessWidget {
   const _HeaderSection({
     this.user,
-    required this.onLogout,
-    required this.isLoggingOut,
   });
 
   final UserModel? user;
-  final VoidCallback onLogout;
-  final bool isLoggingOut;
 
   @override
   Widget build(BuildContext context) {
@@ -689,12 +613,6 @@ class _HeaderSection extends StatelessWidget {
               icon: Icons.notifications_none_rounded,
               size: 25,
               onTap: () {},
-            ),
-            const SizedBox(width: 10),
-            _HeaderActionButton(
-              icon: isLoggingOut ? Icons.hourglass_top_rounded : Icons.logout_rounded,
-              size: 22,
-              onTap: isLoggingOut ? () {} : onLogout,
             ),
           ],
         ),

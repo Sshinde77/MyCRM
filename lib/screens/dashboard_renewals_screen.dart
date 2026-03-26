@@ -136,7 +136,7 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final compact = width <= 360;
-    final horizontalPadding = compact ? 16.0 : 20.0;
+    final horizontalPadding = compact ? 14.0 : 16.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
@@ -171,7 +171,7 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
               child: SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
                   horizontalPadding,
-                  compact ? 16 : 20,
+                  compact ? 12 : 14,
                   horizontalPadding,
                   24,
                 ),
@@ -192,12 +192,12 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
                             });
                           },
                         ),
-                        SizedBox(height: compact ? 18 : 20),
+                        SizedBox(height: compact ? 14 : 16),
                         Text(
                           '${_tabController.index == 0 ? 'Client' : 'Vendor'} Renewals',
                           style: AppTextStyles.style(
                             color: const Color(0xFF17213A),
-                            fontSize: compact ? 18 : 20,
+                            fontSize: compact ? 16 : 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -206,18 +206,18 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
                           'Dummy data for the list view. Hook this screen to API data next.',
                           style: AppTextStyles.style(
                             color: const Color(0xFF64748B),
-                            fontSize: compact ? 13 : 14,
+                            fontSize: compact ? 12 : 13,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        SizedBox(height: compact ? 16 : 18),
+                        SizedBox(height: compact ? 12 : 14),
                         if (_visibleRecords.isEmpty)
                           _EmptyState(compact: compact)
                         else
                           ..._visibleRecords.map(
                             (record) => Padding(
                               padding:
-                                  EdgeInsets.only(bottom: compact ? 14 : 16),
+                                  EdgeInsets.only(bottom: compact ? 10 : 12),
                               child: _RenewalRecordCard(
                                 record: record,
                                 compact: compact,
@@ -251,15 +251,15 @@ class _TopBar extends StatelessWidget {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.fromLTRB(
-        compact ? 12 : 16,
         compact ? 10 : 12,
-        compact ? 12 : 16,
+        compact ? 8 : 10,
+        compact ? 10 : 12,
         0,
       ),
       child: Column(
         children: [
           SizedBox(
-            height: compact ? 56 : 60,
+              height: compact ? 50 : 54,
             child: Row(
               children: [
                 IconButton(
@@ -267,7 +267,7 @@ class _TopBar extends StatelessWidget {
                   icon: Icon(
                     Icons.arrow_back_rounded,
                     color: const Color(0xFF334155),
-                    size: compact ? 28 : 30,
+                    size: compact ? 24 : 26,
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -278,7 +278,7 @@ class _TopBar extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.style(
                       color: const Color(0xFF17213A),
-                      fontSize: compact ? 20 : 22,
+                      fontSize: compact ? 18 : 19,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -291,16 +291,16 @@ class _TopBar extends StatelessWidget {
             child: TabBar(
               controller: controller,
               isScrollable: true,
-              labelPadding: const EdgeInsets.only(right: 12),
+              labelPadding: const EdgeInsets.only(right: 10),
               indicatorColor: const Color(0xFF1769F3),
               indicatorSize: TabBarIndicatorSize.label,
               dividerColor: Colors.transparent,
               labelStyle: AppTextStyles.style(
-                fontSize: compact ? 15 : 16,
+                fontSize: compact ? 14 : 15,
                 fontWeight: FontWeight.w700,
               ),
               unselectedLabelStyle: AppTextStyles.style(
-                fontSize: compact ? 15 : 16,
+                fontSize: compact ? 14 : 15,
                 fontWeight: FontWeight.w600,
               ),
               labelColor: const Color(0xFF1769F3),
@@ -336,16 +336,16 @@ class _FilterAndSearchCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 16 : 18),
+      padding: EdgeInsets.all(compact ? 14 : 15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 22 : 24),
+        borderRadius: BorderRadius.circular(compact ? 18 : 20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x120F172A),
-            blurRadius: 16,
-            offset: Offset(0, 8),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -356,15 +356,15 @@ class _FilterAndSearchCard extends StatelessWidget {
             'Filter',
             style: AppTextStyles.style(
               color: const Color(0xFF17213A),
-              fontSize: compact ? 16 : 17,
+              fontSize: compact ? 14 : 15,
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: compact ? 12 : 14),
+           SizedBox(height: compact ? 10 : 12),
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(18),
+               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFDCE6F2)),
             ),
             child: DropdownButtonFormField<String>(
@@ -376,13 +376,13 @@ class _FilterAndSearchCard extends StatelessWidget {
               decoration: InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
-                  horizontal: compact ? 14 : 16,
-                  vertical: compact ? 14 : 16,
+                  horizontal: compact ? 12 : 14,
+                  vertical: compact ? 12 : 13,
                 ),
               ),
               style: AppTextStyles.style(
                 color: const Color(0xFF17213A),
-                fontSize: compact ? 14 : 15,
+                 fontSize: compact ? 13 : 14,
                 fontWeight: FontWeight.w600,
               ),
               items: filters
@@ -400,23 +400,23 @@ class _FilterAndSearchCard extends StatelessWidget {
               },
             ),
           ),
-          SizedBox(height: compact ? 14 : 16),
+           SizedBox(height: compact ? 12 : 14),
           Text(
             'Search',
             style: AppTextStyles.style(
               color: const Color(0xFF17213A),
-              fontSize: compact ? 16 : 17,
+               fontSize: compact ? 14 : 15,
               fontWeight: FontWeight.w700,
             ),
           ),
-          SizedBox(height: compact ? 12 : 14),
+           SizedBox(height: compact ? 10 : 12),
           TextField(
             controller: searchController,
             decoration: InputDecoration(
               hintText: 'Search name, service, or date',
               hintStyle: AppTextStyles.style(
                 color: const Color(0xFF94A3B8),
-                fontSize: compact ? 13 : 14,
+                 fontSize: compact ? 12 : 13,
                 fontWeight: FontWeight.w500,
               ),
               prefixIcon: const Icon(
@@ -426,19 +426,19 @@ class _FilterAndSearchCard extends StatelessWidget {
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
               contentPadding: EdgeInsets.symmetric(
-                horizontal: compact ? 14 : 16,
-                vertical: compact ? 14 : 16,
+                  horizontal: compact ? 12 : 14,
+                  vertical: compact ? 12 : 13,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(14),
                 borderSide: const BorderSide(color: Color(0xFFDCE6F2)),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(14),
                 borderSide: const BorderSide(color: Color(0xFFDCE6F2)),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(14),
                 borderSide: const BorderSide(
                   color: Color(0xFF1769F3),
                   width: 1.2,
@@ -465,16 +465,16 @@ class _RenewalRecordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 16 : 18),
+      padding: EdgeInsets.all(compact ? 14 : 15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 22 : 24),
+        borderRadius: BorderRadius.circular(compact ? 18 : 20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x120F172A),
-            blurRadius: 14,
-            offset: Offset(0, 8),
+            blurRadius: 10,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -485,45 +485,71 @@ class _RenewalRecordCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: compact ? 44 : 48,
-                height: compact ? 44 : 48,
+                width: compact ? 40 : 42,
+                height: compact ? 40 : 42,
                 decoration: BoxDecoration(
                   color: const Color(0xFFE9F1FF),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   record.initials,
                   style: AppTextStyles.style(
                     color: const Color(0xFF1769F3),
-                    fontSize: compact ? 15 : 16,
+                     fontSize: compact ? 13 : 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              SizedBox(width: compact ? 12 : 14),
+              SizedBox(width: compact ? 10 : 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      record.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF17213A),
-                        fontSize: compact ? 16 : 17,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            record.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF17213A),
+                              fontSize: compact ? 14 : 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: compact ? 8 : 10),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 8 : 10,
+                            vertical: compact ? 4 : 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: record.badgeColor.withOpacity(0.14),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            record.status,
+                            style: AppTextStyles.style(
+                              color: record.badgeColor,
+                              fontSize: compact ? 10 : 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: compact ? 4 : 6),
+                    SizedBox(height: compact ? 3 : 4),
                     Text(
                       record.service,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.style(
                         color: const Color(0xFF64748B),
-                        fontSize: compact ? 13 : 14,
+                        fontSize: compact ? 12 : 13,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -532,10 +558,10 @@ class _RenewalRecordCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: compact ? 16 : 18),
+          SizedBox(height: compact ? 12 : 14),
           Wrap(
-            spacing: compact ? 10 : 12,
-            runSpacing: compact ? 10 : 12,
+            spacing: compact ? 8 : 10,
+            runSpacing: compact ? 8 : 10,
             children: [
               _InfoChip(
                 label: 'Amount',
@@ -548,25 +574,6 @@ class _RenewalRecordCard extends StatelessWidget {
                 compact: compact,
               ),
             ],
-          ),
-          SizedBox(height: compact ? 14 : 16),
-          Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 12 : 14,
-              vertical: compact ? 7 : 8,
-            ),
-            decoration: BoxDecoration(
-              color: record.badgeColor.withOpacity(0.14),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              record.status,
-              style: AppTextStyles.style(
-                color: record.badgeColor,
-                fontSize: compact ? 12 : 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
           ),
         ],
       ),
@@ -589,12 +596,12 @@ class _InfoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 10 : 12,
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 8 : 10,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
@@ -605,16 +612,16 @@ class _InfoChip extends StatelessWidget {
             label,
             style: AppTextStyles.style(
               color: const Color(0xFF94A3B8),
-              fontSize: compact ? 11 : 12,
+                fontSize: compact ? 10 : 11,
               fontWeight: FontWeight.w600,
             ),
           ),
-          SizedBox(height: compact ? 4 : 6),
+          SizedBox(height: compact ? 3 : 4),
           Text(
             value,
             style: AppTextStyles.style(
               color: const Color(0xFF17213A),
-              fontSize: compact ? 13 : 14,
+                fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -634,12 +641,12 @@ class _EmptyState extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 18 : 20,
-        vertical: compact ? 24 : 28,
+        horizontal: compact ? 16 : 18,
+        vertical: compact ? 20 : 22,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 22 : 24),
+        borderRadius: BorderRadius.circular(compact ? 18 : 20),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
@@ -647,15 +654,15 @@ class _EmptyState extends StatelessWidget {
           Icon(
             Icons.search_off_rounded,
             color: const Color(0xFF94A3B8),
-            size: compact ? 34 : 38,
+            size: compact ? 30 : 34,
           ),
-          SizedBox(height: compact ? 10 : 12),
+          SizedBox(height: compact ? 8 : 10),
           Text(
             'No renewals match the current search or filter.',
             textAlign: TextAlign.center,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-              fontSize: compact ? 13 : 14,
+                fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w500,
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -9,6 +10,9 @@ class TasksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final compact = width <= 360;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       bottomNavigationBar: MagicBottomNavigation(
@@ -35,10 +39,10 @@ class TasksScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
           child: Column(
             children: [
-              const SizedBox(height: 10),
+              SizedBox(height: compact ? 8 : 10),
 
               /// HEADER
               Row(
@@ -46,27 +50,32 @@ class TasksScreen extends StatelessWidget {
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         "Tasks",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF111827),
+                          fontSize: compact ? 22 : 24,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      SizedBox(height: compact ? 2 : 4),
                       Text(
                         "Manage your enterprise workflow",
-                        style: TextStyle(color: Colors.grey),
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF6B7280),
+                          fontSize: compact ? 11 : 12,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
                   Row(
                     children: [
-                      _circleIcon(Icons.calendar_today),
-                      const SizedBox(width: 10),
-                      const CircleAvatar(
-                        radius: 20,
+                      _circleIcon(Icons.calendar_today, compact: compact),
+                      SizedBox(width: compact ? 8 : 10),
+                      CircleAvatar(
+                        radius: compact ? 17 : 18,
                         backgroundImage: NetworkImage(
                           "https://i.pravatar.cc/150?img=3",
                         ),
@@ -76,11 +85,11 @@ class TasksScreen extends StatelessWidget {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: compact ? 14 : 16),
 
               /// CARDS
               Row(
-                children: const [
+                children: [
                   Expanded(
                     child: _StatCard(
                       title: "Running Tasks",
@@ -88,9 +97,10 @@ class TasksScreen extends StatelessWidget {
                       percent: "+12%",
                       color: Color(0xFF3B82F6),
                       bgColor: Color(0xFFE7F0FF),
+                      compact: compact,
                     ),
                   ),
-                  SizedBox(width: 12),
+                  SizedBox(width: compact ? 8 : 10),
                   Expanded(
                     child: _StatCard(
                       title: "Completed",
@@ -98,12 +108,13 @@ class TasksScreen extends StatelessWidget {
                       percent: "+5%",
                       color: Color(0xFF22C55E),
                       bgColor: Color(0xFFE8F8EE),
+                      compact: compact,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: compact ? 14 : 16),
 
               /// SEARCH + ACTION
               Row(
@@ -111,44 +122,52 @@ class TasksScreen extends StatelessWidget {
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      height: 50,
+                      height: compact ? 42 : 44,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(22),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.search, color: Colors.grey),
-                          SizedBox(width: 10),
+                          const Icon(Icons.search, color: Colors.grey, size: 18),
+                          SizedBox(width: compact ? 8 : 10),
                           Text(
                             "Search tasks...",
-                            style: TextStyle(color: Colors.grey),
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF6B7280),
+                              fontSize: compact ? 12 : 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  _circleIcon(Icons.tune),
-                  const SizedBox(width: 10),
+                  SizedBox(width: compact ? 8 : 10),
+                  _circleIcon(Icons.tune, compact: compact),
+                  SizedBox(width: compact ? 8 : 10),
                   Container(
-                    height: 50,
-                    width: 50,
+                    height: compact ? 42 : 44,
+                    width: compact ? 42 : 44,
                     decoration: const BoxDecoration(
                       color: Color(0xFF2563EB),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.add, color: Colors.white),
+                    child: Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: compact ? 20 : 22,
+                    ),
                   )
                 ],
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: compact ? 14 : 16),
 
               /// LIST
               Expanded(
                 child: ListView(
-                  children: const [
+                  children: [
                     _TaskCard(
                       id: "TSK-4829",
                       title: "Mobile UI Refactoring",
@@ -158,6 +177,7 @@ class TasksScreen extends StatelessWidget {
                       priority: "HIGH PRIORITY",
                       priorityColor: Colors.red,
                       user: "Alex Rivera",
+                      compact: compact,
                     ),
                     _TaskCard(
                       id: "TSK-5102",
@@ -168,6 +188,7 @@ class TasksScreen extends StatelessWidget {
                       priority: "MEDIUM",
                       priorityColor: Colors.blue,
                       user: "Sarah Jenkins",
+                      compact: compact,
                     ),
                     _TaskCard(
                       id: "TSK-3981",
@@ -178,6 +199,7 @@ class TasksScreen extends StatelessWidget {
                       priority: "LOW",
                       priorityColor: Colors.green,
                       user: "Elena Rodriguez",
+                      compact: compact,
                     ),
                   ],
                 ),
@@ -189,15 +211,15 @@ class TasksScreen extends StatelessWidget {
     );
   }
 
-  static Widget _circleIcon(IconData icon) {
+  static Widget _circleIcon(IconData icon, {required bool compact}) {
     return Container(
-      height: 45,
-      width: 45,
+      height: compact ? 40 : 42,
+      width: compact ? 40 : 42,
       decoration: const BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: Colors.grey),
+      child: Icon(icon, color: Colors.grey, size: compact ? 18 : 20),
     );
   }
 }
@@ -206,6 +228,7 @@ class TasksScreen extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String title, value, percent;
   final Color color, bgColor;
+  final bool compact;
 
   const _StatCard({
     required this.title,
@@ -213,43 +236,62 @@ class _StatCard extends StatelessWidget {
     required this.percent,
     required this.color,
     required this.bgColor,
+    required this.compact,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 140,
-      padding: const EdgeInsets.all(16),
+      height: compact ? 108 : 116,
+      padding: EdgeInsets.all(compact ? 12 : 14),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 8 : 10,
+              vertical: compact ? 3 : 4,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Text(percent, style: TextStyle(color: color)),
+            child: Text(
+              percent,
+              style: AppTextStyles.style(
+                color: color,
+                fontSize: compact ? 10 : 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           const Spacer(),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+            style: AppTextStyles.style(
+              fontSize: compact ? 22 : 24,
+              fontWeight: FontWeight.w700,
               color: color,
             ),
           ),
-          Text(title, style: TextStyle(color: color)),
-          const SizedBox(height: 6),
+          Text(
+            title,
+            style: AppTextStyles.style(
+              color: color,
+              fontSize: compact ? 11 : 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: compact ? 4 : 6),
           LinearProgressIndicator(
             value: 0.6,
             color: color,
             backgroundColor: color.withOpacity(0.2),
+            minHeight: compact ? 5 : 6,
           )
         ],
       ),
@@ -261,6 +303,7 @@ class _StatCard extends StatelessWidget {
 class _TaskCard extends StatelessWidget {
   final String id, title, project, date, hours, priority, user;
   final Color priorityColor;
+  final bool compact;
 
   const _TaskCard({
     required this.id,
@@ -271,16 +314,17 @@ class _TaskCard extends StatelessWidget {
     required this.priority,
     required this.priorityColor,
     required this.user,
+    required this.compact,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: compact ? 10 : 12),
+      padding: EdgeInsets.all(compact ? 12 : 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,54 +333,95 @@ class _TaskCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(id, style: const TextStyle(color: Colors.grey)),
+              Text(
+                id,
+                style: AppTextStyles.style(
+                  color: Colors.grey,
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    EdgeInsets.symmetric(
+                      horizontal: compact ? 8 : 10,
+                      vertical: compact ? 3 : 4,
+                    ),
                 decoration: BoxDecoration(
                   color: priorityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Text(
                   priority,
-                  style: TextStyle(color: priorityColor, fontSize: 12),
+                  style: AppTextStyles.style(
+                    color: priorityColor,
+                    fontSize: compact ? 10 : 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               )
             ],
           ),
 
-          const SizedBox(height: 10),
+          SizedBox(height: compact ? 8 : 10),
 
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            style: AppTextStyles.style(
+              color: const Color(0xFF111827),
+              fontSize: compact ? 15 : 16,
+              fontWeight: FontWeight.w700,
             ),
           ),
 
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 4 : 6),
 
           Text(
             project,
-            style: const TextStyle(color: Colors.blue),
+            style: AppTextStyles.style(
+              color: Colors.blue,
+              fontSize: compact ? 12 : 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
 
-          const SizedBox(height: 10),
+          SizedBox(height: compact ? 8 : 10),
 
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-              const SizedBox(width: 5),
-              Text(date, style: const TextStyle(color: Colors.grey)),
-              const SizedBox(width: 20),
-              const Icon(Icons.access_time, size: 16, color: Colors.grey),
-              const SizedBox(width: 5),
-              Text(hours, style: const TextStyle(color: Colors.grey)),
+              Icon(
+                Icons.calendar_today,
+                size: compact ? 14 : 15,
+                color: Colors.grey,
+              ),
+              SizedBox(width: compact ? 4 : 5),
+              Text(
+                date,
+                style: AppTextStyles.style(
+                  color: Colors.grey,
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(width: compact ? 14 : 16),
+              Icon(
+                Icons.access_time,
+                size: compact ? 14 : 15,
+                color: Colors.grey,
+              ),
+              SizedBox(width: compact ? 4 : 5),
+              Text(
+                hours,
+                style: AppTextStyles.style(
+                  color: Colors.grey,
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
 
-          const Divider(height: 20),
+          Divider(height: compact ? 16 : 18),
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -344,22 +429,41 @@ class _TaskCard extends StatelessWidget {
               Row(
                 children: [
                   const CircleAvatar(radius: 14),
-                  const SizedBox(width: 8),
-                  Text(user),
+                  SizedBox(width: compact ? 6 : 8),
+                  Text(
+                    user,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF111827),
+                      fontSize: compact ? 12 : 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
               Row(
                 children: [
-                  const Icon(Icons.remove_red_eye, color: Colors.grey),
-                  const SizedBox(width: 10),
+                  Icon(
+                    Icons.remove_red_eye,
+                    color: Colors.grey,
+                    size: compact ? 18 : 20,
+                  ),
+                  SizedBox(width: compact ? 8 : 10),
                   GestureDetector(
                     onTap: () {
                       Get.toNamed(AppRoutes.editTask);
                     },
-                    child: const Icon(Icons.edit, color: Colors.grey),
+                    child: Icon(
+                      Icons.edit,
+                      color: Colors.grey,
+                      size: compact ? 18 : 20,
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  const Icon(Icons.delete, color: Colors.grey),
+                  SizedBox(width: compact ? 8 : 10),
+                  Icon(
+                    Icons.delete,
+                    color: Colors.grey,
+                    size: compact ? 18 : 20,
+                  ),
                 ],
               )
             ],

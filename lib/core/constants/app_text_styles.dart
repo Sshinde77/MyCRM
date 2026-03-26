@@ -8,7 +8,7 @@ class AppFonts {
   const AppFonts._();
 
   static const String title = 'Sora';
-  static const String subtitle = 'Sora';
+  static const String subtitle = 'Sora';  
   static const String body = 'DM Sans';
 }
 
