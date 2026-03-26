@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../models/user_model.dart';
 import '../routes/app_routes.dart';
@@ -205,11 +205,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _TaskSummarySection(),
                   ),
                   const SizedBox(height: 16),
-                  // const _SectionCard(
-                  //   padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
-                  //   child: _TeamAvailabilitySection(),
-                  // ),
-                  const SizedBox(height: 16),
                   const _SectionCard(
                     padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
                     child: _SupportTicketsSection(),
@@ -236,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               children: [
                                 Text(
                                   "Today's Calendar",
-                                  style: GoogleFonts.poppins(
+                                  style: AppTextStyles.style(
                                     color: Colors.white,
                                     fontSize: isCompact ? 15 : 16,
                                     fontWeight: FontWeight.w700,
@@ -262,7 +257,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   label: Text(
                                     'Add Appointment',
                                     overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.poppins(
+                                    style: AppTextStyles.style(
                                       color: Colors.white,
                                       fontSize: isCompact ? 11 : 12,
                                       fontWeight: FontWeight.w600,
@@ -290,7 +285,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 10),
                   Text(
                     'Dashboard preview closely follows the provided mockup with local sample data.',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: textSecondary,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
@@ -363,7 +358,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             children: [
                               Text(
                                 'Add Calendar Appointments',
-                                style: GoogleFonts.poppins(
+                                style: AppTextStyles.style(
                                   color: const Color(0xFF3A4656),
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -387,7 +382,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             child: RichText(
                               text: TextSpan(
-                                style: GoogleFonts.poppins(
+                                style: AppTextStyles.style(
                                   color: const Color(0xFF48617D),
                                   fontSize: 12.5,
                                   height: 1.5,
@@ -460,8 +455,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: _AppointmentFormField(
                                   label: 'Time',
                                   requiredMark: true,
-                                  // helperText:
-                                  //     'Choose a slot with minimum 30 minutes difference from existing meetings.',
                                   child: TextFormField(
                                     readOnly: true,
                                     onTap: pickTime,
@@ -529,7 +522,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 child: Text(
                                   'Close',
-                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                  style: AppTextStyles.style(fontWeight: FontWeight.w600),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -564,7 +557,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 child: Text(
                                   'Save Appointment',
-                                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                  style: AppTextStyles.style(fontWeight: FontWeight.w600),
                                 ),
                               ),
                             ],
@@ -665,7 +658,7 @@ class _HeaderSection extends StatelessWidget {
             children: [
               Text(
                 displayName,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF1B2237),
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -674,7 +667,7 @@ class _HeaderSection extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 role,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF7F90A9),
                   fontSize: 10.5,
                   fontWeight: FontWeight.w600,
@@ -784,7 +777,7 @@ class _AlertBanner extends StatelessWidget {
               children: [
                 Text(
                   'Overdue Renewals',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -793,7 +786,7 @@ class _AlertBanner extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '8 accounts require immediate action',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: Colors.white,
                     fontSize: 10.5,
                     fontWeight: FontWeight.w500,
@@ -804,7 +797,7 @@ class _AlertBanner extends StatelessWidget {
           ),
           Text(
             '08',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -854,13 +847,17 @@ class _RenewalSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         _ResponsiveSectionHeader(
           title: 'Upcoming Renewals',
-          trailing: _SectionActionLabel(label: 'View All'),
+          forceInline: true,
+          trailing: _SectionActionLabel(
+            label: 'View All',
+            onTap: () => Get.toNamed(AppRoutes.dashboardRenewals),
+          ),
         ),
-        SizedBox(height: 18),
-        _RenewalTile(
+        const SizedBox(height: 18),
+        const _RenewalTile(
           initials: 'AE',
           company: 'Acme Corporation',
           amount: '₹12,500',
@@ -869,8 +866,8 @@ class _RenewalSection extends StatelessWidget {
           tagColor: Color(0xFFF5A623),
           logoColor: Color(0xFFB9B899),
         ),
-        SizedBox(height: 14),
-        _RenewalTile(
+        const SizedBox(height: 14),
+        const _RenewalTile(
           initials: 'GT',
           company: 'Global Tech Solut',
           amount: '₹12,500',
@@ -879,8 +876,8 @@ class _RenewalSection extends StatelessWidget {
           tagColor: Color(0xFF20BF7A),
           logoColor: Color(0xFF102B3B),
         ),
-        SizedBox(height: 14),
-        _RenewalTile(
+        const SizedBox(height: 14),
+        const _RenewalTile(
           initials: 'NX',
           company: 'Acme Corporation',
           amount: '₹12,500',
@@ -895,18 +892,40 @@ class _RenewalSection extends StatelessWidget {
 }
 
 class _SectionActionLabel extends StatelessWidget {
-  const _SectionActionLabel({required this.label});
+  const _SectionActionLabel({
+    required this.label,
+    this.onTap,
+  });
 
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    final text = Text(
       label,
-      style: GoogleFonts.poppins(
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppTextStyles.style(
         color: const Color(0xFF1769F3),
         fontSize: 13,
         fontWeight: FontWeight.w600,
+      ),
+    );
+
+    if (onTap == null) {
+      return text;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: text,
+        ),
       ),
     );
   }
@@ -972,7 +991,7 @@ class _RenewalTile extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     initials,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: Colors.white,
                       fontSize: isCompact ? 11 : 12,
                       fontWeight: FontWeight.w700,
@@ -990,7 +1009,7 @@ class _RenewalTile extends StatelessWidget {
                         company,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFF1E263B),
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -999,7 +1018,7 @@ class _RenewalTile extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         amount,
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFF1E263B),
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -1013,7 +1032,7 @@ class _RenewalTile extends StatelessWidget {
                               company,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: const Color(0xFF1E263B),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -1027,7 +1046,7 @@ class _RenewalTile extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.right,
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: const Color(0xFF1E263B),
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -1053,7 +1072,7 @@ class _RenewalTile extends StatelessWidget {
                             const SizedBox(width: 8),
                             Text(
                               date,
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: const Color(0xFF7587A3),
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w500,
@@ -1077,7 +1096,7 @@ class _RenewalTile extends StatelessWidget {
                               const SizedBox(width: 4),
                               Text(
                                 tagLabel,
-                                style: GoogleFonts.poppins(
+                                style: AppTextStyles.style(
                                   color: tagColor,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -1193,6 +1212,29 @@ class _TaskSummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const _SectionTitle(title: 'Task Summary'),
+            GestureDetector(
+              onTap: () => Get.toNamed(AppRoutes.tasks),
+              child: const _SectionActionLabel(label: 'View All'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        _TaskSummaryChart(),
+      ],
+    );
+  }
+}
+
+class _TaskSummaryChart extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     const taskItems = [
       ('Not Started', 0, Color(0xFF6C778D)),
       ('In Progress', 6, Color(0xFF1769F3)),
@@ -1200,30 +1242,14 @@ class _TaskSummarySection extends StatelessWidget {
       ('Completed', 6, Color(0xFF20D39B)),
       ('Cancelled', 0, Color(0xFFFF4D6D)),
     ];
-
     final total = taskItems.fold<int>(0, (sum, item) => sum + item.$2);
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _ResponsiveSectionHeader(
-          title: 'Task Summary',
-          trailing: _SectionMenuButton(),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '$total active tasks across all current statuses',
-          style: GoogleFonts.poppins(
-            color: const Color(0xFF7E8EA8),
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 14),
         Center(
           child: SizedBox(
-            width: 146,
-            height: 146,
+            width: 140,
+            height: 140,
             child: CustomPaint(
               painter: _TaskDonutPainter(
                 segments: const [
@@ -1239,7 +1265,7 @@ class _TaskSummarySection extends StatelessWidget {
                   children: [
                     Text(
                       '$total',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: const Color(0xFF1B2237),
                         fontSize: 24,
                         fontWeight: FontWeight.w700,
@@ -1247,7 +1273,7 @@ class _TaskSummarySection extends StatelessWidget {
                     ),
                     Text(
                       'Total Tasks',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: const Color(0xFF8A99AF),
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
@@ -1259,151 +1285,23 @@ class _TaskSummarySection extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9FBFE),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE7ECF4)),
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final item in taskItems)
-                SizedBox(
-                  width: 160,
-                  child: _TaskStatusRow(
-                    label: item.$1,
-                    value: item.$2,
-                    color: item.$3,
-                  ),
-                ),
-            ],
-          ),
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final item in taskItems)
+              _TaskStatusRow(
+                label: item.$1,
+                value: item.$2,
+                color: item.$3,
+              ),
+          ],
         ),
       ],
     );
   }
 }
-
-// class _TeamAvailabilitySection extends StatelessWidget {
-//   const _TeamAvailabilitySection();
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     const members = [
-//       ('Sarah', Color(0xFF4BC7A6), 'S'),
-//       ('David', Color(0xFFF5A623), 'D'),
-//       ('Emma', Color(0xFF2ACB88), 'E'),
-//       ('Mike', Color(0xFFE6E8F2), 'M'),
-//       ('Lily', Color(0xFF4BC7A6), 'L'),
-//     ];
-//
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Row(
-//           children: [
-//             const _SectionTitle(title: 'Team Availability'),
-//             const Spacer(),
-//             Text(
-//               'View All',
-//               style: GoogleFonts.poppins(
-//                 color: const Color(0xFF1769F3),
-//                 fontSize: 14,
-//                 fontWeight: FontWeight.w600,
-//               ),
-//             ),
-//           ],
-//         ),
-//         const SizedBox(height: 18),
-//         Wrap(
-//           spacing: 14,
-//           runSpacing: 14,
-//           children: members
-//               .map(
-//                 (member) => _TeamMember(
-//                   name: member.$1,
-//                   badgeColor: member.$2,
-//                   letter: member.$3,
-//                 ),
-//               )
-//               .toList(),
-//         ),
-//       ],
-//     );
-//   }
-// }
-
-// class _TeamMember extends StatelessWidget {
-//   const _TeamMember({
-//     required this.name,
-//     required this.badgeColor,
-//     required this.letter,
-//   });
-//
-//   final String name;
-//   final Color badgeColor;
-//   final String letter;
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Column(
-//       children: [
-//         Stack(
-//           clipBehavior: Clip.none,
-//           children: [
-//             Container(
-//               width: 50,
-//               height: 50,
-//               decoration: const BoxDecoration(
-//                 shape: BoxShape.circle,
-//                 gradient: LinearGradient(
-//                   colors: [Color(0xFF4A657B), Color(0xFF162534)],
-//                   begin: Alignment.topLeft,
-//                   end: Alignment.bottomRight,
-//                 ),
-//               ),
-//               alignment: Alignment.center,
-//               child: Text(
-//                 letter,
-//                 style: GoogleFonts.poppins(
-//                   color: Colors.white,
-//                   fontSize: 18,
-//                   fontWeight: FontWeight.w700,
-//                 ),
-//               ),
-//             ),
-//             Positioned(
-//               right: -1,
-//               bottom: -1,
-//               child: Container(
-//                 width: 12,
-//                 height: 12,
-//                 decoration: BoxDecoration(
-//                   color: badgeColor,
-//                   shape: BoxShape.circle,
-//                   border: Border.all(color: Colors.white, width: 2),
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//         const SizedBox(height: 8),
-//         Text(
-//           name,
-//           style: GoogleFonts.poppins(
-//             color: const Color(0xFF4D5D79),
-//             fontSize: 12,
-//             fontWeight: FontWeight.w500,
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-// }
 
 class _SupportTicketsSection extends StatelessWidget {
   const _SupportTicketsSection();
@@ -1419,14 +1317,6 @@ class _SupportTicketsSection extends StatelessWidget {
             const Spacer(),
             const _SectionMenuButton(),
             const SizedBox(width: 10),
-            // Text(
-            //   '24',
-            //   style: GoogleFonts.poppins(
-            //     color: const Color(0xFF8A9AB3),
-            //     fontSize: 18,
-            //     fontWeight: FontWeight.w700,
-            // //   ),
-            // ),
           ],
         ),
         const SizedBox(height: 18),
@@ -1443,17 +1333,6 @@ class _SupportTicketsSection extends StatelessWidget {
             ),
           ),
         ),
-        // const SizedBox(height: 14),
-        // const Wrap(
-        //   spacing: 18,
-        //   runSpacing: 8,
-        //   children: [
-        //     _LegendDot(label: 'Open (7)', color: Color(0xFF1769F3)),
-        //     _LegendDot(label: 'Pending (11)', color: Color(0xFFF5B71F)),
-        //     _LegendDot(label: 'Resolved (6)', color: Color(0xFF39D0A0)),
-        //   ],
-        // ),
-        // const SizedBox(height: 12),
         const _SupportTicketPreviewCard(),
       ],
     );
@@ -1488,7 +1367,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Satyam Tiwari',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF6C7D96),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
@@ -1503,7 +1382,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                 ),
                 child: Text(
                   'Low',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF1DB8E9),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
@@ -1515,7 +1394,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Ddhrh',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF1B2237),
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -1524,15 +1403,9 @@ class _SupportTicketPreviewCard extends StatelessWidget {
           const SizedBox(height: 2),
           Row(
             children: [
-              // const Icon(
-              //   Icons.local_fire_department_rounded,
-              //   size: 15,
-              //   color: Color(0xFFF97316),
-              // ),
-              // const SizedBox(width: 4),
               Text(
                 'Crackteck',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF73839B),
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
@@ -1551,7 +1424,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                 ),
                 child: Text(
                   'Open',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFFFF4D6D),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
@@ -1567,7 +1440,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'Mar 14, 2026 10:39',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF73839B),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -1606,7 +1479,7 @@ class _CalendarItem extends StatelessWidget {
               children: [
                 Text(
                   _formatTimeNumber(appointment.time),
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF1769F3),
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -1614,7 +1487,7 @@ class _CalendarItem extends StatelessWidget {
                 ),
                 Text(
                   appointment.time.period == DayPeriod.am ? 'AM' : 'PM',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFFAAB5C6),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -1630,7 +1503,7 @@ class _CalendarItem extends StatelessWidget {
               children: [
                 Text(
                   appointment.title,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: Colors.white,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -1638,7 +1511,7 @@ class _CalendarItem extends StatelessWidget {
                 ),
                 Text(
                   appointment.description,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFFAAB5C6),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
@@ -1673,7 +1546,7 @@ class _AppointmentFormField extends StatelessWidget {
       children: [
         RichText(
           text: TextSpan(
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF59677A),
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -1694,7 +1567,7 @@ class _AppointmentFormField extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             helperText!,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF7A8798),
               fontSize: 11.5,
               fontWeight: FontWeight.w500,
@@ -1731,7 +1604,7 @@ InputDecoration _appointmentInputDecoration({
 }) {
   return InputDecoration(
     hintText: hintText,
-    hintStyle: GoogleFonts.poppins(
+    hintStyle: AppTextStyles.style(
       color: const Color(0xFFB2BDCC),
       fontSize: 14,
     ),
@@ -1799,7 +1672,7 @@ class _LegendDot extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF6E7F99),
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -1846,7 +1719,7 @@ class _TaskStatusRow extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: const Color(0xFF1C2438),
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -1864,7 +1737,7 @@ class _TaskStatusRow extends StatelessWidget {
             alignment: Alignment.center,
             child: Text(
               '$value',
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: color,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -1904,7 +1777,7 @@ class _SectionMenuButton extends StatelessWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('$value clicked'),
-              behavior: SnackBarBehavior.floating,
+              behavior: SnackPosition.BOTTOM == null ? SnackBarBehavior.fixed : SnackBarBehavior.floating,
               duration: const Duration(milliseconds: 1200),
             ),
           );
@@ -1968,7 +1841,7 @@ class _SectionMenuItem extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF1C2438),
             fontSize: 13,
             fontWeight: FontWeight.w500,
@@ -2011,7 +1884,7 @@ class _ChartLegendChip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF1C2438),
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -2059,7 +1932,7 @@ class _ProjectMetricCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF70819A),
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
@@ -2067,7 +1940,7 @@ class _ProjectMetricCard extends StatelessWidget {
               ),
               Text(
                 value,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF1C2438),
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
@@ -2097,7 +1970,7 @@ class _CurrentMonthBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: AppTextStyles.style(
           color: const Color(0xFF667891),
           fontSize: 11,
           fontWeight: FontWeight.w600,
@@ -2134,7 +2007,9 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: GoogleFonts.poppins(
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppTextStyles.style(
         color: const Color(0xFF1C2438),
         fontSize: 16,
         fontWeight: FontWeight.w700,
@@ -2147,16 +2022,18 @@ class _ResponsiveSectionHeader extends StatelessWidget {
   const _ResponsiveSectionHeader({
     required this.title,
     required this.trailing,
+    this.forceInline = false,
   });
 
   final String title;
   final Widget trailing;
+  final bool forceInline;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 320;
+        final isCompact = constraints.maxWidth < 320 && !forceInline;
 
         if (isCompact) {
           return Column(
@@ -2174,8 +2051,8 @@ class _ResponsiveSectionHeader extends StatelessWidget {
 
         return Row(
           children: [
-            _SectionTitle(title: title),
-            const Spacer(),
+            Expanded(child: _SectionTitle(title: title)),
+            const SizedBox(width: 12),
             trailing,
           ],
         );
@@ -2267,7 +2144,7 @@ class _ChartPainter extends CustomPainter {
     final chartWidth = chartRight - chartLeft;
     final chartHeight = chartBottom - chartTop;
 
-    final labelStyle = GoogleFonts.poppins(
+    final labelStyle = AppTextStyles.style(
       color: const Color(0xFF6E7B90),
       fontSize: 10.5,
       fontWeight: FontWeight.w500,
@@ -2366,3 +2243,4 @@ class _ChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+

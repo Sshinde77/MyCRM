@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 class ClientRenewalScreen extends StatelessWidget {
   const ClientRenewalScreen({super.key});
@@ -103,7 +103,7 @@ class _TopBar extends StatelessWidget {
           Expanded(
             child: Text(
               'Services',
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: const Color(0xFF17213A),
                 fontSize: compact ? 21 : 23,
                 fontWeight: FontWeight.w700,
@@ -175,7 +175,7 @@ class _FilterCard extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 'Filter Renewal Period',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF334155),
                   fontSize: compact ? 16 : 17,
                   fontWeight: FontWeight.w700,
@@ -243,7 +243,7 @@ class _DateField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF64748B),
             fontSize: compact ? 13 : 14,
             fontWeight: FontWeight.w600,
@@ -263,7 +263,7 @@ class _DateField extends StatelessWidget {
           ),
           child: Text(
             'mm/dd/yyyy',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF17213A),
               fontSize: compact ? 14 : 15,
               fontWeight: FontWeight.w500,
@@ -300,7 +300,7 @@ class _ActionButton extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: AppTextStyles.style(
           color: filled ? Colors.white : const Color(0xFF334155),
           fontSize: compact ? 16 : 17,
           fontWeight: FontWeight.w700,
@@ -338,7 +338,7 @@ class _AddServiceButton extends StatelessWidget {
           SizedBox(width: compact ? 10 : 12),
           Text(
             'Add New Service',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: compact ? 17 : 18,
               fontWeight: FontWeight.w700,
@@ -391,7 +391,7 @@ class _ServiceCard extends StatelessWidget {
                         children: [
                           Text(
                             'SERVICE DETAILS',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF94A3B8),
                               fontSize: compact ? 11 : 12,
                               fontWeight: FontWeight.w700,
@@ -401,7 +401,7 @@ class _ServiceCard extends StatelessWidget {
                           SizedBox(height: compact ? 8 : 10),
                           Text(
                             service.title,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF17213A),
                               fontSize: compact ? 19 : 21,
                               fontWeight: FontWeight.w700,
@@ -421,7 +421,7 @@ class _ServiceCard extends StatelessWidget {
                       ),
                       child: Text(
                         service.status,
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFF15803D),
                           fontSize: compact ? 12 : 13,
                           fontWeight: FontWeight.w700,
@@ -486,7 +486,7 @@ class _ServiceCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         service.expiryNote!,
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFFEF4444),
                           fontSize: compact ? 14 : 15,
                           fontWeight: FontWeight.w700,
@@ -540,7 +540,7 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF334155),
               fontSize: compact ? 14 : 15,
               fontWeight: FontWeight.w500,
@@ -569,7 +569,7 @@ class _MetaColumn extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF94A3B8),
             fontSize: compact ? 11 : 12,
             fontWeight: FontWeight.w500,
@@ -579,7 +579,7 @@ class _MetaColumn extends StatelessWidget {
         Text(
           value,
           textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF17213A),
             fontSize: compact ? 13 : 14,
             fontWeight: FontWeight.w700,
@@ -683,7 +683,7 @@ class _NavItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: color,
               fontSize: 12,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
@@ -718,3 +718,4 @@ class _ServiceItem {
   final String? expiryNote;
   final bool showExpiryAlert;
 }
+

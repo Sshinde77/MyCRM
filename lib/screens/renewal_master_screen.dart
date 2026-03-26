@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 
@@ -73,7 +73,7 @@ class RenewalMasterScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Renewal Master',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF162033),
                               fontSize: compact ? 22 : 24,
                               fontWeight: FontWeight.w700,
@@ -103,7 +103,7 @@ class RenewalMasterScreen extends StatelessWidget {
                         children: [
                           Text(
                             'Choose a renewal section',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF162033),
                               fontSize: compact ? 18 : 20,
                               fontWeight: FontWeight.w700,
@@ -112,7 +112,7 @@ class RenewalMasterScreen extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             'Open the renewal workflow you want to manage.',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF64748B),
                               fontSize: compact ? 13 : 14,
                               height: 1.5,
@@ -189,7 +189,7 @@ class RenewalDetailScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             title,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF162033),
                               fontSize: compact ? 22 : 24,
                               fontWeight: FontWeight.w700,
@@ -229,7 +229,7 @@ class RenewalDetailScreen extends StatelessWidget {
                           const SizedBox(height: 18),
                           Text(
                             title,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF162033),
                               fontSize: 21,
                               fontWeight: FontWeight.w700,
@@ -238,7 +238,7 @@ class RenewalDetailScreen extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             description,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF64748B),
                               fontSize: 14,
                               height: 1.6,
@@ -254,7 +254,7 @@ class RenewalDetailScreen extends StatelessWidget {
                             ),
                             child: Text(
                               'This screen is ready for the specific renewal form or list you want to add next.',
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: const Color(0xFF475569),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
@@ -316,7 +316,7 @@ class _RenewalOptionCard extends StatelessWidget {
                 children: [
                   Text(
                     option.title,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF162033),
                       fontSize: compact ? 16 : 17,
                       fontWeight: FontWeight.w700,
@@ -325,7 +325,7 @@ class _RenewalOptionCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     option.subtitle,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF64748B),
                       fontSize: compact ? 12 : 13,
                       height: 1.5,
@@ -390,3 +390,4 @@ class _RenewalOption {
   final String routeName;
   final Color accentColor;
 }
+

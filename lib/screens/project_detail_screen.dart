@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -92,7 +92,7 @@ class _TopBar extends StatelessWidget {
         Expanded(
           child: Text(
             'Project Details',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.title,
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -161,7 +161,7 @@ class _HeroCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             'Laith Barrera',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.title,
               fontSize: compact ? 19 : 22,
               fontWeight: FontWeight.w700,
@@ -198,7 +198,7 @@ class _ProgressCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Overall Progress',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: ProjectDetailScreen.title,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -207,7 +207,7 @@ class _ProgressCard extends StatelessWidget {
               ),
               Text(
                 '75%',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: ProjectDetailScreen.blue,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -302,7 +302,7 @@ class _DescriptionCard extends StatelessWidget {
         children: [
           Text(
             'Project Description',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.title,
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -311,7 +311,7 @@ class _DescriptionCard extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             'Full-scale digital transformation including performance-driven SEO strategies and a custom web application built with a modern tech stack.',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.muted,
               fontSize: 14,
               height: 1.7,
@@ -364,7 +364,7 @@ class _ClientInfoCard extends StatelessWidget {
                 children: [
                   Text(
                     'Client Information',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: ProjectDetailScreen.title,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -372,7 +372,7 @@ class _ClientInfoCard extends StatelessWidget {
                   ),
                   Text(
                     'ARNAV',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: ProjectDetailScreen.blue,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -422,7 +422,7 @@ class _SectionTabs extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: active ? ProjectDetailScreen.blue : const Color(0xFF62748D),
               fontSize: 13,
               fontWeight: active ? FontWeight.w700 : FontWeight.w500,
@@ -484,7 +484,7 @@ class _EmployeeCard extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: ProjectDetailScreen.title,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -492,7 +492,7 @@ class _EmployeeCard extends StatelessWidget {
                 ),
                 Text(
                   role,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: ProjectDetailScreen.muted,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -506,7 +506,7 @@ class _EmployeeCard extends StatelessWidget {
             children: [
               Text(
                 totalTime,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: ProjectDetailScreen.blue,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -514,7 +514,7 @@ class _EmployeeCard extends StatelessWidget {
               ),
               Text(
                 'TOTAL TIME',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFFA1AEC0),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
@@ -554,7 +554,7 @@ class _Badge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: AppTextStyles.style(
           color: fgColor,
           fontSize: compact ? 10 : 12,
           fontWeight: FontWeight.w700,
@@ -577,7 +577,7 @@ class _DateBlock extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: ProjectDetailScreen.muted,
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -586,7 +586,7 @@ class _DateBlock extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: ProjectDetailScreen.title,
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -623,7 +623,7 @@ class _MiniStat extends StatelessWidget {
         children: [
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: fgColor,
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -632,7 +632,7 @@ class _MiniStat extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: fgColor,
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -673,7 +673,7 @@ class _MetricInfoCard extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.muted,
               fontSize: compact ? 11 : 13,
               fontWeight: FontWeight.w500,
@@ -684,7 +684,7 @@ class _MetricInfoCard extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.title,
               fontSize: compact ? 13 : 18,
               fontWeight: FontWeight.w700,
@@ -712,7 +712,7 @@ class _TechChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: AppTextStyles.style(
           color: accent ? ProjectDetailScreen.blue : const Color(0xFF53657E),
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -736,7 +736,7 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.muted,
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -748,7 +748,7 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             value,
             textAlign: TextAlign.right,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: ProjectDetailScreen.title,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -774,3 +774,4 @@ BoxDecoration _cardDecoration() {
     ],
   );
 }
+

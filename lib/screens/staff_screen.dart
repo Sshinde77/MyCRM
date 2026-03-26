@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -119,7 +119,7 @@ class _Header extends StatelessWidget {
             children: [
               Text(
                 'Staff',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF162033),
                   fontSize: compact ? 22 : 24,
                   fontWeight: FontWeight.w700,
@@ -127,7 +127,7 @@ class _Header extends StatelessWidget {
               ),
               Text(
                 'Manage team members and workspace access',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF64748B),
                   fontSize: compact ? 12 : 13,
                   fontWeight: FontWeight.w500,
@@ -171,7 +171,7 @@ class _SearchBar extends StatelessWidget {
           border: InputBorder.none,
           icon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8)),
           hintText: 'Search staff members...',
-          hintStyle: GoogleFonts.poppins(
+          hintStyle: AppTextStyles.style(
             color: const Color(0xFF94A3B8),
             fontSize: compact ? 13 : 14,
           ),
@@ -209,7 +209,7 @@ class _AddStaffButton extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             'Add New Staff',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: compact ? 16 : 17,
               fontWeight: FontWeight.w700,
@@ -233,7 +233,7 @@ class _SectionHeader extends StatelessWidget {
         Expanded(
           child: Text(
             'Current team members',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF162033),
               fontSize: compact ? 17 : 18,
               fontWeight: FontWeight.w700,
@@ -242,7 +242,7 @@ class _SectionHeader extends StatelessWidget {
         ),
         Text(
           '3 active records',
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF64748B),
             fontSize: compact ? 12 : 13,
             fontWeight: FontWeight.w500,
@@ -300,7 +300,7 @@ class _StaffCard extends StatelessWidget {
                     children: [
                       Text(
                         member.name,
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFF162033),
                           fontSize: compact ? 15 : 16,
                           fontWeight: FontWeight.w700,
@@ -318,7 +318,7 @@ class _StaffCard extends StatelessWidget {
                         ),
                         child: Text(
                           member.role,
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: member.accentColor,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -339,7 +339,7 @@ class _StaffCard extends StatelessWidget {
                   ),
                   child: Text(
                     member.isActive ? 'ACTIVE' : 'INACTIVE',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: statusColor,
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -407,7 +407,7 @@ class _AvatarBadge extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         initials,
-        style: GoogleFonts.poppins(
+        style: AppTextStyles.style(
           color: member.accentColor,
           fontSize: compact ? 16 : 17,
           fontWeight: FontWeight.w700,
@@ -437,7 +437,7 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF475569),
               fontSize: compact ? 13 : 14,
               fontWeight: FontWeight.w500,
@@ -553,3 +553,4 @@ void _handleBottomNavigation(int index) {
     Get.toNamed(AppRoutes.profile);
   }
 }
+

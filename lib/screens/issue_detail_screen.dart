@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 class IssueDetailScreen extends StatelessWidget {
   const IssueDetailScreen({super.key});
@@ -23,7 +23,7 @@ class IssueDetailScreen extends StatelessWidget {
         ),
         title: Text(
           'Issue Details',
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: textMain,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -91,7 +91,7 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                           child: Text(
                             '#1',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: blue,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
@@ -106,7 +106,7 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                           child: Text(
                             'LOW PRIORITY',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: textSec,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -123,7 +123,7 @@ class IssueDetailScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Project: Laith Barrera',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: textMain,
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
@@ -138,7 +138,7 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                           child: Text(
                             'OPEN STATUS',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: Colors.redAccent,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -153,7 +153,7 @@ class IssueDetailScreen extends StatelessWidget {
                         children: [
                           TextSpan(
                             text: 'Client: ',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: textSec,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -161,7 +161,7 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                           TextSpan(
                             text: 'Arnav',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: textMain,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -173,7 +173,7 @@ class IssueDetailScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       'System latency issues detected during high-traffic checkout flows. Needs immediate performance auditing.',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: textSec,
                         fontSize: 13,
                         height: 1.5,
@@ -224,7 +224,7 @@ class IssueDetailScreen extends StatelessWidget {
               // Assignments Section
               Text(
                 'Assignments',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: textMain,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -247,7 +247,7 @@ class IssueDetailScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Assigned By',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textSec,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
@@ -262,7 +262,7 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                           child: Text(
                             'SA',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: blue,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
@@ -272,7 +272,7 @@ class IssueDetailScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'Super Admin',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textMain,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -289,7 +289,7 @@ class IssueDetailScreen extends StatelessWidget {
               // Task Board Section
               Text(
                 'Task Board',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: textMain,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -311,7 +311,7 @@ class IssueDetailScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Review database logs',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: textMain,
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -326,7 +326,7 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                           child: Text(
                             'MEDIUM',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: Colors.orange,
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -338,7 +338,7 @@ class IssueDetailScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Filter all requests exceeding 500ms response time in production.',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: textSec,
                         fontSize: 12,
                         height: 1.4,
@@ -358,7 +358,7 @@ class IssueDetailScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'TODO',
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: textSec,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -373,7 +373,7 @@ class IssueDetailScreen extends StatelessWidget {
                         ),
                         child: Text(
                           '2',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textSec,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -395,7 +395,7 @@ class IssueDetailScreen extends StatelessWidget {
                         alignment: Alignment.center,
                         child: Text(
                           'JS',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textSec,
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
@@ -425,7 +425,7 @@ class IssueDetailScreen extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF74839D),
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -434,7 +434,7 @@ class IssueDetailScreen extends StatelessWidget {
         const Spacer(),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: valueColor ?? const Color(0xFF141C33),
             fontSize: 14,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
@@ -444,3 +444,4 @@ class IssueDetailScreen extends StatelessWidget {
     );
   }
 }
+

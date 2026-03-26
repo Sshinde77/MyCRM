@@ -4,6 +4,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String dashboard = '/dashboard';
   static const String tasks = '/tasks';
+  static const String editTask = '/tasks/edit';
   static const String leads = '/leads';
   static const String leadDetail = '/leads/detail';
   static const String projects = '/projects';
@@ -16,6 +17,7 @@ class AppRoutes {
   static const String vendorRenewal = '/profile/renewal-master/vendor-renewal';
   static const String renewalClient = '/profile/renewal-master/client';
   static const String renewalVendor = '/profile/renewal-master/vendor';
+  static const String dashboardRenewals = '/dashboard/renewals';
   static const String raiseIssue = '/profile/raise-issue';
   static const String issueDetail = '/issue/detail';
   static const String staff = '/profile/staff';
@@ -27,4 +29,3 @@ class AppRoutes {
   static const String clientDetail = '/profile/clients/detail';
 
 }
-  

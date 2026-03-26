@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/constants/app_colors.dart';
 import 'package:mycrm/core/constants/api_constants.dart';
 
@@ -199,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 10),
                         Text(
                           'Welcome Back',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: AppColors.primaryBlue,
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
@@ -211,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF39475A),
                               fontSize: 15,
                             ),
@@ -234,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF39475A),
                               fontSize: 15,
                             ),
@@ -281,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: Text(
                               'Forgot password?',
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: cyan,
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -330,7 +330,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     )
                                   : Text(
                                       'Sign In',
-                                      style: GoogleFonts.poppins(
+                                      style: AppTextStyles.style(
                                         color: Colors.white,
                                         fontSize: 20,
                                         fontWeight: FontWeight.w700,
@@ -412,7 +412,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: GoogleFonts.poppins(
+      hintStyle: AppTextStyles.style(
         color: const Color(0xFF95A1B1),
         fontSize: 14,
         fontWeight: FontWeight.w400,
@@ -441,3 +441,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+

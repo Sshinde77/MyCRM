@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 import '../routes/app_routes.dart';
 
 class IssueManagementScreen extends StatefulWidget {
@@ -607,7 +607,7 @@ TextStyle _ts(
   double? height,
   double? letterSpacing,
 }) {
-  return GoogleFonts.poppins(
+  return AppTextStyles.style(
     color: color,
     fontSize: size,
     fontWeight: weight,
@@ -615,3 +615,4 @@ TextStyle _ts(
     letterSpacing: letterSpacing,
   );
 }
+

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 import '../core/constants/app_colors.dart';
 
 /// App-wide Material theme configuration.
@@ -35,7 +35,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: AppTextStyles.subtitle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -57,24 +57,29 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        hintStyle: GoogleFonts.inter(color: AppColors.secondaryText),
+        hintStyle: AppTextStyles.body(color: AppColors.secondaryText),
       ),
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.inter(
+        displayLarge: AppTextStyles.title(
           color: AppColors.primaryText,
           fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
         ),
-        headlineMedium: GoogleFonts.inter(
+        headlineMedium: AppTextStyles.title(
           color: AppColors.primaryText,
           fontSize: 24,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
-        bodyLarge: GoogleFonts.inter(
+        titleMedium: AppTextStyles.subtitle(
+          color: AppColors.primaryText,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+        bodyLarge: AppTextStyles.body(
           color: AppColors.primaryText,
           fontSize: 16,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: AppTextStyles.body(
           color: AppColors.secondaryText,
           fontSize: 14,
         ),

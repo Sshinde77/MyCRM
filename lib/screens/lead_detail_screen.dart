@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -84,7 +84,7 @@ class LeadDetailScreen extends StatelessWidget {
         Expanded(
           child: Text(
             'Lead Profile',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: title,
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -156,7 +156,7 @@ class _ProfileCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Chastity Potts',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: LeadDetailScreen.title,
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
@@ -171,7 +171,7 @@ class _ProfileCard extends StatelessWidget {
                           ),
                           child: Text(
                             'Contacted',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF9D6B00),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -183,7 +183,7 @@ class _ProfileCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       'Cruz and Keller Trading',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: const Color(0xFF5D6C84),
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -191,7 +191,7 @@ class _ProfileCard extends StatelessWidget {
                     ),
                     Text(
                       'kenihap@mailinator.com',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: const Color(0xFF98A6BD),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
@@ -239,7 +239,7 @@ class _ProfileCard extends StatelessWidget {
               icon: const Icon(Icons.edit_outlined, size: 19),
               label: Text(
                 'Edit Lead',
-                style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+                style: AppTextStyles.style(fontSize: 15, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -318,7 +318,7 @@ class _SectionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: LeadDetailScreen.title,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -328,7 +328,7 @@ class _SectionCard extends StatelessWidget {
                 if (actionLabel != null)
                   Text(
                     actionLabel!,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: LeadDetailScreen.link,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -397,7 +397,7 @@ class _LeadDetailsContent extends StatelessWidget {
                 children: [
                   Text(
                     'Tags',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: LeadDetailScreen.muted,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -482,7 +482,7 @@ class _NotesContent extends StatelessWidget {
             children: [
               Text(
                 '"Spoke with her briefly, she mentioned their current contract expires in January. Very keen on our reporting features."',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF53627B),
                   fontSize: 13,
                   height: 1.7,
@@ -496,7 +496,7 @@ class _NotesContent extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     'ADDED BY YOU | 3H AGO',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF89A0C2),
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -521,7 +521,7 @@ class _NotesContent extends StatelessWidget {
             icon: const Icon(Icons.add_rounded),
             label: Text(
               'Add Note',
-              style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+              style: AppTextStyles.style(fontSize: 15, fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -554,7 +554,7 @@ class _MetricTile extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF7084A0),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -563,7 +563,7 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: valueColor,
               fontSize: 18,
               fontWeight: FontWeight.w700,
@@ -591,7 +591,7 @@ class _StatusTile extends StatelessWidget {
         children: [
           Text(
             'STATUS',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF7084A0),
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -604,7 +604,7 @@ class _StatusTile extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Warm Lead',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: LeadDetailScreen.title,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -638,7 +638,7 @@ class _ContactRow extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: textColor,
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -676,7 +676,7 @@ class _QuickAction extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF6C7D95),
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -707,7 +707,7 @@ class _DetailField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: LeadDetailScreen.muted,
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -716,7 +716,7 @@ class _DetailField extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: valueColor,
             fontSize: 14,
             height: isMultiline ? 1.7 : 1.4,
@@ -743,7 +743,7 @@ class _TagChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: AppTextStyles.style(
           color: const Color(0xFF4B5D78),
           fontSize: 11,
           fontWeight: FontWeight.w700,
@@ -809,7 +809,7 @@ class _TimelineEntry extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: LeadDetailScreen.title,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -818,7 +818,7 @@ class _TimelineEntry extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF71829A),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -827,7 +827,7 @@ class _TimelineEntry extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     time,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF92A3B8),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -842,3 +842,4 @@ class _TimelineEntry extends StatelessWidget {
     );
   }
 }
+

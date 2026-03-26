@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
 
@@ -25,7 +25,7 @@ class ClientDetailScreen extends StatelessWidget {
         ),
         title: Text(
           'Client Details',
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: textMain,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -143,7 +143,7 @@ class _ProfileHeader extends StatelessWidget {
                     children: [
                       Text(
                         'Arnav',
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF141C33),
@@ -158,7 +158,7 @@ class _ProfileHeader extends StatelessWidget {
                         ),
                         child: Text(
                           'ACTIVE CLIENT',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF059669),
@@ -169,7 +169,7 @@ class _ProfileHeader extends StatelessWidget {
                   ),
                   Text(
                     'Test Company',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       fontSize: 14,
                       color: const Color(0xFF74839D),
                     ),
@@ -197,7 +197,7 @@ class _ProfileHeader extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             text,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               fontSize: 13,
               color: isLink ? const Color(0xFF1769F3) : const Color(0xFF141C33),
               fontWeight: isLink ? FontWeight.w600 : FontWeight.w500,
@@ -240,7 +240,7 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF141C33),
@@ -248,7 +248,7 @@ class _StatBox extends StatelessWidget {
           ),
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               fontSize: 10,
               color: const Color(0xFF74839D),
               fontWeight: FontWeight.w500,
@@ -279,7 +279,7 @@ class _ClientInfoCard extends StatelessWidget {
             children: [
               Text(
                 'Client Information',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF141C33),
@@ -334,7 +334,7 @@ class _InfoField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             fontSize: 10,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF74839D),
@@ -344,7 +344,7 @@ class _InfoField extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: valueColor ?? const Color(0xFF141C33),
@@ -371,7 +371,7 @@ class _SectionHeader extends StatelessWidget {
           children: [
             Text(
               title,
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: const Color(0xFF141C33),
@@ -396,7 +396,7 @@ class _SectionHeader extends StatelessWidget {
         if (showViewAll)
           Text(
             'View All',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF1769F3),
@@ -425,7 +425,7 @@ class _ProjectCard extends StatelessWidget {
             children: [
               Text(
                 'Laith Barrera',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF141C33),
@@ -439,7 +439,7 @@ class _ProjectCard extends StatelessWidget {
                 ),
                 child: Text(
                   'In Progress',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF1769F3),
@@ -453,11 +453,11 @@ class _ProjectCard extends StatelessWidget {
             children: [
               const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF74839D)),
               const SizedBox(width: 4),
-              Text('01 Jan', style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF74839D))),
+              Text('01 Jan', style: AppTextStyles.style(fontSize: 12, color: const Color(0xFF74839D))),
               const SizedBox(width: 12),
               const Icon(Icons.calendar_month_outlined, size: 14, color: Color(0xFF74839D)),
               const SizedBox(width: 4),
-              Text('30 Jun', style: GoogleFonts.poppins(fontSize: 12, color: const Color(0xFF74839D))),
+              Text('30 Jun', style: AppTextStyles.style(fontSize: 12, color: const Color(0xFF74839D))),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -467,7 +467,7 @@ class _ProjectCard extends StatelessWidget {
                 ),
                 child: Text(
                   'HIGH PRIORITY',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     color: Colors.red,
@@ -490,7 +490,7 @@ class _ProjectCard extends StatelessWidget {
               ),
               child: Text(
                 'View Project Details',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF141C33),
@@ -535,7 +535,7 @@ class _TaskCard extends StatelessWidget {
                   children: [
                     Text(
                       'Ut voluptatem conseq',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: const Color(0xFF141C33),
@@ -543,7 +543,7 @@ class _TaskCard extends StatelessWidget {
                     ),
                     Text(
                       'Project: Laith Barrera',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         fontSize: 12,
                         color: const Color(0xFF74839D),
                       ),
@@ -569,7 +569,7 @@ class _TaskCard extends StatelessWidget {
                 ),
                 child: Text(
                   'Not Started',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF74839D),
@@ -579,7 +579,7 @@ class _TaskCard extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 'Due: 24 May',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: Colors.red,
@@ -632,7 +632,7 @@ class _IssueCard extends StatelessWidget {
                         children: [
                           Text(
                             'Issue #1',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF141C33),
@@ -640,7 +640,7 @@ class _IssueCard extends StatelessWidget {
                           ),
                           Text(
                             'OPEN',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: Colors.red,
@@ -650,7 +650,7 @@ class _IssueCard extends StatelessWidget {
                       ),
                       Text(
                         'Laith Barrera • Web App Interface',
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           fontSize: 12,
                           color: const Color(0xFF74839D),
                           fontWeight: FontWeight.w500,
@@ -659,7 +659,7 @@ class _IssueCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         'The navigation bar on mobile view gets cut off when scrolling horizontally...',
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           fontSize: 12,
                           color: const Color(0xFF74839D),
                           height: 1.5,
@@ -682,7 +682,7 @@ class _IssueCard extends StatelessWidget {
                   ),
                   child: Text(
                     'CRITICAL',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: Colors.red,
@@ -691,7 +691,7 @@ class _IssueCard extends StatelessWidget {
                 ),
                 Text(
                   'Added: 18 May',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     fontSize: 11,
                     color: const Color(0xFF74839D),
                     fontWeight: FontWeight.w500,
@@ -705,3 +705,4 @@ class _IssueCard extends StatelessWidget {
     );
   }
 }
+

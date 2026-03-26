@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../routes/app_routes.dart';
 
@@ -20,7 +20,7 @@ class StaffDetailScreen extends StatelessWidget {
         ),
         title: Text(
           'User Profile',
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF1E293B),
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -102,7 +102,7 @@ class StaffDetailScreen extends StatelessWidget {
                 _SectionTitle(title: 'RECENT PROJECTS'),
                 Text(
                   'View All',
-                  style: GoogleFonts.poppins(color: Color(0xFF3B82F6), fontSize: 12, fontWeight: FontWeight.w600),
+                  style: AppTextStyles.style(color: Color(0xFF3B82F6), fontSize: 12, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -188,11 +188,11 @@ class _ProfileHeaderCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Philip Hartman',
-            style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
+            style: AppTextStyles.style(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1E293B)),
           ),
           Text(
             'Client • Web Developers',
-            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF3B82F6)),
+            style: AppTextStyles.style(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF3B82F6)),
           ),
           const SizedBox(height: 16),
           _InfoRow(icon: Icons.email_outlined, text: 'socuf@mailinator.com'),
@@ -220,7 +220,7 @@ class _InfoRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           text,
-          style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
+          style: AppTextStyles.style(fontSize: 13, color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
         ),
       ],
     );
@@ -248,8 +248,8 @@ class _TimeCard extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 8),
-          Text(title, style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
-          Text(time, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+          Text(title, style: AppTextStyles.style(fontSize: 10, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
+          Text(time, style: AppTextStyles.style(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
         ],
       ),
     );
@@ -269,7 +269,7 @@ class _EditProfileForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Edit Profile Details', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700)),
+          Text('Edit Profile Details', style: AppTextStyles.style(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -291,7 +291,7 @@ class _EditProfileForm extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          Text('TEAM SELECTION', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8))),
+          Text('TEAM SELECTION', style: AppTextStyles.style(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF94A3B8))),
           const SizedBox(height: 12),
           _CheckboxItem(label: 'Web Developers', value: true),
           _CheckboxItem(label: 'Design and Graphics', value: false),
@@ -307,7 +307,7 @@ class _EditProfileForm extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
-              child: Text('Save Changes', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+              child: Text('Save Changes', style: AppTextStyles.style(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
             ),
           ),
         ],
@@ -326,11 +326,11 @@ class _InputField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+        Text(label, style: AppTextStyles.style(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         TextFormField(
           initialValue: initialValue,
-          style: GoogleFonts.poppins(fontSize: 14, color: Color(0xFF1E293B)),
+          style: AppTextStyles.style(fontSize: 14, color: Color(0xFF1E293B)),
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
@@ -354,7 +354,7 @@ class _DropdownField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
+        Text(label, style: AppTextStyles.style(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -366,7 +366,7 @@ class _DropdownField extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(value, style: GoogleFonts.poppins(fontSize: 14, color: Color(0xFF1E293B))),
+              Text(value, style: AppTextStyles.style(fontSize: 14, color: Color(0xFF1E293B))),
               const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF64748B), size: 20),
             ],
           ),
@@ -398,7 +398,7 @@ class _CheckboxItem extends StatelessWidget {
             child: value ? const Icon(Icons.check, size: 14, color: Colors.white) : null,
           ),
           const SizedBox(width: 12),
-          Text(label, style: GoogleFonts.poppins(fontSize: 14, color: Color(0xFF475569), fontWeight: FontWeight.w500)),
+          Text(label, style: AppTextStyles.style(fontSize: 14, color: Color(0xFF475569), fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -422,9 +422,9 @@ class _StatsCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(value, style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.w700, color: color)),
+          Text(value, style: AppTextStyles.style(fontSize: 28, fontWeight: FontWeight.w700, color: color)),
           const SizedBox(height: 4),
-          Text(label, style: GoogleFonts.poppins(fontSize: 11, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
+          Text(label, style: AppTextStyles.style(fontSize: 11, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -451,7 +451,7 @@ class _ChartPlaceholder extends StatelessWidget {
           _SectionTitle(title: title),
           const SizedBox(height: 60),
           Center(
-            child: Text('Chart Placeholder', style: GoogleFonts.poppins(color: Color(0xFF94A3B8))),
+            child: Text('Chart Placeholder', style: AppTextStyles.style(color: Color(0xFF94A3B8))),
           ),
           const SizedBox(height: 60),
           Row(
@@ -459,7 +459,7 @@ class _ChartPlaceholder extends StatelessWidget {
             children: [
               Container(height: 8, width: 8, decoration: const BoxDecoration(color: Color(0xFF3B82F6), shape: BoxShape.circle)),
               const SizedBox(width: 8),
-              Text('Performance %', style: GoogleFonts.poppins(fontSize: 11, color: Color(0xFF64748B))),
+              Text('Performance %', style: AppTextStyles.style(fontSize: 11, color: Color(0xFF64748B))),
             ],
           ),
         ],
@@ -527,8 +527,8 @@ class _PriorityItem extends StatelessWidget {
       children: [
         Container(height: 8, width: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
-        Expanded(child: Text(label, style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500))),
-        Text(percent, style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
+        Expanded(child: Text(label, style: AppTextStyles.style(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500))),
+        Text(percent, style: AppTextStyles.style(fontSize: 12, color: Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -572,15 +572,15 @@ class _ProjectCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
-                    Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: Color(0xFF64748B))),
+                    Text(title, style: AppTextStyles.style(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1E293B))),
+                    Text(subtitle, style: AppTextStyles.style(fontSize: 12, color: Color(0xFF64748B))),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: statusColor, borderRadius: BorderRadius.circular(8)),
-                child: Text(status, style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w700, color: statusTextColor)),
+                child: Text(status, style: AppTextStyles.style(fontSize: 10, fontWeight: FontWeight.w700, color: statusTextColor)),
               ),
             ],
           ),
@@ -608,9 +608,9 @@ class _DateColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.poppins(fontSize: 10, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
+        Text(label, style: AppTextStyles.style(fontSize: 10, color: const Color(0xFF94A3B8), fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
-        Text(date, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: isDeadline ? Color(0xFFEF4444) : Color(0xFF475569))),
+        Text(date, style: AppTextStyles.style(fontSize: 13, fontWeight: FontWeight.w600, color: isDeadline ? Color(0xFFEF4444) : Color(0xFF475569))),
       ],
     );
   }
@@ -637,12 +637,12 @@ class _EmptyStateCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'No tasks found for this staff member.',
-            style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
+            style: AppTextStyles.style(fontSize: 14, color: const Color(0xFF64748B), fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: () {},
-            child: Text('+ Create Task', style: GoogleFonts.poppins(fontSize: 14, color: Color(0xFF3B82F6), fontWeight: FontWeight.w600)),
+            child: Text('+ Create Task', style: AppTextStyles.style(fontSize: 14, color: Color(0xFF3B82F6), fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -658,7 +658,8 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF64748B), letterSpacing: 0.5),
+      style: AppTextStyles.style(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF64748B), letterSpacing: 0.5),
     );
   }
 }
+

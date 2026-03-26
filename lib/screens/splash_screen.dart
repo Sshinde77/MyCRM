@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 
@@ -148,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen>
                       const SizedBox(height: 22),
                       Text(
                         'MyCRM',
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFFDB8A1E),
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
@@ -158,7 +158,7 @@ class _SplashScreenState extends State<SplashScreen>
                       const SizedBox(height: 8),
                       Text(
                         'Preparing your workspace',
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFF7590A4),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -189,3 +189,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+

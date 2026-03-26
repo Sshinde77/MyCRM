@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -54,7 +54,7 @@ class LeadsScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Leads',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textDark,
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
@@ -62,7 +62,7 @@ class LeadsScreen extends StatelessWidget {
                         ),
                         Text(
                           'Enterprise Dashboard',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textLight,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -129,7 +129,7 @@ class LeadsScreen extends StatelessWidget {
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Search leads by name or ID...',
-                    hintStyle: GoogleFonts.poppins(color: textLight, fontSize: 14),
+                    hintStyle: AppTextStyles.style(color: textLight, fontSize: 14),
                     icon: const Icon(Icons.search, color: textLight),
                     border: InputBorder.none,
                   ),
@@ -180,7 +180,7 @@ class LeadsScreen extends StatelessWidget {
                 children: [
                   Text(
                     'RECENT LEADS',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: textDark,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -194,7 +194,7 @@ class LeadsScreen extends StatelessWidget {
                       children: [
                         Text(
                           'View All',
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: primaryBlue,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -276,7 +276,7 @@ class _SummaryCard extends StatelessWidget {
               Icon(icon, color: const Color(0xFF33A1FF), size: 24),
               Text(
                 percentage,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: color,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -287,7 +287,7 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF76839A),
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -296,7 +296,7 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF1E2A3B),
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -364,7 +364,7 @@ class _LeadCard extends StatelessWidget {
                       children: [
                         Text(
                           id,
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: const Color(0xFF2CB1FF),
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
@@ -373,7 +373,7 @@ class _LeadCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           name,
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textDark,
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -381,7 +381,7 @@ class _LeadCard extends StatelessWidget {
                         ),
                         Text(
                           company,
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: textLight,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -395,7 +395,7 @@ class _LeadCard extends StatelessWidget {
                     children: [
                       Text(
                         amount,
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFF2CB1FF),
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -410,7 +410,7 @@ class _LeadCard extends StatelessWidget {
                         ),
                         child: Text(
                           status,
-                          style: GoogleFonts.poppins(
+                          style: AppTextStyles.style(
                             color: statusTextColor,
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
@@ -456,7 +456,7 @@ class _LeadCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'Assigned: ',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: textLight,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -464,7 +464,7 @@ class _LeadCard extends StatelessWidget {
                   ),
                   Text(
                     assignedTo,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: textDark,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -506,7 +506,7 @@ class _IconInfoRow extends StatelessWidget {
           child: Text(
             text,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF64748B),
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -541,3 +541,4 @@ class _ActionIcon extends StatelessWidget {
     );
   }
 }
+

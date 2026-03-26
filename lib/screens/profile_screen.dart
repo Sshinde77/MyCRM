@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -187,7 +187,7 @@ class ProfileSectionScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             title,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF162033),
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
@@ -227,7 +227,7 @@ class ProfileSectionScreen extends StatelessWidget {
                           const SizedBox(height: 18),
                           Text(
                             title,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF162033),
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -236,7 +236,7 @@ class ProfileSectionScreen extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             description,
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               color: const Color(0xFF64748B),
                               fontSize: 14,
                               height: 1.6,
@@ -252,7 +252,7 @@ class ProfileSectionScreen extends StatelessWidget {
                             ),
                             child: Text(
                               'This section is ready for the next workflow or form screen.',
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: const Color(0xFF475569),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
@@ -297,7 +297,7 @@ class _ProfileHeader extends StatelessWidget {
             children: [
               Text(
                 'Profile',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF162033),
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -305,7 +305,7 @@ class _ProfileHeader extends StatelessWidget {
               ),
               Text(
                 '$actionsCount quick actions for your workspace',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF64748B),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -348,7 +348,7 @@ class _ProfileHeroCard extends StatelessWidget {
         children: [
           Text(
             'Workspace Control Center',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: 19,
               fontWeight: FontWeight.w700,
@@ -357,7 +357,7 @@ class _ProfileHeroCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Open client tools, issue reporting, renewal tracking, and account settings from one place.',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFFD9E7FF),
               fontSize: 12.5,
               height: 1.55,
@@ -424,7 +424,7 @@ class _ProfileActionCard extends StatelessWidget {
                 action.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF162033),
                   fontSize: isNarrow ? 14 : 15,
                   fontWeight: FontWeight.w700,
@@ -516,3 +516,4 @@ void _handleBottomNavigation(int index) {
     Get.toNamed(AppRoutes.profile);
   }
 }
+

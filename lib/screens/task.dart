@@ -349,12 +349,17 @@ class _TaskCard extends StatelessWidget {
                 ],
               ),
               Row(
-                children: const [
-                  Icon(Icons.remove_red_eye, color: Colors.grey),
-                  SizedBox(width: 10),
-                  Icon(Icons.edit, color: Colors.grey),
-                  SizedBox(width: 10),
-                  Icon(Icons.delete, color: Colors.grey),
+                children: [
+                  const Icon(Icons.remove_red_eye, color: Colors.grey),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: () {
+                      Get.toNamed(AppRoutes.editTask);
+                    },
+                    child: const Icon(Icons.edit, color: Colors.grey),
+                  ),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.delete, color: Colors.grey),
                 ],
               )
             ],

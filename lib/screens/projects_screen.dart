@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -102,7 +102,7 @@ class _ProjectsHeader extends StatelessWidget {
             children: [
               Text(
                 'Projects',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF1E2A3B),
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
@@ -111,7 +111,7 @@ class _ProjectsHeader extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 'Enterprise Management System',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF76839A),
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
@@ -142,7 +142,7 @@ class _ProjectsHeader extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             'UI',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF1E2A3B),
               fontWeight: FontWeight.w700,
             ),
@@ -286,7 +286,7 @@ class _MetricCard extends StatelessWidget {
               const Spacer(),
               Text(
                 percent,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: accent,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -297,7 +297,7 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF1E2A3B),
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -306,7 +306,7 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label.toUpperCase(),
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF7C8BA1),
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -331,7 +331,7 @@ class _TeamWorkloadSection extends StatelessWidget {
           children: [
             Text(
               'Team Workload',
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: const Color(0xFF1E2A3B),
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -340,7 +340,7 @@ class _TeamWorkloadSection extends StatelessWidget {
             const Spacer(),
             Text(
               'View All',
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: const Color(0xFF1D6FEA),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
@@ -383,7 +383,7 @@ class _TeamMemberCard extends StatelessWidget {
               backgroundColor: member.avatarColor.withOpacity(0.18),
               child: Text(
                 member.initials,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: member.avatarColor,
                   fontWeight: FontWeight.w700,
                 ),
@@ -400,7 +400,7 @@ class _TeamMemberCard extends StatelessWidget {
                 ),
                 child: Text(
                   member.count.toString(),
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: Colors.white,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -426,7 +426,7 @@ class _TeamMemberCard extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           member.name,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF4C5B70),
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -463,7 +463,7 @@ class _SearchField extends StatelessWidget {
           Expanded(
             child: Text(
               'Search projects, clients...',
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: const Color(0xFF8A98AD),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
@@ -528,7 +528,7 @@ class _FilterChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF2F3D52),
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
@@ -588,7 +588,7 @@ class _ProjectCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               data.title,
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: const Color(0xFF1E2A3B),
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -603,7 +603,7 @@ class _ProjectCard extends StatelessWidget {
                             ),
                             child: Text(
                               data.status,
-                              style: GoogleFonts.poppins(
+                              style: AppTextStyles.style(
                                 color: data.accentColor,
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
@@ -615,7 +615,7 @@ class _ProjectCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         data.client,
-                        style: GoogleFonts.poppins(
+                        style: AppTextStyles.style(
                           color: const Color(0xFF76839A),
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -646,7 +646,7 @@ class _ProjectCard extends StatelessWidget {
                                   children: [
                                     Text(
                                       'Progress',
-                                      style: GoogleFonts.poppins(
+                                      style: AppTextStyles.style(
                                         color: const Color(0xFF76839A),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
@@ -655,7 +655,7 @@ class _ProjectCard extends StatelessWidget {
                                     const Spacer(),
                                     Text(
                                       '${(data.progress * 100).toInt()}%',
-                                      style: GoogleFonts.poppins(
+                                      style: AppTextStyles.style(
                                         color: const Color(0xFF1E2A3B),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
@@ -739,7 +739,7 @@ class _ProjectInfoItem extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF586A82),
             fontSize: 11.5,
             fontWeight: FontWeight.w500,
@@ -846,3 +846,4 @@ const _projectCards = [
     accentColor: Color(0xFFF59E0B),
   ),
 ];
+

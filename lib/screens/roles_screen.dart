@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../routes/app_routes.dart';
 
@@ -25,7 +25,7 @@ class RolesScreen extends StatelessWidget {
         centerTitle: false,
         title: Text(
           'Roles',
-          style: GoogleFonts.poppins(
+          style: AppTextStyles.style(
             color: const Color(0xFF1E293B),
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -122,7 +122,7 @@ class RolesScreen extends StatelessWidget {
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Search roles by name...',
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: AppTextStyles.style(
                     color: const Color(0xFF94A3B8),
                     fontSize: 14,
                   ),
@@ -215,7 +215,7 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             count,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF1E293B),
               fontSize: 26,
               fontWeight: FontWeight.w700,
@@ -224,7 +224,7 @@ class _SummaryCard extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: accentColor.withValues(alpha: 0.7),
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -274,7 +274,7 @@ class _RoleCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF1E293B),
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -291,7 +291,7 @@ class _RoleCard extends StatelessWidget {
                 ),
                 child: Text(
                   status,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF166534),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -303,7 +303,7 @@ class _RoleCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             description,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFF64748B),
               fontSize: 14,
               height: 1.5,
@@ -327,7 +327,7 @@ class _RoleCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   '$permissions Permissions',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF475569),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -390,3 +390,4 @@ class _ActionButton extends StatelessWidget {
     );
   }
 }
+

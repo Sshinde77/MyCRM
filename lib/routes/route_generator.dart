@@ -9,6 +9,7 @@ import '../screens/projects_screen.dart';
 import '../screens/project_detail_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/task.dart';
+import '../screens/edit_task_screen.dart';
 import '../screens/leads_screen.dart';
 import '../screens/lead_detail_screen.dart';
 import '../screens/issue_management_screen.dart';
@@ -16,6 +17,7 @@ import '../screens/issue_detail_screen.dart';
 import '../screens/renewal_master_screen.dart';
 import '../screens/client_renewal_screen.dart';
 import '../screens/vendor_renewal_screen.dart';
+import '../screens/dashboard_renewals_screen.dart';
 import '../screens/staff_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
@@ -33,6 +35,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
       case AppRoutes.tasks:
         return MaterialPageRoute(builder: (_) => const TasksScreen());
+      case AppRoutes.editTask:
+        return MaterialPageRoute(builder: (_) => const EditTaskScreen());
       case AppRoutes.leads:
         return MaterialPageRoute(builder: (_) => const LeadsScreen());
       case AppRoutes.leadDetail:
@@ -78,6 +82,10 @@ class RouteGenerator {
             icon: Icons.local_shipping_outlined,
             accentColor: Color(0xFFEA580C),
           ),
+        );
+      case AppRoutes.dashboardRenewals:
+        return MaterialPageRoute(
+          builder: (_) => const DashboardRenewalsScreen(),
         );
       case AppRoutes.raiseIssue:
         return MaterialPageRoute(builder: (_) => const IssueManagementScreen());

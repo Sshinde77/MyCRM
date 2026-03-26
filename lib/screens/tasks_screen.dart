@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
@@ -164,7 +164,7 @@ class _TasksHeader extends StatelessWidget {
                     'To-Do List',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF1E2B3C),
                       fontSize: isCompact ? 19 : 22,
                       fontWeight: FontWeight.w700,
@@ -174,7 +174,7 @@ class _TasksHeader extends StatelessWidget {
                     'Plan your day with a clean personal task flow.',
                     maxLines: isCompact ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF72839A),
                       fontSize: isCompact ? 11.5 : 12.5,
                       fontWeight: FontWeight.w500,
@@ -201,7 +201,7 @@ class _TasksHeader extends StatelessWidget {
               alignment: Alignment.center,
               child: Text(
                 'S',
-                style: GoogleFonts.poppins(
+                style: AppTextStyles.style(
                   color: const Color(0xFF1B87E6),
                   fontSize: isCompact ? 14 : 16,
                   fontWeight: FontWeight.w700,
@@ -345,7 +345,7 @@ class _TasksHeroSection extends StatelessWidget {
                   SizedBox(height: isCompact ? 14 : 18),
                   Text(
                     'Focus on what matters today',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF203751),
                       fontSize: isCompact ? 23 : 28,
                       height: 1.12,
@@ -355,7 +355,7 @@ class _TasksHeroSection extends StatelessWidget {
                   SizedBox(height: isCompact ? 8 : 10),
                   Text(
                     'Each logged-in user will only see their own recurring todos with reminders and daily focus.',
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: Colors.white,
                       fontSize: isCompact ? 12 : 13,
                       height: 1.55,
@@ -387,7 +387,7 @@ class _TasksHeroSection extends StatelessWidget {
                           ),
                           label: Text(
                             'Add task',
-                            style: GoogleFonts.poppins(
+                            style: AppTextStyles.style(
                               fontSize: isCompact ? 13.5 : 14,
                               fontWeight: FontWeight.w700,
                             ),
@@ -442,7 +442,7 @@ class _TodayChip extends StatelessWidget {
           SizedBox(width: isCompact ? 6 : 8),
           Text(
             'Today',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: isCompact ? 12 : 13,
               fontWeight: FontWeight.w600,
@@ -475,7 +475,7 @@ class _HeroBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: AppTextStyles.style(
           color: foreground,
           fontSize: 10,
           fontWeight: FontWeight.w700,
@@ -565,7 +565,7 @@ class _HeroStatCard extends StatelessWidget {
             label.toUpperCase(),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white.withOpacity(0.76),
               fontSize: isCompact ? 8.5 : 10,
               fontWeight: FontWeight.w700,
@@ -575,7 +575,7 @@ class _HeroStatCard extends StatelessWidget {
           SizedBox(height: isCompact ? 4 : 6),
           Text(
             value,
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: isCompact ? 22 : 26,
               fontWeight: FontWeight.w700,
@@ -683,7 +683,7 @@ class _TaskStatePanel extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   badge,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: badgeTextColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -726,7 +726,7 @@ class _TaskStatePanel extends StatelessWidget {
                   Text(
                     emptyText,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF91A0B5),
                       fontSize: 12.5,
                       height: 1.6,
@@ -805,7 +805,7 @@ class _TaskListTile extends StatelessWidget {
                   task.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF263548),
                     fontSize: isCompact ? 13 : 14,
                     fontWeight: FontWeight.w700,
@@ -817,7 +817,7 @@ class _TaskListTile extends StatelessWidget {
                     task.description,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
+                    style: AppTextStyles.style(
                       color: const Color(0xFF7B8CA3),
                       fontSize: isCompact ? 11.5 : 12,
                       height: 1.45,
@@ -879,7 +879,7 @@ class _TaskMetaChip extends StatelessWidget {
             child: Text(
               label,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: const Color(0xFF5D7491),
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,
@@ -947,7 +947,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   children: [
                     Text(
                       'TASK SETUP',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: const Color(0xFF556273),
                         fontSize: isCompact ? 10 : 11,
                         fontWeight: FontWeight.w700,
@@ -957,7 +957,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                     const SizedBox(height: 2),
                     Text(
                       'Add New Todo',
-                      style: GoogleFonts.poppins(
+                      style: AppTextStyles.style(
                         color: const Color(0xFF2D3846),
                         fontSize: isCompact ? 16 : 18,
                         fontWeight: FontWeight.w700,
@@ -1059,7 +1059,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                 ),
                 child: Text(
                   'Save Task',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                  style: AppTextStyles.style(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -1078,7 +1078,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                 ),
                 child: Text(
                   'Close',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  style: AppTextStyles.style(fontWeight: FontWeight.w600),
                 ),
               ),
             ),
@@ -1098,7 +1098,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   ),
                   child: Text(
                     'Close',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    style: AppTextStyles.style(fontWeight: FontWeight.w600),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1114,7 +1114,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   ),
                   child: Text(
                     'Save Task',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+                    style: AppTextStyles.style(fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -1449,7 +1449,7 @@ class _EndOptionChip extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.poppins(
+              style: AppTextStyles.style(
                 color: const Color(0xFF52606F),
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -1471,7 +1471,7 @@ class _FormFieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: GoogleFonts.poppins(
+      style: AppTextStyles.style(
         color: const Color(0xFF55606E),
         fontSize: 13,
         fontWeight: FontWeight.w700,
@@ -1512,7 +1512,7 @@ InputDecoration _taskInputDecoration({
 }) {
   return InputDecoration(
     hintText: hintText,
-    hintStyle: GoogleFonts.poppins(
+    hintStyle: AppTextStyles.style(
       color: const Color(0xFF9AA8B7),
       fontSize: 13,
       fontWeight: FontWeight.w500,
@@ -1593,7 +1593,7 @@ class _FocusTipsCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Stay consistent',
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -1605,7 +1605,7 @@ class _FocusTipsCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Build a modern daily workflow by adding recurring patterns, reminders, and clear task priorities for each user.',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: const Color(0xFFB9C7DB),
               fontSize: 12.5,
               height: 1.65,
@@ -1654,7 +1654,7 @@ class _CardEyebrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label.toUpperCase(),
-      style: GoogleFonts.poppins(
+      style: AppTextStyles.style(
         color: const Color(0xFF4E5B6E),
         fontSize: 10,
         fontWeight: FontWeight.w700,
@@ -1673,7 +1673,7 @@ class _CardTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: GoogleFonts.poppins(
+      style: AppTextStyles.style(
         color: const Color(0xFF28384B),
         fontSize: 20,
         fontWeight: FontWeight.w700,
@@ -1691,7 +1691,7 @@ class _SectionDescription extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: GoogleFonts.poppins(
+      style: AppTextStyles.style(
         color: const Color(0xFF7F90A6),
         fontSize: 12.5,
         height: 1.0,
@@ -1745,7 +1745,7 @@ class _SmartListTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF2B3B54),
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -1754,7 +1754,7 @@ class _SmartListTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: GoogleFonts.poppins(
+                  style: AppTextStyles.style(
                     color: const Color(0xFF8D9CB0),
                     fontSize: 12,
                     height: 1.5,
@@ -1791,7 +1791,7 @@ class _HowItWorksCard extends StatelessWidget {
         children: [
           Text(
             'How it works',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -1800,7 +1800,7 @@ class _HowItWorksCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Set a repeat pattern, choose reminder time, and the task stays personal to the current logged-in user.',
-            style: GoogleFonts.poppins(
+            style: AppTextStyles.style(
               color: Colors.white,
               fontSize: 12,
               height: 1.6,
@@ -1812,3 +1812,4 @@ class _HowItWorksCard extends StatelessWidget {
     );
   }
 }
+
