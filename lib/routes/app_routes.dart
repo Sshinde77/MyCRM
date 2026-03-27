@@ -21,6 +21,7 @@ class AppRoutes {
   static const String raiseIssue = '/profile/raise-issue';
   static const String issueDetail = '/issue/detail';
   static const String staff = '/profile/staff';
+  static const String addStaff = '/profile/staff/add';
   static const String staffDetail = '/profile/staff/detail';
   static const String clients = '/profile/clients';
   static const String accessControl = '/profile/access-control';

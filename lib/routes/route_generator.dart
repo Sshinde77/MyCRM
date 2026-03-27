@@ -19,6 +19,7 @@ import '../screens/client_renewal_screen.dart';
 import '../screens/vendor_renewal_screen.dart';
 import '../screens/dashboard_renewals_screen.dart';
 import '../screens/staff_screen.dart';
+import '../screens/add_staff_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
 
@@ -93,8 +94,14 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const IssueDetailScreen());
       case AppRoutes.staff:
         return MaterialPageRoute(builder: (_) => const StaffScreen());
+      case AppRoutes.addStaff:
+        return MaterialPageRoute(builder: (_) => const AddStaffScreen());
       case AppRoutes.staffDetail:
-        return MaterialPageRoute(builder: (_) => const StaffDetailScreen());
+        return MaterialPageRoute(
+          builder: (_) => StaffDetailScreen(
+            staffId: settings.arguments?.toString(),
+          ),
+        );
       case AppRoutes.clients:
         return MaterialPageRoute(builder: (_) => const ClientsScreen());
       case AppRoutes.clientDetail:

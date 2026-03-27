@@ -5,13 +5,18 @@ class ApiConstants {
   static const int receiveTimeout = 30000;
 
   // Endpoints
-
-  // static const String login = '$baseUrl/login';
-  static const String login = 'local-login-bypass';
+  //Authentication Api
+  static const String login = '$baseUrl/login';
   static const String user = '$baseUrl/me';
   static const String logout = '$baseUrl/logout';
 
-  // Temporary local login credentials while the API is bypassed.
-  static const String dummyLoginEmail = 'demo@mycrm.com';
-  static const String dummyLoginPassword = '123456';
+  //Staff Api
+  static const String createstaff = '$baseUrl/staff';
+  static const String liststaff = '$baseUrl/staff';
+  static const String staffdetail = '$baseUrl/staff/{id}';
+  static const String deletestaff = '$baseUrl/staff/{id}';
+  static const String editstaff = '$baseUrl/staff/{id}';
+
+
+
 }

@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/constants/api_constants.dart';
+import '../models/login_request_model.dart';
 import '../models/login_response_model.dart';
+import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import 'storage_service.dart';
 
@@ -53,40 +55,41 @@ class ApiService {
     return await _dio.post(path, data: data);
   }
 
+  /// Basic PUT helper for endpoints that update an existing record.
+  Future<Response> put(String path, {dynamic data}) async {
+    await _restoreAuthToken();
+    return await _dio.put(path, data: data);
+  }
+
+  /// Basic DELETE helper for endpoints that remove a record.
+  Future<Response> delete(String path, {dynamic data}) async {
+    await _restoreAuthToken();
+    return await _dio.delete(path, data: data);
+  }
+
+  /// Multipart POST helper for endpoints that accept form-data payloads.
+  Future<Response> postForm(String path, {required FormData data}) async {
+    await _restoreAuthToken();
+    return await _dio.post(
+      path,
+      data: data,
+      options: Options(
+        headers: const {
+          'Content-Type': 'multipart/form-data',
+        },
+      ),
+    );
+  }
+
   /// Authenticates the user against the login endpoint.
   Future<LoginResponseModel> login({
     required String email,
     required String password,
   }) async {
-    // final request = LoginRequestModel(email: email, password: password);
-    // final response = await post(ApiConstants.login, data: request.toJson());
-    // final body = _normalizeMap(response.data);
-    if (email != ApiConstants.dummyLoginEmail ||
-        password != ApiConstants.dummyLoginPassword) {
-      throw DioException(
-        requestOptions: RequestOptions(path: ApiConstants.login),
-        response: Response(
-          requestOptions: RequestOptions(path: ApiConstants.login),
-          statusCode: 401,
-          data: <String, dynamic>{
-            'message':
-                'Use ${ApiConstants.dummyLoginEmail} / ${ApiConstants.dummyLoginPassword} to login.',
-          },
-        ),
-        type: DioExceptionType.badResponse,
-      );
-    }
-
-    final loginResponse = LoginResponseModel.fromJson(<String, dynamic>{
-      'message': 'Logged in with local dummy credentials.',
-      'token': 'dummy-auth-token',
-      'user': <String, dynamic>{
-        'id': '1',
-        'name': 'Demo User',
-        'email': ApiConstants.dummyLoginEmail,
-        'role': 'admin',
-      },
-    });
+    final request = LoginRequestModel(email: email, password: password);
+    final response = await post(ApiConstants.login, data: request.toJson());
+    final body = _normalizeMap(response.data);
+    final loginResponse = LoginResponseModel.fromJson(body);
 
     await _persistAuth(loginResponse);
     return loginResponse;
@@ -164,6 +167,100 @@ class ApiService {
     return user;
   }
 
+  /// Loads the staff list for the authenticated user.
+  Future<List<StaffMemberModel>> getStaffList() async {
+    final response = await get(ApiConstants.liststaff);
+    final records = _normalizeList(response.data);
+    return records.map(StaffMemberModel.fromJson).toList();
+  }
+
+  /// Loads a single staff member by id.
+  Future<StaffMemberModel> getStaffDetail(String id) async {
+    final path = ApiConstants.staffdetail.replaceFirst('{id}', id);
+    final response = await get(path);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return StaffMemberModel.fromJson(body);
+  }
+
+  /// Deletes a single staff member by id.
+  Future<void> deleteStaff(String id) async {
+    final path = ApiConstants.deletestaff.replaceFirst('{id}', id);
+    await delete(path);
+  }
+
+  /// Updates a single staff member by id.
+  Future<void> editStaff({
+    required String id,
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    required String role,
+    required String status,
+    required String team,
+    required List<String> departments,
+    String? password,
+    bool sendWelcomeEmail = true,
+  }) async {
+    final path = ApiConstants.editstaff.replaceFirst('{id}', id);
+    final payload = <String, dynamic>{
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+      'phone': phone,
+      'role': role,
+      'status': status,
+      'team': team,
+      'departments': departments,
+      'send_welcome_email': sendWelcomeEmail,
+    };
+
+    if (password != null && password.trim().isNotEmpty) {
+      payload['password'] = password.trim();
+    }
+
+    await put(path, data: payload);
+  }
+
+  /// Creates a new staff member.
+  Future<void> createStaff({
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    required String role,
+    required String status,
+    required String team,
+    required List<String> departments,
+    required String password,
+    String? profileImagePath,
+  }) async {
+    final payload = <String, dynamic>{
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'phone': phone,
+      'role': role,
+      'status': status,
+      'team': team,
+      'departments[]': departments,
+      'password': password,
+    };
+
+    if (profileImagePath != null && profileImagePath.isNotEmpty) {
+      final fileName = profileImagePath.split(RegExp(r'[\\/]')).last;
+      payload['profileImage'] = await MultipartFile.fromFile(
+        profileImagePath,
+        filename: fileName,
+      );
+    }
+
+    await postForm(
+      ApiConstants.createstaff,
+      data: FormData.fromMap(payload),
+    );
+  }
+
   /// Logs out the current user and clears the locally cached auth state.
   Future<void> logout() async {
     try {
@@ -171,5 +268,69 @@ class ApiService {
     } finally {
       await _clearAuthData();
     }
+  }
+
+  List<Map<String, dynamic>> _normalizeList(dynamic data) {
+    final source = _extractListSource(data);
+    if (source is List) {
+      return source.map(_normalizeMap).toList();
+    }
+
+    throw DioException(
+      requestOptions: RequestOptions(path: ApiConstants.liststaff),
+      error: 'Unexpected staff list response format',
+      type: DioExceptionType.unknown,
+    );
+  }
+
+  dynamic _extractListSource(dynamic data) {
+    if (data is List) {
+      return data;
+    }
+
+    if (data is Map<String, dynamic>) {
+      for (final key in ['data', 'items', 'staff', 'results', 'rows']) {
+        final candidate = data[key];
+        if (candidate is List) {
+          return candidate;
+        }
+
+        if (candidate is Map<String, dynamic>) {
+          for (final nestedKey in ['data', 'items', 'staff', 'results', 'rows']) {
+            final nestedCandidate = candidate[nestedKey];
+            if (nestedCandidate is List) {
+              return nestedCandidate;
+            }
+          }
+        }
+      }
+    }
+
+    if (data is Map) {
+      return _extractListSource(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+
+    return data;
+  }
+
+  dynamic _extractDetailSource(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      for (final key in ['data', 'staff', 'item', 'result']) {
+        final candidate = data[key];
+        if (candidate is Map<String, dynamic>) {
+          return candidate;
+        }
+      }
+    }
+
+    if (data is Map) {
+      return _extractDetailSource(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+
+    return data;
   }
 }

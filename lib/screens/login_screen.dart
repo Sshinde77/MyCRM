@@ -3,8 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/constants/app_colors.dart';
-import 'package:mycrm/core/constants/api_constants.dart';
-
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../utils/validators.dart';
@@ -25,13 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _obscurePassword = true;
   bool _isSubmitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _emailController.text = ApiConstants.dummyLoginEmail;
-    _passwordController.text = ApiConstants.dummyLoginPassword;
-  }
 
   @override
   void dispose() {

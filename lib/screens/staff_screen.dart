@@ -1,39 +1,130 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/staff_member_model.dart';
+import 'package:mycrm/services/api_service.dart';
 
 import '../routes/app_routes.dart';
 import '../widgets/app_bottom_navigation.dart';
 
-class StaffScreen extends StatelessWidget {
+class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
 
-  static const List<_StaffMember> _staffMembers = [
-    _StaffMember(
-      name: 'Philip Hartman',
-      role: 'Client Manager',
-      email: 'socuf@mailinator.com',
-      lastLogin: '04 Mar 2026, 12:20 PM',
-      isActive: true,
-      accentColor: Color(0xFF2563EB),
-    ),
-    _StaffMember(
-      name: 'Sarah Jenkins',
-      role: 'Admin',
-      email: 's.jenkins@technofra.com',
-      lastLogin: '05 Mar 2026, 09:15 AM',
-      isActive: true,
-      accentColor: Color(0xFF0F766E),
-    ),
-    _StaffMember(
-      name: 'Mike Ross',
-      role: 'Operations Staff',
-      email: 'm.ross@technofra.com',
-      lastLogin: '01 Mar 2026, 04:45 PM',
-      isActive: false,
-      accentColor: Color(0xFFEA580C),
-    ),
-  ];
+  @override
+  State<StaffScreen> createState() => _StaffScreenState();
+}
+
+class _StaffScreenState extends State<StaffScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  late Future<List<StaffMemberModel>> _staffFuture;
+  String? _deletingStaffId;
+
+  @override
+  void initState() {
+    super.initState();
+    _staffFuture = ApiService.instance.getStaffList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() {
+      _staffFuture = ApiService.instance.getStaffList();
+    });
+  }
+
+  Future<void> _confirmDelete(StaffMemberModel member) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text(
+            'Delete Staff',
+            style: AppTextStyles.style(
+              color: const Color(0xFF162033),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'Delete ${member.name.isNotEmpty ? member.name : 'this staff member'} permanently?',
+            style: AppTextStyles.style(
+              color: const Color(0xFF475569),
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB42318),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: Text(
+                'Delete',
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    setState(() => _deletingStaffId = member.id);
+
+    try {
+      await ApiService.instance.deleteStaff(member.id);
+      if (!mounted) return;
+
+      Get.snackbar(
+        'Staff deleted',
+        '${member.name.isNotEmpty ? member.name : 'The staff member'} was deleted successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF153A63),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      _reload();
+    } on Exception catch (error) {
+      if (!mounted) return;
+
+      Get.snackbar(
+        'Delete failed',
+        error.toString().replaceFirst('Exception: ', ''),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _deletingStaffId = null);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,41 +152,93 @@ class StaffScreen extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              horizontalPadding,
-              16,
-              horizontalPadding,
-              24,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _Header(compact: compact),
-                    SizedBox(height: compact ? 18 : 20),
-                    _SearchBar(compact: compact),
-                    SizedBox(height: compact ? 14 : 16),
-                    _AddStaffButton(compact: compact),
-                    SizedBox(height: compact ? 16 : 18),
-                    _SectionHeader(compact: compact),
-                    SizedBox(height: compact ? 14 : 16),
-                    ..._staffMembers.map(
-                      (member) => Padding(
-                        padding: EdgeInsets.only(bottom: compact ? 12 : 14),
-                        child: _StaffCard(member: member, compact: compact),
+          child: FutureBuilder<List<StaffMemberModel>>(
+            future: _staffFuture,
+            builder: (context, snapshot) {
+              final staffMembers = snapshot.data ?? const <StaffMemberModel>[];
+              final filteredMembers = _filterMembers(staffMembers);
+
+              return RefreshIndicator(
+                onRefresh: () async => _reload(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    16,
+                    horizontalPadding,
+                    24,
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _Header(compact: compact),
+                          SizedBox(height: compact ? 18 : 20),
+                          _SearchBar(
+                            compact: compact,
+                            controller: _searchController,
+                            onChanged: (_) => setState(() {}),
+                          ),
+                          SizedBox(height: compact ? 14 : 16),
+                          _AddStaffButton(compact: compact),
+                          SizedBox(height: compact ? 16 : 18),
+                          _SectionHeader(
+                            compact: compact,
+                            count: filteredMembers.length,
+                          ),
+                          SizedBox(height: compact ? 14 : 16),
+                          if (snapshot.connectionState == ConnectionState.waiting)
+                            _LoadingState(compact: compact)
+                          else if (snapshot.hasError)
+                            _ErrorState(compact: compact, onRetry: _reload)
+                          else if (filteredMembers.isEmpty)
+                            _EmptyState(
+                              compact: compact,
+                              hasSearch: _searchController.text.trim().isNotEmpty,
+                            )
+                          else
+                            ...filteredMembers.map(
+                              (member) => Padding(
+                                padding: EdgeInsets.only(bottom: compact ? 12 : 14),
+                                child: _StaffCard(
+                                  member: member,
+                                  compact: compact,
+                                  isDeleting: _deletingStaffId == member.id,
+                                  onDelete: () => _confirmDelete(member),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
     );
+  }
+
+  List<StaffMemberModel> _filterMembers(List<StaffMemberModel> members) {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return members;
+
+    return members.where((member) {
+      final haystack = [
+        member.name,
+        member.email,
+        member.phone ?? '',
+        member.role ?? '',
+        member.team ?? '',
+        member.departments.join(' '),
+      ].join(' ').toLowerCase();
+
+      return haystack.contains(query);
+    }).toList();
   }
 }
 
@@ -143,9 +286,15 @@ class _Header extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
-  const _SearchBar({required this.compact});
+  const _SearchBar({
+    required this.compact,
+    required this.controller,
+    this.onChanged,
+  });
 
   final bool compact;
+  final TextEditingController controller;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -167,6 +316,8 @@ class _SearchBar extends StatelessWidget {
         ],
       ),
       child: TextField(
+        controller: controller,
+        onChanged: onChanged,
         decoration: InputDecoration(
           border: InputBorder.none,
           icon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8)),
@@ -188,43 +339,55 @@ class _AddStaffButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: compact ? 17 : 19),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1D6FEA),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Get.toNamed(AppRoutes.addStaff),
         borderRadius: BorderRadius.circular(22),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x221D6FEA),
-            blurRadius: 18,
-            offset: Offset(0, 10),
+        child: Ink(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: compact ? 17 : 19),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1D6FEA),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x221D6FEA),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_rounded, color: Colors.white, size: compact ? 24 : 26),
-          const SizedBox(width: 10),
-          Text(
-            'Add New Staff',
-            style: AppTextStyles.style(
-              color: Colors.white,
-              fontSize: compact ? 16 : 17,
-              fontWeight: FontWeight.w700,
-            ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.add_rounded,
+                color: Colors.white,
+                size: compact ? 24 : 26,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Add New Staff',
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: compact ? 16 : 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.compact});
+  const _SectionHeader({required this.compact, required this.count});
 
   final bool compact;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +404,7 @@ class _SectionHeader extends StatelessWidget {
           ),
         ),
         Text(
-          '3 active records',
+          '$count staff records',
           style: AppTextStyles.style(
             color: const Color(0xFF64748B),
             fontSize: compact ? 12 : 13,
@@ -254,10 +417,17 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _StaffCard extends StatelessWidget {
-  const _StaffCard({required this.member, required this.compact});
+  const _StaffCard({
+    required this.member,
+    required this.compact,
+    required this.onDelete,
+    this.isDeleting = false,
+  });
 
-  final _StaffMember member;
+  final StaffMemberModel member;
   final bool compact;
+  final VoidCallback onDelete;
+  final bool isDeleting;
 
   @override
   Widget build(BuildContext context) {
@@ -267,9 +437,17 @@ class _StaffCard extends StatelessWidget {
     final statusColor = member.isActive
         ? const Color(0xFF166534)
         : const Color(0xFF64748B);
+    final accentColor = _accentColorFor(member);
+    final secondaryLine = member.phone?.trim().isNotEmpty == true
+        ? member.phone!.trim()
+        : member.team?.trim().isNotEmpty == true
+            ? member.team!.trim()
+            : member.departments.isNotEmpty
+                ? member.departments.join(', ')
+                : 'Staff member';
 
     return InkWell(
-      onTap: () => Get.toNamed(AppRoutes.staffDetail),
+      onTap: () => Get.toNamed(AppRoutes.staffDetail, arguments: member.id),
       borderRadius: BorderRadius.circular(24),
       child: Container(
         width: double.infinity,
@@ -313,13 +491,13 @@ class _StaffCard extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: member.accentColor.withValues(alpha: 0.12),
+                          color: accentColor.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          member.role,
+                          (member.role?.trim().isNotEmpty == true ? member.role! : 'Staff'),
                           style: AppTextStyles.style(
-                            color: member.accentColor,
+                            color: accentColor,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                           ),
@@ -356,22 +534,43 @@ class _StaffCard extends StatelessWidget {
             ),
             SizedBox(height: compact ? 10 : 12),
             _InfoRow(
-              icon: Icons.schedule_rounded,
-              text: 'Last login: ${member.lastLogin}',
+              icon: member.phone?.trim().isNotEmpty == true
+                  ? Icons.phone_outlined
+                  : Icons.groups_2_outlined,
+              text: secondaryLine,
               compact: compact,
             ),
+            if (member.lastLogin?.trim().isNotEmpty == true) ...[
+              SizedBox(height: compact ? 10 : 12),
+              _InfoRow(
+                icon: Icons.schedule_rounded,
+                text: 'Last login: ${member.lastLogin!}',
+                compact: compact,
+              ),
+            ],
             SizedBox(height: compact ? 14 : 16),
             const Divider(height: 1, color: Color(0xFFEAF0F6)),
             SizedBox(height: compact ? 12 : 14),
             Row(
               children: [
-                Expanded(child: _CardAction(icon: Icons.remove_red_eye_outlined, onTap: () => Get.toNamed(AppRoutes.staffDetail))),
-                _ActionDivider(),
-                Expanded(child: _CardAction(icon: Icons.edit_outlined, onTap: () {})),
-                _ActionDivider(),
-                Expanded(child: _CardAction(icon: Icons.mail_outline_rounded, onTap: () {})),
-                _ActionDivider(),
-                Expanded(child: _CardAction(icon: Icons.delete_outline_rounded, onTap: () {})),
+                Expanded(
+                  child: _CardAction(
+                    icon: Icons.remove_red_eye_outlined,
+                    label: 'View',
+                    onTap: () => Get.toNamed(AppRoutes.staffDetail, arguments: member.id),
+                  ),
+                ),
+                SizedBox(width: compact ? 10 : 12),
+                Expanded(
+                  child: _CardAction(
+                    icon: isDeleting
+                        ? Icons.hourglass_top_rounded
+                        : Icons.delete_outline_rounded,
+                    label: isDeleting ? 'Deleting' : 'Delete',
+                    isDestructive: true,
+                    onTap: isDeleting ? null : onDelete,
+                  ),
+                ),
               ],
             ),
           ],
@@ -384,7 +583,7 @@ class _StaffCard extends StatelessWidget {
 class _AvatarBadge extends StatelessWidget {
   const _AvatarBadge({required this.member, required this.compact});
 
-  final _StaffMember member;
+  final StaffMemberModel member;
   final bool compact;
 
   @override
@@ -396,19 +595,20 @@ class _AvatarBadge extends StatelessWidget {
         .map((part) => part[0])
         .join()
         .toUpperCase();
+    final accentColor = _accentColorFor(member);
 
     return Container(
       height: compact ? 52 : 56,
       width: compact ? 52 : 56,
       decoration: BoxDecoration(
-        color: member.accentColor.withValues(alpha: 0.12),
+        color: accentColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(18),
       ),
       alignment: Alignment.center,
       child: Text(
-        initials,
+        initials.isEmpty ? 'ST' : initials,
         style: AppTextStyles.style(
-          color: member.accentColor,
+          color: accentColor,
           fontSize: compact ? 16 : 17,
           fontWeight: FontWeight.w700,
         ),
@@ -450,26 +650,45 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _CardAction extends StatelessWidget {
-  const _CardAction({required this.icon, this.onTap});
+  const _CardAction({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.isDestructive = false,
+  });
 
   final IconData icon;
+  final String label;
   final VoidCallback? onTap;
+  final bool isDestructive;
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
+    final foregroundColor = isDestructive
+        ? const Color(0xFFB42318)
+        : const Color(0xFF1D4ED8);
+    final backgroundColor = isDestructive
+        ? const Color(0xFFFEE4E2)
+        : const Color(0xFFE8F0FE);
+
+    return OutlinedButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, color: const Color(0xFF64748B), size: 24),
+      icon: Icon(icon, color: foregroundColor, size: 20),
+      label: Text(
+        label,
+        style: AppTextStyles.style(
+          color: foregroundColor,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(44),
+        backgroundColor: backgroundColor,
+        side: BorderSide(color: backgroundColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
     );
-  }
-}
-
-class _ActionDivider extends StatelessWidget {
-  const _ActionDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 28, color: const Color(0xFFEAF0F6));
   }
 }
 
@@ -522,22 +741,135 @@ class _AppProfileNavigation extends StatelessWidget {
   }
 }
 
-class _StaffMember {
-  const _StaffMember({
-    required this.name,
-    required this.role,
-    required this.email,
-    required this.lastLogin,
-    required this.isActive,
-    required this.accentColor,
-  });
+class _LoadingState extends StatelessWidget {
+  const _LoadingState({required this.compact});
 
-  final String name;
-  final String role;
-  final String email;
-  final String lastLogin;
-  final bool isActive;
-  final Color accentColor;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(vertical: compact ? 36 : 42),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: const Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState({required this.compact, required this.onRetry});
+
+  final bool compact;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 18 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off_rounded, size: 34, color: Color(0xFFB42318)),
+          const SizedBox(height: 12),
+          Text(
+            'Unable to load staff data',
+            style: AppTextStyles.style(
+              color: const Color(0xFF162033),
+              fontSize: compact ? 15 : 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pull to refresh or retry the request.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.style(
+              color: const Color(0xFF64748B),
+              fontSize: compact ? 12 : 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                backgroundColor: const Color(0xFF1D6FEA),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+              label: Text(
+                'Retry',
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({required this.compact, required this.hasSearch});
+
+  final bool compact;
+  final bool hasSearch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 18 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.group_off_rounded, size: 34, color: Color(0xFF94A3B8)),
+          const SizedBox(height: 12),
+          Text(
+            hasSearch ? 'No matching staff found' : 'No staff records available',
+            style: AppTextStyles.style(
+              color: const Color(0xFF162033),
+              fontSize: compact ? 15 : 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            hasSearch
+                ? 'Try a different name, role, email, or team.'
+                : 'New staff members from the API will appear here.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.style(
+              color: const Color(0xFF64748B),
+              fontSize: compact ? 12 : 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 void _handleBottomNavigation(int index) {
@@ -554,3 +886,18 @@ void _handleBottomNavigation(int index) {
   }
 }
 
+Color _accentColorFor(StaffMemberModel member) {
+  const palette = [
+    Color(0xFF2563EB),
+    Color(0xFF0F766E),
+    Color(0xFFEA580C),
+    Color(0xFF7C3AED),
+    Color(0xFFDC2626),
+  ];
+
+  final seed = '${member.id}-${member.name}'.codeUnits.fold<int>(
+        0,
+        (value, code) => value + code,
+      );
+  return palette[seed % palette.length];
+}
