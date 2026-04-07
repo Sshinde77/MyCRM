@@ -4,6 +4,10 @@ import 'package:flutter/foundation.dart';
 import '../core/constants/api_constants.dart';
 import '../models/login_request_model.dart';
 import '../models/login_response_model.dart';
+import '../models/client_model.dart';
+import '../models/client_detail_model.dart';
+import '../models/create_client_request_model.dart';
+import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import 'storage_service.dart';
@@ -174,6 +178,29 @@ class ApiService {
     return records.map(StaffMemberModel.fromJson).toList();
   }
 
+  /// Loads the client list for the authenticated user.
+  Future<List<ClientModel>> getClientsList() async {
+    final response = await get(ApiConstants.clients);
+    final records = _normalizeList(response.data);
+    return records.map(ClientModel.fromJson).toList();
+  }
+
+  /// Loads a single client by id.
+  Future<ClientDetailModel> getClientDetail(String id) async {
+    final path = ApiConstants.clientDetail.replaceFirst('{id}', id);
+    try {
+      final response = await get(path);
+      final body = _normalizeMap(_extractDetailSource(response.data));
+      return ClientDetailModel.fromJson(body);
+    } on DioException {
+      final fallback = await _tryClientDetailFromList(id);
+      if (fallback != null) {
+        return fallback;
+      }
+      rethrow;
+    }
+  }
+
   /// Loads a single staff member by id.
   Future<StaffMemberModel> getStaffDetail(String id) async {
     final path = ApiConstants.staffdetail.replaceFirst('{id}', id);
@@ -261,6 +288,26 @@ class ApiService {
     );
   }
 
+  /// Creates a new client.
+  Future<void> createClient(CreateClientRequestModel request) async {
+    await post(ApiConstants.clients, data: request.toJson());
+  }
+
+  /// Updates an existing client.
+  Future<void> updateClient({
+    required String id,
+    required UpdateClientRequestModel request,
+  }) async {
+    final path = ApiConstants.updateClient.replaceFirst('{id}', id);
+    await put(path, data: request.toJson());
+  }
+
+  /// Deletes an existing client.
+  Future<void> deleteClient(String id) async {
+    final path = ApiConstants.deleteClient.replaceFirst('{id}', id);
+    await delete(path);
+  }
+
   /// Logs out the current user and clears the locally cached auth state.
   Future<void> logout() async {
     try {
@@ -289,14 +336,30 @@ class ApiService {
     }
 
     if (data is Map<String, dynamic>) {
-      for (final key in ['data', 'items', 'staff', 'results', 'rows']) {
+      for (final key in [
+        'data',
+        'items',
+        'staff',
+        'clients',
+        'customers',
+        'results',
+        'rows',
+      ]) {
         final candidate = data[key];
         if (candidate is List) {
           return candidate;
         }
 
         if (candidate is Map<String, dynamic>) {
-          for (final nestedKey in ['data', 'items', 'staff', 'results', 'rows']) {
+          for (final nestedKey in [
+            'data',
+            'items',
+            'staff',
+            'clients',
+            'customers',
+            'results',
+            'rows',
+          ]) {
             final nestedCandidate = candidate[nestedKey];
             if (nestedCandidate is List) {
               return nestedCandidate;
@@ -317,7 +380,7 @@ class ApiService {
 
   dynamic _extractDetailSource(dynamic data) {
     if (data is Map<String, dynamic>) {
-      for (final key in ['data', 'staff', 'item', 'result']) {
+      for (final key in ['data', 'staff', 'client', 'customer', 'item', 'result']) {
         final candidate = data[key];
         if (candidate is Map<String, dynamic>) {
           return candidate;
@@ -332,5 +395,21 @@ class ApiService {
     }
 
     return data;
+  }
+
+  Future<ClientDetailModel?> _tryClientDetailFromList(String id) async {
+    final response = await get(ApiConstants.clients);
+    final source = _extractListSource(response.data);
+    if (source is! List) return null;
+
+    for (final entry in source) {
+      final normalized = _normalizeMap(entry);
+      final entryId = normalized['id']?.toString();
+      if (entryId == id) {
+        return ClientDetailModel.fromJson(normalized);
+      }
+    }
+
+    return null;
   }
 }

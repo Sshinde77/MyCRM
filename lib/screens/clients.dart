@@ -1,11 +1,60 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../models/client_model.dart';
 import '../routes/app_routes.dart';
+import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 
-class ClientsScreen extends StatelessWidget {
+class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key});
+
+  @override
+  State<ClientsScreen> createState() => _ClientsScreenState();
+}
+
+class _ClientsScreenState extends State<ClientsScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  late Future<List<ClientModel>> _clientsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _clientsFuture = ApiService.instance.getClientsList();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _reload() {
+    setState(() {
+      _clientsFuture = ApiService.instance.getClientsList();
+    });
+  }
+
+  List<ClientModel> _filterClients(List<ClientModel> clients) {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) {
+      return clients;
+    }
+
+    return clients.where((client) {
+      final haystack = [
+        client.name,
+        client.email,
+        client.industry,
+        client.website,
+        client.contactName,
+        client.contactRole,
+      ].join(' ').toLowerCase();
+
+      return haystack.contains(query);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,171 +84,147 @@ class ClientsScreen extends StatelessWidget {
         },
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
+        child: FutureBuilder<List<ClientModel>>(
+          future: _clientsFuture,
+          builder: (context, snapshot) {
+            final clients = snapshot.data ?? const <ClientModel>[];
+            final filteredClients = _filterClients(clients);
+            final totalClients = clients.length;
+            final activeClients = clients.where((client) => client.isActive).length;
 
-              /// HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
                 children: [
-                  const Text(
-                    "Clients",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  const SizedBox(height: 10),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.notifications_none, size: 26),
-                      const SizedBox(width: 12),
-                      const CircleAvatar(
-                        radius: 20,
-                        backgroundImage:
-                            NetworkImage("https://i.pravatar.cc/150?img=5"),
+                      const Text(
+                        'Clients',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ],
-                  )
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              /// STATS
-              Row(
-                children: const [
-                  Expanded(
-                    child: _StatCard(
-                      title: "Total Clients",
-                      value: "1,284",
-                      percent: "+5.2%",
-                      icon: Icons.people,
-                      color: Colors.black,
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _StatCard(
-                      title: "Active",
-                      value: "942",
-                      percent: "+12%",
-                      icon: Icons.check_circle,
-                      color: Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              /// SEARCH
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 50,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Row(
+                      Row(
                         children: [
-                          Icon(Icons.search, color: Colors.grey),
-                          SizedBox(width: 10),
-                          Text(
-                            "Search clients...",
-                            style: TextStyle(color: Colors.grey),
+                          const Icon(Icons.notifications_none, size: 26),
+                          const SizedBox(width: 12),
+                          const CircleAvatar(
+                            radius: 20,
+                            backgroundImage: NetworkImage(
+                              'https://i.pravatar.cc/150?img=5',
+                            ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Total Clients',
+                          value: totalClients.toString(),
+                          percent: 'API',
+                          icon: Icons.people,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatCard(
+                          title: 'Active',
+                          value: activeClients.toString(),
+                          percent: 'API',
+                          icon: Icons.check_circle,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 50,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (_) => setState(() {}),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              icon: Icon(Icons.search, color: Colors.grey),
+                              hintText: 'Search clients...',
+                              hintStyle: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _circleIcon(Icons.tune),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: () => Get.toNamed(AppRoutes.addClient),
+                    borderRadius: BorderRadius.circular(30),
+                    child: Ink(
+                      height: 55,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '+ Add New Client',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  _circleIcon(Icons.tune),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        'RECENTLY UPDATED',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'View All',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: _ClientsList(
+                      snapshot: snapshot,
+                      clients: filteredClients,
+                      hasSearch: _searchController.text.trim().isNotEmpty,
+                      onRefresh: _reload,
+                    ),
+                  ),
                 ],
               ),
-
-              const SizedBox(height: 16),
-
-              /// BUTTON
-              Container(
-                height: 55,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Center(
-                  child: Text(
-                    "+ Add New Client",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              /// HEADER ROW
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    "RECENTLY UPDATED",
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    "View All",
-                    style: TextStyle(color: Colors.blue),
-                  )
-                ],
-              ),
-
-              const SizedBox(height: 10),
-
-              /// LIST
-              Expanded(
-                child: ListView(
-                  children: const [
-                    _ClientCard(
-                      name: "Arnav",
-                      role: "CEO • Arnav Pants",
-                      email: "vkpants@gmail.com",
-                      industry: "Technology",
-                      website: "technofra.com/oceanic",
-                      active: true,
-                    ),
-                    _ClientCard(
-                      name: "Acme Corporation",
-                      role: "CEO • Jane Doe",
-                      email: "j.doe@acmecorp.com",
-                      industry: "Technology & Software",
-                      website: "www.acmecorp.com",
-                      active: true,
-                    ),
-                    _ClientCard(
-                      name: "Stellar Retail Group",
-                      role: "COO • Mark Peterson",
-                      email: "m.pete@stellar.co",
-                      industry: "E-commerce & Retail",
-                      website: "www.stellar.co",
-                      active: false,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -218,9 +243,138 @@ class ClientsScreen extends StatelessWidget {
   }
 }
 
-/// ================= STAT CARD =================
+class _ClientsList extends StatelessWidget {
+  const _ClientsList({
+    required this.snapshot,
+    required this.clients,
+    required this.hasSearch,
+    required this.onRefresh,
+  });
+
+  final AsyncSnapshot<List<ClientModel>> snapshot;
+  final List<ClientModel> clients;
+  final bool hasSearch;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    Future<void> handleDelete(String id) async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete client'),
+          content: const Text('Are you sure you want to delete this client?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) return;
+
+      try {
+        await ApiService.instance.deleteClient(id);
+        Get.snackbar(
+          'Client deleted',
+          'The client has been deleted successfully.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFF153A63),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+        onRefresh();
+      } on DioException catch (error) {
+        final responseData = error.response?.data;
+        String message = 'Failed to delete client.';
+
+        if (responseData is Map && responseData['message'] != null) {
+          message = responseData['message'].toString();
+        } else if (error.message != null && error.message!.trim().isNotEmpty) {
+          message = error.message!.trim();
+        }
+
+        Get.snackbar(
+          'Delete failed',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFFB91C1C),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    }
+
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (snapshot.hasError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off, color: Colors.grey),
+            const SizedBox(height: 8),
+            const Text('Unable to load clients'),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: onRefresh,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (clients.isEmpty) {
+      return Center(
+        child: Text(
+          hasSearch ? 'No matching clients' : 'No clients available',
+          style: const TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async => onRefresh(),
+      child: ListView.builder(
+        itemCount: clients.length,
+        itemBuilder: (context, index) {
+          final client = clients[index];
+          return _ClientCard(
+            id: client.id,
+            name: client.name.isNotEmpty ? client.name : 'Client',
+            role: client.contactLine,
+            email: client.email.isNotEmpty ? client.email : 'No email',
+            industry: client.industry.isNotEmpty ? client.industry : 'No industry',
+            website: client.website.isNotEmpty ? client.website : 'No website',
+            active: client.isActive,
+            onEdit: () {
+              Get.toNamed(
+                AppRoutes.addClient,
+                arguments: {'id': client.id, 'isEdit': true},
+              );
+            },
+            onDelete: () => handleDelete(client.id),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _StatCard extends StatelessWidget {
-  final String title, value, percent;
+  final String title;
+  final String value;
+  final String percent;
   final IconData icon;
   final Color color;
 
@@ -249,14 +403,13 @@ class _StatCard extends StatelessWidget {
               Icon(icon, color: Colors.grey),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(percent),
-              )
+              ),
             ],
           ),
           const Spacer(),
@@ -268,25 +421,34 @@ class _StatCard extends StatelessWidget {
               color: color,
             ),
           ),
-          Text(title, style: const TextStyle(color: Colors.grey))
+          Text(title, style: const TextStyle(color: Colors.grey)),
         ],
       ),
     );
   }
 }
 
-/// ================= CLIENT CARD =================
 class _ClientCard extends StatelessWidget {
-  final String name, role, email, industry, website;
+  final String id;
+  final String name;
+  final String role;
+  final String email;
+  final String industry;
+  final String website;
   final bool active;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   const _ClientCard({
+    required this.id,
     required this.name,
     required this.role,
     required this.email,
     required this.industry,
     required this.website,
     required this.active,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -295,7 +457,7 @@ class _ClientCard extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        Get.toNamed(AppRoutes.clientDetail);
+        Get.toNamed(AppRoutes.clientDetail, arguments: {'id': id});
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -307,7 +469,6 @@ class _ClientCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// TOP
             Row(
               children: [
                 const CircleAvatar(radius: 22),
@@ -328,41 +489,42 @@ class _ClientCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    active ? "ACTIVE" : "INACTIVE",
+                    active ? 'ACTIVE' : 'INACTIVE',
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 12,
                     ),
                   ),
-                )
+                ),
               ],
             ),
-  
             const SizedBox(height: 12),
-  
             _infoRow(Icons.email, email),
             _infoRow(Icons.business, industry),
             _infoRow(Icons.link, website, isLink: true),
-  
             const Divider(height: 20),
-  
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              children: const [
-                Icon(Icons.remove_red_eye, color: Colors.grey),
-                SizedBox(width: 16),
-                Icon(Icons.edit, color: Colors.grey),
-                SizedBox(width: 16),
-                Icon(Icons.delete, color: Colors.grey),
+              children: [
+                const Icon(Icons.remove_red_eye, color: Colors.grey),
+                const SizedBox(width: 16),
+                InkWell(
+                  onTap: onEdit,
+                  child: const Icon(Icons.edit, color: Colors.grey),
+                ),
+                const SizedBox(width: 16),
+                InkWell(
+                  onTap: onDelete,
+                  child: const Icon(Icons.delete, color: Colors.grey),
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),
@@ -376,12 +538,14 @@ class _ClientCard extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: Colors.grey),
           const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: isLink ? Colors.blue : Colors.black87,
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: isLink ? Colors.blue : Colors.black87,
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

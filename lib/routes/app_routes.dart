@@ -24,6 +24,7 @@ class AppRoutes {
   static const String addStaff = '/profile/staff/add';
   static const String staffDetail = '/profile/staff/detail';
   static const String clients = '/profile/clients';
+  static const String addClient = '/profile/clients/add';
   static const String accessControl = '/profile/access-control';
   static const String settings = '/profile/settings';
   static const String to_do_list = '/to_do_list';

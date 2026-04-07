@@ -20,6 +20,7 @@ import '../screens/vendor_renewal_screen.dart';
 import '../screens/dashboard_renewals_screen.dart';
 import '../screens/staff_screen.dart';
 import '../screens/add_staff_screen.dart';
+import '../screens/add_client_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
 
@@ -104,8 +105,19 @@ class RouteGenerator {
         );
       case AppRoutes.clients:
         return MaterialPageRoute(builder: (_) => const ClientsScreen());
+      case AppRoutes.addClient:
+        return MaterialPageRoute(
+          builder: (_) => AddClientScreen(
+            clientId: _extractClientId(settings.arguments),
+            isEdit: _extractEditFlag(settings.arguments),
+          ),
+        );
       case AppRoutes.clientDetail:
-        return MaterialPageRoute(builder: (_) => const ClientDetailScreen());
+        return MaterialPageRoute(
+          builder: (_) => ClientDetailScreen(
+            clientId: _extractClientId(settings.arguments),
+          ),
+        );
       case AppRoutes.accessControl:
         return MaterialPageRoute(builder: (_) => const RolesScreen());
       case AppRoutes.settings:
@@ -121,6 +133,27 @@ class RouteGenerator {
       default:
         return _errorRoute();
     }
+  }
+
+  static String? _extractClientId(dynamic args) {
+    if (args == null) return null;
+    if (args is String) return args;
+    if (args is int) return args.toString();
+    if (args is Map) {
+      final raw = args['id'] ?? args['clientId'] ?? args['client_id'];
+      if (raw != null && raw.toString().trim().isNotEmpty) {
+        return raw.toString();
+      }
+    }
+    return null;
+  }
+
+  static bool _extractEditFlag(dynamic args) {
+    if (args is Map) {
+      final rawEdit = args['isEdit'];
+      return rawEdit == true || rawEdit == 'true' || rawEdit == 1;
+    }
+    return false;
   }
 
   /// Generic fallback page for unknown routes.

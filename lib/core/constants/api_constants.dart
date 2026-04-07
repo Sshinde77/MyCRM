@@ -17,6 +17,12 @@ class ApiConstants {
   static const String deletestaff = '$baseUrl/staff/{id}';
   static const String editstaff = '$baseUrl/staff/{id}';
 
+  //Clients Api
+  static const String clients = '$baseUrl/clients';
+  static const String clientDetail = '$baseUrl/clients/{id}';
+  static const String updateClient = '$baseUrl/clients/{id}';
+  static const String deleteClient = '$baseUrl/clients/{id}';
+
 
 
 }
