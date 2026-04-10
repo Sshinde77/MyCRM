@@ -7,7 +7,7 @@ import 'theme/app_theme.dart';
 
 /// Application entry point.
 void main() {
-  runApp(const MyApp());
+  runApp(const MyApp());  
 }
 
 /// Root widget that configures app-wide theme and navigation.

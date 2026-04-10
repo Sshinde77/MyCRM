@@ -7,6 +7,7 @@ import '../models/login_response_model.dart';
 import '../models/client_model.dart';
 import '../models/client_detail_model.dart';
 import '../models/create_client_request_model.dart';
+import '../models/lead_model.dart';
 import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
@@ -183,6 +184,23 @@ class ApiService {
     final response = await get(ApiConstants.clients);
     final records = _normalizeList(response.data);
     return records.map(ClientModel.fromJson).toList();
+  }
+
+  /// Loads the lead list for the authenticated user.
+  Future<List<LeadModel>> getLeadsList({
+    String? userId,
+    String? roleId,
+  }) async {
+    final query = await _resolveLeadQueryParameters(
+      userId: userId,
+      roleId: roleId,
+    );
+    final response = await get(
+      ApiConstants.leads,
+      queryParameters: query,
+    );
+    final records = _normalizeList(response.data);
+    return records.map(LeadModel.fromJson).toList();
   }
 
   /// Loads a single client by id.
@@ -411,5 +429,63 @@ class ApiService {
     }
 
     return null;
+  }
+
+  Future<Map<String, dynamic>> _resolveLeadQueryParameters({
+    String? userId,
+    String? roleId,
+  }) async {
+    UserModel? user = await getStoredUser();
+    user ??= await _tryGetCurrentUser();
+
+    final resolvedUserId = (userId ?? user?.id ?? '').trim();
+    final resolvedRoleId = (roleId ?? _extractRoleId(user)).trim();
+
+    if (resolvedUserId.isEmpty) {
+      throw Exception('Unable to resolve the current user for the leads API.');
+    }
+
+    final query = <String, dynamic>{
+      'user_id': resolvedUserId,
+    };
+
+    if (resolvedRoleId.isNotEmpty) {
+      query['role_id'] = resolvedRoleId;
+    }
+
+    return query;
+  }
+
+  String _extractRoleId(UserModel? user) {
+    if (user == null) {
+      return '';
+    }
+
+    final directRoleId = user.roleId?.trim() ?? '';
+    if (directRoleId.isNotEmpty) {
+      return directRoleId;
+    }
+
+    final role = user.role?.trim() ?? '';
+    if (_looksNumeric(role)) {
+      return role;
+    }
+
+    return '';
+  }
+
+  bool _looksNumeric(String value) {
+    if (value.isEmpty) {
+      return false;
+    }
+    return num.tryParse(value) != null;
+  }
+
+  Future<UserModel?> _tryGetCurrentUser() async {
+    try {
+      return await getCurrentUser();
+    } catch (_) {
+      return null;
+    }
   }
 }

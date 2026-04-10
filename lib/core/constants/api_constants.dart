@@ -23,6 +23,7 @@ class ApiConstants {
   static const String updateClient = '$baseUrl/clients/{id}';
   static const String deleteClient = '$baseUrl/clients/{id}';
 
-
+  //Leads Api
+  static const String leads = '$baseUrl/leads';
 
 }

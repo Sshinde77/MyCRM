@@ -7,6 +7,7 @@ class UserModel {
   final String email;
   final String? phone;
   final String? role;
+  final String? roleId;
   final String? profilePicture;
 
   UserModel({
@@ -15,19 +16,24 @@ class UserModel {
     required this.email,
     this.phone,
     this.role,
+    this.roleId,
     this.profilePicture,
   });
 
   /// Creates a user object from API JSON.
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final source = _extractUserSource(json);
+    final roleSource = _extractRoleSource(source);
 
     return UserModel(
       id: _readString(source, ['id', '_id', 'user_id']),
       name: _readString(source, ['name', 'full_name', 'username']),
       email: _readString(source, ['email', 'email_address']),
       phone: _readNullableString(source, ['phone', 'mobile', 'phone_number']),
-      role: _readNullableString(source, ['role', 'user_role']),
+      role: _readNullableString(source, ['role', 'user_role']) ??
+          _readNullableString(roleSource, ['name', 'title', 'role']),
+      roleId: _readNullableString(source, ['role_id', 'roleId']) ??
+          _readNullableString(roleSource, ['id', 'role_id', 'roleId']),
       profilePicture: _readNullableString(
         source,
         ['profile_picture', 'profilePicture', 'avatar', 'image'],
@@ -43,6 +49,7 @@ class UserModel {
       'email': email,
       'phone': phone,
       'role': role,
+      'role_id': roleId,
       'profile_picture': profilePicture,
     };
   }
@@ -72,10 +79,26 @@ class UserModel {
     return json;
   }
 
+  static Map<String, dynamic> _extractRoleSource(Map<String, dynamic> json) {
+    for (final key in ['role', 'role_data', 'role_details']) {
+      final value = json[key];
+      if (value is Map<String, dynamic>) {
+        return value;
+      }
+      if (value is Map) {
+        return value.map((key, value) => MapEntry(key.toString(), value));
+      }
+    }
+    return const {};
+  }
+
   static String _readString(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
+      if (value is Map || value is List || value == null) {
+        continue;
+      }
+      if (value.toString().trim().isNotEmpty) {
         return value.toString();
       }
     }

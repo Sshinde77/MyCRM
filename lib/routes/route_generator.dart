@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'app_routes.dart';
+import '../providers/lead_provider.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/clients.dart';
 import '../screens/client_detail_screen.dart';
@@ -40,7 +42,12 @@ class RouteGenerator {
       case AppRoutes.editTask:
         return MaterialPageRoute(builder: (_) => const EditTaskScreen());
       case AppRoutes.leads:
-        return MaterialPageRoute(builder: (_) => const LeadsScreen());
+        return MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider(
+            create: (_) => LeadProvider()..loadLeads(),
+            child: const LeadsScreen(),
+          ),
+        );
       case AppRoutes.leadDetail:
         return MaterialPageRoute(builder: (_) => const LeadDetailScreen());
       case AppRoutes.projects:
