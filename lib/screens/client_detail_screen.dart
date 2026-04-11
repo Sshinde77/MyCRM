@@ -220,11 +220,6 @@ class _ProfileHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              const CircleAvatar(
-                radius: 35,
-                backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'),
-              ),
-              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -670,10 +665,6 @@ class _TaskCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const CircleAvatar(
-                radius: 12,
-                backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=12'),
-              ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:country_state_city_selector/country_state_city_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -44,6 +45,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
   bool _isEditMode = false;
   bool _isLoading = false;
   String? _clientId;
+  String _selectedCountry = 'India';
+  String _selectedState = 'Maharashtra';
+  String _selectedCity = 'Mumbai Suburban';
 
   @override
   void initState() {
@@ -52,6 +56,10 @@ class _AddClientScreenState extends State<AddClientScreen> {
   }
 
   void _hydrateFromArgs() {
+    _countryController.text = _selectedCountry;
+    _stateController.text = _selectedState;
+    _cityController.text = _selectedCity;
+
     final args = Get.arguments;
     String? resolvedId = widget.clientId;
     bool editFlag = widget.isEdit;
@@ -114,6 +122,11 @@ class _AddClientScreenState extends State<AddClientScreen> {
     _stateController.text = detail.state;
     _postalCodeController.text = detail.postalCode;
     _countryController.text = detail.country;
+    _selectedCity = detail.city.trim().isNotEmpty ? detail.city : 'Mumbai Suburban';
+    _selectedState =
+        detail.state.trim().isNotEmpty ? detail.state : 'Maharashtra';
+    _selectedCountry =
+        detail.country.trim().isNotEmpty ? detail.country : 'India';
     _industryController.text = detail.industry;
     _defaultDueDaysController.text = detail.dueDays;
 
@@ -248,42 +261,51 @@ class _AddClientScreenState extends State<AddClientScreen> {
               const SizedBox(height: 16),
               _SectionCard(
                 title: 'Address Information',
-                child: _ResponsiveFields(
+                child: Column(
                   children: [
-                    _TextFieldTile(
-                      label: 'Address Line 1',
-                      isRequired: true,
-                      controller: _addressLine1Controller,
-                      hintText: 'Enter address line 1',
+                    _ResponsiveFields(
+                      children: [
+                        _TextFieldTile(
+                          label: 'Address Line 1',
+                          isRequired: true,
+                          controller: _addressLine1Controller,
+                          hintText: 'Enter address line 1',
+                        ),
+                        _TextFieldTile(
+                          label: 'Address Line 2',
+                          controller: _addressLine2Controller,
+                          hintText: 'Enter address line 2 (optional)',
+                        ),
+                      ],
                     ),
-                    _TextFieldTile(
-                      label: 'Address Line 2',
-                      controller: _addressLine2Controller,
-                      hintText: 'Enter address line 2 (optional)',
+                    const SizedBox(height: 12),
+                    _ClientLocationPickerCard(
+                      initialCountry: _selectedCountry,
+                      initialState: _selectedState,
+                      initialCity: _selectedCity,
+                      onChanged: (country, state, city) {
+                        setState(() {
+                          _selectedCountry = country.isEmpty ? 'India' : country;
+                          _selectedState =
+                              state.isEmpty ? 'Maharashtra' : state;
+                          _selectedCity =
+                              city.isEmpty ? 'Mumbai Suburban' : city;
+                          _countryController.text = _selectedCountry;
+                          _stateController.text = _selectedState;
+                          _cityController.text = _selectedCity;
+                        });
+                      },
                     ),
-                    _TextFieldTile(
-                      label: 'City',
-                      isRequired: true,
-                      controller: _cityController,
-                      hintText: 'Enter city',
-                    ),
-                    _TextFieldTile(
-                      label: 'State',
-                      isRequired: true,
-                      controller: _stateController,
-                      hintText: 'Enter state',
-                    ),
-                    _TextFieldTile(
-                      label: 'Postal Code',
-                      isRequired: true,
-                      controller: _postalCodeController,
-                      hintText: 'Enter postal code',
-                    ),
-                    _TextFieldTile(
-                      label: 'Country',
-                      isRequired: true,
-                      controller: _countryController,
-                      hintText: 'Enter country',
+                    const SizedBox(height: 12),
+                    _ResponsiveFields(
+                      children: [
+                        _TextFieldTile(
+                          label: 'Postal Code',
+                          isRequired: true,
+                          controller: _postalCodeController,
+                          hintText: 'Enter postal code',
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -698,6 +720,74 @@ class _SectionCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ClientLocationPickerCard extends StatelessWidget {
+  const _ClientLocationPickerCard({
+    required this.initialCountry,
+    required this.initialState,
+    required this.initialCity,
+    required this.onChanged,
+  });
+
+  final String initialCountry;
+  final String initialState;
+  final String initialCity;
+  final void Function(String country, String state, String city) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FBFF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Location',
+            style: TextStyle(
+              color: Color(0xFF475569),
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 10),
+          CountryStateCitySelector(
+            enableLabels: true,
+            initialCountry: initialCountry,
+            initialState: initialState,
+            initialCity: initialCity,
+            defaultCountry: 'India',
+            countryHintText: 'Country',
+            stateHintText: 'State',
+            cityHintText: 'City',
+            fillColor: Colors.white,
+            borderColor: const Color(0xFFD9E2EC),
+            borderWidth: 1,
+            labelColor: const Color(0xFF475569),
+            labelFontSize: 12,
+            labelFontWeight: FontWeight.w600,
+            selectedTextColor: const Color(0xFF0F172A),
+            selectedTextFontSize: 14,
+            selectedTextFontWeight: FontWeight.w500,
+            pickerItemTextColor: const Color(0xFF0F172A),
+            pickerItemFontSize: 14,
+            pickerItemFontWeight: FontWeight.w500,
+            modalBackgroundColor: Colors.white,
+            modalTitleColor: const Color(0xFF0F172A),
+            modalTitleFontSize: 18,
+            modalTitleFontWeight: FontWeight.w700,
+            onSelectionChanged: onChanged,
+          ),
         ],
       ),
     );

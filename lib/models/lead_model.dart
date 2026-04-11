@@ -21,6 +21,7 @@ class LeadModel {
     this.zipCode,
     this.description,
     this.tags = const [],
+    this.assignedStaffIds = const [],
   });
 
   final String id;
@@ -44,6 +45,7 @@ class LeadModel {
   final String? zipCode;
   final String? description;
   final List<String> tags;
+  final List<String> assignedStaffIds;
 
   factory LeadModel.fromJson(Map<String, dynamic> json) {
     final source = _extractSource(json);
@@ -146,6 +148,7 @@ class LeadModel {
       zipCode: _readNullableString(source, ['zipCode', 'zip_code', 'postal_code']),
       description: _readNullableString(source, ['description', 'notes', 'remark']),
       tags: _readStringList(source['tags']),
+      assignedStaffIds: _readAssignedStaffIds(assignedStaff, assignedSource, source),
       avatarUrl: _readNullableString(source, [
         'avatar',
         'image',
@@ -332,6 +335,46 @@ class LeadModel {
     }
 
     return firstNames.join(', ');
+  }
+
+  static List<String> _readAssignedStaffIds(
+    List<Map<String, dynamic>> staffList,
+    Map<String, dynamic> assignedSource,
+    Map<String, dynamic> source,
+  ) {
+    final ids = <String>{};
+
+    for (final staff in staffList) {
+      final id = _readString(staff, ['id', '_id', 'staff_id', 'user_id']);
+      if (id.isNotEmpty) {
+        ids.add(id);
+      }
+    }
+
+    final directAssigned = _readString(
+      assignedSource,
+      ['id', '_id', 'staff_id', 'user_id'],
+    );
+    if (directAssigned.isNotEmpty) {
+      ids.add(directAssigned);
+    }
+
+    final sourceAssigned = source['assigned'];
+    if (sourceAssigned is List) {
+      for (final value in sourceAssigned) {
+        final normalized = value?.toString().trim() ?? '';
+        if (normalized.isNotEmpty) {
+          ids.add(normalized);
+        }
+      }
+    } else {
+      final singleAssigned = sourceAssigned?.toString().trim() ?? '';
+      if (singleAssigned.isNotEmpty) {
+        ids.add(singleAssigned);
+      }
+    }
+
+    return ids.toList(growable: false);
   }
 
   static List<String> _readStringList(dynamic value) {

@@ -74,25 +74,30 @@ class _ClientsScreenState extends State<ClientsScreen> {
                 children: [
                   const SizedBox(height: 10),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Clients',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                      IconButton(
+                        onPressed: Get.back,
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Color(0xFF111827),
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Clients',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       Row(
                         children: [
                           const Icon(Icons.notifications_none, size: 26),
-                          const SizedBox(width: 12),
-                          const CircleAvatar(
-                            radius: 20,
-                            backgroundImage: NetworkImage(
-                              'https://i.pravatar.cc/150?img=5',
-                            ),
-                          ),
                         ],
                       ),
                     ],

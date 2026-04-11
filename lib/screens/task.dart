@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
+import '../widgets/app_bottom_navigation.dart';
 
 class TasksScreen extends StatelessWidget {
   const TasksScreen({super.key});
@@ -14,6 +15,9 @@ class TasksScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
+      bottomNavigationBar: const PrimaryBottomNavigation(
+        currentTab: AppBottomNavTab.tasks,
+      ),
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
@@ -50,13 +54,6 @@ class TasksScreen extends StatelessWidget {
                   Row(
                     children: [
                       _circleIcon(Icons.calendar_today, compact: compact),
-                      SizedBox(width: compact ? 8 : 10),
-                      CircleAvatar(
-                        radius: compact ? 17 : 18,
-                        backgroundImage: NetworkImage(
-                          "https://i.pravatar.cc/150?img=3",
-                        ),
-                      ),
                     ],
                   )
                 ],

@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/services/api_service.dart';
 
 /// Mobile-first tasks screen inspired by the provided mockup.
 class ToDoListScreen extends StatefulWidget {
@@ -13,6 +15,8 @@ class ToDoListScreen extends StatefulWidget {
 class _ToDoListScreenState extends State<ToDoListScreen> {
   final List<_TodoTask> _unfinishedTasks = [];
   final List<_TodoTask> _completedTasks = [];
+  bool _isLoadingTodos = false;
+  String? _todoLoadError;
 
   int get _plannedCount => _unfinishedTasks.length;
 
@@ -22,25 +26,15 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadTodos();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        automaticallyImplyLeading: false,
-        leadingWidth: 76,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20, top: 8, bottom: 8),
-          child: _HeaderCircleButton(
-            icon: Icons.arrow_back_ios_new_rounded,
-            onTap: () => Get.back(),
-            size: 42,
-          ),
-        ),
-      ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -68,7 +62,7 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const _TasksHeader(),
+                        _TasksHeader(onBack: () => Get.back()),
                         const SizedBox(height: 18),
                         _TasksHeroSection(
                           onAddTask: _showAddTaskDialog,
@@ -77,6 +71,23 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
                           dueTodayCount: _dueTodayCount,
                         ),
                         const SizedBox(height: 18),
+                        if (_isLoadingTodos)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 16),
+                            child: LinearProgressIndicator(
+                              minHeight: 3,
+                              color: Color(0xFF1B87E6),
+                              backgroundColor: Color(0xFFD8E8F8),
+                            ),
+                          ),
+                        if (_todoLoadError != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _TodoLoadErrorCard(
+                              message: _todoLoadError!,
+                              onRetry: _loadTodos,
+                            ),
+                          ),
                         // _SmartListsPanel(),
                         // SizedBox(height: 16),
                         _TaskStatePanel(
@@ -86,6 +97,9 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
                           emptyText:
                               'No unfinished tasks yet. Start by adding your first task.',
                           tasks: _unfinishedTasks,
+                          onEditTask: _handleEditTask,
+                          onDeleteTask: _handleDeleteTask,
+                          onToggleTaskStatus: _handleToggleTaskStatus,
                         ),
                         const SizedBox(height: 16),
                         _TaskStatePanel(
@@ -97,6 +111,9 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
                           emptyText:
                               'Completed tasks will appear here once you finish them.',
                           tasks: _completedTasks,
+                          onEditTask: _handleEditTask,
+                          onDeleteTask: _handleDeleteTask,
+                          onToggleTaskStatus: _handleToggleTaskStatus,
                         ),
                         const SizedBox(height: 18),
                         // _FocusTipsCard(),
@@ -123,14 +140,159 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       return;
     }
 
+    await _loadTodos(showErrorSnackbar: true, fallbackTask: task);
+  }
+
+  Future<void> _loadTodos({
+    bool showErrorSnackbar = false,
+    _TodoTask? fallbackTask,
+  }) async {
+    if (mounted) {
+      setState(() {
+        _isLoadingTodos = true;
+        _todoLoadError = null;
+      });
+    }
+
+    try {
+      final records = await ApiService.instance.getTodoList();
+      final unfinished = <_TodoTask>[];
+      final completed = <_TodoTask>[];
+
+      for (final record in records) {
+        final task = _TodoTask.fromJson(record);
+        if (task.isCompleted) {
+          completed.add(task);
+        } else {
+          unfinished.add(task);
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _unfinishedTasks
+          ..clear()
+          ..addAll(unfinished);
+        _completedTasks
+          ..clear()
+          ..addAll(completed);
+        _isLoadingTodos = false;
+      });
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final responseData = error.response?.data;
+      String message = 'Failed to load tasks.';
+
+      if (responseData is Map && responseData['message'] != null) {
+        message = responseData['message'].toString();
+      } else if (error.message != null && error.message!.trim().isNotEmpty) {
+        message = error.message!.trim();
+      }
+
+      setState(() {
+        _isLoadingTodos = false;
+        _todoLoadError = message;
+        if (fallbackTask != null && !_unfinishedTasks.any((task) => task == fallbackTask)) {
+          _unfinishedTasks.insert(0, fallbackTask);
+        }
+      });
+
+      if (showErrorSnackbar) {
+        Get.snackbar(
+          'Refresh failed',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFFB45309),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final message = error.toString().trim().isEmpty
+          ? 'Failed to load tasks.'
+          : error.toString().trim();
+
+      setState(() {
+        _isLoadingTodos = false;
+        _todoLoadError = message;
+        if (fallbackTask != null && !_unfinishedTasks.any((task) => task == fallbackTask)) {
+          _unfinishedTasks.insert(0, fallbackTask);
+        }
+      });
+
+      if (showErrorSnackbar) {
+        Get.snackbar(
+          'Refresh failed',
+          message,
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFFB45309),
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    }
+  }
+
+  void _handleEditTask(_TodoTask task) {
+    Get.snackbar(
+      'Edit task',
+      'Edit action is ready in the list UI for "${task.title}".',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF153A63),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
+  void _handleDeleteTask(_TodoTask task) {
+    Get.snackbar(
+      'Delete task',
+      'Delete action is ready in the list UI for "${task.title}".',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF991B1B),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
+  void _handleToggleTaskStatus(_TodoTask task) {
     setState(() {
-      _unfinishedTasks.insert(0, task);
+      if (task.isCompleted) {
+        _completedTasks.remove(task);
+        _unfinishedTasks.insert(0, task.copyWith(isCompleted: false));
+      } else {
+        _unfinishedTasks.remove(task);
+        _completedTasks.insert(0, task.copyWith(isCompleted: true));
+      }
     });
+
+    Get.snackbar(
+      task.isCompleted ? 'Task marked incomplete' : 'Task marked complete',
+      task.title,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: task.isCompleted
+          ? const Color(0xFFB45309)
+          : const Color(0xFF166534),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+    );
   }
 }
 
 class _TasksHeader extends StatelessWidget {
-  const _TasksHeader();
+  const _TasksHeader({required this.onBack});
+
+  final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +302,14 @@ class _TasksHeader extends StatelessWidget {
         final buttonSize = isCompact ? 38.0 : 42.0;
 
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _HeaderCircleButton(
+              icon: Icons.arrow_back_ios_new_rounded,
+              onTap: onBack,
+              size: buttonSize,
+            ),
+            SizedBox(width: isCompact ? 10 : 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -626,6 +795,9 @@ class _TaskStatePanel extends StatelessWidget {
     required this.title,
     required this.badge,
     required this.emptyText,
+    required this.onEditTask,
+    required this.onDeleteTask,
+    required this.onToggleTaskStatus,
     this.tasks = const [],
     this.badgeColor = const Color(0xFFE9F5FF),
     this.badgeTextColor = const Color(0xFF2D7DD2),
@@ -636,6 +808,9 @@ class _TaskStatePanel extends StatelessWidget {
   final String badge;
   final String emptyText;
   final List<_TodoTask> tasks;
+  final ValueChanged<_TodoTask> onEditTask;
+  final ValueChanged<_TodoTask> onDeleteTask;
+  final ValueChanged<_TodoTask> onToggleTaskStatus;
   final Color badgeColor;
   final Color badgeTextColor;
 
@@ -730,6 +905,9 @@ class _TaskStatePanel extends StatelessWidget {
                       child: _TaskListTile(
                         task: task,
                         isCompleted: eyebrow == 'Archive',
+                        onEdit: () => onEditTask(task),
+                        onDelete: () => onDeleteTask(task),
+                        onToggleStatus: () => onToggleTaskStatus(task),
                       ),
                     ),
                   )
@@ -745,10 +923,16 @@ class _TaskListTile extends StatelessWidget {
   const _TaskListTile({
     required this.task,
     required this.isCompleted,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onToggleStatus,
   });
 
   final _TodoTask task;
   final bool isCompleted;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback onToggleStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -786,15 +970,36 @@ class _TaskListTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  task.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF263548),
-                    fontSize: isCompact ? 13 : 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF263548),
+                          fontSize: isCompact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: isCompact ? 6 : 8),
+                    _TaskActionButton(
+                      icon: Icons.edit_outlined,
+                      iconColor: const Color(0xFF2D7DD2),
+                      backgroundColor: const Color(0xFFEAF4FF),
+                      onTap: onEdit,
+                    ),
+                    SizedBox(width: isCompact ? 6 : 8),
+                    _TaskActionButton(
+                      icon: Icons.delete_outline_rounded,
+                      iconColor: const Color(0xFFDC2626),
+                      backgroundColor: const Color(0xFFFFEEEE),
+                      onTap: onDelete,
+                    ),
+                  ],
                 ),
                 if (task.description.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -815,6 +1020,10 @@ class _TaskListTile extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
+                    _TaskStatusButton(
+                      isCompleted: isCompleted,
+                      onTap: onToggleStatus,
+                    ),
                     _TaskMetaChip(
                       icon: Icons.calendar_today_outlined,
                       label: _formatDate(task.date),
@@ -833,6 +1042,88 @@ class _TaskListTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TaskStatusButton extends StatelessWidget {
+  const _TaskStatusButton({
+    required this.isCompleted,
+    required this.onTap,
+  });
+
+  final bool isCompleted;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final backgroundColor = isCompleted
+        ? const Color(0xFFFFF4E5)
+        : const Color(0xFFEAFBF1);
+    final foregroundColor = isCompleted
+        ? const Color(0xFFB45309)
+        : const Color(0xFF15803D);
+
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isCompleted ? Icons.undo_rounded : Icons.task_alt_rounded,
+                size: 14,
+                color: foregroundColor,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isCompleted ? 'Mark as Incomplete' : 'Mark as Complete',
+                style: AppTextStyles.style(
+                  color: foregroundColor,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskActionButton extends StatelessWidget {
+  const _TaskActionButton({
+    required this.icon,
+    required this.iconColor,
+    required this.backgroundColor,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color backgroundColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Icon(icon, size: 18, color: iconColor),
+        ),
       ),
     );
   }
@@ -893,10 +1184,12 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
 
   DateTime _selectedDate = DateTime.now();
   DateTime _startsDate = DateTime.now();
+  DateTime _endsOnDate = DateTime.now();
   TimeOfDay? _selectedTime;
   TimeOfDay? _reminderTime;
   String _repeatUnit = 'Day';
   _TaskEndType _endType = _TaskEndType.never;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -909,174 +1202,165 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
+    final screenHeight = mediaQuery.size.height;
+    final keyboardHeight = mediaQuery.viewInsets.bottom;
     final dialogWidth = screenWidth > 520 ? 520.0 : screenWidth - 16;
     final isCompact = screenWidth < 380;
     final useTwoColumns = screenWidth > 420;
     final descriptionLines = screenHeight < 740 ? 2 : 3;
-    final shouldScroll = isCompact || screenHeight < 760;
-    final maxDialogHeight = isCompact ? screenHeight * 0.8 : screenHeight * 0.84;
-    final dialogBody = Form(
-      key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final maxDialogHeight = (screenHeight - keyboardHeight) - (isCompact ? 20 : 32);
+    final dialogContent = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TASK SETUP',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF556273),
+                      fontSize: isCompact ? 10 : 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Add New Todo',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF2D3846),
+                      fontSize: isCompact ? 16 : 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: const Icon(Icons.close_rounded),
+              color: const Color(0xFF6E7A89),
+            ),
+          ],
+        ),
+        SizedBox(height: isCompact ? 10 : 12),
+        useTwoColumns
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: _buildTitleField()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildDateField()),
+                ],
+              )
+            : Column(
+                children: [
+                  _buildTitleField(),
+                  const SizedBox(height: 12),
+                  _buildDateField(),
+                ],
+              ),
+        SizedBox(height: isCompact ? 10 : 12),
+        _FormFieldLabel(label: 'Description'),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _descriptionController,
+          minLines: descriptionLines,
+          maxLines: descriptionLines,
+          decoration: _taskInputDecoration(
+            hintText: 'Add extra details for this task',
+          ),
+        ),
+        SizedBox(height: isCompact ? 10 : 12),
+        useTwoColumns
+            ? Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _buildTimeField()),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildReminderField()),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildRepeatField(),
+                ],
+              )
+            : Column(
+                children: [
+                  _buildTimeField(),
+                  const SizedBox(height: 10),
+                  _buildReminderField(),
+                  const SizedBox(height: 10),
+                  _buildRepeatField(),
+                ],
+              ),
+        SizedBox(height: isCompact ? 10 : 12),
+        useTwoColumns
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: _buildStartsField()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildEndsField()),
+                ],
+              )
+            : Column(
+                children: [
+                  _buildStartsField(),
+                  const SizedBox(height: 10),
+                  _buildEndsField(),
+                ],
+              ),
+      ],
+    );
+    final dialogActions = isCompact
+        ? Column(
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'TASK SETUP',
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF556273),
-                        fontSize: isCompact ? 10 : 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                      ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _saveTask,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1C86F2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Add New Todo',
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF2D3846),
-                        fontSize: isCompact ? 16 : 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded),
-                color: const Color(0xFF6E7A89),
-              ),
-            ],
-          ),
-          SizedBox(height: isCompact ? 10 : 12),
-          useTwoColumns
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildTitleField()),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildDateField()),
-                  ],
-                )
-              : Column(
-                  children: [
-                    _buildTitleField(),
-                    const SizedBox(height: 12),
-                    _buildDateField(),
-                  ],
-                ),
-          SizedBox(height: isCompact ? 10 : 12),
-          _FormFieldLabel(label: 'Description'),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _descriptionController,
-            minLines: descriptionLines,
-            maxLines: descriptionLines,
-            decoration: _taskInputDecoration(
-              hintText: 'Add extra details for this task',
-            ),
-          ),
-          SizedBox(height: isCompact ? 10 : 12),
-          useTwoColumns
-              ? Column(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _buildTimeField()),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildReminderField()),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildRepeatField(),
-                  ],
-                )
-              : Column(
-                  children: [
-                    _buildTimeField(),
-                    const SizedBox(height: 10),
-                    _buildReminderField(),
-                    const SizedBox(height: 10),
-                    _buildRepeatField(),
-                  ],
-                ),
-          SizedBox(height: isCompact ? 10 : 12),
-          useTwoColumns
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _buildStartsField()),
-                    const SizedBox(width: 12),
-                    Expanded(child: _buildEndsField()),
-                  ],
-                )
-              : Column(
-                  children: [
-                    _buildStartsField(),
-                    const SizedBox(height: 10),
-                    _buildEndsField(),
-                  ],
-                ),
-          SizedBox(height: isCompact ? 14 : 18),
-          if (isCompact) ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saveTask,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1C86F2),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
                   ),
-                ),
-                child: Text(
-                  'Save Task',
-                  style: AppTextStyles.style(fontWeight: FontWeight.w700),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFFF5F7FB),
-                  foregroundColor: const Color(0xFF222222),
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: Text(
-                  'Close',
-                  style: AppTextStyles.style(fontWeight: FontWeight.w600),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Save Task',
+                          style: AppTextStyles.style(fontWeight: FontWeight.w700),
+                        ),
                 ),
               ),
-            ),
-          ] else
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF5F7FB),
                     foregroundColor: const Color(0xFF222222),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -1086,25 +1370,66 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                     style: AppTextStyles.style(fontWeight: FontWeight.w600),
                   ),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: _saveTask,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1C86F2),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: Text(
-                    'Save Task',
-                    style: AppTextStyles.style(fontWeight: FontWeight.w700),
+              ),
+            ],
+          )
+        : Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFFF5F7FB),
+                  foregroundColor: const Color(0xFF222222),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ],
-            ),
-        ],
+                child: Text(
+                  'Close',
+                  style: AppTextStyles.style(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: _isSubmitting ? null : _saveTask,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1C86F2),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: _isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text(
+                        'Save Task',
+                        style: AppTextStyles.style(fontWeight: FontWeight.w700),
+                      ),
+              ),
+            ],
+          );
+    final dialogBody = Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            dialogContent,
+            SizedBox(height: isCompact ? 14 : 18),
+            dialogActions,
+          ],
+        ),
       ),
     );
 
@@ -1123,12 +1448,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             isCompact ? 14 : 18,
             isCompact ? 12 : 16,
           ),
-          child: shouldScroll
-              ? ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxDialogHeight),
-                  child: SingleChildScrollView(child: dialogBody),
-                )
-              : dialogBody,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxDialogHeight),
+            child: dialogBody,
+          ),
         ),
       ),
     );
@@ -1317,6 +1640,22 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             ),
           ],
         ),
+        if (_endType == _TaskEndType.on) ...[
+          const SizedBox(height: 10),
+          const _FormFieldLabel(label: 'Ends On'),
+          const SizedBox(height: 8),
+          TextFormField(
+            readOnly: true,
+            controller: TextEditingController(text: _formatDate(_endsOnDate)),
+            onTap: () => _pickDate(
+              initialDate: _endsOnDate,
+              onSelected: (date) => setState(() => _endsOnDate = date),
+            ),
+            decoration: _taskInputDecoration(
+              suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
+            ),
+          ),
+        ],
         if (_endType == _TaskEndType.after) ...[
           const SizedBox(height: 10),
           SizedBox(
@@ -1362,22 +1701,157 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     }
   }
 
-  void _saveTask() {
+  Future<void> _saveTask() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    Navigator.of(context).pop(
-      _TodoTask(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        date: _selectedDate,
-        startTime: _selectedTime,
-        reminderTime: _reminderTime,
-        repeatEvery: int.parse(_repeatEveryController.text.trim()),
-        repeatUnit: _repeatUnit,
-        startsOn: _startsDate,
-        endType: _endType,
+    final task = _TodoTask(
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
+      date: _selectedDate,
+      startTime: _selectedTime,
+      reminderTime: _reminderTime,
+      repeatEvery: int.parse(_repeatEveryController.text.trim()),
+      repeatUnit: _repeatUnit,
+      startsOn: _startsDate,
+      endType: _endType,
+      endsOn: _endType == _TaskEndType.on ? _endsOnDate : null,
+      endsAfterCount: _endType == _TaskEndType.after
+          ? int.tryParse(_afterCountController.text.trim())
+          : null,
+    );
+
+    FocusScope.of(context).unfocus();
+    setState(() => _isSubmitting = true);
+
+    try {
+      await ApiService.instance.createTodo(
+        title: task.title,
+        description: task.description,
+        taskDate: task.date,
+        taskTime: task.startTime,
+        repeatInterval: task.repeatEvery,
+        repeatUnit: task.repeatUnit,
+        reminderTime: task.reminderTime,
+        startsOn: task.startsOn,
+        endsType: task.endType.apiValue,
+        endsOn: task.endsOn,
+        endsAfter: task.endsAfterCount,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      Get.snackbar(
+        'Task created',
+        'The task has been added successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF153A63),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+
+      Navigator.of(context).pop(task);
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final responseData = error.response?.data;
+      String message = 'Failed to create task.';
+
+      if (responseData is Map && responseData['message'] != null) {
+        message = responseData['message'].toString();
+      } else if (error.message != null && error.message!.trim().isNotEmpty) {
+        message = error.message!.trim();
+      }
+
+      Get.snackbar(
+        'Create task failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+}
+
+class _TodoLoadErrorCard extends StatelessWidget {
+  const _TodoLoadErrorCard({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFB45309),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Unable to load tasks',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF9A3412),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF9A3412),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: onRetry,
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFF59E0B),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'Retry',
+                    style: AppTextStyles.style(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1474,9 +1948,75 @@ class _TodoTask {
     required this.repeatUnit,
     required this.startsOn,
     required this.endType,
+    this.endsOn,
+    this.endsAfterCount,
     this.startTime,
     this.reminderTime,
+    this.isCompleted = false,
   });
+
+  _TodoTask copyWith({
+    String? title,
+    String? description,
+    DateTime? date,
+    TimeOfDay? startTime,
+    TimeOfDay? reminderTime,
+    int? repeatEvery,
+    String? repeatUnit,
+    DateTime? startsOn,
+    _TaskEndType? endType,
+    DateTime? endsOn,
+    int? endsAfterCount,
+    bool? isCompleted,
+  }) {
+    return _TodoTask(
+      title: title ?? this.title,
+      description: description ?? this.description,
+      date: date ?? this.date,
+      startTime: startTime ?? this.startTime,
+      reminderTime: reminderTime ?? this.reminderTime,
+      repeatEvery: repeatEvery ?? this.repeatEvery,
+      repeatUnit: repeatUnit ?? this.repeatUnit,
+      startsOn: startsOn ?? this.startsOn,
+      endType: endType ?? this.endType,
+      endsOn: endsOn ?? this.endsOn,
+      endsAfterCount: endsAfterCount ?? this.endsAfterCount,
+      isCompleted: isCompleted ?? this.isCompleted,
+    );
+  }
+
+  factory _TodoTask.fromJson(Map<String, dynamic> source) {
+    final taskDate =
+        _tryParseApiDate(_readString(source, const ['task_date', 'date', 'due_date'])) ??
+        _tryParseApiDate(_readString(source, const ['starts_on', 'start_date'])) ??
+        DateTime.now();
+    final startsOn =
+        _tryParseApiDate(_readString(source, const ['starts_on', 'start_date'])) ?? taskDate;
+    final endType = _taskEndTypeFromString(
+      _readString(source, const ['ends_type', 'end_type']),
+    );
+
+    return _TodoTask(
+      title: _readString(source, const ['title', 'name', 'task_title']) ?? 'Untitled Task',
+      description: _readString(source, const ['description', 'details']) ?? '',
+      date: taskDate,
+      startTime: _tryParseApiTime(
+        _readString(source, const ['task_time', 'start_time', 'time']),
+      ),
+      reminderTime: _tryParseApiTime(
+        _readString(source, const ['reminder_time', 'reminder']),
+      ),
+      repeatEvery: _readInt(source, const ['repeat_interval', 'repeat_every']) ?? 1,
+      repeatUnit: _toTitleCase(
+        _readString(source, const ['repeat_unit', 'repeat']) ?? 'day',
+      ),
+      startsOn: startsOn,
+      endType: endType,
+      endsOn: _tryParseApiDate(_readString(source, const ['ends_on'])),
+      endsAfterCount: _readInt(source, const ['ends_after']),
+      isCompleted: _readCompletionState(source),
+    );
+  }
 
   final String title;
   final String description;
@@ -1487,9 +2027,16 @@ class _TodoTask {
   final String repeatUnit;
   final DateTime startsOn;
   final _TaskEndType endType;
+  final DateTime? endsOn;
+  final int? endsAfterCount;
+  final bool isCompleted;
 }
 
 enum _TaskEndType { never, on, after }
+
+extension on _TaskEndType {
+  String get apiValue => name;
+}
 
 InputDecoration _taskInputDecoration({
   String? hintText,
@@ -1541,6 +2088,130 @@ bool _isSameDate(DateTime first, DateTime second) {
   return first.year == second.year &&
       first.month == second.month &&
       first.day == second.day;
+}
+
+String? _readString(Map<String, dynamic> source, List<String> keys) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value == null) {
+      continue;
+    }
+
+    if (value is String && value.trim().isNotEmpty) {
+      return value.trim();
+    }
+
+    final asString = value.toString().trim();
+    if (asString.isNotEmpty && asString.toLowerCase() != 'null') {
+      return asString;
+    }
+  }
+
+  return null;
+}
+
+int? _readInt(Map<String, dynamic> source, List<String> keys) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    if (value is String) {
+      final parsed = int.tryParse(value.trim());
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
+}
+
+DateTime? _tryParseApiDate(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return null;
+  }
+
+  final normalized = value.trim();
+  return DateTime.tryParse(normalized);
+}
+
+TimeOfDay? _tryParseApiTime(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return null;
+  }
+
+  final parts = value.trim().split(':');
+  if (parts.length < 2) {
+    return null;
+  }
+
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) {
+    return null;
+  }
+
+  return TimeOfDay(hour: hour, minute: minute);
+}
+
+_TaskEndType _taskEndTypeFromString(String? value) {
+  switch ((value ?? '').trim().toLowerCase()) {
+    case 'on':
+      return _TaskEndType.on;
+    case 'after':
+      return _TaskEndType.after;
+    default:
+      return _TaskEndType.never;
+  }
+}
+
+bool _readCompletionState(Map<String, dynamic> source) {
+  for (final key in const ['is_completed', 'completed', 'isComplete']) {
+    final value = source[key];
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+        return true;
+      }
+      if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+        return false;
+      }
+    }
+  }
+
+  final status = _readString(source, const ['status', 'task_status', 'state'])?.toLowerCase();
+  if (status == null) {
+    return false;
+  }
+
+  return status.contains('complete') ||
+      status.contains('completed') ||
+      status.contains('done') ||
+      status.contains('closed') ||
+      status.contains('finish');
+}
+
+String _toTitleCase(String value) {
+  if (value.isEmpty) {
+    return value;
+  }
+
+  final normalized = value.trim().toLowerCase();
+  return '${normalized[0].toUpperCase()}${normalized.substring(1)}';
 }
 
 class _FocusTipsCard extends StatelessWidget {

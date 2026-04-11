@@ -13,6 +13,7 @@ import '../screens/project_detail_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/task.dart';
 import '../screens/edit_task_screen.dart';
+import '../screens/add_lead_screen.dart';
 import '../screens/leads_screen.dart';
 import '../screens/lead_detail_screen.dart';
 import '../screens/issue_management_screen.dart';
@@ -49,6 +50,8 @@ class RouteGenerator {
             child: const LeadsScreen(),
           ),
         );
+      case AppRoutes.addLead:
+        return MaterialPageRoute(builder: (_) => const AddLeadScreen());
       case AppRoutes.leadDetail:
         final leadId = _extractLeadId(settings.arguments);
         return MaterialPageRoute(

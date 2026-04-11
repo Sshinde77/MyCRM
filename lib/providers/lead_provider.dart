@@ -13,6 +13,7 @@ class LeadProvider extends ChangeNotifier {
   String _searchQuery = '';
   bool _isLoading = false;
   String? _errorMessage;
+  final Set<String> _deletingLeadIds = <String>{};
 
   List<LeadModel> get leads {
     if (_searchQuery.trim().isEmpty) {
@@ -25,6 +26,7 @@ class LeadProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
   int get totalLeads => _allLeads.length;
+  bool isDeletingLead(String id) => _deletingLeadIds.contains(id);
 
   int get newLeadsCount {
     return _allLeads.where((lead) {
@@ -77,6 +79,30 @@ class LeadProvider extends ChangeNotifier {
 
     _searchQuery = value;
     notifyListeners();
+  }
+
+  Future<void> deleteLead(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty || _deletingLeadIds.contains(normalizedId)) {
+      return;
+    }
+
+    _deletingLeadIds.add(normalizedId);
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _apiService.deleteLead(normalizedId);
+      _allLeads = _allLeads
+          .where((lead) => (lead.id?.trim() ?? '') != normalizedId)
+          .toList(growable: false);
+    } catch (error) {
+      _errorMessage = _toMessage(error);
+      rethrow;
+    } finally {
+      _deletingLeadIds.remove(normalizedId);
+      notifyListeners();
+    }
   }
 
   String _toMessage(Object error) {

@@ -45,21 +45,33 @@ class _LeadsScreenState extends State<LeadsScreen> {
           builder: (context, leadProvider, _) {
             return RefreshIndicator(
               onRefresh: () => leadProvider.loadLeads(forceRefresh: true),
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 24,
-                        backgroundImage: NetworkImage(
-                          'https://i.pravatar.cc/150?u=shubham',
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 380;
+                  final horizontalPadding = isCompact ? 16.0 : 20.0;
+
+                  return ListView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: 16,
+                    ),
+                  children: [
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: Get.back,
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: textDark,
+                            size: 20,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Leads',
@@ -80,35 +92,41 @@ class _LeadsScreenState extends State<LeadsScreen> {
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: lightBlue,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: const Stack(
-                          children: [
-                            Icon(
-                              Icons.notifications_none_rounded,
-                              color: primaryBlue,
-                            ),
-                            Positioned(
-                              right: 2,
-                              top: 2,
-                              child: CircleAvatar(
-                                radius: 4,
-                                backgroundColor: Colors.red,
+                      if (!isCompact)
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: lightBlue,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Stack(
+                            children: [
+                              Icon(
+                                Icons.notifications_none_rounded,
+                                color: primaryBlue,
                               ),
-                            ),
-                          ],
+                              Positioned(
+                                right: 2,
+                                top: 2,
+                                child: CircleAvatar(
+                                  radius: 4,
+                                  backgroundColor: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Row(
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
                     children: [
-                      Expanded(
+                      SizedBox(
+                        width: isCompact
+                            ? double.infinity
+                            : (constraints.maxWidth - (horizontalPadding * 2) - 16) / 2,
                         child: _SummaryCard(
                           label: 'Total Leads',
                           value: '${leadProvider.totalLeads}',
@@ -117,8 +135,10 @@ class _LeadsScreenState extends State<LeadsScreen> {
                           color: Colors.green,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
+                      SizedBox(
+                        width: isCompact
+                            ? double.infinity
+                            : (constraints.maxWidth - (horizontalPadding * 2) - 16) / 2,
                         child: _SummaryCard(
                           label: 'New Leads',
                           value: '${leadProvider.newLeadsCount}',
@@ -167,13 +187,15 @@ class _LeadsScreenState extends State<LeadsScreen> {
                   Row(
                     children: [
                       Expanded(
-                        flex: 2,
                         child: OutlinedButton.icon(
                           onPressed: leadProvider.isLoading
                               ? null
                               : () => leadProvider.loadLeads(forceRefresh: true),
-                          icon: const Icon(Icons.refresh_rounded, size: 20),
-                          label: const Text('Refresh'),
+                          icon: const Icon(Icons.refresh_rounded, size: 18),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('Refresh'),
+                          ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: textDark,
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -186,11 +208,14 @@ class _LeadsScreenState extends State<LeadsScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        flex: 5,
+                        flex: 2,
                         child: ElevatedButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.add_rounded, color: Colors.white),
-                          label: const Text('Add New Lead'),
+                          onPressed: () => Get.toNamed(AppRoutes.addLead),
+                          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                          label: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text('Add New Lead'),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF2CB1FF),
                             foregroundColor: Colors.white,
@@ -205,8 +230,11 @@ class _LeadsScreenState extends State<LeadsScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         'RECENT LEADS',
@@ -224,19 +252,19 @@ class _LeadsScreenState extends State<LeadsScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              'Reload',
-                              style: AppTextStyles.style(
-                                color: primaryBlue,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 16,
-                              color: primaryBlue,
-                            ),
+                            // Text(
+                            //   'Reload',
+                            //   style: AppTextStyles.style(
+                            //     color: primaryBlue,
+                            //     fontSize: 13,
+                            //     fontWeight: FontWeight.w600,
+                            //   ),
+                            // ),
+                            // const Icon(
+                            //   Icons.arrow_forward_rounded,
+                            //   size: 16,
+                            //   color: primaryBlue,
+                            // ),
                           ],
                         ),
                       ),
@@ -256,8 +284,10 @@ class _LeadsScreenState extends State<LeadsScreen> {
                       hasQuery: leadProvider.searchQuery.trim().isNotEmpty,
                     )
                   else
-                    ..._buildLeadCards(leadProvider.leads),
+                    ..._buildLeadCards(leadProvider),
                 ],
+                  );
+                },
               ),
             );
           },
@@ -266,10 +296,92 @@ class _LeadsScreenState extends State<LeadsScreen> {
     );
   }
 
-  List<Widget> _buildLeadCards(List<LeadModel> leads) {
+  Future<void> _deleteLead(
+    BuildContext context,
+    LeadProvider leadProvider,
+    LeadModel lead,
+  ) async {
+    final id = lead.id.trim();
+    if (id.isEmpty) {
+      Get.snackbar(
+        'Delete failed',
+        'Lead id is missing.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Delete Lead'),
+          content: Text(
+            'Delete ${lead.displayName.isEmpty ? 'this lead' : lead.displayName} permanently?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB3261E),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true || !mounted) {
+      return;
+    }
+
+    try {
+      await leadProvider.deleteLead(id);
+      if (!mounted) {
+        return;
+      }
+      Get.snackbar(
+        'Lead deleted',
+        '${lead.displayName.isEmpty ? 'Lead' : lead.displayName} was deleted successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF153A63),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      Get.snackbar(
+        'Delete failed',
+        leadProvider.errorMessage ?? error.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    }
+  }
+
+  List<Widget> _buildLeadCards(LeadProvider leadProvider) {
+    final leads = leadProvider.leads;
     return [
       for (var index = 0; index < leads.length; index++) ...[
-        _LeadCard(lead: leads[index]),
+        _LeadCard(
+          lead: leads[index],
+          isDeleting: leadProvider.isDeletingLead(leads[index].id),
+          onDelete: () => _deleteLead(context, leadProvider, leads[index]),
+        ),
         if (index != leads.length - 1) const SizedBox(height: 16),
       ],
     ];
@@ -293,59 +405,88 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 170;
+        final captionFontSize = isCompact ? 10.0 : 11.0;
+        final labelFontSize = isCompact ? 11.0 : 12.0;
+        final valueFontSize = isCompact ? 20.0 : 22.0;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: const Color(0xFF33A1FF), size: 24),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                alignment: WrapAlignment.spaceBetween,
+                children: [
+                  Icon(icon, color: const Color(0xFF33A1FF), size: 24),
+                  SizedBox(
+                    width: isCompact ? constraints.maxWidth - 32 : 92,
+                    child: Text(
+                      caption,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                      style: AppTextStyles.style(
+                        color: color,
+                        fontSize: captionFontSize,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               Text(
-                caption,
-                textAlign: TextAlign.end,
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: AppTextStyles.style(
-                  color: color,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF76839A),
+                  fontSize: labelFontSize,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF1E2A3B),
+                    fontSize: valueFontSize,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: const Color(0xFF76839A),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: AppTextStyles.style(
-              color: const Color(0xFF1E2A3B),
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
 class _LeadCard extends StatelessWidget {
-  const _LeadCard({required this.lead});
+  const _LeadCard({
+    required this.lead,
+    required this.onDelete,
+    this.isDeleting = false,
+  });
 
   final LeadModel lead;
+  final VoidCallback onDelete;
+  final bool isDeleting;
 
   @override
   Widget build(BuildContext context) {
@@ -368,11 +509,42 @@ class _LeadCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 360;
+                  final statusBadge = Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      lead.displayStatus.toUpperCase(),
+                      style: AppTextStyles.style(
+                        color: statusColors.foreground,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  );
+
+                  final amountText = lead.displayAmount.isNotEmpty
+                      ? Text(
+                          lead.displayAmount,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF2CB1FF),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        )
+                      : null;
+
+                  if (isCompact) {
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
@@ -392,6 +564,7 @@ class _LeadCard extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        const SizedBox(height: 2),
                         Text(
                           lead.displayCompany,
                           style: AppTextStyles.style(
@@ -400,122 +573,164 @@ class _LeadCard extends StatelessWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (amountText != null) amountText,
+                            statusBadge,
+                          ],
+                        ),
                       ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (lead.displayAmount.isNotEmpty) ...[
-                        Text(
-                          lead.displayAmount,
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF2CB1FF),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lead.displayId,
+                              style: AppTextStyles.style(
+                                color: const Color(0xFF2CB1FF),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              lead.displayName,
+                              style: AppTextStyles.style(
+                                color: textDark,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              lead.displayCompany,
+                              style: AppTextStyles.style(
+                                color: textLight,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                      ],
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColors.background,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          lead.displayStatus.toUpperCase(),
-                          style: AppTextStyles.style(
-                            color: statusColors.foreground,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5,
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (amountText != null) ...[
+                              amountText,
+                              const SizedBox(height: 6),
+                            ],
+                            statusBadge,
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 10,
                 children: [
-                  Expanded(
-                    child: _IconInfoRow(
-                      icon: Icons.mail_outline_rounded,
-                      text: lead.displayEmail,
-                    ),
+                  _InfoTile(
+                    icon: Icons.mail_outline_rounded,
+                    text: lead.displayEmail,
                   ),
-                  Expanded(
-                    child: _IconInfoRow(
-                      icon: Icons.share_outlined,
-                      text: ((lead.source ?? '').trim().isNotEmpty)
-                          ? lead.source!.trim()
-                          : 'Source not available',
-                    ),
+                  _InfoTile(
+                    icon: Icons.share_outlined,
+                    text: ((lead.source ?? '').trim().isNotEmpty)
+                        ? lead.source!.trim()
+                        : 'Source not available',
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _IconInfoRow(
-                      icon: Icons.call_outlined,
-                      text: lead.displayPhone,
-                    ),
+                  _InfoTile(
+                    icon: Icons.call_outlined,
+                    text: lead.displayPhone,
                   ),
-                  Expanded(
-                    child: _IconInfoRow(
-                      icon: Icons.calendar_today_outlined,
-                      text: _formatDate(lead.createdAt),
-                    ),
+                  _InfoTile(
+                    icon: Icons.calendar_today_outlined,
+                    text: _formatDate(lead.createdAt),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
               const Divider(height: 1, color: Color(0xFFF1F5F9)),
               const SizedBox(height: 14),
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _LeadAvatar(
-                    name: lead.displayAssignedTo,
-                    imageUrl: lead.avatarUrl,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Assigned: ',
-                    style: AppTextStyles.style(
-                      color: textLight,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      lead.displayAssignedTo,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.style(
-                        color: textDark,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _LeadAvatar(
+                        name: lead.displayAssignedTo,
+                        imageUrl: lead.avatarUrl,
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Assigned: ',
+                        style: AppTextStyles.style(
+                          color: textLight,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 140),
+                        child: Text(
+                          lead.displayAssignedTo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.style(
+                            color: textDark,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  _ActionIcon(
-                    icon: Icons.visibility_outlined,
-                    onTap: () => Get.toNamed(AppRoutes.leadDetail, arguments: lead.id),
-                  ),
-                  const SizedBox(width: 12),
-                  const _ActionIcon(icon: Icons.edit_outlined),
-                  const SizedBox(width: 12),
-                  _ActionIcon(
-                    icon: Icons.delete_outline_rounded,
-                    color: Colors.red.shade400,
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ActionIcon(
+                        icon: Icons.visibility_outlined,
+                        onTap: () =>
+                            Get.toNamed(AppRoutes.leadDetail, arguments: lead.id),
+                      ),
+                      const SizedBox(width: 16),
+                      const _ActionIcon(icon: Icons.edit_outlined),
+                      const SizedBox(width: 16),
+                      isDeleting
+                          ? SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.red.shade400,
+                                ),
+                              ),
+                            )
+                          : _ActionIcon(
+                              icon: Icons.delete_outline_rounded,
+                              color: Colors.red.shade400,
+                              onTap: onDelete,
+                            ),
+                    ],
                   ),
                 ],
               ),
@@ -602,31 +817,34 @@ class _LeadAvatar extends StatelessWidget {
   }
 }
 
-class _IconInfoRow extends StatelessWidget {
-  const _IconInfoRow({required this.icon, required this.text});
+class _InfoTile extends StatelessWidget {
+  const _InfoTile({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            text,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.style(
-              color: const Color(0xFF64748B),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+    return SizedBox(
+      width: 220,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.style(
+                color: const Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -644,12 +862,18 @@ class _ActionIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Padding(
-        padding: const EdgeInsets.all(2),
-        child: Icon(icon, size: 18, color: color),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: Center(
+            child: Icon(icon, size: 18, color: color),
+          ),
+        ),
       ),
     );
   }

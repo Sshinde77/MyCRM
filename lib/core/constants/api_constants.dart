@@ -10,7 +10,7 @@ class ApiConstants {
   static const String user = '$baseUrl/me';
   static const String logout = '$baseUrl/logout';
 
-  //Staff Api
+  //Staff Api 
   static const String createstaff = '$baseUrl/staff';
   static const String liststaff = '$baseUrl/staff';
   static const String staffdetail = '$baseUrl/staff/{id}';
@@ -26,5 +26,20 @@ class ApiConstants {
   //Leads Api
   static const String leads = '$baseUrl/leads';
   static const String leadDetail = '$baseUrl/leads/{id}';
+  static const String leadDelete = '$baseUrl/leads/{id}';
+  static const String leadformdata = '$baseUrl/leads/form-options';
+  static const String createleads = '$baseUrl/leads';
+  static const String editleads = '$baseUrl/leads/{id}';
+
+
+  //Todo Api
+  static const String createtodo = '$baseUrl/todos/create-todo';
+  static const String listtodo = '$baseUrl/todos';
+  static const String tododetail = '$baseUrl/todos/{id}';
+  static const String deletetodo = '$baseUrl/todos/delete-todo/5';
+  static const String edittodo = '$baseUrl/todos/update-todo/5';
+  static const String statustodo = '$baseUrl/todos/toggle-todo-status/14';
+
+
 
 }

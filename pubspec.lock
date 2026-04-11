@@ -49,6 +49,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  country_state_city_selector:
+    dependency: "direct main"
+    description:
+      name: country_state_city_selector
+      sha256: "00dcfffd67e24613b2d30633b5e76529ef226a5f350cd3458b07f302c2daa156"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.6"
   cross_file:
     dependency: transitive
     description:

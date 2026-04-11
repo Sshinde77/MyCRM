@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../core/constants/app_text_styles.dart';
 import '../models/lead_model.dart';
 import '../providers/lead_detail_provider.dart';
+import 'add_lead_screen.dart';
 
 class LeadDetailScreen extends StatelessWidget {
   const LeadDetailScreen({super.key});
@@ -56,27 +57,23 @@ class LeadDetailScreen extends StatelessWidget {
                       titleText: lead.displayName,
                     ),
                     const SizedBox(height: 18),
-                    _ProfileCard(lead: lead),
-                    const SizedBox(height: 20),
-                    _QuickActionsCard(lead: lead),
-                    const SizedBox(height: 20),
-                    _SectionCard(
-                      title: 'Lead Details',
-                      trailing: const Icon(
-                        Icons.info_outline,
-                        color: Color(0xFF91A3BF),
-                        size: 26,
-                      ),
-                      child: _LeadDetailsContent(lead: lead),
+                    _ProfileCard(
+                      lead: lead,
+                      onEdit: () async {
+                        final updated = await Get.to<bool>(
+                          () => AddLeadScreen(leadId: lead.id),
+                        );
+                        if (updated == true && context.mounted) {
+                          await context.read<LeadDetailProvider>().loadLead(
+                            forceRefresh: true,
+                          );
+                        }
+                      },
                     ),
                     const SizedBox(height: 20),
                     _SectionCard(
-                      title: 'Notes',
-                      trailing: const Icon(
-                        Icons.more_horiz,
-                        color: Color(0xFF91A3BF),
-                      ),
-                      child: _NotesContent(lead: lead),
+                      title: 'Lead Details',
+                      child: _LeadDetailsContent(lead: lead),
                     ),
                   ],
                 ),
@@ -121,20 +118,19 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ),
-        const Icon(
-          Icons.notifications_none_rounded,
-          color: Color(0xFF5C6B82),
-          size: 28,
-        ),
       ],
     );
   }
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.lead});
+  const _ProfileCard({
+    required this.lead,
+    required this.onEdit,
+  });
 
   final LeadModel lead;
+  final Future<void> Function() onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -221,21 +217,11 @@ class _ProfileCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          _ContactRow(icon: Icons.call_outlined, text: lead.displayPhone),
-          const SizedBox(height: 12),
-          _ContactRow(
-            icon: Icons.language_rounded,
-            text: lead.displayWebsite,
-            textColor: lead.website?.trim().isNotEmpty == true
-                ? LeadDetailScreen.link
-                : const Color(0xFF5D6C84),
-          ),
           const SizedBox(height: 22),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: onEdit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: LeadDetailScreen.primary,
                 foregroundColor: Colors.white,
@@ -254,57 +240,6 @@ class _ProfileCard extends StatelessWidget {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickActionsCard extends StatelessWidget {
-  const _QuickActionsCard({required this.lead});
-
-  final LeadModel lead;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-      decoration: BoxDecoration(
-        color: LeadDetailScreen.surface,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: LeadDetailScreen.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _QuickAction(
-            icon: Icons.call_outlined,
-            label: 'CALL',
-            bgColor: const Color(0xFFDDF8E6),
-            fgColor: const Color(0xFF17A34A),
-            onTap: () {},
-          ),
-          _QuickAction(
-            icon: Icons.mail_outline_rounded,
-            label: 'EMAIL',
-            bgColor: const Color(0xFFDCEAFF),
-            fgColor: const Color(0xFF346DFF),
-            onTap: () {},
-          ),
-          _QuickAction(
-            icon: Icons.language_rounded,
-            label: 'WEB',
-            bgColor: const Color(0xFFF0E1FF),
-            fgColor: const Color(0xFF8A38F5),
-            onTap: () {},
-          ),
-          _QuickAction(
-            icon: Icons.person_outline_rounded,
-            label: lead.displayAssignedTo,
-            bgColor: const Color(0xFFFFE9D4),
-            fgColor: const Color(0xFFF97316),
-            onTap: () {},
           ),
         ],
       ),
@@ -473,34 +408,6 @@ class _LeadDetailsContent extends StatelessWidget {
   }
 }
 
-class _NotesContent extends StatelessWidget {
-  const _NotesContent({required this.lead});
-
-  final LeadModel lead;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FBFF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDDE7F3)),
-      ),
-      child: Text(
-        lead.displayDescription,
-        style: AppTextStyles.style(
-          color: const Color(0xFF53627B),
-          fontSize: 13,
-          height: 1.7,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
 class _MetricTile extends StatelessWidget {
   const _MetricTile({
     required this.label,
@@ -541,86 +448,6 @@ class _MetricTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ContactRow extends StatelessWidget {
-  const _ContactRow({
-    required this.icon,
-    required this.text,
-    this.textColor = const Color(0xFF5D6C84),
-  });
-
-  final IconData icon;
-  final String text;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color(0xFF8CA0BF), size: 18),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: AppTextStyles.style(
-              color: textColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.bgColor,
-    required this.fgColor,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color bgColor;
-  final Color fgColor;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Column(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-              child: Icon(icon, color: fgColor, size: 27),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.style(
-                color: const Color(0xFF6C7D95),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

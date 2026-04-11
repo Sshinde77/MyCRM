@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../core/constants/api_constants.dart';
 import '../models/login_request_model.dart';
@@ -7,6 +8,7 @@ import '../models/login_response_model.dart';
 import '../models/client_model.dart';
 import '../models/client_detail_model.dart';
 import '../models/create_client_request_model.dart';
+import '../models/lead_form_options_model.dart';
 import '../models/lead_model.dart';
 import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
@@ -209,6 +211,217 @@ class ApiService {
     final response = await get(path);
     final body = _normalizeMap(_extractDetailSource(response.data));
     return LeadModel.fromJson(body);
+  }
+
+  /// Loads form option data required by the add lead screen.
+  Future<LeadFormOptionsModel> getLeadFormOptions() async {
+    final response = await get(ApiConstants.leadformdata);
+    final body = _normalizeMap(response.data);
+    return LeadFormOptionsModel.fromJson(body);
+  }
+
+  /// Deletes a single lead by id.
+  Future<void> deleteLead(String id) async {
+    final path = ApiConstants.leadDelete.replaceFirst('{id}', id);
+    await delete(path);
+  }
+
+  /// Creates a new lead.
+  Future<void> createLead({
+    required String name,
+    required String source,
+    required String status,
+    String? email,
+    String? phone,
+    String? company,
+    String? position,
+    String? website,
+    String? address,
+    String? city,
+    String? state,
+    String? country,
+    String? zipCode,
+    double? leadValue,
+    List<dynamic> assigned = const [],
+    List<String> tags = const [],
+    String? description,
+  }) async {
+    final payload = _buildLeadPayload(
+      name: name,
+      source: source,
+      status: status,
+      email: email,
+      phone: phone,
+      company: company,
+      position: position,
+      website: website,
+      address: address,
+      city: city,
+      state: state,
+      country: country,
+      zipCode: zipCode,
+      leadValue: leadValue,
+      assigned: assigned,
+      tags: tags,
+      description: description,
+    );
+    await post(ApiConstants.createleads, data: payload);
+  }
+
+  /// Updates an existing lead.
+  Future<void> updateLead({
+    required String id,
+    required String name,
+    required String source,
+    required String status,
+    String? email,
+    String? phone,
+    String? company,
+    String? position,
+    String? website,
+    String? address,
+    String? city,
+    String? state,
+    String? country,
+    String? zipCode,
+    double? leadValue,
+    List<dynamic> assigned = const [],
+    List<String> tags = const [],
+    String? description,
+  }) async {
+    final path = ApiConstants.editleads.replaceFirst('{id}', id);
+    final payload = _buildLeadPayload(
+      name: name,
+      source: source,
+      status: status,
+      email: email,
+      phone: phone,
+      company: company,
+      position: position,
+      website: website,
+      address: address,
+      city: city,
+      state: state,
+      country: country,
+      zipCode: zipCode,
+      leadValue: leadValue,
+      assigned: assigned,
+      tags: tags,
+      description: description,
+    );
+    await put(path, data: payload);
+  }
+
+  /// Creates a new todo for the authenticated user.
+  Future<List<Map<String, dynamic>>> getTodoList() async {
+    final response = await get(ApiConstants.listtodo);
+    return _normalizeList(response.data);
+  }
+
+  /// Creates a new todo for the authenticated user.
+  Future<void> createTodo({
+    required String title,
+    String? description,
+    required DateTime taskDate,
+    TimeOfDay? taskTime,
+    required int repeatInterval,
+    required String repeatUnit,
+    TimeOfDay? reminderTime,
+    required DateTime startsOn,
+    required String endsType,
+    DateTime? endsOn,
+    int? endsAfter,
+  }) async {
+    final payload = <String, dynamic>{
+      'title': title.trim(),
+      'task_date': _formatApiDate(taskDate),
+      'repeat_interval': repeatInterval,
+      'repeat_unit': repeatUnit.trim().toLowerCase(),
+      'starts_on': _formatApiDate(startsOn),
+      'ends_type': endsType.trim().toLowerCase(),
+    };
+
+    final normalizedDescription = description?.trim() ?? '';
+    if (normalizedDescription.isNotEmpty) {
+      payload['description'] = normalizedDescription;
+    }
+
+    if (taskTime != null) {
+      payload['task_time'] = _formatApiTime(taskTime);
+    }
+
+    if (reminderTime != null) {
+      payload['reminder_time'] = _formatApiTime(reminderTime);
+    }
+
+    if (endsOn != null) {
+      payload['ends_on'] = _formatApiDate(endsOn);
+    }
+
+    if (endsAfter != null && endsAfter > 0) {
+      payload['ends_after'] = endsAfter;
+    }
+
+    await post(ApiConstants.createtodo, data: payload);
+  }
+
+  Map<String, dynamic> _buildLeadPayload({
+    required String name,
+    required String source,
+    required String status,
+    String? email,
+    String? phone,
+    String? company,
+    String? position,
+    String? website,
+    String? address,
+    String? city,
+    String? state,
+    String? country,
+    String? zipCode,
+    double? leadValue,
+    List<dynamic> assigned = const [],
+    List<String> tags = const [],
+    String? description,
+  }) {
+    final payload = <String, dynamic>{
+      'name': name,
+      'source': source,
+      'status': status,
+    };
+
+    void addIfNotEmpty(String key, String? value) {
+      final normalized = value?.trim() ?? '';
+      if (normalized.isNotEmpty) {
+        payload[key] = normalized;
+      }
+    }
+
+    addIfNotEmpty('email', email);
+    addIfNotEmpty('phone', phone);
+    addIfNotEmpty('company', company);
+    addIfNotEmpty('position', position);
+    addIfNotEmpty('website', website);
+    addIfNotEmpty('address', address);
+    addIfNotEmpty('city', city);
+    addIfNotEmpty('state', state);
+    addIfNotEmpty('country', country);
+    addIfNotEmpty('zipCode', zipCode);
+    addIfNotEmpty('description', description);
+
+    if (leadValue != null) {
+      payload['lead_value'] = leadValue;
+    }
+
+    if (assigned.isNotEmpty) {
+      payload['assigned'] = assigned;
+    }
+
+    if (tags.isNotEmpty) {
+      payload['tags'] = tags;
+    }
+
+    return payload;
   }
 
   /// Loads a single client by id.
@@ -503,5 +716,17 @@ class ApiService {
     } catch (_) {
       return null;
     }
+  }
+
+  String _formatApiDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
+  }
+
+  String _formatApiTime(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
