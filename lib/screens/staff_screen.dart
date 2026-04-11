@@ -5,7 +5,6 @@ import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
 import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -134,15 +133,6 @@ class _StaffScreenState extends State<StaffScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
-      bottomNavigationBar: _AppProfileNavigation(
-        onChanged: (index) {
-          if (index == 4) {
-            Get.toNamed(AppRoutes.profile);
-            return;
-          }
-          _handleBottomNavigation(index);
-        },
-      ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -720,27 +710,6 @@ class _CircleIconButton extends StatelessWidget {
   }
 }
 
-class _AppProfileNavigation extends StatelessWidget {
-  const _AppProfileNavigation({required this.onChanged});
-
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return MagicBottomNavigation(
-      items: const [
-        MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-        MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-        MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-        MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-        MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-      ],
-      initialIndex: 4,
-      onChanged: onChanged,
-    );
-  }
-}
-
 class _LoadingState extends StatelessWidget {
   const _LoadingState({required this.compact});
 
@@ -869,20 +838,6 @@ class _EmptyState extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-void _handleBottomNavigation(int index) {
-  if (index == 0) {
-    Get.toNamed(AppRoutes.dashboard);
-  } else if (index == 1) {
-    Get.toNamed(AppRoutes.leads);
-  } else if (index == 2) {
-    Get.toNamed(AppRoutes.projects);
-  } else if (index == 3) {
-    Get.toNamed(AppRoutes.tasks);
-  } else if (index == 4) {
-    Get.toNamed(AppRoutes.profile);
   }
 }
 

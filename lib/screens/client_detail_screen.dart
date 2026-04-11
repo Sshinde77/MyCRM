@@ -5,7 +5,6 @@ import 'package:mycrm/core/constants/app_text_styles.dart';
 import '../models/client_detail_model.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 class ClientDetailScreen extends StatefulWidget {
   const ClientDetailScreen({super.key, this.clientId});
@@ -83,23 +82,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             onPressed: () {},
           ),
         ],
-      ),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Home', icon: Icons.home_outlined),
-          MagicNavItem(label: 'Clients', icon: Icons.people_outline),
-          MagicNavItem(label: 'Projects', icon: Icons.folder_open_outlined),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_box_outlined),
-          MagicNavItem(label: 'More', icon: Icons.menu_rounded),
-        ],
-        initialIndex: 1,
-        onChanged: (index) {
-          if (index == 0) Get.toNamed(AppRoutes.dashboard);
-          if (index == 1) Get.toNamed(AppRoutes.clients);
-          if (index == 2) Get.toNamed(AppRoutes.projects);
-          if (index == 3) Get.toNamed(AppRoutes.tasks);
-          if (index == 4) Get.toNamed(AppRoutes.profile);
-        },
       ),
       body: FutureBuilder<ClientDetailModel>(
         future: _clientFuture,

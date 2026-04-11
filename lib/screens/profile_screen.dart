@@ -144,11 +144,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
-      bottomNavigationBar: _AppProfileNavigation(
-        onChanged: (index) {
-          if (index == 4) return;
-          _handleBottomNavigation(index);
-        },
+      bottomNavigationBar: const PrimaryBottomNavigation(
+        currentTab: AppBottomNavTab.profile,
       ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
@@ -232,15 +229,6 @@ class ProfileSectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
-      bottomNavigationBar: _AppProfileNavigation(
-        onChanged: (index) {
-          if (index == 4) {
-            Get.toNamed(AppRoutes.profile);
-            return;
-          }
-          _handleBottomNavigation(index);
-        },
-      ),
       body: DecoratedBox(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -585,27 +573,6 @@ class _CircleIconButton extends StatelessWidget {
   }
 }
 
-class _AppProfileNavigation extends StatelessWidget {
-  const _AppProfileNavigation({required this.onChanged});
-
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return MagicBottomNavigation(
-      items: const [
-        MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-        MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-        MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-        MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-        MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-      ],
-      initialIndex: 4,
-      onChanged: onChanged,
-    );
-  }
-}
-
 class _ProfileAction {
   const _ProfileAction({
     required this.title,
@@ -618,19 +585,5 @@ class _ProfileAction {
   final IconData icon;
   final String routeName;
   final Color accentColor;
-}
-
-void _handleBottomNavigation(int index) {
-  if (index == 0) {
-    Get.toNamed(AppRoutes.dashboard);
-  } else if (index == 1) {
-    Get.toNamed(AppRoutes.leads);
-  } else if (index == 2) {
-    Get.toNamed(AppRoutes.projects);
-  } else if (index == 3) {
-    Get.toNamed(AppRoutes.tasks);
-  } else if (index == 4) {
-    Get.toNamed(AppRoutes.profile);
-  }
 }
 

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:provider/provider.dart';
 
-import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
+import '../core/constants/app_text_styles.dart';
+import '../models/lead_model.dart';
+import '../providers/lead_detail_provider.dart';
 
 class LeadDetailScreen extends StatelessWidget {
   const LeadDetailScreen({super.key});
@@ -20,89 +21,110 @@ class LeadDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: background,
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.task_alt_rounded),
-          MagicNavItem(label: 'Settings', icon: Icons.settings_outlined),
-        ],
-        initialIndex: 1,
-        onChanged: (index) {
-          if (index == 1) return;
-          if (index == 0) Get.toNamed(AppRoutes.dashboard);
-          if (index == 2) Get.toNamed(AppRoutes.tasks);
-          if (index == 3) Get.toNamed(AppRoutes.settings);
-        },
-      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopBar(context),
-              const SizedBox(height: 18),
-              const _ProfileCard(),
-              const SizedBox(height: 20),
-              const _QuickActionsCard(),
-              const SizedBox(height: 20),
-              const _SectionCard(
-                title: 'Lead Details',
-                trailing: Icon(Icons.info_outline, color: Color(0xFF91A3BF), size: 26),
-                child: _LeadDetailsContent(),
+        child: Consumer<LeadDetailProvider>(
+          builder: (context, provider, _) {
+            final lead = provider.lead;
+
+            if (provider.isLoading && lead == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (provider.errorMessage != null && lead == null) {
+              return _LeadDetailError(
+                message: provider.errorMessage!,
+                onRetry: () => provider.loadLead(forceRefresh: true),
+              );
+            }
+
+            if (lead == null) {
+              return _LeadDetailError(
+                message: 'Lead details are not available.',
+                onRetry: () => provider.loadLead(forceRefresh: true),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: () => provider.loadLead(forceRefresh: true),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TopBar(
+                      titleText: lead.displayName,
+                    ),
+                    const SizedBox(height: 18),
+                    _ProfileCard(lead: lead),
+                    const SizedBox(height: 20),
+                    _QuickActionsCard(lead: lead),
+                    const SizedBox(height: 20),
+                    _SectionCard(
+                      title: 'Lead Details',
+                      trailing: const Icon(
+                        Icons.info_outline,
+                        color: Color(0xFF91A3BF),
+                        size: 26,
+                      ),
+                      child: _LeadDetailsContent(lead: lead),
+                    ),
+                    const SizedBox(height: 20),
+                    _SectionCard(
+                      title: 'Notes',
+                      trailing: const Icon(
+                        Icons.more_horiz,
+                        color: Color(0xFF91A3BF),
+                      ),
+                      child: _NotesContent(lead: lead),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 20),
-              const _SectionCard(
-                title: 'Activity History',
-                actionLabel: 'VIEW ALL',
-                child: _ActivityHistoryContent(),
-              ),
-              const SizedBox(height: 20),
-              const _SectionCard(
-                title: 'Notes',
-                trailing: Icon(Icons.more_horiz, color: Color(0xFF91A3BF)),
-                child: _NotesContent(),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
+}
 
-  Widget _buildTopBar(BuildContext context) {
+class _TopBar extends StatelessWidget {
+  const _TopBar({required this.titleText});
+
+  final String titleText;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF5C6B82), size: 28),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Color(0xFF5C6B82),
+            size: 28,
+          ),
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            'Lead Profile',
+            titleText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
-              color: title,
+              color: LeadDetailScreen.title,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
-        const Icon(Icons.search_rounded, color: Color(0xFF5C6B82), size: 28),
-        const SizedBox(width: 18),
-        const Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(Icons.notifications_none_rounded, color: Color(0xFF5C6B82), size: 28),
-            Positioned(
-              right: 1,
-              top: 1,
-              child: CircleAvatar(radius: 4, backgroundColor: Color(0xFFFF5A5A)),
-            ),
-          ],
+        const Icon(
+          Icons.notifications_none_rounded,
+          color: Color(0xFF5C6B82),
+          size: 28,
         ),
       ],
     );
@@ -110,7 +132,9 @@ class LeadDetailScreen extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard();
+  const _ProfileCard({required this.lead});
+
+  final LeadModel lead;
 
   @override
   Widget build(BuildContext context) {
@@ -134,18 +158,7 @@ class _ProfileCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD9E7FF), width: 2),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://i.pravatar.cc/200?img=47'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
+              _LeadAvatar(name: lead.displayName, imageUrl: lead.avatarUrl),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -155,7 +168,7 @@ class _ProfileCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'Chastity Potts',
+                            lead.displayName,
                             style: AppTextStyles.style(
                               color: LeadDetailScreen.title,
                               fontSize: 17,
@@ -163,26 +176,12 @@ class _ProfileCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0B3),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            'Contacted',
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF9D6B00),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                        _StatusChip(status: lead.displayStatus),
                       ],
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Cruz and Keller Trading',
+                      lead.displayCompany,
                       style: AppTextStyles.style(
                         color: const Color(0xFF5D6C84),
                         fontSize: 14,
@@ -190,7 +189,7 @@ class _ProfileCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'kenihap@mailinator.com',
+                      lead.displayEmail,
                       style: AppTextStyles.style(
                         color: const Color(0xFF98A6BD),
                         fontSize: 13,
@@ -203,26 +202,34 @@ class _ProfileCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             children: [
               Expanded(
                 child: _MetricTile(
                   label: 'LEAD VALUE',
-                  value: '\$57.00',
+                  value: lead.displayAmount.isEmpty ? 'Not available' : lead.displayAmount,
                   valueColor: LeadDetailScreen.link,
                 ),
               ),
-              SizedBox(width: 14),
-              Expanded(child: _StatusTile()),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _MetricTile(
+                  label: 'ASSIGNED',
+                  value: lead.displayAssignedTo,
+                  valueColor: LeadDetailScreen.title,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 18),
-          const _ContactRow(icon: Icons.call_outlined, text: '+1 (565) 564-5044'),
+          _ContactRow(icon: Icons.call_outlined, text: lead.displayPhone),
           const SizedBox(height: 12),
-          const _ContactRow(
+          _ContactRow(
             icon: Icons.language_rounded,
-            text: 'https://www.wor.com',
-            textColor: LeadDetailScreen.link,
+            text: lead.displayWebsite,
+            textColor: lead.website?.trim().isNotEmpty == true
+                ? LeadDetailScreen.link
+                : const Color(0xFF5D6C84),
           ),
           const SizedBox(height: 22),
           SizedBox(
@@ -234,12 +241,17 @@ class _ProfileCard extends StatelessWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               icon: const Icon(Icons.edit_outlined, size: 19),
               label: Text(
                 'Edit Lead',
-                style: AppTextStyles.style(fontSize: 15, fontWeight: FontWeight.w600),
+                style: AppTextStyles.style(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -250,7 +262,9 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _QuickActionsCard extends StatelessWidget {
-  const _QuickActionsCard();
+  const _QuickActionsCard({required this.lead});
+
+  final LeadModel lead;
 
   @override
   Widget build(BuildContext context) {
@@ -260,21 +274,38 @@ class _QuickActionsCard extends StatelessWidget {
         color: LeadDetailScreen.surface,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: LeadDetailScreen.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x100F172A),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _QuickAction(icon: Icons.call_outlined, label: 'CALL', bgColor: Color(0xFFDDF8E6), fgColor: Color(0xFF17A34A)),
-          _QuickAction(icon: Icons.mail_outline_rounded, label: 'EMAIL', bgColor: Color(0xFFDCEAFF), fgColor: Color(0xFF346DFF)),
-          _QuickAction(icon: Icons.note_add_outlined, label: 'NOTE', bgColor: Color(0xFFF0E1FF), fgColor: Color(0xFF8A38F5)),
-          _QuickAction(icon: Icons.calendar_today_outlined, label: 'FOLLOW-UP', bgColor: Color(0xFFFFE9D4), fgColor: Color(0xFFF97316)),
+          _QuickAction(
+            icon: Icons.call_outlined,
+            label: 'CALL',
+            bgColor: const Color(0xFFDDF8E6),
+            fgColor: const Color(0xFF17A34A),
+            onTap: () {},
+          ),
+          _QuickAction(
+            icon: Icons.mail_outline_rounded,
+            label: 'EMAIL',
+            bgColor: const Color(0xFFDCEAFF),
+            fgColor: const Color(0xFF346DFF),
+            onTap: () {},
+          ),
+          _QuickAction(
+            icon: Icons.language_rounded,
+            label: 'WEB',
+            bgColor: const Color(0xFFF0E1FF),
+            fgColor: const Color(0xFF8A38F5),
+            onTap: () {},
+          ),
+          _QuickAction(
+            icon: Icons.person_outline_rounded,
+            label: lead.displayAssignedTo,
+            bgColor: const Color(0xFFFFE9D4),
+            fgColor: const Color(0xFFF97316),
+            onTap: () {},
+          ),
         ],
       ),
     );
@@ -282,17 +313,15 @@ class _QuickActionsCard extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  final String title;
-  final Widget child;
-  final Widget? trailing;
-  final String? actionLabel;
-
   const _SectionCard({
     required this.title,
     required this.child,
     this.trailing,
-    this.actionLabel,
   });
+
+  final String title;
+  final Widget child;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -301,13 +330,6 @@ class _SectionCard extends StatelessWidget {
         color: LeadDetailScreen.surface,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: LeadDetailScreen.border),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0E0F172A),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -325,17 +347,7 @@ class _SectionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (actionLabel != null)
-                  Text(
-                    actionLabel!,
-                    style: AppTextStyles.style(
-                      color: LeadDetailScreen.link,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  )
-                else if (trailing != null)
-                  trailing!,
+                if (trailing != null) trailing!,
               ],
             ),
           ),
@@ -351,45 +363,64 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _LeadDetailsContent extends StatelessWidget {
-  const _LeadDetailsContent();
+  const _LeadDetailsContent({required this.lead});
+
+  final LeadModel lead;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Expanded(child: _DetailField(label: 'Name', value: 'Chastity Potts')),
-            SizedBox(width: 22),
-            Expanded(child: _DetailField(label: 'Company', value: 'Cruz and Keller')),
-          ],
-        ),
-        const SizedBox(height: 18),
-        const Row(
-          children: [
-            Expanded(child: _DetailField(label: 'Position', value: 'Account Manager')),
-            SizedBox(width: 22),
+            Expanded(child: _DetailField(label: 'Name', value: lead.displayName)),
+            const SizedBox(width: 22),
             Expanded(
-              child: _DetailField(label: 'Source', value: 'LinkedIn', valueColor: LeadDetailScreen.link),
+              child: _DetailField(label: 'Company', value: lead.displayCompany),
             ),
           ],
         ),
         const SizedBox(height: 18),
-        const _DetailField(label: 'Address', value: '842 Business Plaza, Suite 400'),
-        const SizedBox(height: 18),
-        const Row(
+        Row(
           children: [
-            Expanded(child: _DetailField(label: 'City / State', value: 'Denver, CO')),
-            SizedBox(width: 22),
-            Expanded(child: _DetailField(label: 'Country', value: 'United States')),
+            Expanded(
+              child: _DetailField(label: 'Position', value: lead.displayPosition),
+            ),
+            const SizedBox(width: 22),
+            Expanded(
+              child: _DetailField(
+                label: 'Source',
+                value: lead.displaySource,
+                valueColor: LeadDetailScreen.link,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        _DetailField(label: 'Address', value: lead.displayAddress),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: _DetailField(
+                label: 'City / State',
+                value: lead.displayLocation,
+              ),
+            ),
+            const SizedBox(width: 22),
+            Expanded(
+              child: _DetailField(label: 'Country', value: lead.displayCountry),
+            ),
           ],
         ),
         const SizedBox(height: 18),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Expanded(child: _DetailField(label: 'Zip Code', value: '80202')),
+            Expanded(
+              child: _DetailField(label: 'Zip Code', value: lead.displayZipCode),
+            ),
             const SizedBox(width: 22),
             Expanded(
               child: Column(
@@ -404,25 +435,37 @@ class _LeadDetailsContent extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _TagChip(label: 'VIP'),
-                      _TagChip(label: 'TECH'),
-                    ],
-                  ),
+                  if (lead.tags.isEmpty)
+                    Text(
+                      'No tags',
+                      style: AppTextStyles.style(
+                        color: LeadDetailScreen.title,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    )
+                  else
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: lead.tags
+                          .map((tag) => _TagChip(label: tag))
+                          .toList(),
+                    ),
                 ],
               ),
             ),
           ],
         ),
         const SizedBox(height: 18),
-        const _DetailField(label: 'Created Date', value: 'Oct 12, 2023 | 10:45 AM'),
+        _DetailField(
+          label: 'Created Date',
+          value: _formatDateTime(lead.createdAt),
+        ),
         const SizedBox(height: 18),
-        const _DetailField(
+        _DetailField(
           label: 'Description',
-          value: 'Interested in enterprise licensing for the next fiscal year. Needs a demo scheduled for the engineering team by end of month.',
+          value: lead.displayDescription,
           isMultiline: true,
         ),
       ],
@@ -430,116 +473,44 @@ class _LeadDetailsContent extends StatelessWidget {
   }
 }
 
-class _ActivityHistoryContent extends StatelessWidget {
-  const _ActivityHistoryContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        _TimelineEntry(
-          color: Color(0xFF22C55E),
-          title: 'Lead Contacted',
-          subtitle: 'Successfully reached out via phone.',
-          time: 'TODAY, 2:30 PM',
-          isFirst: true,
-        ),
-        _TimelineEntry(
-          color: Color(0xFF3F7EF7),
-          title: 'Email Sent',
-          subtitle: 'Introductory brochure sent to kenihap@mail...',
-          time: 'YESTERDAY, 11:15 AM',
-        ),
-        _TimelineEntry(
-          color: Color(0xFFF97316),
-          title: 'Follow-up Scheduled',
-          subtitle: 'Calendar invite sent for initial demo.',
-          time: 'OCT 14, 2023',
-          isLast: true,
-        ),
-      ],
-    );
-  }
-}
-
 class _NotesContent extends StatelessWidget {
-  const _NotesContent();
+  const _NotesContent({required this.lead});
+
+  final LeadModel lead;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8FBFF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFDDE7F3)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '"Spoke with her briefly, she mentioned their current contract expires in January. Very keen on our reporting features."',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF53627B),
-                  fontSize: 13,
-                  height: 1.7,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  const CircleAvatar(radius: 11, backgroundColor: Color(0xFFD3DDEA)),
-                  const SizedBox(width: 10),
-                  Text(
-                    'ADDED BY YOU | 3H AGO',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF89A0C2),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FBFF),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDDE7F3)),
+      ),
+      child: Text(
+        lead.displayDescription,
+        style: AppTextStyles.style(
+          color: const Color(0xFF53627B),
+          fontSize: 13,
+          height: 1.7,
+          fontWeight: FontWeight.w500,
         ),
-        const SizedBox(height: 20),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              foregroundColor: LeadDetailScreen.link,
-              side: const BorderSide(color: Color(0xFFD6E2F4), width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            icon: const Icon(Icons.add_rounded),
-            label: Text(
-              'Add Note',
-              style: AppTextStyles.style(fontSize: 15, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
 class _MetricTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color valueColor;
-
   const _MetricTile({
     required this.label,
     required this.value,
     required this.valueColor,
   });
+
+  final String label;
+  final String value;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -575,59 +546,16 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-class _StatusTile extends StatelessWidget {
-  const _StatusTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F6FB),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'STATUS',
-            style: AppTextStyles.style(
-              color: const Color(0xFF7084A0),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const CircleAvatar(radius: 4, backgroundColor: Color(0xFFEAB308)),
-              const SizedBox(width: 8),
-              Text(
-                'Warm Lead',
-                style: AppTextStyles.style(
-                  color: LeadDetailScreen.title,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ContactRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color textColor;
-
   const _ContactRow({
     required this.icon,
     required this.text,
     this.textColor = const Color(0xFF5D6C84),
   });
+
+  final IconData icon;
+  final String text;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -651,54 +579,65 @@ class _ContactRow extends StatelessWidget {
 }
 
 class _QuickAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color bgColor;
-  final Color fgColor;
-
   const _QuickAction({
     required this.icon,
     required this.label,
     required this.bgColor,
     required this.fgColor,
+    this.onTap,
   });
+
+  final IconData icon;
+  final String label;
+  final Color bgColor;
+  final Color fgColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-          child: Icon(icon, color: fgColor, size: 27),
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+              child: Icon(icon, color: fgColor, size: 27),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.style(
+                color: const Color(0xFF6C7D95),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        Text(
-          label,
-          style: AppTextStyles.style(
-            color: const Color(0xFF6C7D95),
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
 class _DetailField extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color valueColor;
-  final bool isMultiline;
-
   const _DetailField({
     required this.label,
     required this.value,
     this.valueColor = LeadDetailScreen.title,
     this.isMultiline = false,
   });
+
+  final String label;
+  final String value;
+  final Color valueColor;
+  final bool isMultiline;
 
   @override
   Widget build(BuildContext context) {
@@ -729,9 +668,9 @@ class _DetailField extends StatelessWidget {
 }
 
 class _TagChip extends StatelessWidget {
-  final String label;
-
   const _TagChip({required this.label});
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -753,93 +692,169 @@ class _TagChip extends StatelessWidget {
   }
 }
 
-class _TimelineEntry extends StatelessWidget {
-  final Color color;
-  final String title;
-  final String subtitle;
-  final String time;
-  final bool isFirst;
-  final bool isLast;
-
-  const _TimelineEntry({
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    this.isFirst = false,
-    this.isLast = false,
+class _LeadAvatar extends StatelessWidget {
+  const _LeadAvatar({
+    required this.name,
+    this.imageUrl,
   });
+
+  final String name;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 28,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isFirst ? Colors.transparent : const Color(0xFFE7EEF6),
-                  ),
-                ),
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                ),
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isLast ? Colors.transparent : const Color(0xFFE7EEF6),
-                  ),
-                ),
-              ],
-            ),
+    final trimmedUrl = imageUrl?.trim() ?? '';
+    if (trimmedUrl.isNotEmpty) {
+      return Container(
+        width: 64,
+        height: 64,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFFD9E7FF), width: 2),
+          image: DecorationImage(
+            image: NetworkImage(trimmedUrl),
+            fit: BoxFit.cover,
           ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTextStyles.style(
-                      color: LeadDetailScreen.title,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF71829A),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    time,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF92A3B8),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
+      );
+    }
+
+    return CircleAvatar(
+      radius: 32,
+      backgroundColor: const Color(0xFFDCE8F8),
+      child: Text(
+        _initials(name),
+        style: AppTextStyles.style(
+          color: const Color(0xFF2E5B9A),
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  String _initials(String value) {
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) {
+      return '?';
+    }
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = status.trim().toLowerCase();
+    Color background = const Color(0xFFF1F5F9);
+    Color foreground = const Color(0xFF475569);
+
+    if (normalized.contains('new') || normalized.contains('initial')) {
+      background = const Color(0xFFE0F2FE);
+      foreground = const Color(0xFF0369A1);
+    } else if (normalized.contains('won') || normalized.contains('closed')) {
+      background = const Color(0xFFDCFCE7);
+      foreground = const Color(0xFF15803D);
+    } else if (normalized.contains('progress') ||
+        normalized.contains('negotiation')) {
+      background = const Color(0xFFFFF7ED);
+      foreground = const Color(0xFFEA580C);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        status.toUpperCase(),
+        style: AppTextStyles.style(
+          color: foreground,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
 }
 
+class _LeadDetailError extends StatelessWidget {
+  const _LeadDetailError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 40,
+              color: Color(0xFFB3261E),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.style(
+                color: LeadDetailScreen.title,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _formatDateTime(DateTime? value) {
+  if (value == null) {
+    return 'Not available';
+  }
+
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
+  final minute = value.minute.toString().padLeft(2, '0');
+  final suffix = value.hour >= 12 ? 'PM' : 'AM';
+  return '${months[value.month - 1]} ${value.day}, ${value.year} | $hour:$minute $suffix';
+}

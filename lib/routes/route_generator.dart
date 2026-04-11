@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'app_routes.dart';
+import '../providers/lead_detail_provider.dart';
 import '../providers/lead_provider.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/clients.dart';
@@ -49,7 +50,13 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.leadDetail:
-        return MaterialPageRoute(builder: (_) => const LeadDetailScreen());
+        final leadId = _extractLeadId(settings.arguments);
+        return MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider(
+            create: (_) => LeadDetailProvider(leadId: leadId)..loadLead(),
+            child: const LeadDetailScreen(),
+          ),
+        );
       case AppRoutes.projects:
         return MaterialPageRoute(builder: (_) => const ProjectsScreen());
       case AppRoutes.projectDetail:
@@ -161,6 +168,19 @@ class RouteGenerator {
       return rawEdit == true || rawEdit == 'true' || rawEdit == 1;
     }
     return false;
+  }
+
+  static String _extractLeadId(dynamic args) {
+    if (args == null) return '';
+    if (args is String) return args;
+    if (args is int) return args.toString();
+    if (args is Map) {
+      final raw = args['id'] ?? args['leadId'] ?? args['lead_id'];
+      if (raw != null && raw.toString().trim().isNotEmpty) {
+        return raw.toString();
+      }
+    }
+    return '';
   }
 
   /// Generic fallback page for unknown routes.

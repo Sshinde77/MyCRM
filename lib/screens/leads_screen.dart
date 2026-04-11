@@ -6,7 +6,6 @@ import '../core/constants/app_text_styles.dart';
 import '../models/lead_model.dart';
 import '../providers/lead_provider.dart';
 import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 class LeadsScreen extends StatefulWidget {
   const LeadsScreen({super.key});
@@ -41,23 +40,6 @@ class _LeadsScreenState extends State<LeadsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 1,
-        onChanged: (index) {
-          if (index == 1) return;
-          if (index == 0) Get.toNamed(AppRoutes.dashboard);
-          if (index == 2) Get.toNamed(AppRoutes.projects);
-          if (index == 3) Get.toNamed(AppRoutes.tasks);
-          if (index == 4) Get.toNamed(AppRoutes.profile);
-        },
-      ),
       body: SafeArea(
         child: Consumer<LeadProvider>(
           builder: (context, leadProvider, _) {

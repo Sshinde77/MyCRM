@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
-import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
-
 class DashboardRenewalsScreen extends StatefulWidget {
   const DashboardRenewalsScreen({super.key});
 
@@ -140,29 +137,6 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 0,
-        onChanged: (index) {
-          if (index == 0) {
-            Get.offAllNamed(AppRoutes.dashboard);
-          } else if (index == 1) {
-            Get.offAllNamed(AppRoutes.leads);
-          } else if (index == 2) {
-            Get.offAllNamed(AppRoutes.projects);
-          } else if (index == 3) {
-            Get.offAllNamed(AppRoutes.tasks);
-          } else if (index == 4) {
-            Get.offAllNamed(AppRoutes.profile);
-          }
-        },
-      ),
       body: SafeArea(
         child: Column(
           children: [

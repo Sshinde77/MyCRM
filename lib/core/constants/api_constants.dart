@@ -25,5 +25,6 @@ class ApiConstants {
 
   //Leads Api
   static const String leads = '$baseUrl/leads';
+  static const String leadDetail = '$baseUrl/leads/{id}';
 
 }

@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../models/client_model.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key});
@@ -60,29 +59,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 4,
-        onChanged: (index) {
-          if (index == 0) {
-            Get.toNamed(AppRoutes.dashboard);
-          } else if (index == 1) {
-            Get.toNamed(AppRoutes.leads);
-          } else if (index == 2) {
-            Get.toNamed(AppRoutes.projects);
-          } else if (index == 3) {
-            Get.toNamed(AppRoutes.tasks);
-          } else if (index == 4) {
-            Get.toNamed(AppRoutes.profile);
-          }
-        },
-      ),
       body: SafeArea(
         child: FutureBuilder<List<ClientModel>>(
           future: _clientsFuture,

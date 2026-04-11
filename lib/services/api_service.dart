@@ -203,6 +203,14 @@ class ApiService {
     return records.map(LeadModel.fromJson).toList();
   }
 
+  /// Loads a single lead by id.
+  Future<LeadModel> getLeadDetail(String id) async {
+    final path = ApiConstants.leadDetail.replaceFirst('{id}', id);
+    final response = await get(path);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return LeadModel.fromJson(body);
+  }
+
   /// Loads a single client by id.
   Future<ClientDetailModel> getClientDetail(String id) async {
     final path = ApiConstants.clientDetail.replaceFirst('{id}', id);
@@ -398,7 +406,15 @@ class ApiService {
 
   dynamic _extractDetailSource(dynamic data) {
     if (data is Map<String, dynamic>) {
-      for (final key in ['data', 'staff', 'client', 'customer', 'item', 'result']) {
+      for (final key in [
+        'data',
+        'staff',
+        'client',
+        'customer',
+        'item',
+        'result',
+        'lead',
+      ]) {
         final candidate = data[key];
         if (candidate is Map<String, dynamic>) {
           return candidate;

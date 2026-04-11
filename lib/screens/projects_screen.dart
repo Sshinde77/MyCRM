@@ -19,27 +19,8 @@ class ProjectsScreen extends StatelessWidget {
         shape: const CircleBorder(),
         child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
       ),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 2,
-        onChanged: (index) {
-          if (index == 2) return;
-          if (index == 0) {
-            Get.toNamed(AppRoutes.dashboard);
-          } else if (index == 1) {
-            Get.toNamed(AppRoutes.leads);
-          } else if (index == 3) {
-            Get.toNamed(AppRoutes.tasks);
-          } else if (index == 4) {
-            Get.toNamed(AppRoutes.profile);
-          }
-        },
+      bottomNavigationBar: const PrimaryBottomNavigation(
+        currentTab: AppBottomNavTab.projects,
       ),
       body: SafeArea(
         child: LayoutBuilder(

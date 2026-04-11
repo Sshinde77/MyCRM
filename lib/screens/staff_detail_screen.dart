@@ -6,7 +6,6 @@ import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
 import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 class StaffDetailScreen extends StatefulWidget {
   const StaffDetailScreen({
@@ -91,20 +90,6 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 4,
-        onChanged: (index) {
-          if (index == 4) return;
-          _handleBottomNavigation(index);
-        },
       ),
       body: _staffId.isEmpty
           ? const _DetailErrorState(
@@ -809,17 +794,5 @@ class _DetailErrorState extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-void _handleBottomNavigation(int index) {
-  if (index == 0) {
-    Get.toNamed(AppRoutes.dashboard);
-  } else if (index == 1) {
-    Get.toNamed(AppRoutes.leads);
-  } else if (index == 2) {
-    Get.toNamed(AppRoutes.projects);
-  } else if (index == 3) {
-    Get.toNamed(AppRoutes.tasks);
   }
 }

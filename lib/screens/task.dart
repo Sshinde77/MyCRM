@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 class TasksScreen extends StatelessWidget {
   const TasksScreen({super.key});
@@ -15,28 +14,6 @@ class TasksScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 3,
-        onChanged: (index) {
-          if (index == 3) return;
-          if (index == 0) {
-            Get.toNamed(AppRoutes.dashboard);
-          } else if (index == 1) {
-            Get.toNamed(AppRoutes.leads);
-          } else if (index == 2) {
-            Get.toNamed(AppRoutes.projects);
-          } else if (index == 4) {
-            Get.toNamed(AppRoutes.profile);
-          }
-        },
-      ),
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),

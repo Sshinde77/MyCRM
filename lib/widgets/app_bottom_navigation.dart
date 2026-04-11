@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+
+import '../routes/app_routes.dart';
 
 class MagicNavItem {
   const MagicNavItem({
@@ -11,6 +14,79 @@ class MagicNavItem {
   final String label;
   final IconData icon;
   final Color activeColor;
+}
+
+enum AppBottomNavTab {
+  dashboard(
+    label: 'Dashboard',
+    icon: Icons.grid_view_rounded,
+    routeName: AppRoutes.dashboard,
+  ),
+  projects(
+    label: 'Projects',
+    icon: Icons.assignment_rounded,
+    routeName: AppRoutes.projects,
+  ),
+  tasks(
+    label: 'Tasks',
+    icon: Icons.check_circle_outline_rounded,
+    routeName: AppRoutes.tasks,
+  ),
+  profile(
+    label: 'Profile',
+    icon: Icons.person_rounded,
+    routeName: AppRoutes.profile,
+  );
+
+  const AppBottomNavTab({
+    required this.label,
+    required this.icon,
+    required this.routeName,
+  });
+
+  final String label;
+  final IconData icon;
+  final String routeName;
+}
+
+class PrimaryBottomNavigation extends StatelessWidget {
+  const PrimaryBottomNavigation({
+    super.key,
+    required this.currentTab,
+  });
+
+  final AppBottomNavTab currentTab;
+
+  static final List<MagicNavItem> _items = AppBottomNavTab.values
+      .map(
+        (tab) => MagicNavItem(
+          label: tab.label,
+          icon: tab.icon,
+        ),
+      )
+      .toList(growable: false);
+
+  void _handleTabChange(int index) {
+    if (index < 0 || index >= AppBottomNavTab.values.length) {
+      return;
+    }
+
+    final selectedTab = AppBottomNavTab.values[index];
+    if (selectedTab == currentTab) {
+      return;
+    }
+
+    Get.offAllNamed(selectedTab.routeName);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MagicBottomNavigation(
+      items: _items,
+      initialIndex: currentTab.index,
+      onChanged: _handleTabChange,
+    );
+  }
 }
 
 /// Reusable "magic navigation menu" style bottom bar.

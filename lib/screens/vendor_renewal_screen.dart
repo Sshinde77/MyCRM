@@ -67,7 +67,6 @@ class VendorRenewalScreen extends StatelessWidget {
                 ),
               ),
             ),
-            _BottomNav(compact: compact),
           ],
         ),
       ),
@@ -620,78 +619,6 @@ class _ActionDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(width: 1, color: const Color(0xFFEAF0F6));
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  const _BottomNav({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(10, compact ? 8 : 10, 10, compact ? 8 : 10),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
-      ),
-      child: Row(
-        children: const [
-          Expanded(
-            child: _NavItem(icon: Icons.home_outlined, label: 'Home'),
-          ),
-          Expanded(
-            child: _NavItem(
-              icon: Icons.business_center,
-              label: 'Services',
-              selected: true,
-            ),
-          ),
-          Expanded(
-            child: _NavItem(icon: Icons.groups_2_outlined, label: 'Clients'),
-          ),
-          Expanded(
-            child: _NavItem(icon: Icons.settings_outlined, label: 'Settings'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.selected = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? const Color(0xFF156CF1) : const Color(0xFF94A3B8);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: color,
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

@@ -13,6 +13,14 @@ class LeadModel {
     this.source,
     this.website,
     this.avatarUrl,
+    this.position,
+    this.address,
+    this.city,
+    this.state,
+    this.country,
+    this.zipCode,
+    this.description,
+    this.tags = const [],
   });
 
   final String id;
@@ -28,6 +36,14 @@ class LeadModel {
   final String? source;
   final String? website;
   final String? avatarUrl;
+  final String? position;
+  final String? address;
+  final String? city;
+  final String? state;
+  final String? country;
+  final String? zipCode;
+  final String? description;
+  final List<String> tags;
 
   factory LeadModel.fromJson(Map<String, dynamic> json) {
     final source = _extractSource(json);
@@ -122,6 +138,14 @@ class LeadModel {
         'website_url',
         'url',
       ]),
+      position: _readNullableString(source, ['position', 'designation', 'role']),
+      address: _readNullableString(source, ['address', 'street_address']),
+      city: _readNullableString(source, ['city']),
+      state: _readNullableString(source, ['state']),
+      country: _readNullableString(source, ['country']),
+      zipCode: _readNullableString(source, ['zipCode', 'zip_code', 'postal_code']),
+      description: _readNullableString(source, ['description', 'notes', 'remark']),
+      tags: _readStringList(source['tags']),
       avatarUrl: _readNullableString(source, [
         'avatar',
         'image',
@@ -176,6 +200,52 @@ class LeadModel {
   String get displayAssignedTo {
     final value = assignedTo?.trim();
     return value == null || value.isEmpty ? 'Unassigned' : value;
+  }
+
+  String get displayWebsite {
+    final value = website?.trim();
+    return value == null || value.isEmpty ? 'Not available' : value;
+  }
+
+  String get displayPosition {
+    final value = position?.trim();
+    return value == null || value.isEmpty ? 'Not available' : value;
+  }
+
+  String get displaySource {
+    final value = source?.trim();
+    return value == null || value.isEmpty ? 'Not available' : value;
+  }
+
+  String get displayAddress {
+    final value = address?.trim();
+    return value == null || value.isEmpty ? 'Not available' : value;
+  }
+
+  String get displayLocation {
+    final parts = [city?.trim(), state?.trim()]
+        .whereType<String>()
+        .where((value) => value.isNotEmpty)
+        .toList();
+    if (parts.isEmpty) {
+      return 'Not available';
+    }
+    return parts.join(', ');
+  }
+
+  String get displayCountry {
+    final value = country?.trim();
+    return value == null || value.isEmpty ? 'Not available' : value;
+  }
+
+  String get displayZipCode {
+    final value = zipCode?.trim();
+    return value == null || value.isEmpty ? 'Not available' : value;
+  }
+
+  String get displayDescription {
+    final value = description?.trim();
+    return value == null || value.isEmpty ? 'No description available.' : value;
   }
 
   bool matchesQuery(String query) {
@@ -262,6 +332,29 @@ class LeadModel {
     }
 
     return firstNames.join(', ');
+  }
+
+  static List<String> _readStringList(dynamic value) {
+    if (value is List) {
+      return value
+          .map((item) {
+            if (item is String) {
+              return item.trim();
+            }
+            if (item is Map<String, dynamic>) {
+              return _readString(item, ['name', 'title', 'label']);
+            }
+            if (item is Map) {
+              final normalized =
+                  item.map((key, value) => MapEntry(key.toString(), value));
+              return _readString(normalized, ['name', 'title', 'label']);
+            }
+            return item.toString().trim();
+          })
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+    return const [];
   }
 
   static String _readString(Map<String, dynamic> json, List<String> keys) {

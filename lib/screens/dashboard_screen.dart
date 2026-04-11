@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:get/get_navigation/src/snackbar/snackbar.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../models/user_model.dart';
@@ -81,27 +83,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: pageBackground,
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 0,
-        onChanged: (index) {
-          if (index == 0) return;
-          if (index == 1) {
-            Get.toNamed(AppRoutes.leads);
-          } else if (index == 2) {
-            Get.toNamed(AppRoutes.projects);
-          } else if (index == 3) {
-            Get.toNamed(AppRoutes.tasks);
-          } else if (index == 4) {
-            Get.toNamed(AppRoutes.profile);
-          }
-        },
+      bottomNavigationBar: const PrimaryBottomNavigation(
+        currentTab: AppBottomNavTab.dashboard,
       ),
       body: SafeArea(
         child: SingleChildScrollView(

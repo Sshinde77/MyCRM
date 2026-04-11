@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
-import '../widgets/app_bottom_navigation.dart';
-import '../routes/app_routes.dart';
 
 class RolesScreen extends StatelessWidget {
   const RolesScreen({super.key});
@@ -50,23 +48,6 @@ class RolesScreen extends StatelessWidget {
         backgroundColor: const Color(0xFF3B82F6),
         elevation: 4,
         child: const Icon(Icons.add, color: Colors.white, size: 32),
-      ),
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Dashboard', icon: Icons.grid_view_rounded),
-          MagicNavItem(label: 'Leads', icon: Icons.person_outline_rounded),
-          MagicNavItem(label: 'Projects', icon: Icons.assignment_rounded),
-          MagicNavItem(
-            label: 'Tasks',
-            icon: Icons.check_circle_outline_rounded,
-          ),
-          MagicNavItem(label: 'Profile', icon: Icons.person_rounded),
-        ],
-        initialIndex: 4,
-        onChanged: (index) {
-          if (index == 4) return;
-          _handleBottomNavigation(index);
-        },
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -171,18 +152,6 @@ class RolesScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _handleBottomNavigation(int index) {
-    if (index == 0) {
-      Get.toNamed(AppRoutes.dashboard);
-    } else if (index == 1) {
-      Get.toNamed(AppRoutes.leads);
-    } else if (index == 2) {
-      Get.toNamed(AppRoutes.projects);
-    } else if (index == 3) {
-      Get.toNamed(AppRoutes.tasks);
-    }
   }
 }
 

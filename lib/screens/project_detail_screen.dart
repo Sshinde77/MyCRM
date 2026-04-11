@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
-
-import '../routes/app_routes.dart';
-import '../widgets/app_bottom_navigation.dart';
 
 class ProjectDetailScreen extends StatelessWidget {
   const ProjectDetailScreen({super.key});
@@ -19,21 +15,6 @@ class ProjectDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: background,
-      bottomNavigationBar: MagicBottomNavigation(
-        items: const [
-          MagicNavItem(label: 'Home', icon: Icons.home_outlined),
-          MagicNavItem(label: 'Projects', icon: Icons.folder_outlined),
-          MagicNavItem(label: 'Tasks', icon: Icons.check_circle_outline_rounded),
-          MagicNavItem(label: 'Profile', icon: Icons.person_outline_rounded),
-        ],
-        initialIndex: 1,
-        onChanged: (index) {
-          if (index == 1) return;
-          if (index == 0) Get.toNamed(AppRoutes.dashboard);
-          if (index == 2) Get.toNamed(AppRoutes.tasks);
-          if (index == 3) Get.toNamed(AppRoutes.profile);
-        },
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(22, 16, 22, 20),
