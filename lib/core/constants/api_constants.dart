@@ -36,9 +36,9 @@ class ApiConstants {
   static const String createtodo = '$baseUrl/todos/create-todo';
   static const String listtodo = '$baseUrl/todos';
   static const String tododetail = '$baseUrl/todos/{id}';
-  static const String deletetodo = '$baseUrl/todos/delete-todo/5';
-  static const String edittodo = '$baseUrl/todos/update-todo/5';
-  static const String statustodo = '$baseUrl/todos/toggle-todo-status/14';
+  static const String deletetodo = '$baseUrl/todos/delete-todo/{id}';
+  static const String edittodo = '$baseUrl/todos/update-todo/{id}';
+  static const String statustodo = '$baseUrl/todos/toggle-todo-status/{id}';
 
 
 

@@ -74,6 +74,12 @@ class ApiService {
     return await _dio.delete(path, data: data);
   }
 
+  /// Basic PATCH helper for endpoints that partially update a record.
+  Future<Response> patch(String path, {dynamic data}) async {
+    await _restoreAuthToken();
+    return await _dio.patch(path, data: data);
+  }
+
   /// Multipart POST helper for endpoints that accept form-data payloads.
   Future<Response> postForm(String path, {required FormData data}) async {
     await _restoreAuthToken();
@@ -332,37 +338,95 @@ class ApiService {
     DateTime? endsOn,
     int? endsAfter,
   }) async {
-    final payload = <String, dynamic>{
-      'title': title.trim(),
-      'task_date': _formatApiDate(taskDate),
-      'repeat_interval': repeatInterval,
-      'repeat_unit': repeatUnit.trim().toLowerCase(),
-      'starts_on': _formatApiDate(startsOn),
-      'ends_type': endsType.trim().toLowerCase(),
-    };
-
-    final normalizedDescription = description?.trim() ?? '';
-    if (normalizedDescription.isNotEmpty) {
-      payload['description'] = normalizedDescription;
-    }
-
-    if (taskTime != null) {
-      payload['task_time'] = _formatApiTime(taskTime);
-    }
-
-    if (reminderTime != null) {
-      payload['reminder_time'] = _formatApiTime(reminderTime);
-    }
-
-    if (endsOn != null) {
-      payload['ends_on'] = _formatApiDate(endsOn);
-    }
-
-    if (endsAfter != null && endsAfter > 0) {
-      payload['ends_after'] = endsAfter;
-    }
-
+    final payload = _buildTodoPayload(
+      title: title,
+      description: description,
+      taskDate: taskDate,
+      taskTime: taskTime,
+      repeatInterval: repeatInterval,
+      repeatUnit: repeatUnit,
+      reminderTime: reminderTime,
+      startsOn: startsOn,
+      endsType: endsType,
+      endsOn: endsOn,
+      endsAfter: endsAfter,
+    );
     await post(ApiConstants.createtodo, data: payload);
+  }
+
+  Future<void> updateTodo({
+    required String id,
+    required String title,
+    String? description,
+    required DateTime taskDate,
+    TimeOfDay? taskTime,
+    required int repeatInterval,
+    required String repeatUnit,
+    TimeOfDay? reminderTime,
+    required DateTime startsOn,
+    required String endsType,
+    DateTime? endsOn,
+    int? endsAfter,
+  }) async {
+    final path = ApiConstants.edittodo.replaceFirst('{id}', id);
+    final payload = _buildTodoPayload(
+      title: title,
+      description: description,
+      taskDate: taskDate,
+      taskTime: taskTime,
+      repeatInterval: repeatInterval,
+      repeatUnit: repeatUnit,
+      reminderTime: reminderTime,
+      startsOn: startsOn,
+      endsType: endsType,
+      endsOn: endsOn,
+      endsAfter: endsAfter,
+    );
+    await put(path, data: payload);
+  }
+
+  Future<void> deleteTodo({
+    required String id,
+    required String title,
+    String? description,
+    required DateTime taskDate,
+    TimeOfDay? taskTime,
+    required int repeatInterval,
+    required String repeatUnit,
+    TimeOfDay? reminderTime,
+    required DateTime startsOn,
+    required String endsType,
+    DateTime? endsOn,
+    int? endsAfter,
+  }) async {
+    final path = ApiConstants.deletetodo.replaceFirst('{id}', id);
+    final payload = _buildTodoPayload(
+      title: title,
+      description: description,
+      taskDate: taskDate,
+      taskTime: taskTime,
+      repeatInterval: repeatInterval,
+      repeatUnit: repeatUnit,
+      reminderTime: reminderTime,
+      startsOn: startsOn,
+      endsType: endsType,
+      endsOn: endsOn,
+      endsAfter: endsAfter,
+    );
+    await delete(path, data: payload);
+  }
+
+  Future<void> toggleTodoStatus({
+    required String id,
+    required bool isCompleted,
+  }) async {
+    final path = ApiConstants.statustodo.replaceFirst('{id}', id);
+    await patch(
+      path,
+      data: <String, dynamic>{
+        'is_completed': isCompleted,
+      },
+    );
   }
 
   Map<String, dynamic> _buildLeadPayload({
@@ -728,5 +792,51 @@ class ApiService {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  Map<String, dynamic> _buildTodoPayload({
+    required String title,
+    String? description,
+    required DateTime taskDate,
+    TimeOfDay? taskTime,
+    required int repeatInterval,
+    required String repeatUnit,
+    TimeOfDay? reminderTime,
+    required DateTime startsOn,
+    required String endsType,
+    DateTime? endsOn,
+    int? endsAfter,
+  }) {
+    final payload = <String, dynamic>{
+      'title': title.trim(),
+      'task_date': _formatApiDate(taskDate),
+      'repeat_interval': repeatInterval,
+      'repeat_unit': repeatUnit.trim().toLowerCase(),
+      'starts_on': _formatApiDate(startsOn),
+      'ends_type': endsType.trim().toLowerCase(),
+    };
+
+    final normalizedDescription = description?.trim() ?? '';
+    if (normalizedDescription.isNotEmpty) {
+      payload['description'] = normalizedDescription;
+    }
+
+    if (taskTime != null) {
+      payload['task_time'] = _formatApiTime(taskTime);
+    }
+
+    if (reminderTime != null) {
+      payload['reminder_time'] = _formatApiTime(reminderTime);
+    }
+
+    if (endsOn != null) {
+      payload['ends_on'] = _formatApiDate(endsOn);
+    }
+
+    if (endsAfter != null && endsAfter > 0) {
+      payload['ends_after'] = endsAfter;
+    }
+
+    return payload;
   }
 }

@@ -130,17 +130,21 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
   }
 
   Future<void> _showAddTaskDialog() async {
-    final task = await showDialog<_TodoTask>(
+    await _showTaskDialog();
+  }
+
+  Future<void> _showTaskDialog({_TodoTask? task}) async {
+    final savedTask = await showDialog<_TodoTask>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const _AddTaskDialog(),
+      builder: (context) => _AddTaskDialog(initialTask: task),
     );
 
-    if (task == null) {
+    if (savedTask == null) {
       return;
     }
 
-    await _loadTodos(showErrorSnackbar: true, fallbackTask: task);
+    await _loadTodos(showErrorSnackbar: true, fallbackTask: savedTask);
   }
 
   Future<void> _loadTodos({
@@ -243,48 +247,200 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
     }
   }
 
-  void _handleEditTask(_TodoTask task) {
-    Get.snackbar(
-      'Edit task',
-      'Edit action is ready in the list UI for "${task.title}".',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFF153A63),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
-    );
+  Future<void> _handleEditTask(_TodoTask task) async {
+    if (task.id == null || task.id!.isEmpty) {
+      Get.snackbar(
+        'Edit task failed',
+        'This task is missing an id from the API response.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    await _showTaskDialog(task: task);
   }
 
-  void _handleDeleteTask(_TodoTask task) {
-    Get.snackbar(
-      'Delete task',
-      'Delete action is ready in the list UI for "${task.title}".',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFF991B1B),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+  Future<void> _handleDeleteTask(_TodoTask task) async {
+    if (task.id == null || task.id!.isEmpty) {
+      Get.snackbar(
+        'Delete task failed',
+        'This task is missing an id from the API response.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Todo'),
+        content: Text('Delete "${task.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    try {
+      await ApiService.instance.deleteTodo(
+        id: task.id!,
+        title: task.title,
+        description: task.description,
+        taskDate: task.date,
+        taskTime: task.startTime,
+        repeatInterval: task.repeatEvery,
+        repeatUnit: task.repeatUnit,
+        reminderTime: task.reminderTime,
+        startsOn: task.startsOn,
+        endsType: task.endType.apiValue,
+        endsOn: task.endsOn,
+        endsAfter: task.endsAfterCount,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _removeTaskFromLists(task);
+      });
+
+      Get.snackbar(
+        'Task deleted',
+        task.title,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF991B1B),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final responseData = error.response?.data;
+      String message = 'Failed to delete task.';
+      if (responseData is Map && responseData['message'] != null) {
+        message = responseData['message'].toString();
+      } else if (error.message != null && error.message!.trim().isNotEmpty) {
+        message = error.message!.trim();
+      }
+
+      Get.snackbar(
+        'Delete task failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    }
   }
 
-  void _handleToggleTaskStatus(_TodoTask task) {
+  Future<void> _handleToggleTaskStatus(_TodoTask task) async {
+    if (task.id == null || task.id!.isEmpty) {
+      Get.snackbar(
+        'Status update failed',
+        'This task is missing an id from the API response.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    final updatedTask = task.copyWith(isCompleted: !task.isCompleted);
+
     setState(() {
       if (task.isCompleted) {
-        _completedTasks.remove(task);
-        _unfinishedTasks.insert(0, task.copyWith(isCompleted: false));
+        _removeTaskFromList(_completedTasks, task);
+        _unfinishedTasks.insert(0, updatedTask);
       } else {
-        _unfinishedTasks.remove(task);
-        _completedTasks.insert(0, task.copyWith(isCompleted: true));
+        _removeTaskFromList(_unfinishedTasks, task);
+        _completedTasks.insert(0, updatedTask);
       }
     });
 
-    Get.snackbar(
-      task.isCompleted ? 'Task marked incomplete' : 'Task marked complete',
-      task.title,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: task.isCompleted
-          ? const Color(0xFFB45309)
-          : const Color(0xFF166534),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+    try {
+      await ApiService.instance.toggleTodoStatus(
+        id: task.id!,
+        isCompleted: updatedTask.isCompleted,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Get.snackbar(
+        task.isCompleted ? 'Task marked incomplete' : 'Task marked complete',
+        task.title,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: task.isCompleted
+            ? const Color(0xFFB45309)
+            : const Color(0xFF166534),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        if (updatedTask.isCompleted) {
+          _removeTaskFromList(_completedTasks, updatedTask);
+          _unfinishedTasks.insert(0, task);
+        } else {
+          _removeTaskFromList(_unfinishedTasks, updatedTask);
+          _completedTasks.insert(0, task);
+        }
+      });
+
+      final responseData = error.response?.data;
+      String message = 'Failed to update task status.';
+      if (responseData is Map && responseData['message'] != null) {
+        message = responseData['message'].toString();
+      } else if (error.message != null && error.message!.trim().isNotEmpty) {
+        message = error.message!.trim();
+      }
+
+      Get.snackbar(
+        'Status update failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    }
+  }
+
+  void _removeTaskFromLists(_TodoTask task) {
+    _removeTaskFromList(_unfinishedTasks, task);
+    _removeTaskFromList(_completedTasks, task);
+  }
+
+  void _removeTaskFromList(List<_TodoTask> tasks, _TodoTask task) {
+    tasks.removeWhere(
+      (entry) => (entry.id != null && entry.id == task.id) || identical(entry, task),
     );
   }
 }
@@ -1169,7 +1325,9 @@ class _TaskMetaChip extends StatelessWidget {
 }
 
 class _AddTaskDialog extends StatefulWidget {
-  const _AddTaskDialog();
+  const _AddTaskDialog({this.initialTask});
+
+  final _TodoTask? initialTask;
 
   @override
   State<_AddTaskDialog> createState() => _AddTaskDialogState();
@@ -1190,6 +1348,29 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   String _repeatUnit = 'Day';
   _TaskEndType _endType = _TaskEndType.never;
   bool _isSubmitting = false;
+
+  bool get _isEditMode => widget.initialTask != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final task = widget.initialTask;
+    if (task == null) {
+      return;
+    }
+
+    _titleController.text = task.title;
+    _descriptionController.text = task.description;
+    _repeatEveryController.text = task.repeatEvery.toString();
+    _afterCountController.text = (task.endsAfterCount ?? 1).toString();
+    _selectedDate = task.date;
+    _startsDate = task.startsOn;
+    _endsOnDate = task.endsOn ?? task.date;
+    _selectedTime = task.startTime;
+    _reminderTime = task.reminderTime;
+    _repeatUnit = _toTitleCase(task.repeatUnit);
+    _endType = task.endType;
+  }
 
   @override
   void dispose() {
@@ -1233,7 +1414,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Add New Todo',
+                    _isEditMode ? 'Edit Todo' : 'Add New Todo',
                     style: AppTextStyles.style(
                       color: const Color(0xFF2D3846),
                       fontSize: isCompact ? 16 : 18,
@@ -1347,7 +1528,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                           ),
                         )
                       : Text(
-                          'Save Task',
+                          _isEditMode ? 'Update Task' : 'Save Task',
                           style: AppTextStyles.style(fontWeight: FontWeight.w700),
                         ),
                 ),
@@ -1393,7 +1574,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                onPressed: _isSubmitting ? null : _saveTask,
+                 onPressed: _isSubmitting ? null : _saveTask,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1C86F2),
                   foregroundColor: Colors.white,
@@ -1412,7 +1593,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                         ),
                       )
                     : Text(
-                        'Save Task',
+                        _isEditMode ? 'Update Task' : 'Save Task',
                         style: AppTextStyles.style(fontWeight: FontWeight.w700),
                       ),
               ),
@@ -1707,6 +1888,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     }
 
     final task = _TodoTask(
+      id: widget.initialTask?.id,
       title: _titleController.text.trim(),
       description: _descriptionController.text.trim(),
       date: _selectedDate,
@@ -1726,26 +1908,50 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     setState(() => _isSubmitting = true);
 
     try {
-      await ApiService.instance.createTodo(
-        title: task.title,
-        description: task.description,
-        taskDate: task.date,
-        taskTime: task.startTime,
-        repeatInterval: task.repeatEvery,
-        repeatUnit: task.repeatUnit,
-        reminderTime: task.reminderTime,
-        startsOn: task.startsOn,
-        endsType: task.endType.apiValue,
-        endsOn: task.endsOn,
-        endsAfter: task.endsAfterCount,
-      );
+      if (_isEditMode) {
+        final id = widget.initialTask?.id;
+        if (id == null || id.isEmpty) {
+          throw Exception('This task is missing an id from the API response.');
+        }
+
+        await ApiService.instance.updateTodo(
+          id: id,
+          title: task.title,
+          description: task.description,
+          taskDate: task.date,
+          taskTime: task.startTime,
+          repeatInterval: task.repeatEvery,
+          repeatUnit: task.repeatUnit,
+          reminderTime: task.reminderTime,
+          startsOn: task.startsOn,
+          endsType: task.endType.apiValue,
+          endsOn: task.endsOn,
+          endsAfter: task.endsAfterCount,
+        );
+      } else {
+        await ApiService.instance.createTodo(
+          title: task.title,
+          description: task.description,
+          taskDate: task.date,
+          taskTime: task.startTime,
+          repeatInterval: task.repeatEvery,
+          repeatUnit: task.repeatUnit,
+          reminderTime: task.reminderTime,
+          startsOn: task.startsOn,
+          endsType: task.endType.apiValue,
+          endsOn: task.endsOn,
+          endsAfter: task.endsAfterCount,
+        );
+      }
       if (!mounted) {
         return;
       }
 
       Get.snackbar(
-        'Task created',
-        'The task has been added successfully.',
+        _isEditMode ? 'Task updated' : 'Task created',
+        _isEditMode
+            ? 'The task has been updated successfully.'
+            : 'The task has been added successfully.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFF153A63),
         colorText: Colors.white,
@@ -1759,7 +1965,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       }
 
       final responseData = error.response?.data;
-      String message = 'Failed to create task.';
+      String message = _isEditMode ? 'Failed to update task.' : 'Failed to create task.';
 
       if (responseData is Map && responseData['message'] != null) {
         message = responseData['message'].toString();
@@ -1768,7 +1974,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       }
 
       Get.snackbar(
-        'Create task failed',
+        _isEditMode ? 'Update task failed' : 'Create task failed',
         message,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: const Color(0xFFB91C1C),
@@ -1941,6 +2147,7 @@ class _FormFieldLabel extends StatelessWidget {
 
 class _TodoTask {
   const _TodoTask({
+    this.id,
     required this.title,
     required this.description,
     required this.date,
@@ -1956,6 +2163,7 @@ class _TodoTask {
   });
 
   _TodoTask copyWith({
+    String? id,
     String? title,
     String? description,
     DateTime? date,
@@ -1970,6 +2178,7 @@ class _TodoTask {
     bool? isCompleted,
   }) {
     return _TodoTask(
+      id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       date: date ?? this.date,
@@ -1997,6 +2206,7 @@ class _TodoTask {
     );
 
     return _TodoTask(
+      id: _readString(source, const ['id', 'todo_id', 'task_id']),
       title: _readString(source, const ['title', 'name', 'task_title']) ?? 'Untitled Task',
       description: _readString(source, const ['description', 'details']) ?? '',
       date: taskDate,
@@ -2018,6 +2228,7 @@ class _TodoTask {
     );
   }
 
+  final String? id;
   final String title;
   final String description;
   final DateTime date;
