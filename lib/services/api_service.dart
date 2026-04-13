@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants/api_constants.dart';
@@ -463,6 +462,115 @@ class ApiService {
     return _normalizeList(response.data);
   }
 
+  /// Loads task-list records for the authenticated user.
+  Future<List<Map<String, dynamic>>> getTasksList() async {
+    final response = await get(ApiConstants.tasks);
+    return _normalizeList(response.data);
+  }
+
+  /// Loads a single task record by id.
+  Future<Map<String, dynamic>> getTaskDetail(String id) async {
+    final path = ApiConstants.taskDetail.replaceFirst('{id}', id);
+    final response = await get(path);
+    final body = _normalizeMap(response.data);
+    final detail = _normalizeMap(_extractDetailSource(body));
+    return <String, dynamic>{...body, ...detail};
+  }
+
+  /// Creates a task-list record with one or more nested tasks.
+  Future<Map<String, dynamic>> createTaskList({
+    required String title,
+    String? description,
+    required List<Map<String, dynamic>> tasks,
+  }) async {
+    final payload = _buildTaskListPayload(
+      title: title,
+      description: description,
+      tasks: tasks,
+    );
+    final response = await post(ApiConstants.createTask, data: payload);
+    final data = response.data;
+
+    if (data == null) {
+      return payload;
+    }
+
+    return _normalizeMap(_extractDetailSource(data));
+  }
+
+  /// Creates a single task record.
+  Future<Map<String, dynamic>> createTaskRecord({
+    required String title,
+    String? description,
+    String? status,
+    String? priority,
+    String? projectId,
+    DateTime? startDate,
+    DateTime? deadline,
+    List<String> assigneeIds = const [],
+    List<String> followerIds = const [],
+    List<String> tags = const [],
+  }) async {
+    final payload = _buildCreateTaskPayload(
+      title: title,
+      description: description,
+      status: status,
+      priority: priority,
+      projectId: projectId,
+      startDate: startDate,
+      deadline: deadline,
+      assigneeIds: assigneeIds,
+      followerIds: followerIds,
+      tags: tags,
+    );
+    final response = await post(ApiConstants.createTask, data: payload);
+    final data = response.data;
+
+    if (data == null) {
+      return payload;
+    }
+
+    return _normalizeMap(_extractDetailSource(data));
+  }
+
+  /// Updates a task record by id.
+  Future<void> updateTaskRecord({
+    required String id,
+    required String title,
+    String? description,
+    String? status,
+    String? priority,
+    String? projectId,
+    DateTime? startDate,
+    DateTime? deadline,
+    List<String> assigneeIds = const [],
+    List<String> followerIds = const [],
+    List<String> tags = const [],
+  }) async {
+    final path = ApiConstants.updateTask.replaceFirst('{id}', id);
+    await put(
+      path,
+      data: _buildUpdateTaskPayload(
+        title: title,
+        description: description,
+        status: status,
+        priority: priority,
+        projectId: projectId,
+        startDate: startDate,
+        deadline: deadline,
+        assigneeIds: assigneeIds,
+        followerIds: followerIds,
+        tags: tags,
+      ),
+    );
+  }
+
+  /// Deletes a task record by id.
+  Future<void> deleteTaskRecord(String id) async {
+    final path = ApiConstants.deleteTask.replaceFirst('{id}', id);
+    await delete(path);
+  }
+
   /// Creates a new todo for the authenticated user.
   Future<void> createTodo({
     required String title,
@@ -777,6 +885,9 @@ class ApiService {
         'clients',
         'customers',
         'projects',
+        'tasks',
+        'task_lists',
+        'todos',
         'results',
         'rows',
       ]) {
@@ -793,6 +904,9 @@ class ApiService {
             'clients',
             'customers',
             'projects',
+            'tasks',
+            'task_lists',
+            'todos',
             'results',
             'rows',
           ]) {
@@ -822,6 +936,8 @@ class ApiService {
         'project',
         'client',
         'customer',
+        'task',
+        'todo',
         'item',
         'result',
         'lead',
@@ -989,5 +1105,227 @@ class ApiService {
     }
 
     return payload;
+  }
+
+  Map<String, dynamic> _buildTaskListPayload({
+    required String title,
+    String? description,
+    required List<Map<String, dynamic>> tasks,
+  }) {
+    final normalizedTasks = tasks
+        .map(
+          (task) => <String, dynamic>{
+            'title': (task['title'] ?? '').toString().trim(),
+            'completed': task['completed'] == true,
+          },
+        )
+        .where((task) => (task['title'] as String).isNotEmpty)
+        .toList();
+
+    if (normalizedTasks.isEmpty) {
+      throw Exception('At least one task title is required.');
+    }
+
+    final payload = <String, dynamic>{
+      'task_title': title.trim(),
+      'title': title.trim(),
+      'tasks': normalizedTasks,
+    };
+
+    final normalizedDescription = description?.trim() ?? '';
+    if (normalizedDescription.isNotEmpty) {
+      payload['description'] = normalizedDescription;
+    }
+
+    return payload;
+  }
+
+  Map<String, dynamic> _buildTaskRecordPayload({
+    required String title,
+    String? description,
+    String? status,
+    String? priority,
+    String? projectId,
+    DateTime? startDate,
+    DateTime? deadline,
+    List<String> assigneeIds = const [],
+    List<String> followerIds = const [],
+    List<String> tags = const [],
+  }) {
+    final normalizedTitle = title.trim();
+    final payload = <String, dynamic>{
+      'title': normalizedTitle,
+      'task_title': normalizedTitle,
+    };
+
+    final normalizedDescription = description?.trim() ?? '';
+    if (normalizedDescription.isNotEmpty) {
+      payload['description'] = normalizedDescription;
+    }
+
+    final normalizedStatus = _normalizeTaskStatus(status);
+    if (normalizedStatus.isNotEmpty) {
+      payload['status'] = normalizedStatus;
+    }
+
+    final normalizedPriority = _normalizeTaskPriority(priority);
+    if (normalizedPriority.isNotEmpty) {
+      payload['priority'] = normalizedPriority;
+    }
+
+    final normalizedProjectId = projectId?.trim() ?? '';
+    if (normalizedProjectId.isNotEmpty) {
+      payload['project_id'] = normalizedProjectId;
+    }
+
+    if (startDate != null) {
+      payload['start_date'] = _formatApiDate(startDate);
+    }
+
+    if (deadline != null) {
+      payload['deadline'] = _formatApiDate(deadline);
+    }
+
+    final normalizedAssigneeIds = assigneeIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (normalizedAssigneeIds.isNotEmpty) {
+      payload['assignees'] = normalizedAssigneeIds;
+    }
+
+    final normalizedFollowerIds = followerIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toList();
+    if (normalizedFollowerIds.isNotEmpty) {
+      payload['followers'] = normalizedFollowerIds;
+    }
+
+    final normalizedTags = tags
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList();
+    if (normalizedTags.isNotEmpty) {
+      payload['tags'] = normalizedTags;
+    }
+
+    return payload;
+  }
+
+  Map<String, dynamic> _buildCreateTaskPayload({
+    required String title,
+    String? description,
+    String? status,
+    String? priority,
+    String? projectId,
+    DateTime? startDate,
+    DateTime? deadline,
+    List<String> assigneeIds = const [],
+    List<String> followerIds = const [],
+    List<String> tags = const [],
+  }) {
+    final normalizedTitle = title.trim();
+    final normalizedDescription = description?.trim() ?? '';
+    final normalizedStatus = _normalizeTaskStatus(status);
+    final normalizedPriority = _normalizeTaskPriority(priority);
+    final normalizedProjectId = projectId?.trim() ?? '';
+    final normalizedAssigneeIds = _normalizeTaskRelationIds(assigneeIds);
+    final normalizedFollowerIds = _normalizeTaskRelationIds(followerIds);
+    final normalizedTags = tags
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList();
+
+    final payload = <String, dynamic>{
+      'task_title': normalizedTitle,
+      'project_related': normalizedProjectId,
+      'priority': normalizedPriority,
+      'status': normalizedStatus,
+      'assignees': normalizedAssigneeIds,
+      'followers': normalizedFollowerIds,
+      'tags': normalizedTags,
+      'task_description': normalizedDescription,
+    };
+
+    if (startDate != null) {
+      payload['start_date'] = _formatApiDate(startDate);
+    }
+
+    if (deadline != null) {
+      payload['due_date'] = _formatApiDate(deadline);
+    }
+
+    return payload;
+  }
+
+  Map<String, dynamic> _buildUpdateTaskPayload({
+    required String title,
+    String? description,
+    String? status,
+    String? priority,
+    String? projectId,
+    DateTime? startDate,
+    DateTime? deadline,
+    List<String> assigneeIds = const [],
+    List<String> followerIds = const [],
+    List<String> tags = const [],
+  }) {
+    return _buildCreateTaskPayload(
+      title: title,
+      description: description,
+      status: status,
+      priority: priority,
+      projectId: projectId,
+      startDate: startDate,
+      deadline: deadline,
+      assigneeIds: assigneeIds,
+      followerIds: followerIds,
+      tags: tags,
+    );
+  }
+
+  String _normalizeTaskStatus(String? status) {
+    final normalizedStatus = status?.trim() ?? '';
+    if (normalizedStatus.isEmpty) return '';
+
+    switch (normalizedStatus.toLowerCase()) {
+      case 'not started':
+      case 'not_started':
+        return 'not_started';
+      case 'in progress':
+      case 'in_progress':
+        return 'in_progress';
+      case 'on hold':
+      case 'on_hold':
+        return 'on_hold';
+      case 'completed':
+        return 'completed';
+      default:
+        return normalizedStatus.toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  String _normalizeTaskPriority(String? priority) {
+    final normalizedPriority = priority?.trim() ?? '';
+    if (normalizedPriority.isEmpty) return '';
+
+    switch (normalizedPriority.toLowerCase()) {
+      case 'low':
+      case 'medium':
+      case 'high':
+      case 'urgent':
+        return normalizedPriority.toLowerCase();
+      default:
+        return normalizedPriority.toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  List<dynamic> _normalizeTaskRelationIds(List<String> ids) {
+    return ids
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .map<dynamic>((id) => int.tryParse(id) ?? id)
+        .toList();
   }
 }

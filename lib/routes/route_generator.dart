@@ -13,7 +13,7 @@ import '../screens/add_project_screen.dart';
 import '../screens/project_detail_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/task.dart';
-import '../screens/edit_task_screen.dart';
+import '../screens/create_task_screen.dart';
 import '../screens/add_lead_screen.dart';
 import '../screens/leads_screen.dart';
 import '../screens/lead_detail_screen.dart';
@@ -43,7 +43,51 @@ class RouteGenerator {
       case AppRoutes.tasks:
         return MaterialPageRoute(builder: (_) => const TasksScreen());
       case AppRoutes.editTask:
-        return MaterialPageRoute(builder: (_) => const EditTaskScreen());
+        return MaterialPageRoute(
+          builder: (_) => CreateTaskScreen(
+            taskId: _extractTaskId(settings.arguments),
+            initialTitle: _extractTaskString(
+              settings.arguments,
+              const ['title', 'name', 'task_title'],
+            ),
+            initialDescription: _extractTaskString(
+              settings.arguments,
+              const ['description', 'details'],
+            ),
+            initialProjectId: _extractTaskString(
+              settings.arguments,
+              const ['projectId', 'project_id'],
+            ),
+            initialPriority: _extractTaskString(
+              settings.arguments,
+              const ['priority', 'priority_level'],
+            ),
+            initialStatus: _extractTaskString(
+              settings.arguments,
+              const ['status', 'task_status'],
+            ),
+            initialStartDate: _extractTaskDate(
+              settings.arguments,
+              const ['startDate', 'start_date', 'starts_on'],
+            ),
+            initialDueDate: _extractTaskDate(
+              settings.arguments,
+              const ['dueDate', 'deadline', 'due_date', 'end_date'],
+            ),
+            initialAssigneeIds: _extractTaskStringList(
+              settings.arguments,
+              const ['assigneeIds'],
+            ),
+            initialFollowerIds: _extractTaskStringList(
+              settings.arguments,
+              const ['followerIds'],
+            ),
+            initialTags: _extractTaskStringList(
+              settings.arguments,
+              const ['tags'],
+            ),
+          ),
+        );
       case AppRoutes.leads:
         return MaterialPageRoute(
           builder: (_) => ChangeNotifierProvider(
@@ -207,6 +251,49 @@ class RouteGenerator {
       }
     }
     return null;
+  }
+
+  static String? _extractTaskId(dynamic args) {
+    return _extractTaskString(args, const ['id', 'taskId', 'task_id']);
+  }
+
+  static String? _extractTaskString(dynamic args, List<String> keys) {
+    if (args is! Map) return null;
+    for (final key in keys) {
+      final value = args[key];
+      if (value == null) {
+        continue;
+      }
+      final normalized = value.toString().trim();
+      if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  static DateTime? _extractTaskDate(dynamic args, List<String> keys) {
+    final raw = _extractTaskString(args, keys);
+    if (raw == null) {
+      return null;
+    }
+    return DateTime.tryParse(raw);
+  }
+
+  static List<String> _extractTaskStringList(dynamic args, List<String> keys) {
+    if (args is! Map) return const [];
+    for (final key in keys) {
+      final value = args[key];
+      if (value is! List) {
+        continue;
+      }
+
+      return value
+          .map((entry) => entry.toString().trim())
+          .where((entry) => entry.isNotEmpty && entry.toLowerCase() != 'null')
+          .toList();
+    }
+    return const [];
   }
 
   /// Generic fallback page for unknown routes.

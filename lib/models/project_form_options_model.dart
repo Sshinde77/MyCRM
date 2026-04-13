@@ -130,7 +130,12 @@ class ProjectFormOptionsModel {
             return entry.trim();
           }
           if (entry is Map<String, dynamic>) {
-            return _readString(entry, const ['name', 'title', 'label', 'value']);
+            return _readString(entry, const [
+              'name',
+              'title',
+              'label',
+              'value',
+            ]);
           }
           if (entry is Map) {
             return _readString(
@@ -186,10 +191,10 @@ class ProjectSelectOption {
       'last_name',
       'lastName',
     ]);
-    final fullName = [firstName, lastName]
-        .where((value) => value.isNotEmpty)
-        .join(' ')
-        .trim();
+    final fullName = [
+      firstName,
+      lastName,
+    ].where((value) => value.isNotEmpty).join(' ').trim();
 
     final name = fullName.isNotEmpty
         ? fullName
@@ -215,10 +220,7 @@ class ProjectSelectOption {
       'value',
     ]);
 
-    return ProjectSelectOption(
-      id: id.isNotEmpty ? id : name,
-      name: name,
-    );
+    return ProjectSelectOption(id: id.isNotEmpty ? id : name, name: name);
   }
 
   static ProjectSelectOption? fromDynamic(dynamic value) {

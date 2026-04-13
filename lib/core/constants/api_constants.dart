@@ -47,4 +47,11 @@ class ApiConstants {
   static const String deleteProject = '$baseUrl/projects/{id}';
   static const String formdataProject = '$baseUrl/projects/form-options';
 
+  //task
+  static const String tasks = '$baseUrl/tasks';
+  static const String createTask = '$baseUrl/tasks';
+  static const String taskDetail = '$baseUrl/tasks/{id}';
+  static const String updateTask = '$baseUrl/tasks/{id}';
+  static const String deleteTask = '$baseUrl/tasks/{id}';
+  static const String taskformdata = '$baseUrl/tasks/form-options';
 }

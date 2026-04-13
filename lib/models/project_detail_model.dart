@@ -104,12 +104,15 @@ class ProjectDetailModel {
         'project_name',
         'subject',
       ], fallback: 'Untitled Project'),
-      customerId: _readValue(customerMap, const [
-        'id',
-        '_id',
-        'customer_id',
-        'client_id',
-      ], fallback: _readValue(source, const ['customer', 'customer_id', 'client_id'])),
+      customerId: _readValue(
+        customerMap,
+        const ['id', '_id', 'customer_id', 'client_id'],
+        fallback: _readValue(source, const [
+          'customer',
+          'customer_id',
+          'client_id',
+        ]),
+      ),
       client: _readValue(
         customerMap,
         const ['name'],
@@ -141,10 +144,7 @@ class ProjectDetailModel {
         'end_date',
         'endDate',
       ], fallback: 'Not set'),
-      billingType: _readValue(source, const [
-        'billing_type',
-        'billingType',
-      ]),
+      billingType: _readValue(source, const ['billing_type', 'billingType']),
       totalRate: _readValue(source, const ['total_rate', 'totalRate']),
       estimatedHours: _readValue(source, const [
         'estimated_hours',
@@ -333,7 +333,10 @@ class ProjectDetailModel {
     return const [];
   }
 
-  static List<String> _readIdList(Map<String, dynamic> json, List<String> keys) {
+  static List<String> _readIdList(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
     for (final key in keys) {
       final value = json[key];
       if (value is! List) {

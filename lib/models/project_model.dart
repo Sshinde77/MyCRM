@@ -77,10 +77,8 @@ class ProjectModel {
       final value = json[key];
       if (value is Map) {
         return value.map(
-          (nestedKey, nestedValue) => MapEntry(
-            nestedKey.toString(),
-            nestedValue,
-          ),
+          (nestedKey, nestedValue) =>
+              MapEntry(nestedKey.toString(), nestedValue),
         );
       }
     }
@@ -176,9 +174,7 @@ class ProjectMemberModel {
     }
 
     if (source is Map) {
-      final json = source.map(
-        (key, value) => MapEntry(key.toString(), value),
-      );
+      final json = source.map((key, value) => MapEntry(key.toString(), value));
       final firstName = ProjectModel._readValue(json, const [
         'first_name',
         'firstName',
@@ -187,10 +183,10 @@ class ProjectMemberModel {
         'last_name',
         'lastName',
       ]);
-      final combinedName = [firstName, lastName]
-          .where((value) => value.trim().isNotEmpty)
-          .join(' ')
-          .trim();
+      final combinedName = [
+        firstName,
+        lastName,
+      ].where((value) => value.trim().isNotEmpty).join(' ').trim();
       final name = combinedName.isNotEmpty
           ? combinedName
           : ProjectModel._readValue(json, const [

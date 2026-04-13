@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -193,7 +192,9 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
 
     setState(() {
       _selectedCustomer = matchedCustomerId;
-      _selectedStatus = project.status.trim().isEmpty ? _selectedStatus : project.status.trim();
+      _selectedStatus = project.status.trim().isEmpty
+          ? _selectedStatus
+          : project.status.trim();
       _selectedPriority = project.priority.trim().isEmpty
           ? _selectedPriority
           : project.priority.trim();
@@ -304,7 +305,8 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                   child: const Text('Clear'),
                 ),
                 ElevatedButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(tempSelection),
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(tempSelection),
                   child: const Text('Done'),
                 ),
               ],
@@ -633,7 +635,9 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _ProjectFormCard(
-                          title: _isEditMode ? 'Edit Project' : 'Project Details',
+                          title: _isEditMode
+                              ? 'Edit Project'
+                              : 'Project Details',
                           subtitle: _isEditMode
                               ? 'Update project information'
                               : 'Basic Information',
@@ -677,10 +681,11 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Customer',
                                     child: DropdownButtonFormField<String>(
-                                      value: _customerOptions.any(
-                                        (option) =>
-                                            option.id == _selectedCustomer,
-                                      )
+                                      value:
+                                          _customerOptions.any(
+                                            (option) =>
+                                                option.id == _selectedCustomer,
+                                          )
                                           ? _selectedCustomer
                                           : null,
                                       decoration: _inputDecoration('Choose...'),
@@ -713,9 +718,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Status',
                                     child: DropdownButtonFormField<String>(
-                                      value: _statusOptions.contains(
-                                        _selectedStatus,
-                                      )
+                                      value:
+                                          _statusOptions.contains(
+                                            _selectedStatus,
+                                          )
                                           ? _selectedStatus
                                           : null,
                                       decoration: _inputDecoration('Choose...'),
@@ -741,9 +747,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Priority',
                                     child: DropdownButtonFormField<String>(
-                                      value: _priorityOptions.contains(
-                                        _selectedPriority,
-                                      )
+                                      value:
+                                          _priorityOptions.contains(
+                                            _selectedPriority,
+                                          )
                                           ? _selectedPriority
                                           : null,
                                       decoration: _inputDecoration('Choose...'),
@@ -813,9 +820,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Billing Type',
                                     child: DropdownButtonFormField<String>(
-                                      value: _billingOptions.contains(
-                                        _selectedBillingType,
-                                      )
+                                      value:
+                                          _billingOptions.contains(
+                                            _selectedBillingType,
+                                          )
                                           ? _selectedBillingType
                                           : null,
                                       decoration: _inputDecoration('Choose...'),
@@ -897,10 +905,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         InkWell(
-                                          onTap: _isBusy
-                                              ? null
-                                              : _pickMembers,
-                                          borderRadius: BorderRadius.circular(12),
+                                          onTap: _isBusy ? null : _pickMembers,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           child: InputDecorator(
                                             decoration: _inputDecoration(
                                               'Select members',
@@ -909,8 +917,11 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                               _selectedMembers.isEmpty
                                                   ? 'Select members'
                                                   : _selectedMembers
-                                                      .map((member) => member.name)
-                                                      .join(', '),
+                                                        .map(
+                                                          (member) =>
+                                                              member.name,
+                                                        )
+                                                        .join(', '),
                                               style: AppTextStyles.style(
                                                 color: _selectedMembers.isEmpty
                                                     ? const Color(0xFF94A3B8)

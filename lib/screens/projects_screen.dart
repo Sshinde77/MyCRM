@@ -1370,8 +1370,8 @@ class _ProjectAssigneeStack extends StatelessWidget {
     final stackWidth = visibleMembers.isEmpty
         ? 32.0
         : 28.0 +
-            ((visibleMembers.length - 1) * 14.0) +
-            (extraCount > 0 ? 24.0 : 0.0);
+              ((visibleMembers.length - 1) * 14.0) +
+              (extraCount > 0 ? 24.0 : 0.0);
 
     return SizedBox(
       height: 32,
