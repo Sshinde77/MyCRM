@@ -46,8 +46,12 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final horizontalPadding = constraints.maxWidth < 360 ? 16.0 : 20.0;
-              final contentWidth = constraints.maxWidth > 560 ? 560.0 : double.infinity;
+              final horizontalPadding = constraints.maxWidth < 360
+                  ? 16.0
+                  : 20.0;
+              final contentWidth = constraints.maxWidth > 560
+                  ? 560.0
+                  : double.infinity;
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -202,7 +206,8 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       setState(() {
         _isLoadingTodos = false;
         _todoLoadError = message;
-        if (fallbackTask != null && !_unfinishedTasks.any((task) => task == fallbackTask)) {
+        if (fallbackTask != null &&
+            !_unfinishedTasks.any((task) => task == fallbackTask)) {
           _unfinishedTasks.insert(0, fallbackTask);
         }
       });
@@ -229,7 +234,8 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       setState(() {
         _isLoadingTodos = false;
         _todoLoadError = message;
-        if (fallbackTask != null && !_unfinishedTasks.any((task) => task == fallbackTask)) {
+        if (fallbackTask != null &&
+            !_unfinishedTasks.any((task) => task == fallbackTask)) {
           _unfinishedTasks.insert(0, fallbackTask);
         }
       });
@@ -440,7 +446,8 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
 
   void _removeTaskFromList(List<_TodoTask> tasks, _TodoTask task) {
     tasks.removeWhere(
-      (entry) => (entry.id != null && entry.id == task.id) || identical(entry, task),
+      (entry) =>
+          (entry.id != null && entry.id == task.id) || identical(entry, task),
     );
   }
 }
@@ -526,11 +533,7 @@ class _TasksHeader extends StatelessWidget {
 }
 
 class _HeaderCircleButton extends StatelessWidget {
-  const _HeaderCircleButton({
-    required this.icon,
-    this.onTap,
-    this.size = 42,
-  });
+  const _HeaderCircleButton({required this.icon, this.onTap, this.size = 42});
 
   final IconData icon;
   final VoidCallback? onTap;
@@ -911,7 +914,8 @@ class _SmartListsPanel extends StatelessWidget {
           _CardTitle(title: 'Smart lists'),
           SizedBox(height: 8),
           _SectionDescription(
-            text: 'Keep recurring, reminder, and today-specific tasks in one place.',
+            text:
+                'Keep recurring, reminder, and today-specific tasks in one place.',
           ),
           SizedBox(height: 18),
           _SmartListTile(
@@ -1092,7 +1096,9 @@ class _TaskListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = isCompleted ? const Color(0xFF16A34A) : const Color(0xFF2D7DD2);
+    final accentColor = isCompleted
+        ? const Color(0xFF16A34A)
+        : const Color(0xFF2D7DD2);
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 360;
 
@@ -1186,7 +1192,9 @@ class _TaskListTile extends StatelessWidget {
                     ),
                     _TaskMetaChip(
                       icon: Icons.access_time_rounded,
-                      label: task.startTime == null ? '--:--' : _formatTime(task.startTime!),
+                      label: task.startTime == null
+                          ? '--:--'
+                          : _formatTime(task.startTime!),
                     ),
                     _TaskMetaChip(
                       icon: Icons.repeat_rounded,
@@ -1204,10 +1212,7 @@ class _TaskListTile extends StatelessWidget {
 }
 
 class _TaskStatusButton extends StatelessWidget {
-  const _TaskStatusButton({
-    required this.isCompleted,
-    required this.onTap,
-  });
+  const _TaskStatusButton({required this.isCompleted, required this.onTap});
 
   final bool isCompleted;
   final VoidCallback onTap;
@@ -1286,10 +1291,7 @@ class _TaskActionButton extends StatelessWidget {
 }
 
 class _TaskMetaChip extends StatelessWidget {
-  const _TaskMetaChip({
-    required this.icon,
-    required this.label,
-  });
+  const _TaskMetaChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -1391,7 +1393,8 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     final isCompact = screenWidth < 380;
     final useTwoColumns = screenWidth > 420;
     final descriptionLines = screenHeight < 740 ? 2 : 3;
-    final maxDialogHeight = (screenHeight - keyboardHeight) - (isCompact ? 20 : 32);
+    final maxDialogHeight =
+        (screenHeight - keyboardHeight) - (isCompact ? 20 : 32);
     final dialogContent = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1524,12 +1527,16 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : Text(
                           _isEditMode ? 'Update Task' : 'Save Task',
-                          style: AppTextStyles.style(fontWeight: FontWeight.w700),
+                          style: AppTextStyles.style(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                 ),
               ),
@@ -1537,7 +1544,9 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
               SizedBox(
                 width: double.infinity,
                 child: TextButton(
-                  onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => Navigator.of(context).pop(),
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF5F7FB),
                     foregroundColor: const Color(0xFF222222),
@@ -1558,11 +1567,16 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
-                onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => Navigator.of(context).pop(),
                 style: TextButton.styleFrom(
                   backgroundColor: const Color(0xFFF5F7FB),
                   foregroundColor: const Color(0xFF222222),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 13,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1574,11 +1588,14 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
               ),
               const SizedBox(width: 12),
               ElevatedButton(
-                 onPressed: _isSubmitting ? null : _saveTask,
+                onPressed: _isSubmitting ? null : _saveTask,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1C86F2),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 13,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1589,7 +1606,9 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Text(
@@ -1619,7 +1638,9 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         horizontal: isCompact ? 8 : 12,
         vertical: isCompact ? 10 : 16,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isCompact ? 22 : 28)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 22 : 28),
+      ),
       child: SizedBox(
         width: dialogWidth,
         child: Padding(
@@ -1965,7 +1986,9 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       }
 
       final responseData = error.response?.data;
-      String message = _isEditMode ? 'Failed to update task.' : 'Failed to create task.';
+      String message = _isEditMode
+          ? 'Failed to update task.'
+          : 'Failed to create task.';
 
       if (responseData is Map && responseData['message'] != null) {
         message = responseData['message'].toString();
@@ -1990,10 +2013,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
 }
 
 class _TodoLoadErrorCard extends StatelessWidget {
-  const _TodoLoadErrorCard({
-    required this.message,
-    required this.onRetry,
-  });
+  const _TodoLoadErrorCard({required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -2044,7 +2064,10 @@ class _TodoLoadErrorCard extends StatelessWidget {
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF59E0B),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -2196,18 +2219,27 @@ class _TodoTask {
 
   factory _TodoTask.fromJson(Map<String, dynamic> source) {
     final taskDate =
-        _tryParseApiDate(_readString(source, const ['task_date', 'date', 'due_date'])) ??
-        _tryParseApiDate(_readString(source, const ['starts_on', 'start_date'])) ??
+        _tryParseApiDate(
+          _readString(source, const ['task_date', 'date', 'due_date']),
+        ) ??
+        _tryParseApiDate(
+          _readString(source, const ['starts_on', 'start_date']),
+        ) ??
         DateTime.now();
     final startsOn =
-        _tryParseApiDate(_readString(source, const ['starts_on', 'start_date'])) ?? taskDate;
+        _tryParseApiDate(
+          _readString(source, const ['starts_on', 'start_date']),
+        ) ??
+        taskDate;
     final endType = _taskEndTypeFromString(
       _readString(source, const ['ends_type', 'end_type']),
     );
 
     return _TodoTask(
       id: _readString(source, const ['id', 'todo_id', 'task_id']),
-      title: _readString(source, const ['title', 'name', 'task_title']) ?? 'Untitled Task',
+      title:
+          _readString(source, const ['title', 'name', 'task_title']) ??
+          'Untitled Task',
       description: _readString(source, const ['description', 'details']) ?? '',
       date: taskDate,
       startTime: _tryParseApiTime(
@@ -2216,7 +2248,8 @@ class _TodoTask {
       reminderTime: _tryParseApiTime(
         _readString(source, const ['reminder_time', 'reminder']),
       ),
-      repeatEvery: _readInt(source, const ['repeat_interval', 'repeat_every']) ?? 1,
+      repeatEvery:
+          _readInt(source, const ['repeat_interval', 'repeat_every']) ?? 1,
       repeatUnit: _toTitleCase(
         _readString(source, const ['repeat_unit', 'repeat']) ?? 'day',
       ),
@@ -2249,10 +2282,7 @@ extension on _TaskEndType {
   String get apiValue => name;
 }
 
-InputDecoration _taskInputDecoration({
-  String? hintText,
-  Widget? suffixIcon,
-}) {
+InputDecoration _taskInputDecoration({String? hintText, Widget? suffixIcon}) {
   return InputDecoration(
     hintText: hintText,
     hintStyle: AppTextStyles.style(
@@ -2404,7 +2434,11 @@ bool _readCompletionState(Map<String, dynamic> source) {
     }
   }
 
-  final status = _readString(source, const ['status', 'task_status', 'state'])?.toLowerCase();
+  final status = _readString(source, const [
+    'status',
+    'task_status',
+    'state',
+  ])?.toLowerCase();
   if (status == null) {
     return false;
   }
@@ -2679,4 +2713,3 @@ class _HowItWorksCard extends StatelessWidget {
     );
   }
 }
-

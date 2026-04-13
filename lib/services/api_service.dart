@@ -10,6 +10,9 @@ import '../models/client_detail_model.dart';
 import '../models/create_client_request_model.dart';
 import '../models/lead_form_options_model.dart';
 import '../models/lead_model.dart';
+import '../models/project_form_options_model.dart';
+import '../models/project_model.dart';
+import '../models/project_detail_model.dart';
 import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
@@ -86,11 +89,7 @@ class ApiService {
     return await _dio.post(
       path,
       data: data,
-      options: Options(
-        headers: const {
-          'Content-Type': 'multipart/form-data',
-        },
-      ),
+      options: Options(headers: const {'Content-Type': 'multipart/form-data'}),
     );
   }
 
@@ -148,9 +147,7 @@ class ApiService {
     }
 
     if (data is Map) {
-      return data.map(
-        (key, value) => MapEntry(key.toString(), value),
-      );
+      return data.map((key, value) => MapEntry(key.toString(), value));
     }
 
     throw DioException(
@@ -194,19 +191,29 @@ class ApiService {
     return records.map(ClientModel.fromJson).toList();
   }
 
+  /// Loads the project list for the authenticated user.
+  Future<List<ProjectModel>> getProjectsList() async {
+    final response = await get(ApiConstants.projects);
+    final records = _normalizeList(response.data);
+    return records.map(ProjectModel.fromJson).toList();
+  }
+
+  /// Loads a single project by id.
+  Future<ProjectDetailModel> getProjectDetail(String id) async {
+    final path = ApiConstants.projectDetail.replaceFirst('{id}', id);
+    final response = await get(path);
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractProjectDetailSource(body));
+    return ProjectDetailModel.fromJson(source);
+  }
+
   /// Loads the lead list for the authenticated user.
-  Future<List<LeadModel>> getLeadsList({
-    String? userId,
-    String? roleId,
-  }) async {
+  Future<List<LeadModel>> getLeadsList({String? userId, String? roleId}) async {
     final query = await _resolveLeadQueryParameters(
       userId: userId,
       roleId: roleId,
     );
-    final response = await get(
-      ApiConstants.leads,
-      queryParameters: query,
-    );
+    final response = await get(ApiConstants.leads, queryParameters: query);
     final records = _normalizeList(response.data);
     return records.map(LeadModel.fromJson).toList();
   }
@@ -224,6 +231,138 @@ class ApiService {
     final response = await get(ApiConstants.leadformdata);
     final body = _normalizeMap(response.data);
     return LeadFormOptionsModel.fromJson(body);
+  }
+
+  /// Loads form option data required by the add project screen.
+  Future<ProjectFormOptionsModel> getProjectFormOptions() async {
+    final response = await get(ApiConstants.formdataProject);
+    final body = _normalizeMap(response.data);
+    return ProjectFormOptionsModel.fromJson(body);
+  }
+
+  /// Creates a new project.
+  Future<void> createProject({
+    required String projectName,
+    required dynamic customer,
+    required String status,
+    String? startDate,
+    String? deadline,
+    String? billingType,
+    double? totalRate,
+    double? estimatedHours,
+    List<String> tags = const [],
+    List<dynamic> members = const [],
+    String? description,
+    String? priority,
+    List<String> technologies = const [],
+  }) async {
+    final payload = _buildProjectPayload(
+      projectName: projectName,
+      customer: customer,
+      status: status,
+      startDate: startDate,
+      deadline: deadline,
+      billingType: billingType,
+      totalRate: totalRate,
+      estimatedHours: estimatedHours,
+      tags: tags,
+      members: members,
+      description: description,
+      priority: priority,
+      technologies: technologies,
+    );
+    await post(ApiConstants.createprojects, data: payload);
+  }
+
+  /// Updates an existing project.
+  Future<void> updateProject({
+    required String id,
+    required String projectName,
+    required dynamic customer,
+    required String status,
+    String? startDate,
+    String? deadline,
+    String? billingType,
+    double? totalRate,
+    double? estimatedHours,
+    List<String> tags = const [],
+    List<dynamic> members = const [],
+    String? description,
+    String? priority,
+    List<String> technologies = const [],
+  }) async {
+    final path = ApiConstants.updateProject.replaceFirst('{id}', id);
+    final payload = _buildProjectPayload(
+      projectName: projectName,
+      customer: customer,
+      status: status,
+      startDate: startDate,
+      deadline: deadline,
+      billingType: billingType,
+      totalRate: totalRate,
+      estimatedHours: estimatedHours,
+      tags: tags,
+      members: members,
+      description: description,
+      priority: priority,
+      technologies: technologies,
+    );
+    await put(path, data: payload);
+  }
+
+  /// Deletes a single project by id.
+  Future<void> deleteProject(String id, {dynamic data}) async {
+    final path = ApiConstants.deleteProject.replaceFirst('{id}', id);
+    await delete(path, data: data);
+  }
+
+  Map<String, dynamic> _buildProjectPayload({
+    required String projectName,
+    required dynamic customer,
+    required String status,
+    String? startDate,
+    String? deadline,
+    String? billingType,
+    double? totalRate,
+    double? estimatedHours,
+    List<String> tags = const [],
+    List<dynamic> members = const [],
+    String? description,
+    String? priority,
+    List<String> technologies = const [],
+  }) {
+    final payload = <String, dynamic>{
+      'project_name': projectName.trim(),
+      'customer': customer,
+      'status': status.trim(),
+      'tags': tags,
+      'members': members,
+      'technologies': technologies,
+    };
+
+    if (startDate != null && startDate.trim().isNotEmpty) {
+      payload['start_date'] = startDate.trim();
+    }
+    if (deadline != null && deadline.trim().isNotEmpty) {
+      payload['deadline'] = deadline.trim();
+    }
+    if (billingType != null && billingType.trim().isNotEmpty) {
+      payload['billing_type'] = billingType.trim();
+    }
+    if (totalRate != null) {
+      payload['total_rate'] = totalRate;
+    }
+    if (estimatedHours != null) {
+      payload['estimated_hours'] = estimatedHours;
+    }
+    if (description != null && description.trim().isNotEmpty) {
+      payload['description'] = description.trim();
+    }
+    if (priority != null && priority.trim().isNotEmpty) {
+      payload['priority'] = priority.trim();
+    }
+
+    return payload;
   }
 
   /// Deletes a single lead by id.
@@ -421,12 +560,7 @@ class ApiService {
     required bool isCompleted,
   }) async {
     final path = ApiConstants.statustodo.replaceFirst('{id}', id);
-    await patch(
-      path,
-      data: <String, dynamic>{
-        'is_completed': isCompleted,
-      },
-    );
+    await patch(path, data: <String, dynamic>{'is_completed': isCompleted});
   }
 
   Map<String, dynamic> _buildLeadPayload({
@@ -585,10 +719,7 @@ class ApiService {
       );
     }
 
-    await postForm(
-      ApiConstants.createstaff,
-      data: FormData.fromMap(payload),
-    );
+    await postForm(ApiConstants.createstaff, data: FormData.fromMap(payload));
   }
 
   /// Creates a new client.
@@ -645,6 +776,7 @@ class ApiService {
         'staff',
         'clients',
         'customers',
+        'projects',
         'results',
         'rows',
       ]) {
@@ -660,6 +792,7 @@ class ApiService {
             'staff',
             'clients',
             'customers',
+            'projects',
             'results',
             'rows',
           ]) {
@@ -686,6 +819,7 @@ class ApiService {
       for (final key in [
         'data',
         'staff',
+        'project',
         'client',
         'customer',
         'item',
@@ -701,6 +835,25 @@ class ApiService {
 
     if (data is Map) {
       return _extractDetailSource(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+
+    return data;
+  }
+
+  dynamic _extractProjectDetailSource(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      for (final key in ['data', 'item', 'result']) {
+        final candidate = data[key];
+        if (candidate is Map<String, dynamic>) {
+          return candidate;
+        }
+      }
+    }
+
+    if (data is Map) {
+      return _extractProjectDetailSource(
         data.map((key, value) => MapEntry(key.toString(), value)),
       );
     }
@@ -738,9 +891,7 @@ class ApiService {
       throw Exception('Unable to resolve the current user for the leads API.');
     }
 
-    final query = <String, dynamic>{
-      'user_id': resolvedUserId,
-    };
+    final query = <String, dynamic>{'user_id': resolvedUserId};
 
     if (resolvedRoleId.isNotEmpty) {
       query['role_id'] = resolvedRoleId;

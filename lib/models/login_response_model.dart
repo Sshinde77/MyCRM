@@ -2,11 +2,7 @@ import 'user_model.dart';
 
 /// Auth response returned from the login endpoint.
 class LoginResponseModel {
-  const LoginResponseModel({
-    required this.user,
-    this.token,
-    this.message,
-  });
+  const LoginResponseModel({required this.user, this.token, this.message});
 
   final UserModel user;
   final String? token;

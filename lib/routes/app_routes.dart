@@ -9,6 +9,7 @@ class AppRoutes {
   static const String addLead = '/leads/add';
   static const String leadDetail = '/leads/detail';
   static const String projects = '/projects';
+  static const String addProject = '/projects/add';
   static const String projectDetail = '/projects/detail';
 
   static const String profile = '/profile';
@@ -30,5 +31,4 @@ class AppRoutes {
   static const String settings = '/profile/settings';
   static const String to_do_list = '/to_do_list';
   static const String clientDetail = '/profile/clients/detail';
-
 }

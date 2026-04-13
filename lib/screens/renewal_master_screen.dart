@@ -276,10 +276,7 @@ class RenewalDetailScreen extends StatelessWidget {
 }
 
 class _RenewalOptionCard extends StatelessWidget {
-  const _RenewalOptionCard({
-    required this.option,
-    required this.compact,
-  });
+  const _RenewalOptionCard({required this.option, required this.compact});
 
   final _RenewalOption option;
   final bool compact;
@@ -307,7 +304,11 @@ class _RenewalOptionCard extends StatelessWidget {
                 color: option.accentColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Icon(option.icon, color: option.accentColor, size: compact ? 22 : 24),
+              child: Icon(
+                option.icon,
+                color: option.accentColor,
+                size: compact ? 22 : 24,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -348,10 +349,7 @@ class _RenewalOptionCard extends StatelessWidget {
 }
 
 class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _RoundIconButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -390,4 +388,3 @@ class _RenewalOption {
   final String routeName;
   final Color accentColor;
 }
-

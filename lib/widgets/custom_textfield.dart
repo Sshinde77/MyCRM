@@ -34,9 +34,7 @@ class CustomTextField extends StatelessWidget {
           controller: controller,
           obscureText: isPassword,
           validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-          ),
+          decoration: InputDecoration(hintText: hint),
         ),
       ],
     );

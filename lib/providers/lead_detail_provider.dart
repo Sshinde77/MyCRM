@@ -4,10 +4,8 @@ import '../models/lead_model.dart';
 import '../services/api_service.dart';
 
 class LeadDetailProvider extends ChangeNotifier {
-  LeadDetailProvider({
-    required this.leadId,
-    ApiService? apiService,
-  }) : _apiService = apiService ?? ApiService.instance;
+  LeadDetailProvider({required this.leadId, ApiService? apiService})
+    : _apiService = apiService ?? ApiService.instance;
 
   final String leadId;
   final ApiService _apiService;

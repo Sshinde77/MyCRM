@@ -55,7 +55,7 @@ class TasksScreen extends StatelessWidget {
                     children: [
                       _circleIcon(Icons.calendar_today, compact: compact),
                     ],
-                  )
+                  ),
                 ],
               ),
 
@@ -103,7 +103,11 @@ class TasksScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.search, color: Colors.grey, size: 18),
+                          const Icon(
+                            Icons.search,
+                            color: Colors.grey,
+                            size: 18,
+                          ),
                           SizedBox(width: compact ? 8 : 10),
                           Text(
                             "Search tasks...",
@@ -132,7 +136,7 @@ class TasksScreen extends StatelessWidget {
                       color: Colors.white,
                       size: compact ? 20 : 22,
                     ),
-                  )
+                  ),
                 ],
               ),
 
@@ -266,7 +270,7 @@ class _StatCard extends StatelessWidget {
             color: color,
             backgroundColor: color.withOpacity(0.2),
             minHeight: compact ? 5 : 6,
-          )
+          ),
         ],
       ),
     );
@@ -316,11 +320,10 @@ class _TaskCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    EdgeInsets.symmetric(
-                      horizontal: compact ? 8 : 10,
-                      vertical: compact ? 3 : 4,
-                    ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? 8 : 10,
+                  vertical: compact ? 3 : 4,
+                ),
                 decoration: BoxDecoration(
                   color: priorityColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(14),
@@ -333,7 +336,7 @@ class _TaskCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              )
+              ),
             ],
           ),
 
@@ -439,9 +442,9 @@ class _TaskCard extends StatelessWidget {
                     size: compact ? 18 : 20,
                   ),
                 ],
-              )
+              ),
             ],
-          )
+          ),
         ],
       ),
     );

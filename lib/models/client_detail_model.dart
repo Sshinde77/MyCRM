@@ -52,7 +52,10 @@ class ClientDetailModel {
       addressLine1,
       addressLine2,
       [city, state].where((value) => value.trim().isNotEmpty).join(', '),
-      [country, postalCode].where((value) => value.trim().isNotEmpty).join(' - '),
+      [
+        country,
+        postalCode,
+      ].where((value) => value.trim().isNotEmpty).join(' - '),
     ].where((value) => value.trim().isNotEmpty).toList();
 
     return lines.isEmpty ? 'No address provided' : lines.join('\n');

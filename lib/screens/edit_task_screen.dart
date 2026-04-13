@@ -13,14 +13,18 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers with initial values from the screenshot
-  final TextEditingController _titleController =
-      TextEditingController(text: 'Oceanic Video And Catelouge');
-  final TextEditingController _startDateController =
-      TextEditingController(text: '11-03-2026');
-  final TextEditingController _dueDateController =
-      TextEditingController(text: '12-03-2026');
+  final TextEditingController _titleController = TextEditingController(
+    text: 'Oceanic Video And Catelouge',
+  );
+  final TextEditingController _startDateController = TextEditingController(
+    text: '11-03-2026',
+  );
+  final TextEditingController _dueDateController = TextEditingController(
+    text: '12-03-2026',
+  );
   final TextEditingController _descriptionController = TextEditingController(
-      text: 'Working on Product Catelogue\nand Video genrate');
+    text: 'Working on Product Catelogue\nand Video genrate',
+  );
 
   String _selectedProject = 'Oceanic';
   String _selectedPriority = 'Medium';
@@ -259,14 +263,18 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           backgroundColor: const Color(0xFF007BFF),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
                         child: Text(
                           'Update Task',
-                          style: AppTextStyles.style(fontWeight: FontWeight.w600),
+                          style: AppTextStyles.style(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -276,14 +284,18 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           backgroundColor: const Color(0xFF6C757D),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           ),
                         ),
                         child: Text(
                           'Cancel',
-                          style: AppTextStyles.style(fontWeight: FontWeight.w600),
+                          style: AppTextStyles.style(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -323,7 +335,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       controller: controller,
       maxLines: maxLines,
       decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -365,7 +380,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       controller: controller,
       readOnly: true,
       decoration: InputDecoration(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         suffixIcon: const Icon(Icons.calendar_today, size: 18),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -385,7 +403,8 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         );
         if (pickedDate != null) {
           setState(() {
-            controller.text = "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
+            controller.text =
+                "${pickedDate.day}-${pickedDate.month}-${pickedDate.year}";
           });
         }
       },
@@ -428,7 +447,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
           const SizedBox(width: 4),
           Text(
             label,
-            style: AppTextStyles.style(fontSize: 12, color: const Color(0xFF4A5568)),
+            style: AppTextStyles.style(
+              fontSize: 12,
+              color: const Color(0xFF4A5568),
+            ),
           ),
         ],
       ),
@@ -445,9 +467,11 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
       ),
       child: Text(
         hint,
-        style: AppTextStyles.style(fontSize: 14, color: const Color(0xFFA0AEC0)),
+        style: AppTextStyles.style(
+          fontSize: 14,
+          color: const Color(0xFFA0AEC0),
+        ),
       ),
     );
   }
 }
-

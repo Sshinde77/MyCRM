@@ -32,9 +32,7 @@ class AppTheme {
           backgroundColor: AppColors.primaryBlue,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: AppTextStyles.subtitle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -56,7 +54,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         hintStyle: AppTextStyles.body(color: AppColors.secondaryText),
       ),
       textTheme: TextTheme(

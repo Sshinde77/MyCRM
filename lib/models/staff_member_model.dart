@@ -26,14 +26,8 @@ class StaffMemberModel {
   bool get isActive => (status ?? '').toLowerCase() == 'active';
 
   factory StaffMemberModel.fromJson(Map<String, dynamic> json) {
-    final firstName = _readNullableString(json, [
-      'firstName',
-      'first_name',
-    ]);
-    final lastName = _readNullableString(json, [
-      'lastName',
-      'last_name',
-    ]);
+    final firstName = _readNullableString(json, ['firstName', 'first_name']);
+    final lastName = _readNullableString(json, ['lastName', 'last_name']);
 
     final combinedName = [firstName, lastName]
         .whereType<String>()

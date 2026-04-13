@@ -645,4 +645,3 @@ class _ServiceItem {
   final String? expiryNote;
   final bool showExpiryAlert;
 }
-

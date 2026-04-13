@@ -178,7 +178,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 24,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 360),
                   child: Form(
@@ -315,8 +318,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         strokeWidth: 2.4,
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
-                                          Colors.white,
-                                        ),
+                                              Colors.white,
+                                            ),
                                       ),
                                     )
                                   : Text(
@@ -376,9 +379,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   /// Adds glow/shadow styling around focused-looking fields.
-  Widget _buildInputShell({
-    required Widget child,
-  }) {
+  Widget _buildInputShell({required Widget child}) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -432,4 +433,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

@@ -41,8 +41,12 @@ class _TasksScreenState extends State<TasksScreen> {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final horizontalPadding = constraints.maxWidth < 360 ? 16.0 : 20.0;
-              final contentWidth = constraints.maxWidth > 560 ? 560.0 : double.infinity;
+              final horizontalPadding = constraints.maxWidth < 360
+                  ? 16.0
+                  : 20.0;
+              final contentWidth = constraints.maxWidth > 560
+                  ? 560.0
+                  : double.infinity;
 
               return SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(
@@ -196,11 +200,7 @@ class _TasksHeader extends StatelessWidget {
 }
 
 class _HeaderCircleButton extends StatelessWidget {
-  const _HeaderCircleButton({
-    required this.icon,
-    this.onTap,
-    this.size = 42,
-  });
+  const _HeaderCircleButton({required this.icon, this.onTap, this.size = 42});
 
   final IconData icon;
   final VoidCallback? onTap;
@@ -581,7 +581,8 @@ class _SmartListsPanel extends StatelessWidget {
           _CardTitle(title: 'Smart lists'),
           SizedBox(height: 8),
           _SectionDescription(
-            text: 'Keep recurring, reminder, and today-specific tasks in one place.',
+            text:
+                'Keep recurring, reminder, and today-specific tasks in one place.',
           ),
           SizedBox(height: 18),
           _SmartListTile(
@@ -737,17 +738,16 @@ class _TaskStatePanel extends StatelessWidget {
 }
 
 class _TaskListTile extends StatelessWidget {
-  const _TaskListTile({
-    required this.task,
-    required this.isCompleted,
-  });
+  const _TaskListTile({required this.task, required this.isCompleted});
 
   final _TodoTask task;
   final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = isCompleted ? const Color(0xFF16A34A) : const Color(0xFF2D7DD2);
+    final accentColor = isCompleted
+        ? const Color(0xFF16A34A)
+        : const Color(0xFF2D7DD2);
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 360;
 
@@ -816,7 +816,9 @@ class _TaskListTile extends StatelessWidget {
                     ),
                     _TaskMetaChip(
                       icon: Icons.access_time_rounded,
-                      label: task.startTime == null ? '--:--' : _formatTime(task.startTime!),
+                      label: task.startTime == null
+                          ? '--:--'
+                          : _formatTime(task.startTime!),
                     ),
                     _TaskMetaChip(
                       icon: Icons.repeat_rounded,
@@ -834,10 +836,7 @@ class _TaskListTile extends StatelessWidget {
 }
 
 class _TaskMetaChip extends StatelessWidget {
-  const _TaskMetaChip({
-    required this.icon,
-    required this.label,
-  });
+  const _TaskMetaChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -911,7 +910,9 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     final useTwoColumns = screenWidth > 420;
     final descriptionLines = screenHeight < 740 ? 2 : 3;
     final shouldScroll = isCompact || screenHeight < 760;
-    final maxDialogHeight = isCompact ? screenHeight * 0.8 : screenHeight * 0.84;
+    final maxDialogHeight = isCompact
+        ? screenHeight * 0.8
+        : screenHeight * 0.84;
     final dialogBody = Form(
       key: _formKey,
       child: Column(
@@ -1071,7 +1072,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   style: TextButton.styleFrom(
                     backgroundColor: const Color(0xFFF5F7FB),
                     foregroundColor: const Color(0xFF222222),
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 13,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -1087,7 +1091,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF1C86F2),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 13,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -1108,7 +1115,9 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         horizontal: isCompact ? 8 : 12,
         vertical: isCompact ? 10 : 16,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(isCompact ? 22 : 28)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(isCompact ? 22 : 28),
+      ),
       child: SizedBox(
         width: dialogWidth,
         child: Padding(
@@ -1486,10 +1495,7 @@ class _TodoTask {
 
 enum _TaskEndType { never, on, after }
 
-InputDecoration _taskInputDecoration({
-  String? hintText,
-  Widget? suffixIcon,
-}) {
+InputDecoration _taskInputDecoration({String? hintText, Widget? suffixIcon}) {
   return InputDecoration(
     hintText: hintText,
     hintStyle: AppTextStyles.style(
@@ -1792,4 +1798,3 @@ class _HowItWorksCard extends StatelessWidget {
     );
   }
 }
-

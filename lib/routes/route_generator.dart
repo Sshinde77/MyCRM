@@ -9,6 +9,7 @@ import '../screens/client_detail_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/projects_screen.dart';
+import '../screens/add_project_screen.dart';
 import '../screens/project_detail_screen.dart';
 import '../screens/splash_screen.dart';
 import '../screens/task.dart';
@@ -62,8 +63,18 @@ class RouteGenerator {
         );
       case AppRoutes.projects:
         return MaterialPageRoute(builder: (_) => const ProjectsScreen());
+      case AppRoutes.addProject:
+        return MaterialPageRoute(
+          builder: (_) => AddProjectScreen(
+            projectId: _extractProjectId(settings.arguments),
+          ),
+        );
       case AppRoutes.projectDetail:
-        return MaterialPageRoute(builder: (_) => const ProjectDetailScreen());
+        return MaterialPageRoute(
+          builder: (_) => ProjectDetailScreen(
+            projectId: _extractProjectId(settings.arguments),
+          ),
+        );
       case AppRoutes.profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case AppRoutes.personalInformation:
@@ -116,9 +127,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const AddStaffScreen());
       case AppRoutes.staffDetail:
         return MaterialPageRoute(
-          builder: (_) => StaffDetailScreen(
-            staffId: settings.arguments?.toString(),
-          ),
+          builder: (_) =>
+              StaffDetailScreen(staffId: settings.arguments?.toString()),
         );
       case AppRoutes.clients:
         return MaterialPageRoute(builder: (_) => const ClientsScreen());
@@ -184,6 +194,19 @@ class RouteGenerator {
       }
     }
     return '';
+  }
+
+  static String? _extractProjectId(dynamic args) {
+    if (args == null) return null;
+    if (args is String) return args;
+    if (args is int) return args.toString();
+    if (args is Map) {
+      final raw = args['id'] ?? args['projectId'] ?? args['project_id'];
+      if (raw != null && raw.toString().trim().isNotEmpty) {
+        return raw.toString();
+      }
+    }
+    return null;
   }
 
   /// Generic fallback page for unknown routes.

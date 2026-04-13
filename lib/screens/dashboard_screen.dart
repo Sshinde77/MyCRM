@@ -95,9 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _HeaderSection(
-                    user: _currentUser,
-                  ),
+                  _HeaderSection(user: _currentUser),
                   const SizedBox(height: 18),
                   const _AlertBanner(),
                   const SizedBox(height: 20),
@@ -152,7 +150,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   onPressed: _showAddAppointmentDialog,
                                   style: TextButton.styleFrom(
                                     foregroundColor: Colors.white,
-                                    backgroundColor: Colors.white.withOpacity(0.08),
+                                    backgroundColor: Colors.white.withOpacity(
+                                      0.08,
+                                    ),
                                     padding: EdgeInsets.symmetric(
                                       horizontal: isCompact ? 10 : 12,
                                       vertical: 8,
@@ -243,7 +243,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Future<void> pickTime() async {
               final picked = await showTimePicker(
                 context: context,
-                initialTime: selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
+                initialTime:
+                    selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
               );
               if (picked != null) {
                 setModalState(() => selectedTime = picked);
@@ -251,7 +252,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
 
             return Dialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 24,
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
@@ -289,7 +293,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFEFF5FF),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFD5E4FF)),
+                              border: Border.all(
+                                color: const Color(0xFFD5E4FF),
+                              ),
                             ),
                             child: RichText(
                               text: TextSpan(
@@ -307,7 +313,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: 'WhatsApp template message automatically at selected meeting time.\n'
+                                    text:
+                                        'WhatsApp template message automatically at selected meeting time.\n'
                                         'Note: Same day meetings require at least 30 minutes gap between time slots.',
                                   ),
                                 ],
@@ -320,7 +327,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             requiredMark: true,
                             child: TextFormField(
                               controller: titleController,
-                              validator: (value) => value == null || value.trim().isEmpty
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
                                   ? 'Please enter a title'
                                   : null,
                               decoration: _appointmentInputDecoration(),
@@ -356,7 +364,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         : null,
                                     decoration: _appointmentInputDecoration(
                                       hintText: 'dd-mm-yyyy',
-                                      suffixIcon: const Icon(Icons.calendar_today_outlined),
+                                      suffixIcon: const Icon(
+                                        Icons.calendar_today_outlined,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -379,7 +389,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         : null,
                                     decoration: _appointmentInputDecoration(
                                       hintText: '--:--',
-                                      suffixIcon: const Icon(Icons.access_time_rounded),
+                                      suffixIcon: const Icon(
+                                        Icons.access_time_rounded,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -394,7 +406,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             child: TextFormField(
                               controller: emailController,
                               decoration: _appointmentInputDecoration(
-                                hintText: 'email1@example.com, email2@example.com',
+                                hintText:
+                                    'email1@example.com, email2@example.com',
                               ),
                             ),
                           ),
@@ -406,7 +419,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 'Use international format. Multiple numbers comma separated.',
                             child: TextFormField(
                               controller: whatsappController,
-                              validator: (value) => value == null || value.trim().isEmpty
+                              validator: (value) =>
+                                  value == null || value.trim().isEmpty
                                   ? 'Please enter at least one WhatsApp number'
                                   : null,
                               decoration: _appointmentInputDecoration(
@@ -433,7 +447,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 child: Text(
                                   'Close',
-                                  style: AppTextStyles.style(fontWeight: FontWeight.w600),
+                                  style: AppTextStyles.style(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 10),
@@ -445,13 +461,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   Navigator.of(context).pop(
                                     _Appointment(
                                       title: titleController.text.trim(),
-                                      description: descriptionController.text.trim().isEmpty
+                                      description:
+                                          descriptionController.text
+                                              .trim()
+                                              .isEmpty
                                           ? 'New calendar appointment'
                                           : descriptionController.text.trim(),
                                       date: selectedDate!,
                                       time: selectedTime!,
-                                      emailRecipients: emailController.text.trim(),
-                                      whatsappRecipients: whatsappController.text.trim(),
+                                      emailRecipients: emailController.text
+                                          .trim(),
+                                      whatsappRecipients: whatsappController
+                                          .text
+                                          .trim(),
                                     ),
                                   );
                                 },
@@ -468,7 +490,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                                 child: Text(
                                   'Save Appointment',
-                                  style: AppTextStyles.style(fontWeight: FontWeight.w600),
+                                  style: AppTextStyles.style(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -518,9 +542,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _HeaderSection extends StatelessWidget {
-  const _HeaderSection({
-    this.user,
-  });
+  const _HeaderSection({this.user});
 
   final UserModel? user;
 
@@ -586,11 +608,11 @@ class _HeaderSection extends StatelessWidget {
         ),
         Row(
           children: [
-              _HeaderActionButton(
-                icon: Icons.checklist_rounded,
-                size: 24,
-                onTap: () => Get.to(() => const to_do.ToDoListScreen()),
-              ),
+            _HeaderActionButton(
+              icon: Icons.checklist_rounded,
+              size: 24,
+              onTap: () => Get.to(() => const to_do.ToDoListScreen()),
+            ),
             const SizedBox(width: 10),
             _HeaderActionButton(
               icon: Icons.notifications_none_rounded,
@@ -626,11 +648,7 @@ class _HeaderActionButton extends StatelessWidget {
         child: SizedBox(
           width: 50,
           height: 50,
-          child: Icon(
-            icon,
-            color: const Color(0xFF61728F),
-            size: size,
-          ),
+          child: Icon(icon, color: const Color(0xFF61728F), size: size),
         ),
       ),
     );
@@ -711,10 +729,7 @@ class _AlertBanner extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.child,
-    required this.padding,
-  });
+  const _SectionCard({required this.child, required this.padding});
 
   final Widget child;
   final EdgeInsets padding;
@@ -793,10 +808,7 @@ class _RenewalSection extends StatelessWidget {
 }
 
 class _SectionActionLabel extends StatelessWidget {
-  const _SectionActionLabel({
-    required this.label,
-    this.onTap,
-  });
+  const _SectionActionLabel({required this.label, this.onTap});
 
   final String label;
   final VoidCallback? onTap;
@@ -1052,43 +1064,43 @@ class _ProjectSummarySection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF9FBFE),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFE5EBF4)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      const _ChartLegendChip(
-                        label: 'Projects',
-                        color: Color(0xFF2D9CDB),
-                      ),
-                      const _ChartLegendChip(
-                        label: 'Tasks',
-                        color: Color(0xFFFFB020),
-                      ),
-                      _CurrentMonthBadge(
-                        label: 'Current: ${_monthShortLabel(DateTime.now())}',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const _LineChartMock(),
-              ],
-            ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF9FBFE),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE5EBF4)),
           ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    const _ChartLegendChip(
+                      label: 'Projects',
+                      color: Color(0xFF2D9CDB),
+                    ),
+                    const _ChartLegendChip(
+                      label: 'Tasks',
+                      color: Color(0xFFFFB020),
+                    ),
+                    _CurrentMonthBadge(
+                      label: 'Current: ${_monthShortLabel(DateTime.now())}',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const _LineChartMock(),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -1101,9 +1113,7 @@ class _LineChartMock extends StatelessWidget {
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 2.55,
-      child: const CustomPaint(
-        painter: _ChartPainter(),
-      ),
+      child: const CustomPaint(painter: _ChartPainter()),
     );
   }
 }
@@ -1192,11 +1202,7 @@ class _TaskSummaryChart extends StatelessWidget {
           runSpacing: 8,
           children: [
             for (final item in taskItems)
-              _TaskStatusRow(
-                label: item.$1,
-                value: item.$2,
-                color: item.$3,
-              ),
+              _TaskStatusRow(label: item.$1, value: item.$2, color: item.$3),
           ],
         ),
       ],
@@ -1276,7 +1282,10 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE3F8FE),
                   borderRadius: BorderRadius.circular(999),
@@ -1318,7 +1327,10 @@ class _SupportTicketPreviewCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFEEF1),
                   borderRadius: BorderRadius.circular(999),
@@ -1356,9 +1368,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
 }
 
 class _CalendarItem extends StatelessWidget {
-  const _CalendarItem({
-    required this.appointment,
-  });
+  const _CalendarItem({required this.appointment});
 
   final _Appointment appointment;
 
@@ -1552,10 +1562,7 @@ String _formatTimeNumber(TimeOfDay time) {
 }
 
 class _LegendDot extends StatelessWidget {
-  const _LegendDot({
-    required this.label,
-    required this.color,
-  });
+  const _LegendDot({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -1609,10 +1616,7 @@ class _TaskStatusRow extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1671,14 +1675,14 @@ class _SectionMenuButton extends StatelessWidget {
         color: Colors.white,
         padding: EdgeInsets.zero,
         offset: const Offset(0, 38),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         onSelected: (value) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('$value clicked'),
-              behavior: SnackPosition.BOTTOM == null ? SnackBarBehavior.fixed : SnackBarBehavior.floating,
+              behavior: SnackPosition.BOTTOM == null
+                  ? SnackBarBehavior.fixed
+                  : SnackBarBehavior.floating,
               duration: const Duration(milliseconds: 1200),
             ),
           );
@@ -1726,10 +1730,7 @@ class _SectionMenuButton extends StatelessWidget {
 }
 
 class _SectionMenuItem extends StatelessWidget {
-  const _SectionMenuItem({
-    required this.icon,
-    required this.label,
-  });
+  const _SectionMenuItem({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -1754,10 +1755,7 @@ class _SectionMenuItem extends StatelessWidget {
 }
 
 class _ChartLegendChip extends StatelessWidget {
-  const _ChartLegendChip({
-    required this.label,
-    required this.color,
-  });
+  const _ChartLegendChip({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -1777,10 +1775,7 @@ class _ChartLegendChip extends StatelessWidget {
           Container(
             width: 10,
             height: 10,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
@@ -1942,10 +1937,7 @@ class _ResponsiveSectionHeader extends StatelessWidget {
             children: [
               _SectionTitle(title: title),
               const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: trailing,
-              ),
+              Align(alignment: Alignment.centerLeft, child: trailing),
             ],
           );
         }
@@ -1963,20 +1955,14 @@ class _ResponsiveSectionHeader extends StatelessWidget {
 }
 
 class _TaskDonutSegment {
-  const _TaskDonutSegment({
-    required this.value,
-    required this.color,
-  });
+  const _TaskDonutSegment({required this.value, required this.color});
 
   final double value;
   final Color color;
 }
 
 class _TaskDonutPainter extends CustomPainter {
-  _TaskDonutPainter({
-    required this.segments,
-    required this.backgroundColor,
-  });
+  _TaskDonutPainter({required this.segments, required this.backgroundColor});
 
   final List<_TaskDonutSegment> segments;
   final Color backgroundColor;
@@ -1994,7 +1980,10 @@ class _TaskDonutPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, backgroundPaint);
 
-    final total = segments.fold<double>(0, (sum, segment) => sum + segment.value);
+    final total = segments.fold<double>(
+      0,
+      (sum, segment) => sum + segment.value,
+    );
     if (total <= 0) {
       return;
     }
@@ -2108,19 +2097,11 @@ class _ChartPainter extends CustomPainter {
         const Radius.circular(8),
       );
       final taskRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          xCenter + 2,
-          chartBottom - taskHeight,
-          14,
-          taskHeight,
-        ),
+        Rect.fromLTWH(xCenter + 2, chartBottom - taskHeight, 14, taskHeight),
         const Radius.circular(8),
       );
 
-      canvas.drawRRect(
-        projectRect,
-        Paint()..color = const Color(0xFF2D9CDB),
-      );
+      canvas.drawRRect(projectRect, Paint()..color = const Color(0xFF2D9CDB));
       canvas.drawRRect(
         taskRect,
         Paint()
@@ -2144,4 +2125,3 @@ class _ChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-

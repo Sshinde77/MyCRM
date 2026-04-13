@@ -41,7 +41,9 @@ class _StaffScreenState extends State<StaffScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text(
             'Delete Staff',
             style: AppTextStyles.style(
@@ -74,7 +76,9 @@ class _StaffScreenState extends State<StaffScreen> {
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFB42318),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: Text(
                 'Delete',
@@ -179,19 +183,24 @@ class _StaffScreenState extends State<StaffScreen> {
                             count: filteredMembers.length,
                           ),
                           SizedBox(height: compact ? 14 : 16),
-                          if (snapshot.connectionState == ConnectionState.waiting)
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting)
                             _LoadingState(compact: compact)
                           else if (snapshot.hasError)
                             _ErrorState(compact: compact, onRetry: _reload)
                           else if (filteredMembers.isEmpty)
                             _EmptyState(
                               compact: compact,
-                              hasSearch: _searchController.text.trim().isNotEmpty,
+                              hasSearch: _searchController.text
+                                  .trim()
+                                  .isNotEmpty,
                             )
                           else
                             ...filteredMembers.map(
                               (member) => Padding(
-                                padding: EdgeInsets.only(bottom: compact ? 12 : 14),
+                                padding: EdgeInsets.only(
+                                  bottom: compact ? 12 : 14,
+                                ),
                                 child: _StaffCard(
                                   member: member,
                                   compact: compact,
@@ -431,10 +440,10 @@ class _StaffCard extends StatelessWidget {
     final secondaryLine = member.phone?.trim().isNotEmpty == true
         ? member.phone!.trim()
         : member.team?.trim().isNotEmpty == true
-            ? member.team!.trim()
-            : member.departments.isNotEmpty
-                ? member.departments.join(', ')
-                : 'Staff member';
+        ? member.team!.trim()
+        : member.departments.isNotEmpty
+        ? member.departments.join(', ')
+        : 'Staff member';
 
     return InkWell(
       onTap: () => Get.toNamed(AppRoutes.staffDetail, arguments: member.id),
@@ -485,7 +494,9 @@ class _StaffCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
-                          (member.role?.trim().isNotEmpty == true ? member.role! : 'Staff'),
+                          (member.role?.trim().isNotEmpty == true
+                              ? member.role!
+                              : 'Staff'),
                           style: AppTextStyles.style(
                             color: accentColor,
                             fontSize: 11,
@@ -547,7 +558,10 @@ class _StaffCard extends StatelessWidget {
                   child: _CardAction(
                     icon: Icons.remove_red_eye_outlined,
                     label: 'View',
-                    onTap: () => Get.toNamed(AppRoutes.staffDetail, arguments: member.id),
+                    onTap: () => Get.toNamed(
+                      AppRoutes.staffDetail,
+                      arguments: member.id,
+                    ),
                   ),
                 ),
                 SizedBox(width: compact ? 10 : 12),
@@ -748,7 +762,11 @@ class _ErrorState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.cloud_off_rounded, size: 34, color: Color(0xFFB42318)),
+          const Icon(
+            Icons.cloud_off_rounded,
+            size: 34,
+            color: Color(0xFFB42318),
+          ),
           const SizedBox(height: 12),
           Text(
             'Unable to load staff data',
@@ -776,7 +794,9 @@ class _ErrorState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size.fromHeight(46),
                 backgroundColor: const Color(0xFF1D6FEA),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               icon: const Icon(Icons.refresh_rounded, color: Colors.white),
               label: Text(
@@ -813,10 +833,16 @@ class _EmptyState extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.group_off_rounded, size: 34, color: Color(0xFF94A3B8)),
+          const Icon(
+            Icons.group_off_rounded,
+            size: 34,
+            color: Color(0xFF94A3B8),
+          ),
           const SizedBox(height: 12),
           Text(
-            hasSearch ? 'No matching staff found' : 'No staff records available',
+            hasSearch
+                ? 'No matching staff found'
+                : 'No staff records available',
             style: AppTextStyles.style(
               color: const Color(0xFF162033),
               fontSize: compact ? 15 : 16,
@@ -851,8 +877,8 @@ Color _accentColorFor(StaffMemberModel member) {
   ];
 
   final seed = '${member.id}-${member.name}'.codeUnits.fold<int>(
-        0,
-        (value, code) => value + code,
-      );
+    0,
+    (value, code) => value + code,
+  );
   return palette[seed % palette.length];
 }

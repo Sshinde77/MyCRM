@@ -63,8 +63,10 @@ class CreateClientRequestModel {
 
     if (_hasValue(phone)) payload['phone'] = phone!.trim();
     if (_hasValue(website)) payload['website'] = website!.trim();
-    if (_hasValue(addressLine2)) payload['address_line2'] = addressLine2!.trim();
-    if (_hasValue(priorityLevel)) payload['priority_level'] = priorityLevel!.trim();
+    if (_hasValue(addressLine2))
+      payload['address_line2'] = addressLine2!.trim();
+    if (_hasValue(priorityLevel))
+      payload['priority_level'] = priorityLevel!.trim();
     if (_hasValue(assignedManagerId)) {
       payload['assigned_manager_id'] = assignedManagerId!.trim();
     }

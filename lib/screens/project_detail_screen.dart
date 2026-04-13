@@ -1,480 +1,888 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/project_detail_model.dart';
+import 'package:mycrm/routes/app_routes.dart';
+import 'package:mycrm/services/api_service.dart';
 
-class ProjectDetailScreen extends StatelessWidget {
-  const ProjectDetailScreen({super.key});
+class ProjectDetailScreen extends StatefulWidget {
+  const ProjectDetailScreen({super.key, this.projectId});
 
-  static const Color background = Color(0xFFF5F7FB);
-  static const Color surface = Colors.white;
-  static const Color border = Color(0xFFE1E8F2);
-  static const Color title = Color(0xFF1E2740);
-  static const Color muted = Color(0xFF6E7F98);
-  static const Color blue = Color(0xFF3F7EF7);
+  final String? projectId;
+
+  static const background = Color(0xFFF5F7FB);
+  static const surface = Colors.white;
+  static const border = Color(0xFFE1E8F2);
+  static const title = Color(0xFF1E2740);
+  static const muted = Color(0xFF6E7F98);
+  static const blue = Color(0xFF3F7EF7);
+
+  @override
+  State<ProjectDetailScreen> createState() => _ProjectDetailScreenState();
+}
+
+class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
+  late Future<ProjectDetailModel> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<ProjectDetailModel> _load() async {
+    final id = (widget.projectId ?? '').trim();
+    if (id.isEmpty) throw Exception('Project id is missing.');
+    return ApiService.instance.getProjectDetail(id);
+  }
+
+  void _reload() => setState(() => _future = _load());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: background,
+      backgroundColor: ProjectDetailScreen.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 16, 22, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _TopBar(),
-              const SizedBox(height: 22),
-              const _HeroCard(),
-              const SizedBox(height: 24),
-              const _ProgressCard(),
-              const SizedBox(height: 22),
-              const _StatsRow(),
-              const SizedBox(height: 22),
-              const _DescriptionCard(),
-              const SizedBox(height: 22),
-              const _ClientInfoCard(),
-              const SizedBox(height: 20),
-              const _SectionTabs(),
-              const SizedBox(height: 22),
-              const _EmployeeCard(
-                name: 'Philip Hartman',
-                role: 'Design Team • Lead',
-                totalTime: '0h',
-                avatarUrl: '',
-                fallbackColor: Color(0xFF131B19),
+        child: FutureBuilder<ProjectDetailModel>(
+          future: _future,
+          builder: (context, snapshot) {
+            return RefreshIndicator(
+              onRefresh: () async => _reload(),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+                child: snapshot.connectionState == ConnectionState.waiting
+                    ? const _StateCard(
+                        icon: Icons.hourglass_top_rounded,
+                        title: 'Loading project...',
+                      )
+                    : snapshot.hasError
+                    ? _ErrorCard(onRetry: _reload)
+                    : _Body(project: snapshot.data!),
               ),
-              const SizedBox(height: 18),
-              const _EmployeeCard(
-                name: 'Sarah Jenkins',
-                role: 'Dev Team • Backend',
-                totalTime: '2.5h',
-                avatarUrl: 'https://i.pravatar.cc/200?img=47',
-                fallbackColor: Color(0xFFE6D2B8),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _TopBar extends StatelessWidget {
+class _Body extends StatefulWidget {
+  const _Body({required this.project});
+
+  final ProjectDetailModel project;
+
+  @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  _ProjectDetailTab _selectedTab = _ProjectDetailTab.employees;
+  String _employeeQuery = '';
+
+  List<ProjectAssignedEmployee> get _employees {
+    if (widget.project.employeeRecords.isNotEmpty) {
+      return widget.project.employeeRecords;
+    }
+
+    return widget.project.members
+        .map(
+          (member) => ProjectAssignedEmployee(
+            name: member,
+            avatarUrl: '',
+            firstName: member,
+            lastName: '',
+            email: 'Not available',
+            phone: 'Not available',
+            role: 'Staff',
+            status: 'Unknown',
+            team: 'Not assigned',
+            departments: const [],
+            startDate: widget.project.startDate,
+            deadline: widget.project.deadline,
+            totalTimeHours: '0.0h',
+          ),
+        )
+        .toList();
+  }
+
+  List<ProjectAssignedEmployee> get _filteredEmployees {
+    final query = _employeeQuery.trim().toLowerCase();
+    if (query.isEmpty) return _employees;
+    return _employees
+        .where((employee) => employee.name.toLowerCase().contains(query))
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final project = widget.project;
+    final accent = _accent(project.status);
+    final descriptionChips = [
+      ...project.technologies,
+      ...project.tags,
+    ].take(8).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF5E6E86), size: 30),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            'Project Details',
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.title,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+        Row(
+          children: [
+            IconButton(
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(
+                Icons.arrow_back_rounded,
+                color: Color(0xFF5E6E86),
+                size: 30,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
-          ),
-        ),
-        const Icon(Icons.notifications_none_rounded, color: Color(0xFF5E6E86), size: 29),
-        const SizedBox(width: 14),
-        const Icon(Icons.more_vert_rounded, color: Color(0xFF5E6E86), size: 29),
-      ],
-    );
-  }
-}
-
-class _HeroCard extends StatelessWidget {
-  const _HeroCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final compact = screenWidth < 400;
-
-    return Container(
-      padding: EdgeInsets.all(compact ? 20 : 28),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing: compact ? 8 : 10,
-                  runSpacing: compact ? 8 : 10,
-                  children: [
-                    _Badge(
-                      label: 'HIGH PRIORITY',
-                      bgColor: const Color(0xFFFFE3E1),
-                      fgColor: const Color(0xFFFF3B30),
-                      compact: compact,
-                    ),
-                    _Badge(
-                      label: 'IN PROGRESS',
-                      bgColor: const Color(0xFFDDEBFF),
-                      fgColor: const Color(0xFF2965F1),
-                      compact: compact,
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: compact ? 10 : 14),
-              Container(
-                width: compact ? 50 : 62,
-                height: compact ? 50 : 62,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  image: DecorationImage(
-                    image: NetworkImage('https://i.pravatar.cc/200?img=12'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Laith Barrera',
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.title,
-              fontSize: compact ? 19 : 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Divider(color: Color(0xFFEDF2F7), height: 1),
-          const SizedBox(height: 22),
-          const Row(
-            children: [
-              Expanded(child: _DateBlock(label: 'Start Date', value: 'Oct 30, 1980')),
-              SizedBox(width: 18),
-              Expanded(child: _DateBlock(label: 'End Date', value: 'Mar 04, 2026')),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressCard extends StatelessWidget {
-  const _ProgressCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: _cardDecoration(),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Overall Progress',
-                  style: AppTextStyles.style(
-                    color: ProjectDetailScreen.title,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Text(
-                '75%',
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Project Details',
                 style: AppTextStyles.style(
-                  color: ProjectDetailScreen.blue,
+                  color: ProjectDetailScreen.title,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: const LinearProgressIndicator(
-              value: 0.75,
-              minHeight: 14,
-              backgroundColor: Color(0xFFE9EEF5),
-              valueColor: AlwaysStoppedAnimation(Color(0xFF4A86F7)),
             ),
-          ),
-          const SizedBox(height: 36),
-          const Row(
-            children: [
-              Expanded(child: _MiniStat(value: '15', label: 'DONE', bgColor: Color(0xFFEAFBF1), fgColor: Color(0xFF1DA95B))),
-              SizedBox(width: 16),
-              Expanded(child: _MiniStat(value: '5', label: 'ACTIVE', bgColor: Color(0xFFFFF4E8), fgColor: Color(0xFFF26A22))),
-              SizedBox(width: 16),
-              Expanded(child: _MiniStat(value: '2', label: 'LATE', bgColor: Color(0xFFFFEFF0), fgColor: Color(0xFFE03131))),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 420;
-
-        return Row(
-          children: [
-            Expanded(
-              child: _MetricInfoCard(
-                icon: Icons.access_time_rounded,
-                iconColor: const Color(0xFF4A86F7),
-                label: 'Time Spent',
-                value: '4.1h',
-                compact: compact,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _MetricInfoCard(
-                icon: Icons.payments_outlined,
-                iconColor: const Color(0xFF22C55E),
-                label: 'Income',
-                value: 'Rs50,000',
-                compact: compact,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _MetricInfoCard(
-                icon: Icons.warning_amber_rounded,
-                iconColor: const Color(0xFFE03131),
-                label: 'Loss',
-                value: 'Rs3,200',
-                compact: compact,
-              ),
+            const Icon(
+              Icons.notifications_none_rounded,
+              color: Color(0xFF5E6E86),
+              size: 26,
             ),
           ],
-        );
-      },
-    );
-  }
-}
-
-class _DescriptionCard extends StatelessWidget {
-  const _DescriptionCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(28),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Project Description',
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.title,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'Full-scale digital transformation including performance-driven SEO strategies and a custom web application built with a modern tech stack.',
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.muted,
-              fontSize: 14,
-              height: 1.7,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Wrap(
-            spacing: 10,
-            runSpacing: 10,
+        ),
+        const SizedBox(height: 20),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TechChip(label: 'Development'),
-              _TechChip(label: 'SEO'),
-              _TechChip(label: 'Vue.js', accent: true),
-              _TechChip(label: 'Laravel', accent: true),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ClientInfoCard extends StatelessWidget {
-  const _ClientInfoCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(28),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F0FF),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(Icons.person_outline_rounded, color: Color(0xFF4281F4), size: 28),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
                 children: [
-                  Text(
-                    'Client Information',
-                    style: AppTextStyles.style(
-                      color: ProjectDetailScreen.title,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                  _Badge(
+                    label: project.priority.toUpperCase(),
+                    bg: _priorityColors(project.priority).background,
+                    fg: _priorityColors(project.priority).foreground,
+                  ),
+                  _Badge(
+                    label: project.status.toUpperCase(),
+                    bg: accent.withOpacity(0.14),
+                    fg: accent,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              const Divider(color: Color(0xFFEDF2F7)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _LabelValue(
+                      label: 'Project Name',
+                      value: project.title,
                     ),
                   ),
-                  Text(
-                    'ARNAV',
-                    style: AppTextStyles.style(
-                      color: ProjectDetailScreen.blue,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _LabelValue(label: 'Name', value: project.client),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _LabelValue(
+                      label: 'Start Date',
+                      value: project.startDate,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _LabelValue(
+                      label: 'Deadline',
+                      value: project.deadline,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 26),
-          const _InfoRow(label: 'Contact Person', value: 'Arnav Singh'),
-          const SizedBox(height: 18),
-          const _InfoRow(label: 'Email', value: 'arnav@example.com'),
-          const SizedBox(height: 18),
-          const _InfoRow(label: 'Phone', value: '+91 98765 43210'),
-          const SizedBox(height: 18),
-          const _InfoRow(label: 'Address', value: 'B-402, Business Park,\nMumbai, MH'),
-        ],
-      ),
+        ),
+        const SizedBox(height: 18),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Overall Progress',
+                      style: AppTextStyles.style(
+                        color: ProjectDetailScreen.title,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${(project.progress * 100).toInt()}%',
+                    style: AppTextStyles.style(
+                      color: ProjectDetailScreen.blue,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: project.progress,
+                  minHeight: 14,
+                  backgroundColor: const Color(0xFFE9EEF5),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF4A86F7)),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _MiniStat(
+                      label: 'Total Tasks',
+                      value: project.taskTotal,
+                      color: const Color(0xFF4A86F7),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _MiniStat(
+                      label: 'Completed',
+                      value: project.taskCompleted,
+                      color: const Color(0xFF22C55E),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _MiniStat(
+                      label: 'Remaining',
+                      value: project.taskRemaining,
+                      color: const Color(0xFFF26A22),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Project Description',
+                style: AppTextStyles.style(
+                  color: ProjectDetailScreen.title,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Html(
+                data: project.description.trim().isEmpty
+                    ? '<p>No description available</p>'
+                    : project.description,
+                style: {
+                  'body': Style(
+                    margin: Margins.zero,
+                    padding: HtmlPaddings.zero,
+                    color: ProjectDetailScreen.muted,
+                    fontSize: FontSize(14),
+                    lineHeight: const LineHeight(1.7),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  'p': Style(margin: Margins.zero, padding: HtmlPaddings.zero),
+                },
+              ),
+              if (descriptionChips.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: descriptionChips
+                      .map(
+                        (chip) => _Chip(
+                          label: chip,
+                          accent: project.technologies.contains(chip),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        _Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Client Information',
+                style: AppTextStyles.style(
+                  color: ProjectDetailScreen.title,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _InfoRow(label: 'Name', value: project.client),
+              const SizedBox(height: 14),
+              _InfoRow(label: 'Email', value: project.clientEmail),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        _SectionTabs(
+          selected: _selectedTab,
+          onSelected: (tab) => setState(() => _selectedTab = tab),
+        ),
+        const SizedBox(height: 18),
+        _buildSelectedSection(project),
+      ],
     );
+  }
+
+  Widget _buildSelectedSection(ProjectDetailModel project) {
+    switch (_selectedTab) {
+      case _ProjectDetailTab.employees:
+        return _EmployeesSection(
+          employees: _filteredEmployees,
+          onSearchChanged: (value) => setState(() => _employeeQuery = value),
+        );
+      case _ProjectDetailTab.tasks:
+        return _TasksSection(tasks: project.taskRecords);
+      case _ProjectDetailTab.files:
+      case _ProjectDetailTab.usage:
+      case _ProjectDetailTab.milestones:
+      case _ProjectDetailTab.issues:
+      case _ProjectDetailTab.comments:
+        return _PlaceholderSection(title: _selectedTab.title);
+    }
   }
 }
 
+enum _ProjectDetailTab {
+  employees('Employees'),
+  tasks('Tasks'),
+  files('Files'),
+  usage('Usage'),
+  milestones('Milestones'),
+  issues('Issues'),
+  comments('Comments');
+
+  const _ProjectDetailTab(this.title);
+  final String title;
+}
+
 class _SectionTabs extends StatelessWidget {
-  const _SectionTabs();
+  const _SectionTabs({required this.selected, required this.onSelected});
+
+  final _ProjectDetailTab selected;
+  final ValueChanged<_ProjectDetailTab> onSelected;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: [
-          _tab('Employees', true),
-          _tab('Tasks', false),
-          _tab('Files', false),
-          _tab('Usage', false),
-          _tab('Milestones', false),
-        ],
+        children: _ProjectDetailTab.values
+            .map(
+              (tab) => Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: InkWell(
+                  onTap: () => onSelected(tab),
+                  borderRadius: BorderRadius.circular(14),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected == tab
+                          ? Colors.white
+                          : const Color(0xFFEAF1FF),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected == tab
+                            ? const Color(0xFFD5E0F4)
+                            : const Color(0xFFDCE7FA),
+                      ),
+                      boxShadow: selected == tab
+                          ? const [
+                              BoxShadow(
+                                color: Color(0x120F172A),
+                                blurRadius: 16,
+                                offset: Offset(0, 8),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      tab.title,
+                      style: AppTextStyles.style(
+                        color: selected == tab
+                            ? ProjectDetailScreen.title
+                            : ProjectDetailScreen.blue,
+                        fontSize: 14,
+                        fontWeight: selected == tab
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
+}
 
-  Widget _tab(String label, bool active) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 26),
+class _EmployeesSection extends StatelessWidget {
+  const _EmployeesSection({
+    required this.employees,
+    required this.onSearchChanged,
+  });
+
+  final List<ProjectAssignedEmployee> employees;
+  final ValueChanged<String> onSearchChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: active ? ProjectDetailScreen.blue : const Color(0xFF62748D),
-              fontSize: 13,
-              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 640;
+              return compact
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Assigned Employees',
+                          style: AppTextStyles.style(
+                            color: ProjectDetailScreen.title,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _SearchBox(
+                          hintText: 'Search employees...',
+                          onChanged: onSearchChanged,
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Assigned Employees',
+                            style: AppTextStyles.style(
+                              color: ProjectDetailScreen.title,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        SizedBox(
+                          width: 280,
+                          child: _SearchBox(
+                            hintText: 'Search employees...',
+                            onChanged: onSearchChanged,
+                          ),
+                        ),
+                      ],
+                    );
+            },
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: active ? 74 : 0,
-            height: 3,
-            decoration: BoxDecoration(
-              color: active ? ProjectDetailScreen.blue : Colors.transparent,
-              borderRadius: BorderRadius.circular(999),
+          const SizedBox(height: 18),
+          if (employees.isEmpty)
+            const _EmptySectionState(message: 'No assigned employees found.')
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final cardWidth = width >= 1100
+                    ? (width - 24) / 3
+                    : width >= 720
+                    ? (width - 16) / 2
+                    : width;
+
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: employees
+                      .map(
+                        (employee) => SizedBox(
+                          width: cardWidth,
+                          child: _EmployeeInfoCard(employee: employee),
+                        ),
+                      )
+                      .toList(),
+                );
+              },
             ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _EmployeeCard extends StatelessWidget {
-  final String name;
-  final String role;
-  final String totalTime;
-  final String avatarUrl;
-  final Color fallbackColor;
+class _TasksSection extends StatelessWidget {
+  const _TasksSection({required this.tasks});
 
-  const _EmployeeCard({
-    required this.name,
-    required this.role,
-    required this.totalTime,
-    required this.avatarUrl,
-    required this.fallbackColor,
-  });
+  final List<ProjectTaskRecord> tasks;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 640;
+              return compact
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Project Tasks',
+                          style: AppTextStyles.style(
+                            color: ProjectDetailScreen.title,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _PrimaryActionButton(
+                          label: 'Create Task',
+                          onTap: () => Get.toNamed(AppRoutes.tasks),
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Project Tasks',
+                            style: AppTextStyles.style(
+                              color: ProjectDetailScreen.title,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        _PrimaryActionButton(
+                          label: 'Create Task',
+                          onTap: () => Get.toNamed(AppRoutes.tasks),
+                        ),
+                      ],
+                    );
+            },
+          ),
+          const SizedBox(height: 18),
+          if (tasks.isEmpty)
+            const _EmptySectionState(
+              message: 'No tasks available for this project.',
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: 980,
+                child: Column(
+                  children: [
+                    const _TableHeader(
+                      columns: [
+                        _TableColumn(title: 'Task ID', width: 90),
+                        _TableColumn(title: 'Task', width: 320),
+                        _TableColumn(title: 'Created On', width: 140),
+                        _TableColumn(title: 'Priority', width: 120),
+                        _TableColumn(title: 'Status', width: 120),
+                        _TableColumn(title: 'Assignee', width: 190),
+                      ],
+                    ),
+                    ...tasks.map(
+                      (task) => _TableRow(
+                        cells: [
+                          _TextCell(
+                            task.id.isEmpty ? '--' : '#${task.id}',
+                            width: 90,
+                          ),
+                          _TextCell(task.title, width: 320, accent: true),
+                          _TextCell(task.createdOn, width: 140),
+                          _BadgeCell(
+                            label: task.priority,
+                            width: 120,
+                            colors: _priorityColors(task.priority),
+                          ),
+                          _BadgeCell(
+                            label: task.status,
+                            width: 120,
+                            colors: _statusColors(task.status),
+                          ),
+                          _AssigneeCell(task: task, width: 190),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaceholderSection extends StatelessWidget {
+  const _PlaceholderSection({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: const _EmptySectionState(
+        message: 'This section is ready for API data and UI mapping.',
+      ),
+    );
+  }
+}
+
+class _SearchBox extends StatelessWidget {
+  const _SearchBox({required this.hintText, required this.onChanged});
+
+  final String hintText;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              color: fallbackColor,
-              shape: BoxShape.circle,
-              image: avatarUrl.isEmpty
-                  ? null
-                  : DecorationImage(image: NetworkImage(avatarUrl), fit: BoxFit.cover),
-            ),
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFD8E1EF)),
+      ),
+      child: TextField(
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          icon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8)),
+          hintText: hintText,
+          hintStyle: AppTextStyles.style(
+            color: const Color(0xFF94A3B8),
+            fontSize: 14,
           ),
-          const SizedBox(width: 18),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryActionButton extends StatelessWidget {
+  const _PrimaryActionButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          decoration: BoxDecoration(
+            color: ProjectDetailScreen.blue,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.add_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TableHeader extends StatelessWidget {
+  const _TableHeader({required this.columns});
+
+  final List<_TableColumn> columns;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFE7EDF6))),
+      ),
+      child: Row(
+        children: columns
+            .map(
+              (column) => SizedBox(
+                width: column.width,
+                child: Text(
+                  column.title,
+                  style: AppTextStyles.style(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _TableColumn {
+  const _TableColumn({required this.title, required this.width});
+
+  final String title;
+  final double width;
+}
+
+class _TableRow extends StatelessWidget {
+  const _TableRow({required this.cells});
+
+  final List<Widget> cells;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFFEFF4FA))),
+      ),
+      child: Row(children: cells),
+    );
+  }
+}
+
+class _TextCell extends StatelessWidget {
+  const _TextCell(this.text, {required this.width, this.accent = false});
+
+  final String text;
+  final double width;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Text(
+        text,
+        style: AppTextStyles.style(
+          color: accent ? ProjectDetailScreen.blue : ProjectDetailScreen.title,
+          fontSize: 14,
+          fontWeight: accent ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmployeeInfoCard extends StatelessWidget {
+  const _EmployeeInfoCard({required this.employee});
+
+  final ProjectAssignedEmployee employee;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = [
+      employee.firstName.trim(),
+      employee.lastName.trim(),
+    ].where((value) => value.isNotEmpty).join(' ');
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FBFF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFDCE7F7)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Avatar(name: employee.name, imageUrl: employee.avatarUrl),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  displayName.isEmpty ? '--' : displayName,
                   style: AppTextStyles.style(
                     color: ProjectDetailScreen.title,
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 10),
                 Text(
-                  role,
+                  'Departments',
                   style: AppTextStyles.style(
                     color: ProjectDetailScreen.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  employee.departmentLabel,
+                  style: AppTextStyles.style(
+                    color: ProjectDetailScreen.title,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -482,26 +890,36 @@ class _EmployeeCard extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                totalTime,
-                style: AppTextStyles.style(
-                  color: ProjectDetailScreen.blue,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AssigneeCell extends StatelessWidget {
+  const _AssigneeCell({required this.task, required this.width});
+
+  final ProjectTaskRecord task;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Row(
+        children: [
+          _Avatar(name: task.assigneeName, imageUrl: task.assigneeAvatarUrl),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              task.assigneeName,
+              style: AppTextStyles.style(
+                color: ProjectDetailScreen.title,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              Text(
-                'TOTAL TIME',
-                style: AppTextStyles.style(
-                  color: const Color(0xFFA1AEC0),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -509,250 +927,401 @@ class _EmployeeCard extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  final String label;
-  final Color bgColor;
-  final Color fgColor;
-  final bool compact;
-
-  const _Badge({
+class _BadgeCell extends StatelessWidget {
+  const _BadgeCell({
     required this.label,
-    required this.bgColor,
-    required this.fgColor,
-    this.compact = false,
+    required this.width,
+    required this.colors,
   });
+
+  final String label;
+  final double width;
+  final _BadgeColors colors;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 14,
-        vertical: compact ? 6 : 7,
-      ),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.style(
-          color: fgColor,
-          fontSize: compact ? 10 : 12,
-          fontWeight: FontWeight.w700,
+    return SizedBox(
+      width: width,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: colors.background,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: AppTextStyles.style(
+              color: colors.foreground,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-class _DateBlock extends StatelessWidget {
-  final String label;
-  final String value;
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.name, required this.imageUrl});
 
-  const _DateBlock({required this.label, required this.value});
+  final String name;
+  final String imageUrl;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
+    final initials = _initials(name);
+    final hasImage = imageUrl.trim().isNotEmpty;
+
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: const Color(0xFFE8EEF8),
+      backgroundImage: hasImage ? NetworkImage(imageUrl) : null,
+      child: hasImage
+          ? null
+          : Text(
+              initials,
+              style: AppTextStyles.style(
+                color: ProjectDetailScreen.blue,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+    );
+  }
+}
+
+class _EmptySectionState extends StatelessWidget {
+  const _EmptySectionState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Center(
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
           style: AppTextStyles.style(
             color: ProjectDetailScreen.muted,
-            fontSize: 12,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: AppTextStyles.style(
-            color: ProjectDetailScreen.title,
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-          ),
+      ),
+    );
+  }
+}
+
+class _BadgeColors {
+  const _BadgeColors(this.background, this.foreground);
+
+  final Color background;
+  final Color foreground;
+}
+
+class _Card extends StatelessWidget {
+  const _Card({required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(22),
+    decoration: BoxDecoration(
+      color: ProjectDetailScreen.surface,
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: ProjectDetailScreen.border),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x120F172A),
+          blurRadius: 18,
+          offset: Offset(0, 10),
         ),
       ],
-    );
-  }
+    ),
+    child: child,
+  );
 }
 
-class _MiniStat extends StatelessWidget {
-  final String value;
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.bg, required this.fg});
   final String label;
-  final Color bgColor;
-  final Color fgColor;
-
-  const _MiniStat({
-    required this.value,
-    required this.label,
-    required this.bgColor,
-    required this.fgColor,
-  });
-
+  final Color bg;
+  final Color fg;
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 18),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: fgColor.withOpacity(0.18)),
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    decoration: BoxDecoration(
+      color: bg,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      label,
+      style: AppTextStyles.style(
+        color: fg,
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
       ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTextStyles.style(
-              color: fgColor,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: fgColor,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+    ),
+  );
 }
 
-class _MetricInfoCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
+class _LabelValue extends StatelessWidget {
+  const _LabelValue({required this.label, required this.value});
   final String label;
   final String value;
-  final bool compact;
-
-  const _MetricInfoCard({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-    this.compact = false,
-  });
-
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(compact ? 16 : 20),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: iconColor, size: compact ? 24 : 30),
-          SizedBox(height: compact ? 14 : 18),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.muted,
-              fontSize: compact ? 11 : 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.title,
-              fontSize: compact ? 13 : 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TechChip extends StatelessWidget {
-  final String label;
-  final bool accent;
-
-  const _TechChip({required this.label, this.accent = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: accent ? const Color(0xFFEAF1FF) : const Color(0xFFF2F5F9),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
         label,
         style: AppTextStyles.style(
-          color: accent ? ProjectDetailScreen.blue : const Color(0xFF53657E),
+          color: ProjectDetailScreen.muted,
           fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.muted,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+      const SizedBox(height: 8),
+      Text(
+        value,
+        style: AppTextStyles.style(
+          color: ProjectDetailScreen.title,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.title,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-BoxDecoration _cardDecoration() {
-  return BoxDecoration(
-    color: ProjectDetailScreen.surface,
-    borderRadius: BorderRadius.circular(22),
-    border: Border.all(color: ProjectDetailScreen.border),
-    boxShadow: const [
-      BoxShadow(
-        color: Color(0x120F172A),
-        blurRadius: 18,
-        offset: Offset(0, 10),
       ),
     ],
   );
 }
 
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+  final String label;
+  final String value;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    decoration: BoxDecoration(
+      color: color.withOpacity(0.08),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: color.withOpacity(0.16)),
+    ),
+    child: Column(
+      children: [
+        Text(
+          value,
+          style: AppTextStyles.style(
+            color: color,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label.toUpperCase(),
+          style: AppTextStyles.style(
+            color: color,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({required this.label, this.accent = false});
+  final String label;
+  final bool accent;
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    decoration: BoxDecoration(
+      color: accent ? const Color(0xFFEAF1FF) : const Color(0xFFF2F5F9),
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      label,
+      style: AppTextStyles.style(
+        color: accent ? ProjectDetailScreen.blue : const Color(0xFF53657E),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.label, required this.value});
+  final String label;
+  final String value;
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Expanded(
+        child: Text(
+          label,
+          style: AppTextStyles.style(
+            color: ProjectDetailScreen.muted,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      const SizedBox(width: 1),
+      Expanded(
+        child: Text(
+          value,
+          textAlign: TextAlign.right,
+          style: AppTextStyles.style(
+            color: ProjectDetailScreen.title,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _StateCard extends StatelessWidget {
+  const _StateCard({required this.icon, required this.title});
+  final IconData icon;
+  final String title;
+  @override
+  Widget build(BuildContext context) => _Card(
+    child: Column(
+      children: [
+        Icon(icon, size: 34, color: const Color(0xFF94A3B8)),
+        const SizedBox(height: 12),
+        Text(
+          title,
+          style: AppTextStyles.style(
+            color: ProjectDetailScreen.title,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({required this.onRetry});
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => _Card(
+    child: Column(
+      children: [
+        const Icon(Icons.cloud_off_rounded, size: 34, color: Color(0xFFB42318)),
+        const SizedBox(height: 12),
+        Text(
+          'Unable to load project details',
+          style: AppTextStyles.style(
+            color: ProjectDetailScreen.title,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Pull to refresh or retry the request.',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.style(
+            color: ProjectDetailScreen.muted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onRetry,
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+              backgroundColor: const Color(0xFF1D6FEA),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            label: Text(
+              'Retry',
+              style: AppTextStyles.style(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Color _accent(String status) {
+  final s = status.toLowerCase();
+  if (s.contains('progress') || s.contains('active'))
+    return const Color(0xFF1D6FEA);
+  if (s.contains('planning')) return const Color(0xFF8B5CF6);
+  if (s.contains('hold') || s.contains('pending'))
+    return const Color(0xFFF59E0B);
+  if (s.contains('complete') || s.contains('done'))
+    return const Color(0xFF10B981);
+  return const Color(0xFF4F5D74);
+}
+
+_BadgeColors _priorityColors(String priority) {
+  final value = priority.toLowerCase();
+  if (value.contains('high')) {
+    return const _BadgeColors(Color(0xFFFFE3E1), Color(0xFFFF3B30));
+  }
+  if (value.contains('medium')) {
+    return const _BadgeColors(Color(0xFFFFF3D6), Color(0xFFD97706));
+  }
+  if (value.contains('low')) {
+    return const _BadgeColors(Color(0xFFE8F7EE), Color(0xFF16A34A));
+  }
+  return const _BadgeColors(Color(0xFFF1F5F9), Color(0xFF475569));
+}
+
+_BadgeColors _statusColors(String status) {
+  final value = status.toLowerCase();
+  if (value.contains('complete') || value.contains('done')) {
+    return const _BadgeColors(Color(0xFFDCFCE7), Color(0xFF16A34A));
+  }
+  if (value.contains('progress') || value.contains('active')) {
+    return const _BadgeColors(Color(0xFFDBEAFE), Color(0xFF2563EB));
+  }
+  if (value.contains('pending') || value.contains('hold')) {
+    return const _BadgeColors(Color(0xFFFFF3D6), Color(0xFFD97706));
+  }
+  return const _BadgeColors(Color(0xFFF1F5F9), Color(0xFF475569));
+}
+
+String _initials(String value) {
+  final parts = value
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+      .toUpperCase();
+}

@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 class Helpers {
   /// Shows a short snackbar inside the current BuildContext.
   static void showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

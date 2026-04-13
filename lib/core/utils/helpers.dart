@@ -4,7 +4,11 @@ import 'package:get/get.dart';
 /// Small UI helpers used across screens.
 class Helpers {
   /// Shows a GetX snackbar with standard success/error coloring.
-  static void showSnackbar(String title, String message, {bool isError = false}) {
+  static void showSnackbar(
+    String title,
+    String message, {
+    bool isError = false,
+  }) {
     Get.snackbar(
       title,
       message,

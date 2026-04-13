@@ -21,9 +21,11 @@ dependencies:
   flutter_svg: ^2.2.4
   google_fonts: ^8.0.2
   image_picker: ^1.2.1
+  file_picker: ^10.1.9
   permission_handler: ^12.0.1
   provider: ^6.1.5
   country_state_city_selector: ^1.0.6
+  flutter_html: ^3.0.0
 # Packages used only during development and testing.
 dev_dependencies:
   flutter_test:

@@ -16,21 +16,71 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   static const _pageSize = 3;
 
   static const List<_IssueItem> _allIssues = [
-    _IssueItem('#ISS-2034', 'Project: Laith Barrera',
-        'Database migration failure on staging', 'Arnav', 'Oct 24, 2023', 'Low',
-        Color(0xFFF1F5F9), Color(0xFF475569), 'Open', Color(0xFFFCE7E7), Color(0xFFEF4444)),
-    _IssueItem('#ISS-2035', 'Project: Evelyn Fox',
-        'Login API timeout during peak hours', 'Zara Sheikh', 'Oct 25, 2023', 'High',
-        Color(0xFFFFEDD5), Color(0xFFF97316), 'In Progress', Color(0xFFDCEAFE), Color(0xFF2563EB)),
-    _IssueItem('#ISS-2036', 'Project: Project Delta',
-        'UI responsiveness on iPhone 15', 'John Doe', 'Oct 26, 2023', 'Medium',
-        Color(0xFFF1F5F9), Color(0xFF475569), 'Open', Color(0xFFFCE7E7), Color(0xFFEF4444)),
-    _IssueItem('#ISS-2037', 'Project: Nova Retail',
-        'Invoice export generates blank PDF attachments', 'Ayesha Khan', 'Oct 27, 2023', 'High',
-        Color(0xFFFFEDD5), Color(0xFFF97316), 'Open', Color(0xFFFCE7E7), Color(0xFFEF4444)),
-    _IssueItem('#ISS-2038', 'Project: Atlas Group',
-        'Lead activity timeline not refreshing automatically', 'Riya Patel', 'Oct 28, 2023', 'Low',
-        Color(0xFFF1F5F9), Color(0xFF475569), 'Closed', Color(0xFFE8F8EE), Color(0xFF16A34A)),
+    _IssueItem(
+      '#ISS-2034',
+      'Project: Laith Barrera',
+      'Database migration failure on staging',
+      'Arnav',
+      'Oct 24, 2023',
+      'Low',
+      Color(0xFFF1F5F9),
+      Color(0xFF475569),
+      'Open',
+      Color(0xFFFCE7E7),
+      Color(0xFFEF4444),
+    ),
+    _IssueItem(
+      '#ISS-2035',
+      'Project: Evelyn Fox',
+      'Login API timeout during peak hours',
+      'Zara Sheikh',
+      'Oct 25, 2023',
+      'High',
+      Color(0xFFFFEDD5),
+      Color(0xFFF97316),
+      'In Progress',
+      Color(0xFFDCEAFE),
+      Color(0xFF2563EB),
+    ),
+    _IssueItem(
+      '#ISS-2036',
+      'Project: Project Delta',
+      'UI responsiveness on iPhone 15',
+      'John Doe',
+      'Oct 26, 2023',
+      'Medium',
+      Color(0xFFF1F5F9),
+      Color(0xFF475569),
+      'Open',
+      Color(0xFFFCE7E7),
+      Color(0xFFEF4444),
+    ),
+    _IssueItem(
+      '#ISS-2037',
+      'Project: Nova Retail',
+      'Invoice export generates blank PDF attachments',
+      'Ayesha Khan',
+      'Oct 27, 2023',
+      'High',
+      Color(0xFFFFEDD5),
+      Color(0xFFF97316),
+      'Open',
+      Color(0xFFFCE7E7),
+      Color(0xFFEF4444),
+    ),
+    _IssueItem(
+      '#ISS-2038',
+      'Project: Atlas Group',
+      'Lead activity timeline not refreshing automatically',
+      'Riya Patel',
+      'Oct 28, 2023',
+      'Low',
+      Color(0xFFF1F5F9),
+      Color(0xFF475569),
+      'Closed',
+      Color(0xFFE8F8EE),
+      Color(0xFF16A34A),
+    ),
   ];
 
   List<_IssueItem> get _filtered {
@@ -46,12 +96,15 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
     }).toList();
   }
 
-  int get _pageCount => _filtered.isEmpty ? 1 : (_filtered.length / _pageSize).ceil();
+  int get _pageCount =>
+      _filtered.isEmpty ? 1 : (_filtered.length / _pageSize).ceil();
 
   List<_IssueItem> get _visible {
     final start = (_page - 1) * _pageSize;
     if (start >= _filtered.length) return const [];
-    final end = start + _pageSize > _filtered.length ? _filtered.length : start + _pageSize;
+    final end = start + _pageSize > _filtered.length
+        ? _filtered.length
+        : start + _pageSize;
     return _filtered.sublist(start, end);
   }
 
@@ -69,7 +122,9 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final startEntry = _filtered.isEmpty ? 0 : ((_page - 1) * _pageSize) + 1;
-    final endEntry = _filtered.isEmpty ? 0 : ((_page - 1) * _pageSize) + _visible.length;
+    final endEntry = _filtered.isEmpty
+        ? 0
+        : ((_page - 1) * _pageSize) + _visible.length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAFF),
@@ -85,7 +140,12 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                 _MobileAppBar(compact: compact),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(0, compact ? 6 : 10, 0, compact ? 12 : 16),
+                    padding: EdgeInsets.fromLTRB(
+                      0,
+                      compact ? 6 : 10,
+                      0,
+                      compact ? 12 : 16,
+                    ),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 560),
@@ -103,8 +163,12 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(compact ? 24 : 28),
-                                  border: Border.all(color: const Color(0xFFD8E1EF)),
+                                  borderRadius: BorderRadius.circular(
+                                    compact ? 24 : 28,
+                                  ),
+                                  border: Border.all(
+                                    color: const Color(0xFFD8E1EF),
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0x120F172A),
@@ -116,96 +180,211 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                 child: Column(
                                   children: [
                                     Padding(
-                                      padding: EdgeInsets.fromLTRB(inner, inner, inner, compact ? 12 : 14),
+                                      padding: EdgeInsets.fromLTRB(
+                                        inner,
+                                        inner,
+                                        inner,
+                                        compact ? 12 : 14,
+                                      ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
-                                              Text('Show', style: _ts(const Color(0xFF64748B), compact ? 14 : 15, FontWeight.w500)),
+                                              Text(
+                                                'Show',
+                                                style: _ts(
+                                                  const Color(0xFF64748B),
+                                                  compact ? 14 : 15,
+                                                  FontWeight.w500,
+                                                ),
+                                              ),
                                               SizedBox(width: compact ? 8 : 10),
                                               Container(
-                                                padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14, vertical: compact ? 8 : 9),
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: compact ? 12 : 14,
+                                                  vertical: compact ? 8 : 9,
+                                                ),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFFF8FAFC),
-                                                  borderRadius: BorderRadius.circular(compact ? 16 : 18),
-                                                  border: Border.all(color: const Color(0xFFD8E1EF)),
+                                                  color: const Color(
+                                                    0xFFF8FAFC,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                        compact ? 16 : 18,
+                                                      ),
+                                                  border: Border.all(
+                                                    color: const Color(
+                                                      0xFFD8E1EF,
+                                                    ),
+                                                  ),
                                                 ),
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
-                                                    Text('10', style: _ts(const Color(0xFF334155), compact ? 14 : 15, FontWeight.w600)),
-                                                    Icon(Icons.keyboard_arrow_down_rounded, color: const Color(0xFF64748B), size: compact ? 18 : 20),
+                                                    Text(
+                                                      '10',
+                                                      style: _ts(
+                                                        const Color(0xFF334155),
+                                                        compact ? 14 : 15,
+                                                        FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    Icon(
+                                                      Icons
+                                                          .keyboard_arrow_down_rounded,
+                                                      color: const Color(
+                                                        0xFF64748B,
+                                                      ),
+                                                      size: compact ? 18 : 20,
+                                                    ),
                                                   ],
                                                 ),
                                               ),
                                               SizedBox(width: compact ? 8 : 10),
-                                              Text('entries', style: _ts(const Color(0xFF64748B), compact ? 14 : 15, FontWeight.w500)),
+                                              Text(
+                                                'entries',
+                                                style: _ts(
+                                                  const Color(0xFF64748B),
+                                                  compact ? 14 : 15,
+                                                  FontWeight.w500,
+                                                ),
+                                              ),
                                             ],
                                           ),
                                           SizedBox(height: compact ? 12 : 14),
                                           TextField(
                                             controller: _searchController,
-                                            onChanged: (_) => setState(() => _page = 1),
-                                            style: _ts(const Color(0xFF334155), compact ? 14 : 15, FontWeight.w500),
+                                            onChanged: (_) =>
+                                                setState(() => _page = 1),
+                                            style: _ts(
+                                              const Color(0xFF334155),
+                                              compact ? 14 : 15,
+                                              FontWeight.w500,
+                                            ),
                                             decoration: InputDecoration(
                                               hintText: 'Search issues...',
-                                              hintStyle: _ts(const Color(0xFF94A3B8), compact ? 14 : 15, FontWeight.w500),
-                                              prefixIcon: Icon(Icons.search_rounded, color: const Color(0xFF94A3B8), size: compact ? 20 : 22),
+                                              hintStyle: _ts(
+                                                const Color(0xFF94A3B8),
+                                                compact ? 14 : 15,
+                                                FontWeight.w500,
+                                              ),
+                                              prefixIcon: Icon(
+                                                Icons.search_rounded,
+                                                color: const Color(0xFF94A3B8),
+                                                size: compact ? 20 : 22,
+                                              ),
                                               filled: true,
-                                              fillColor: const Color(0xFFF8FAFC),
-                                              contentPadding: EdgeInsets.symmetric(vertical: compact ? 13 : 15),
+                                              fillColor: const Color(
+                                                0xFFF8FAFC,
+                                              ),
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: compact ? 13 : 15,
+                                                  ),
                                               enabledBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(compact ? 18 : 20),
-                                                borderSide: const BorderSide(color: Color(0xFFD8E1EF)),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      compact ? 18 : 20,
+                                                    ),
+                                                borderSide: const BorderSide(
+                                                  color: Color(0xFFD8E1EF),
+                                                ),
                                               ),
                                               focusedBorder: OutlineInputBorder(
-                                                borderRadius: BorderRadius.circular(compact ? 18 : 20),
-                                                borderSide: const BorderSide(color: Color(0xFF3B82F6)),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      compact ? 18 : 20,
+                                                    ),
+                                                borderSide: const BorderSide(
+                                                  color: Color(0xFF3B82F6),
+                                                ),
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Divider(height: 1, color: Color(0xFFD8E1EF)),
+                                    const Divider(
+                                      height: 1,
+                                      color: Color(0xFFD8E1EF),
+                                    ),
                                     Padding(
-                                      padding: EdgeInsets.fromLTRB(compact ? 12 : 14, compact ? 12 : 14, compact ? 12 : 14, compact ? 10 : 12),
+                                      padding: EdgeInsets.fromLTRB(
+                                        compact ? 12 : 14,
+                                        compact ? 12 : 14,
+                                        compact ? 12 : 14,
+                                        compact ? 10 : 12,
+                                      ),
                                       child: Column(
                                         children: _visible.isEmpty
                                             ? [
                                                 Container(
                                                   width: double.infinity,
-                                                  padding: EdgeInsets.all(compact ? 20 : 24),
+                                                  padding: EdgeInsets.all(
+                                                    compact ? 20 : 24,
+                                                  ),
                                                   decoration: BoxDecoration(
-                                                    color: const Color(0xFFFBFDFF),
-                                                    borderRadius: BorderRadius.circular(compact ? 20 : 24),
-                                                    border: Border.all(color: const Color(0xFFE6ECF5)),
+                                                    color: const Color(
+                                                      0xFFFBFDFF,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          compact ? 20 : 24,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: const Color(
+                                                        0xFFE6ECF5,
+                                                      ),
+                                                    ),
                                                   ),
                                                   child: Text(
                                                     'No issues match your search.',
                                                     textAlign: TextAlign.center,
-                                                    style: _ts(const Color(0xFF64748B), compact ? 14 : 15, FontWeight.w500),
+                                                    style: _ts(
+                                                      const Color(0xFF64748B),
+                                                      compact ? 14 : 15,
+                                                      FontWeight.w500,
+                                                    ),
                                                   ),
                                                 ),
                                               ]
                                             : _visible.map((issue) {
                                                 return Padding(
-                                                  padding: EdgeInsets.only(bottom: compact ? 12 : 14),
-                                                  child: _IssueCard(issue: issue, compact: compact),
+                                                  padding: EdgeInsets.only(
+                                                    bottom: compact ? 12 : 14,
+                                                  ),
+                                                  child: _IssueCard(
+                                                    issue: issue,
+                                                    compact: compact,
+                                                  ),
                                                 );
                                               }).toList(),
                                       ),
                                     ),
-                                    const Divider(height: 1, color: Color(0xFFD8E1EF)),
+                                    const Divider(
+                                      height: 1,
+                                      color: Color(0xFFD8E1EF),
+                                    ),
                                     Padding(
-                                      padding: EdgeInsets.fromLTRB(compact ? 12 : 16, compact ? 14 : 16, compact ? 12 : 16, compact ? 16 : 18),
+                                      padding: EdgeInsets.fromLTRB(
+                                        compact ? 12 : 16,
+                                        compact ? 14 : 16,
+                                        compact ? 12 : 16,
+                                        compact ? 16 : 18,
+                                      ),
                                       child: Column(
                                         children: [
                                           Text(
                                             'Showing $startEntry to $endEntry of ${_filtered.length} entries',
                                             textAlign: TextAlign.center,
-                                            style: _ts(const Color(0xFF64748B), compact ? 13 : 14, FontWeight.w500),
+                                            style: _ts(
+                                              const Color(0xFF64748B),
+                                              compact ? 13 : 14,
+                                              FontWeight.w500,
+                                            ),
                                           ),
                                           SizedBox(height: compact ? 12 : 14),
                                           Wrap(
@@ -213,17 +392,30 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                             spacing: compact ? 6 : 8,
                                             runSpacing: compact ? 8 : 10,
                                             children: [
-                                              _PageAction('Previous', _page > 1, () => _setPage(_page - 1), compact: compact),
-                                              ...List.generate(_pageCount > 3 ? 3 : _pageCount, (i) {
-                                                final p = i + 1;
-                                                return _PageChip(
-                                                  label: '$p',
-                                                  selected: p == _page,
-                                                  compact: compact,
-                                                  onTap: () => _setPage(p),
-                                                );
-                                              }),
-                                              _PageAction('Next', _page < _pageCount, () => _setPage(_page + 1), compact: compact),
+                                              _PageAction(
+                                                'Previous',
+                                                _page > 1,
+                                                () => _setPage(_page - 1),
+                                                compact: compact,
+                                              ),
+                                              ...List.generate(
+                                                _pageCount > 3 ? 3 : _pageCount,
+                                                (i) {
+                                                  final p = i + 1;
+                                                  return _PageChip(
+                                                    label: '$p',
+                                                    selected: p == _page,
+                                                    compact: compact,
+                                                    onTap: () => _setPage(p),
+                                                  );
+                                                },
+                                              ),
+                                              _PageAction(
+                                                'Next',
+                                                _page < _pageCount,
+                                                () => _setPage(_page + 1),
+                                                compact: compact,
+                                              ),
                                             ],
                                           ),
                                         ],
@@ -287,10 +479,18 @@ class _MobileAppBar extends StatelessWidget {
             child: Text(
               'Issue Management',
               overflow: TextOverflow.ellipsis,
-              style: _ts(const Color(0xFF17213A), compact ? 17 : 18, FontWeight.w700),
+              style: _ts(
+                const Color(0xFF17213A),
+                compact ? 17 : 18,
+                FontWeight.w700,
+              ),
             ),
           ),
-          const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B), size: 24),
+          const Icon(
+            Icons.notifications_none_rounded,
+            color: Color(0xFF64748B),
+            size: 24,
+          ),
           Container(
             height: compact ? 28 : 30,
             width: 1,
@@ -319,7 +519,12 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(compact ? 14 : 18, compact ? 10 : 14, compact ? 14 : 18, compact ? 14 : 16),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 14 : 18,
+        compact ? 10 : 14,
+        compact ? 14 : 18,
+        compact ? 14 : 16,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -329,18 +534,29 @@ class _Header extends StatelessWidget {
               children: [
                 RichText(
                   text: TextSpan(
-                    style: _ts(const Color(0xFF64748B), compact ? 12 : 13, FontWeight.w500),
+                    style: _ts(
+                      const Color(0xFF64748B),
+                      compact ? 12 : 13,
+                      FontWeight.w500,
+                    ),
                     children: const [
                       TextSpan(text: 'Dashboard'),
                       TextSpan(text: '  >  '),
-                      TextSpan(text: 'Client Issue Management', style: TextStyle(color: Color(0xFF3B82F6))),
+                      TextSpan(
+                        text: 'Client Issue Management',
+                        style: TextStyle(color: Color(0xFF3B82F6)),
+                      ),
                     ],
                   ),
                 ),
                 SizedBox(height: compact ? 6 : 8),
                 Text(
                   'Issue Management',
-                  style: _ts(const Color(0xFF17213A), compact ? 22 : 24, FontWeight.w700),
+                  style: _ts(
+                    const Color(0xFF17213A),
+                    compact ? 22 : 24,
+                    FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -352,9 +568,19 @@ class _Header extends StatelessWidget {
             decoration: const BoxDecoration(
               color: Color(0xFF17213A),
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Color(0x220F172A), blurRadius: 18, offset: Offset(0, 8))],
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x220F172A),
+                  blurRadius: 18,
+                  offset: Offset(0, 8),
+                ),
+              ],
             ),
-            child: Icon(Icons.settings_rounded, color: Colors.white, size: compact ? 22 : 24),
+            child: Icon(
+              Icons.settings_rounded,
+              color: Colors.white,
+              size: compact ? 22 : 24,
+            ),
           ),
         ],
       ),
@@ -396,7 +622,11 @@ class _BlueButton extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: compact ? 22 : 24),
+            Icon(
+              Icons.add_circle_outline_rounded,
+              color: Colors.white,
+              size: compact ? 22 : 24,
+            ),
             SizedBox(width: compact ? 8 : 10),
             Flexible(
               child: Text(
@@ -425,7 +655,12 @@ class _IssueCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(compact ? 20 : 24),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.fromLTRB(compact ? 14 : 16, compact ? 14 : 16, compact ? 14 : 16, compact ? 14 : 16),
+        padding: EdgeInsets.fromLTRB(
+          compact ? 14 : 16,
+          compact ? 14 : 16,
+          compact ? 14 : 16,
+          compact ? 14 : 16,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(compact ? 20 : 24),
@@ -444,20 +679,59 @@ class _IssueCard extends StatelessWidget {
             Row(
               children: [
                 Flexible(
-                  child: _Pill(issue.code, const Color(0xFFF1F5F9), const Color(0xFF64748B), compact: compact),
+                  child: _Pill(
+                    issue.code,
+                    const Color(0xFFF1F5F9),
+                    const Color(0xFF64748B),
+                    compact: compact,
+                  ),
                 ),
                 const Spacer(),
-                Icon(Icons.calendar_today_outlined, size: compact ? 15 : 16, color: const Color(0xFF94A3B8)),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: compact ? 15 : 16,
+                  color: const Color(0xFF94A3B8),
+                ),
                 SizedBox(width: compact ? 5 : 6),
-                Text(issue.date, style: _ts(const Color(0xFF94A3B8), compact ? 12 : 13, FontWeight.w500)),
+                Text(
+                  issue.date,
+                  style: _ts(
+                    const Color(0xFF94A3B8),
+                    compact ? 12 : 13,
+                    FontWeight.w500,
+                  ),
+                ),
               ],
             ),
             SizedBox(height: compact ? 14 : 18),
-            Text(issue.project.toUpperCase(), style: _ts(const Color(0xFF3B82F6), compact ? 11 : 12, FontWeight.w700, letterSpacing: 0.2)),
+            Text(
+              issue.project.toUpperCase(),
+              style: _ts(
+                const Color(0xFF3B82F6),
+                compact ? 11 : 12,
+                FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
             SizedBox(height: compact ? 6 : 8),
-            Text(issue.title, style: _ts(const Color(0xFF17213A), compact ? 18 : 19, FontWeight.w700, height: 1.22)),
+            Text(
+              issue.title,
+              style: _ts(
+                const Color(0xFF17213A),
+                compact ? 18 : 19,
+                FontWeight.w700,
+                height: 1.22,
+              ),
+            ),
             SizedBox(height: compact ? 6 : 8),
-            Text('Client: ${issue.client}', style: _ts(const Color(0xFF64748B), compact ? 14 : 15, FontWeight.w500)),
+            Text(
+              'Client: ${issue.client}',
+              style: _ts(
+                const Color(0xFF64748B),
+                compact ? 14 : 15,
+                FontWeight.w500,
+              ),
+            ),
             SizedBox(height: compact ? 14 : 16),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
             SizedBox(height: compact ? 12 : 14),
@@ -466,19 +740,41 @@ class _IssueCard extends StatelessWidget {
               runSpacing: compact ? 8 : 10,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                _Pill(issue.priority, issue.priorityBg, issue.priorityFg, compact: compact),
-                _Pill(issue.status, issue.statusBg, issue.statusFg, compact: compact),
+                _Pill(
+                  issue.priority,
+                  issue.priorityBg,
+                  issue.priorityFg,
+                  compact: compact,
+                ),
+                _Pill(
+                  issue.status,
+                  issue.statusBg,
+                  issue.statusFg,
+                  compact: compact,
+                ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.remove_red_eye_outlined, color: const Color(0xFF94A3B8), size: compact ? 20 : 22),
+                      icon: Icon(
+                        Icons.remove_red_eye_outlined,
+                        color: const Color(0xFF94A3B8),
+                        size: compact ? 20 : 22,
+                      ),
                       onPressed: () => Get.toNamed(AppRoutes.issueDetail),
                     ),
                     SizedBox(width: compact ? 12 : 14),
-                    Icon(Icons.edit_outlined, color: const Color(0xFF94A3B8), size: compact ? 18 : 20),
+                    Icon(
+                      Icons.edit_outlined,
+                      color: const Color(0xFF94A3B8),
+                      size: compact ? 18 : 20,
+                    ),
                     SizedBox(width: compact ? 12 : 14),
-                    Icon(Icons.delete_outline_rounded, color: const Color(0xFF94A3B8), size: compact ? 20 : 22),
+                    Icon(
+                      Icons.delete_outline_rounded,
+                      color: const Color(0xFF94A3B8),
+                      size: compact ? 20 : 22,
+                    ),
                   ],
                 ),
               ],
@@ -501,15 +797,29 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14, vertical: compact ? 7 : 8),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(label.toUpperCase(), style: _ts(fg, compact ? 11 : 12, FontWeight.w700)),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 7 : 8,
+      ),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: _ts(fg, compact ? 11 : 12, FontWeight.w700),
+      ),
     );
   }
 }
 
 class _PageAction extends StatelessWidget {
-  const _PageAction(this.label, this.enabled, this.onTap, {required this.compact});
+  const _PageAction(
+    this.label,
+    this.enabled,
+    this.onTap, {
+    required this.compact,
+  });
 
   final String label;
   final bool enabled;
@@ -522,7 +832,10 @@ class _PageAction extends StatelessWidget {
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(compact ? 16 : 18),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 16, vertical: compact ? 10 : 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 14 : 16,
+          vertical: compact ? 10 : 12,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(compact ? 16 : 18),
@@ -530,7 +843,11 @@ class _PageAction extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: _ts(enabled ? const Color(0xFF64748B) : const Color(0xFFCBD5E1), compact ? 13 : 14, FontWeight.w500),
+          style: _ts(
+            enabled ? const Color(0xFF64748B) : const Color(0xFFCBD5E1),
+            compact ? 13 : 14,
+            FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -565,7 +882,11 @@ class _PageChip extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: _ts(selected ? Colors.white : const Color(0xFF334155), compact ? 14 : 15, FontWeight.w600),
+          style: _ts(
+            selected ? Colors.white : const Color(0xFF334155),
+            compact ? 14 : 15,
+            FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -615,4 +936,3 @@ TextStyle _ts(
     letterSpacing: letterSpacing,
   );
 }
-

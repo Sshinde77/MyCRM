@@ -55,237 +55,259 @@ class _LeadsScreenState extends State<LeadsScreen> {
                       horizontal: horizontalPadding,
                       vertical: 16,
                     ),
-                  children: [
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: Get.back,
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: textDark,
-                            size: 20,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: Get.back,
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: textDark,
+                              size: 20,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
                           ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Leads',
+                                  style: AppTextStyles.style(
+                                    color: textDark,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  'Enterprise Dashboard',
+                                  style: AppTextStyles.style(
+                                    color: textLight,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (!isCompact)
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: lightBlue,
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: const Stack(
+                                children: [
+                                  Icon(
+                                    Icons.notifications_none_rounded,
+                                    color: primaryBlue,
+                                  ),
+                                  Positioned(
+                                    right: 2,
+                                    top: 2,
+                                    child: CircleAvatar(
+                                      radius: 4,
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          SizedBox(
+                            width: isCompact
+                                ? double.infinity
+                                : (constraints.maxWidth -
+                                          (horizontalPadding * 2) -
+                                          16) /
+                                      2,
+                            child: _SummaryCard(
+                              label: 'Total Leads',
+                              value: '${leadProvider.totalLeads}',
+                              caption: 'Live records',
+                              icon: Icons.groups_outlined,
+                              color: Colors.green,
+                            ),
+                          ),
+                          SizedBox(
+                            width: isCompact
+                                ? double.infinity
+                                : (constraints.maxWidth -
+                                          (horizontalPadding * 2) -
+                                          16) /
+                                      2,
+                            child: _SummaryCard(
+                              label: 'New Leads',
+                              value: '${leadProvider.newLeadsCount}',
+                              caption: 'Today or fresh status',
+                              icon: Icons.new_label_outlined,
+                              color: primaryBlue,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Leads',
-                              style: AppTextStyles.style(
-                                color: textDark,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                              ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: leadProvider.updateSearchQuery,
+                          decoration: InputDecoration(
+                            hintText: 'Search leads by name or ID...',
+                            hintStyle: AppTextStyles.style(
+                              color: textLight,
+                              fontSize: 14,
                             ),
-                            Text(
-                              'Enterprise Dashboard',
-                              style: AppTextStyles.style(
-                                color: textLight,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                            icon: const Icon(Icons.search, color: textLight),
+                            suffixIcon: leadProvider.searchQuery.isEmpty
+                                ? null
+                                : IconButton(
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      leadProvider.updateSearchQuery('');
+                                    },
+                                    icon: const Icon(
+                                      Icons.close_rounded,
+                                      color: textLight,
+                                    ),
+                                  ),
+                            border: InputBorder.none,
+                          ),
                         ),
                       ),
-                      if (!isCompact)
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: lightBlue,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Stack(
-                            children: [
-                              Icon(
-                                Icons.notifications_none_rounded,
-                                color: primaryBlue,
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: leadProvider.isLoading
+                                  ? null
+                                  : () => leadProvider.loadLeads(
+                                      forceRefresh: true,
+                                    ),
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Refresh'),
                               ),
-                              Positioned(
-                                right: 2,
-                                top: 2,
-                                child: CircleAvatar(
-                                  radius: 4,
-                                  backgroundColor: Colors.red,
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: textDark,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                side: const BorderSide(
+                                  color: Color(0xFFE2E8F0),
                                 ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      SizedBox(
-                        width: isCompact
-                            ? double.infinity
-                            : (constraints.maxWidth - (horizontalPadding * 2) - 16) / 2,
-                        child: _SummaryCard(
-                          label: 'Total Leads',
-                          value: '${leadProvider.totalLeads}',
-                          caption: 'Live records',
-                          icon: Icons.groups_outlined,
-                          color: Colors.green,
-                        ),
-                      ),
-                      SizedBox(
-                        width: isCompact
-                            ? double.infinity
-                            : (constraints.maxWidth - (horizontalPadding * 2) - 16) / 2,
-                        child: _SummaryCard(
-                          label: 'New Leads',
-                          value: '${leadProvider.newLeadsCount}',
-                          caption: 'Today or fresh status',
-                          icon: Icons.new_label_outlined,
-                          color: primaryBlue,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: leadProvider.updateSearchQuery,
-                      decoration: InputDecoration(
-                        hintText: 'Search leads by name or ID...',
-                        hintStyle: AppTextStyles.style(
-                          color: textLight,
-                          fontSize: 14,
-                        ),
-                        icon: const Icon(Icons.search, color: textLight),
-                        suffixIcon: leadProvider.searchQuery.isEmpty
-                            ? null
-                            : IconButton(
-                                onPressed: () {
-                                  _searchController.clear();
-                                  leadProvider.updateSearchQuery('');
-                                },
-                                icon: const Icon(
-                                  Icons.close_rounded,
-                                  color: textLight,
-                                ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: ElevatedButton.icon(
+                              onPressed: () => Get.toNamed(AppRoutes.addLead),
+                              icon: const Icon(
+                                Icons.add_rounded,
+                                color: Colors.white,
+                                size: 18,
                               ),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: leadProvider.isLoading
-                              ? null
-                              : () => leadProvider.loadLeads(forceRefresh: true),
-                          icon: const Icon(Icons.refresh_rounded, size: 18),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text('Refresh'),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: textDark,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text('Add New Lead'),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2CB1FF),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                elevation: 0,
+                              ),
                             ),
-                            side: const BorderSide(color: Color(0xFFE2E8F0)),
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton.icon(
-                          onPressed: () => Get.toNamed(AppRoutes.addLead),
-                          icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                          label: const FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text('Add New Lead'),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2CB1FF),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                      const SizedBox(height: 24),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            'RECENT LEADS',
+                            style: AppTextStyles.style(
+                              color: textDark,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.1,
                             ),
-                            elevation: 0,
                           ),
-                        ),
+                          TextButton(
+                            onPressed: leadProvider.isLoading
+                                ? null
+                                : () => leadProvider.loadLeads(
+                                    forceRefresh: true,
+                                  ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Text(
+                                //   'Reload',
+                                //   style: AppTextStyles.style(
+                                //     color: primaryBlue,
+                                //     fontSize: 13,
+                                //     fontWeight: FontWeight.w600,
+                                //   ),
+                                // ),
+                                // const Icon(
+                                //   Icons.arrow_forward_rounded,
+                                //   size: 16,
+                                //   color: primaryBlue,
+                                // ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 8),
+                      if (leadProvider.isLoading &&
+                          leadProvider.totalLeads == 0)
+                        const _LeadListLoading()
+                      else if (leadProvider.errorMessage != null &&
+                          leadProvider.totalLeads == 0)
+                        _LeadListError(
+                          message: leadProvider.errorMessage!,
+                          onRetry: () =>
+                              leadProvider.loadLeads(forceRefresh: true),
+                        )
+                      else if (leadProvider.leads.isEmpty)
+                        _LeadListEmpty(
+                          hasQuery: leadProvider.searchQuery.trim().isNotEmpty,
+                        )
+                      else
+                        ..._buildLeadCards(leadProvider),
                     ],
-                  ),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        'RECENT LEADS',
-                        style: AppTextStyles.style(
-                          color: textDark,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: leadProvider.isLoading
-                            ? null
-                            : () => leadProvider.loadLeads(forceRefresh: true),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Text(
-                            //   'Reload',
-                            //   style: AppTextStyles.style(
-                            //     color: primaryBlue,
-                            //     fontSize: 13,
-                            //     fontWeight: FontWeight.w600,
-                            //   ),
-                            // ),
-                            // const Icon(
-                            //   Icons.arrow_forward_rounded,
-                            //   size: 16,
-                            //   color: primaryBlue,
-                            // ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  if (leadProvider.isLoading && leadProvider.totalLeads == 0)
-                    const _LeadListLoading()
-                  else if (leadProvider.errorMessage != null &&
-                      leadProvider.totalLeads == 0)
-                    _LeadListError(
-                      message: leadProvider.errorMessage!,
-                      onRetry: () => leadProvider.loadLeads(forceRefresh: true),
-                    )
-                  else if (leadProvider.leads.isEmpty)
-                    _LeadListEmpty(
-                      hasQuery: leadProvider.searchQuery.trim().isNotEmpty,
-                    )
-                  else
-                    ..._buildLeadCards(leadProvider),
-                ],
                   );
                 },
               ),
@@ -318,7 +340,9 @@ class _LeadsScreenState extends State<LeadsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Delete Lead'),
           content: Text(
             'Delete ${lead.displayName.isEmpty ? 'this lead' : lead.displayName} permanently?',
@@ -654,10 +678,7 @@ class _LeadCard extends StatelessWidget {
                         ? lead.source!.trim()
                         : 'Source not available',
                   ),
-                  _InfoTile(
-                    icon: Icons.call_outlined,
-                    text: lead.displayPhone,
-                  ),
+                  _InfoTile(icon: Icons.call_outlined, text: lead.displayPhone),
                   _InfoTile(
                     icon: Icons.calendar_today_outlined,
                     text: _formatDate(lead.createdAt),
@@ -708,8 +729,10 @@ class _LeadCard extends StatelessWidget {
                     children: [
                       _ActionIcon(
                         icon: Icons.visibility_outlined,
-                        onTap: () =>
-                            Get.toNamed(AppRoutes.leadDetail, arguments: lead.id),
+                        onTap: () => Get.toNamed(
+                          AppRoutes.leadDetail,
+                          arguments: lead.id,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const _ActionIcon(icon: Icons.edit_outlined),
@@ -769,10 +792,7 @@ class _LeadCard extends StatelessWidget {
 }
 
 class _LeadAvatar extends StatelessWidget {
-  const _LeadAvatar({
-    required this.name,
-    this.imageUrl,
-  });
+  const _LeadAvatar({required this.name, this.imageUrl});
 
   final String name;
   final String? imageUrl;
@@ -870,9 +890,7 @@ class _ActionIcon extends StatelessWidget {
         child: SizedBox(
           width: 32,
           height: 32,
-          child: Center(
-            child: Icon(icon, size: 18, color: color),
-          ),
+          child: Center(child: Icon(icon, size: 18, color: color)),
         ),
       ),
     );
@@ -885,11 +903,7 @@ class _LeadListLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: const [
-        _LoadingCard(),
-        SizedBox(height: 16),
-        _LoadingCard(),
-      ],
+      children: const [_LoadingCard(), SizedBox(height: 16), _LoadingCard()],
     );
   }
 }
@@ -913,10 +927,7 @@ class _LoadingCard extends StatelessWidget {
 }
 
 class _LeadListError extends StatelessWidget {
-  const _LeadListError({
-    required this.message,
-    required this.onRetry,
-  });
+  const _LeadListError({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -1025,10 +1036,7 @@ class _LeadListEmpty extends StatelessWidget {
 }
 
 class _LeadStatusColors {
-  const _LeadStatusColors({
-    required this.background,
-    required this.foreground,
-  });
+  const _LeadStatusColors({required this.background, required this.foreground});
 
   final Color background;
   final Color foreground;

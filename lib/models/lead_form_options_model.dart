@@ -26,7 +26,12 @@ class LeadFormOptionsModel {
         'lead_sources',
         'leadSources',
       ]),
-      tags: _readStringOptions(source, ['tags', 'tag', 'lead_tags', 'leadTags']),
+      tags: _readStringOptions(source, [
+        'tags',
+        'tag',
+        'lead_tags',
+        'leadTags',
+      ]),
       staff: _readStaffOptions(source, [
         'staff',
         'assigned_staff',
@@ -67,8 +72,8 @@ class LeadFormOptionsModel {
       final normalized = value is Map<String, dynamic>
           ? value
           : value is Map
-              ? value.map((key, value) => MapEntry(key.toString(), value))
-              : null;
+          ? value.map((key, value) => MapEntry(key.toString(), value))
+          : null;
       if (normalized == null) {
         continue;
       }
@@ -107,8 +112,8 @@ class LeadFormOptionsModel {
       final normalized = value is Map<String, dynamic>
           ? value
           : value is Map
-              ? value.map((key, value) => MapEntry(key.toString(), value))
-              : null;
+          ? value.map((key, value) => MapEntry(key.toString(), value))
+          : null;
       if (normalized == null) {
         continue;
       }
@@ -167,10 +172,7 @@ class LeadFormOptionsModel {
 }
 
 class LeadStaffOption {
-  const LeadStaffOption({
-    required this.id,
-    required this.name,
-  });
+  const LeadStaffOption({required this.id, required this.name});
 
   final String id;
   final String name;
@@ -178,10 +180,10 @@ class LeadStaffOption {
   factory LeadStaffOption.fromJson(Map<String, dynamic> json) {
     final firstName = _readString(json, ['first_name', 'firstName']);
     final lastName = _readString(json, ['last_name', 'lastName']);
-    final fullName = [firstName, lastName]
-        .where((value) => value.isNotEmpty)
-        .join(' ')
-        .trim();
+    final fullName = [
+      firstName,
+      lastName,
+    ].where((value) => value.isNotEmpty).join(' ').trim();
 
     return LeadStaffOption(
       id: _readString(json, ['id', '_id', 'staff_id', 'user_id']),

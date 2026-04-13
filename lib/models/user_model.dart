@@ -30,14 +30,18 @@ class UserModel {
       name: _readString(source, ['name', 'full_name', 'username']),
       email: _readString(source, ['email', 'email_address']),
       phone: _readNullableString(source, ['phone', 'mobile', 'phone_number']),
-      role: _readNullableString(source, ['role', 'user_role']) ??
+      role:
+          _readNullableString(source, ['role', 'user_role']) ??
           _readNullableString(roleSource, ['name', 'title', 'role']),
-      roleId: _readNullableString(source, ['role_id', 'roleId']) ??
+      roleId:
+          _readNullableString(source, ['role_id', 'roleId']) ??
           _readNullableString(roleSource, ['id', 'role_id', 'roleId']),
-      profilePicture: _readNullableString(
-        source,
-        ['profile_picture', 'profilePicture', 'avatar', 'image'],
-      ),
+      profilePicture: _readNullableString(source, [
+        'profile_picture',
+        'profilePicture',
+        'avatar',
+        'image',
+      ]),
     );
   }
 

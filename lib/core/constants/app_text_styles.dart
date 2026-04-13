@@ -8,7 +8,7 @@ class AppFonts {
   const AppFonts._();
 
   static const String title = 'Sora';
-  static const String subtitle = 'Sora';  
+  static const String subtitle = 'Sora';
   static const String body = 'DM Sans';
 }
 
@@ -177,7 +177,8 @@ class AppTextStyles {
     double? decorationThickness,
     List<FontVariation>? fontVariations,
   }) {
-    final resolvedWeight = fontWeight ?? textStyle?.fontWeight ?? FontWeight.w400;
+    final resolvedWeight =
+        fontWeight ?? textStyle?.fontWeight ?? FontWeight.w400;
     final resolvedSize = fontSize ?? textStyle?.fontSize ?? 14;
 
     if (resolvedWeight.value >= FontWeight.w700.value || resolvedSize >= 20) {

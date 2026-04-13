@@ -53,9 +53,7 @@ class LeadDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _TopBar(
-                      titleText: lead.displayName,
-                    ),
+                    _TopBar(titleText: lead.displayName),
                     const SizedBox(height: 18),
                     _ProfileCard(
                       lead: lead,
@@ -124,10 +122,7 @@ class _TopBar extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({
-    required this.lead,
-    required this.onEdit,
-  });
+  const _ProfileCard({required this.lead, required this.onEdit});
 
   final LeadModel lead;
   final Future<void> Function() onEdit;
@@ -203,7 +198,9 @@ class _ProfileCard extends StatelessWidget {
               Expanded(
                 child: _MetricTile(
                   label: 'LEAD VALUE',
-                  value: lead.displayAmount.isEmpty ? 'Not available' : lead.displayAmount,
+                  value: lead.displayAmount.isEmpty
+                      ? 'Not available'
+                      : lead.displayAmount,
                   valueColor: LeadDetailScreen.link,
                 ),
               ),
@@ -248,11 +245,7 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.child,
-    this.trailing,
-  });
+  const _SectionCard({required this.title, required this.child, this.trailing});
 
   final String title;
   final Widget child;
@@ -309,7 +302,9 @@ class _LeadDetailsContent extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: _DetailField(label: 'Name', value: lead.displayName)),
+            Expanded(
+              child: _DetailField(label: 'Name', value: lead.displayName),
+            ),
             const SizedBox(width: 22),
             Expanded(
               child: _DetailField(label: 'Company', value: lead.displayCompany),
@@ -320,7 +315,10 @@ class _LeadDetailsContent extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _DetailField(label: 'Position', value: lead.displayPosition),
+              child: _DetailField(
+                label: 'Position',
+                value: lead.displayPosition,
+              ),
             ),
             const SizedBox(width: 22),
             Expanded(
@@ -354,7 +352,10 @@ class _LeadDetailsContent extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: _DetailField(label: 'Zip Code', value: lead.displayZipCode),
+              child: _DetailField(
+                label: 'Zip Code',
+                value: lead.displayZipCode,
+              ),
             ),
             const SizedBox(width: 22),
             Expanded(
@@ -520,10 +521,7 @@ class _TagChip extends StatelessWidget {
 }
 
 class _LeadAvatar extends StatelessWidget {
-  const _LeadAvatar({
-    required this.name,
-    this.imageUrl,
-  });
+  const _LeadAvatar({required this.name, this.imageUrl});
 
   final String name;
   final String? imageUrl;
@@ -618,10 +616,7 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _LeadDetailError extends StatelessWidget {
-  const _LeadDetailError({
-    required this.message,
-    required this.onRetry,
-  });
+  const _LeadDetailError({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -650,10 +645,7 @@ class _LeadDetailError extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),

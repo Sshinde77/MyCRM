@@ -33,7 +33,13 @@ class ClientModel {
   factory ClientModel.fromJson(Map<String, dynamic> json) {
     final source = _extractSource(json);
     return ClientModel(
-      id: _readString(source, ['id', '_id', 'clientId', 'client_id', 'clientID']),
+      id: _readString(source, [
+        'id',
+        '_id',
+        'clientId',
+        'client_id',
+        'clientID',
+      ]),
       name: _readString(source, [
         'name',
         'client_name',
@@ -54,12 +60,7 @@ class ClientModel {
         'sector',
         'category',
       ]),
-      website: _readString(source, [
-        'website',
-        'website_url',
-        'site',
-        'url',
-      ]),
+      website: _readString(source, ['website', 'website_url', 'site', 'url']),
       contactName: _readString(source, [
         'contact_name',
         'contactName',

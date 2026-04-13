@@ -168,7 +168,10 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                       const SizedBox(height: 20),
                       _ClientInfoCard(client: client),
                       const SizedBox(height: 20),
-                      const _SectionHeader(title: 'Projects', showViewAll: true),
+                      const _SectionHeader(
+                        title: 'Projects',
+                        showViewAll: true,
+                      ),
                       const SizedBox(height: 12),
                       const _ProjectCard(),
                       const SizedBox(height: 20),
@@ -204,11 +207,15 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayName = client.name.isNotEmpty ? client.name : 'Client';
-    final company = client.companyName.isNotEmpty ? client.companyName : 'No company';
+    final company = client.companyName.isNotEmpty
+        ? client.companyName
+        : 'No company';
     final email = client.email.isNotEmpty ? client.email : 'No email';
     final phone = client.phone.isNotEmpty ? client.phone : 'No phone';
     final website = client.website.isNotEmpty ? client.website : 'No website';
-    final manager = client.managerName.isNotEmpty ? client.managerName : 'Unassigned Manager';
+    final manager = client.managerName.isNotEmpty
+        ? client.managerName
+        : 'Unassigned Manager';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -236,17 +243,26 @@ class _ProfileHeader extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: client.isActive ? const Color(0xFFD1FAE5) : const Color(0xFFF1F5F9),
+                            color: client.isActive
+                                ? const Color(0xFFD1FAE5)
+                                : const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            client.isActive ? 'ACTIVE CLIENT' : 'INACTIVE CLIENT',
+                            client.isActive
+                                ? 'ACTIVE CLIENT'
+                                : 'INACTIVE CLIENT',
                             style: AppTextStyles.style(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: client.isActive ? const Color(0xFF059669) : const Color(0xFF64748B),
+                              color: client.isActive
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFF64748B),
                             ),
                           ),
                         ),
@@ -286,7 +302,9 @@ class _ProfileHeader extends StatelessWidget {
               text,
               style: AppTextStyles.style(
                 fontSize: 13,
-                color: isLink ? const Color(0xFF1769F3) : const Color(0xFF141C33),
+                color: isLink
+                    ? const Color(0xFF1769F3)
+                    : const Color(0xFF141C33),
                 fontWeight: isLink ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
@@ -361,12 +379,24 @@ class _ClientInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final contactPerson = client.contactPerson.isNotEmpty ? client.contactPerson : 'Not specified';
-    final clientType = client.clientType.isNotEmpty ? client.clientType : 'Not specified';
-    final industry = client.industry.isNotEmpty ? client.industry : 'Not specified';
-    final priority = client.priorityLevel.isNotEmpty ? client.priorityLevel : 'Not specified';
-    final billingType = client.billingType.isNotEmpty ? client.billingType : 'Not specified';
-    final dueDays = client.dueDays.isNotEmpty ? client.dueDays : 'Not specified';
+    final contactPerson = client.contactPerson.isNotEmpty
+        ? client.contactPerson
+        : 'Not specified';
+    final clientType = client.clientType.isNotEmpty
+        ? client.clientType
+        : 'Not specified';
+    final industry = client.industry.isNotEmpty
+        ? client.industry
+        : 'Not specified';
+    final priority = client.priorityLevel.isNotEmpty
+        ? client.priorityLevel
+        : 'Not specified';
+    final billingType = client.billingType.isNotEmpty
+        ? client.billingType
+        : 'Not specified';
+    final dueDays = client.dueDays.isNotEmpty
+        ? client.dueDays
+        : 'Not specified';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -388,20 +418,33 @@ class _ClientInfoCard extends StatelessWidget {
                   color: const Color(0xFF141C33),
                 ),
               ),
-              const Icon(Icons.info_outline, color: Color(0xFF74839D), size: 20),
+              const Icon(
+                Icons.info_outline,
+                color: Color(0xFF74839D),
+                size: 20,
+              ),
             ],
           ),
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: _InfoField(label: 'CONTACT PERSON', value: contactPerson)),
-              Expanded(child: _InfoField(label: 'CLIENT TYPE', value: clientType)),
+              Expanded(
+                child: _InfoField(
+                  label: 'CONTACT PERSON',
+                  value: contactPerson,
+                ),
+              ),
+              Expanded(
+                child: _InfoField(label: 'CLIENT TYPE', value: clientType),
+              ),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _InfoField(label: 'INDUSTRY', value: industry)),
+              Expanded(
+                child: _InfoField(label: 'INDUSTRY', value: industry),
+              ),
               Expanded(
                 child: _InfoField(
                   label: 'PRIORITY LEVEL',
@@ -412,15 +455,16 @@ class _ClientInfoCard extends StatelessWidget {
             ],
           ),
           const Divider(height: 32),
-          _InfoField(
-            label: 'ADDRESS DETAILS',
-            value: client.addressSummary,
-          ),
+          _InfoField(label: 'ADDRESS DETAILS', value: client.addressSummary),
           const Divider(height: 32),
           Row(
             children: [
-              Expanded(child: _InfoField(label: 'BILLING TYPE', value: billingType)),
-              Expanded(child: _InfoField(label: 'DUE DAYS', value: dueDays)),
+              Expanded(
+                child: _InfoField(label: 'BILLING TYPE', value: billingType),
+              ),
+              Expanded(
+                child: _InfoField(label: 'DUE DAYS', value: dueDays),
+              ),
             ],
           ),
         ],
@@ -469,7 +513,11 @@ class _SectionHeader extends StatelessWidget {
   final bool showViewAll;
   final int? count;
 
-  const _SectionHeader({required this.title, this.showViewAll = false, this.count});
+  const _SectionHeader({
+    required this.title,
+    this.showViewAll = false,
+    this.count,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -496,7 +544,11 @@ class _SectionHeader extends StatelessWidget {
                 ),
                 child: Text(
                   count.toString(),
-                  style: const TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -560,13 +612,33 @@ class _ProjectCard extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 14, color: Color(0xFF74839D)),
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 14,
+                color: Color(0xFF74839D),
+              ),
               const SizedBox(width: 4),
-              Text('01 Jan', style: AppTextStyles.style(fontSize: 12, color: const Color(0xFF74839D))),
+              Text(
+                '01 Jan',
+                style: AppTextStyles.style(
+                  fontSize: 12,
+                  color: const Color(0xFF74839D),
+                ),
+              ),
               const SizedBox(width: 12),
-              const Icon(Icons.calendar_month_outlined, size: 14, color: Color(0xFF74839D)),
+              const Icon(
+                Icons.calendar_month_outlined,
+                size: 14,
+                color: Color(0xFF74839D),
+              ),
               const SizedBox(width: 4),
-              Text('30 Jun', style: AppTextStyles.style(fontSize: 12, color: const Color(0xFF74839D))),
+              Text(
+                '30 Jun',
+                style: AppTextStyles.style(
+                  fontSize: 12,
+                  color: const Color(0xFF74839D),
+                ),
+              ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -594,7 +666,9 @@ class _ProjectCard extends StatelessWidget {
               },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFFE2E8F0)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
               child: Text(
@@ -725,7 +799,11 @@ class _IssueCard extends StatelessWidget {
                     color: const Color(0xFFFFF1F2),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.bug_report_outlined, size: 20, color: Colors.red),
+                  child: const Icon(
+                    Icons.bug_report_outlined,
+                    size: 20,
+                    color: Colors.red,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -780,7 +858,10 @@ class _IssueCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF1F2),
                     borderRadius: BorderRadius.circular(6),

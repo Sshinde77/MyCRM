@@ -21,7 +21,8 @@ class AddClientScreen extends StatefulWidget {
 
 class _AddClientScreenState extends State<AddClientScreen> {
   final TextEditingController _clientNameController = TextEditingController();
-  final TextEditingController _contactPersonController = TextEditingController();
+  final TextEditingController _contactPersonController =
+      TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
@@ -32,7 +33,8 @@ class _AddClientScreenState extends State<AddClientScreen> {
   final TextEditingController _postalCodeController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _industryController = TextEditingController();
-  final TextEditingController _defaultDueDaysController = TextEditingController();
+  final TextEditingController _defaultDueDaysController =
+      TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   String? _clientType;
@@ -110,8 +112,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
   }
 
   void _applyDetail(ClientDetailModel detail) {
-    _clientNameController.text =
-        detail.companyName.isNotEmpty ? detail.companyName : detail.name;
+    _clientNameController.text = detail.companyName.isNotEmpty
+        ? detail.companyName
+        : detail.name;
     _contactPersonController.text = detail.contactPerson;
     _emailController.text = detail.email;
     _phoneController.text = detail.phone;
@@ -122,11 +125,15 @@ class _AddClientScreenState extends State<AddClientScreen> {
     _stateController.text = detail.state;
     _postalCodeController.text = detail.postalCode;
     _countryController.text = detail.country;
-    _selectedCity = detail.city.trim().isNotEmpty ? detail.city : 'Mumbai Suburban';
-    _selectedState =
-        detail.state.trim().isNotEmpty ? detail.state : 'Maharashtra';
-    _selectedCountry =
-        detail.country.trim().isNotEmpty ? detail.country : 'India';
+    _selectedCity = detail.city.trim().isNotEmpty
+        ? detail.city
+        : 'Mumbai Suburban';
+    _selectedState = detail.state.trim().isNotEmpty
+        ? detail.state
+        : 'Maharashtra';
+    _selectedCountry = detail.country.trim().isNotEmpty
+        ? detail.country
+        : 'India';
     _industryController.text = detail.industry;
     _defaultDueDaysController.text = detail.dueDays;
 
@@ -141,7 +148,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
       'Medium',
       'High',
     ]);
-    _billingType = detail.billingType.trim().isNotEmpty ? detail.billingType : null;
+    _billingType = detail.billingType.trim().isNotEmpty
+        ? detail.billingType
+        : null;
     _role = detail.role.trim().isNotEmpty ? detail.role : 'client';
 
     setState(() {});
@@ -285,11 +294,15 @@ class _AddClientScreenState extends State<AddClientScreen> {
                       initialCity: _selectedCity,
                       onChanged: (country, state, city) {
                         setState(() {
-                          _selectedCountry = country.isEmpty ? 'India' : country;
-                          _selectedState =
-                              state.isEmpty ? 'Maharashtra' : state;
-                          _selectedCity =
-                              city.isEmpty ? 'Mumbai Suburban' : city;
+                          _selectedCountry = country.isEmpty
+                              ? 'India'
+                              : country;
+                          _selectedState = state.isEmpty
+                              ? 'Maharashtra'
+                              : state;
+                          _selectedCity = city.isEmpty
+                              ? 'Mumbai Suburban'
+                              : city;
                           _countryController.text = _selectedCountry;
                           _stateController.text = _selectedState;
                           _cityController.text = _selectedCity;
@@ -342,14 +355,16 @@ class _AddClientScreenState extends State<AddClientScreen> {
                       value: _priorityLevel,
                       hintText: 'Select priority',
                       items: _priorityItems(),
-                      onChanged: (value) => setState(() => _priorityLevel = value),
+                      onChanged: (value) =>
+                          setState(() => _priorityLevel = value),
                     ),
                     _DropdownFieldTile(
                       label: 'Billing Type',
                       value: _billingType,
                       hintText: 'Select billing type',
                       items: _billingTypeItems(),
-                      onChanged: (value) => setState(() => _billingType = value),
+                      onChanged: (value) =>
+                          setState(() => _billingType = value),
                     ),
                     _TextFieldTile(
                       label: 'Default Due Days',
@@ -412,7 +427,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : Text(_isEditMode ? 'Update Client' : 'Add Client'),
@@ -451,7 +468,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
 
   List<String> _priorityItems() {
     final items = ['Low', 'Medium', 'High'];
-    if (_isEditMode && _priorityLevel != null && !items.contains(_priorityLevel)) {
+    if (_isEditMode &&
+        _priorityLevel != null &&
+        !items.contains(_priorityLevel)) {
       items.add(_priorityLevel!);
     }
     return items;
@@ -804,7 +823,9 @@ class _ResponsiveFields extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 640;
-        final itemWidth = isWide ? (constraints.maxWidth - 16) / 2 : constraints.maxWidth;
+        final itemWidth = isWide
+            ? (constraints.maxWidth - 16) / 2
+            : constraints.maxWidth;
 
         return Wrap(
           runSpacing: 12,
@@ -931,12 +952,7 @@ class _DropdownFieldTile extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: value,
           items: items
-              .map(
-                (item) => DropdownMenuItem(
-                  value: item,
-                  child: Text(item),
-                ),
-              )
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
               .toList(),
           onChanged: onChanged,
           decoration: InputDecoration(

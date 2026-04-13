@@ -34,7 +34,10 @@ class IssueDetailScreen extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_none_rounded, color: textSec),
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: textSec,
+                ),
                 onPressed: () {},
               ),
               Positioned(
@@ -84,7 +87,10 @@ class IssueDetailScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE0E7FF),
                             borderRadius: BorderRadius.circular(8),
@@ -99,7 +105,10 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(8),
@@ -131,7 +140,10 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFEE2E2),
                             borderRadius: BorderRadius.circular(8),
@@ -185,7 +197,10 @@ class IssueDetailScreen extends StatelessWidget {
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {},
-                            icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                            icon: const Icon(
+                              Icons.person_add_alt_1_rounded,
+                              size: 18,
+                            ),
                             label: const Text('Assign'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: blue,
@@ -241,7 +256,11 @@ class IssueDetailScreen extends StatelessWidget {
                   children: [
                     _infoRow('Team', 'lagan', isBold: true),
                     const Divider(height: 32),
-                    _infoRow('Assigned To', 'All lagan Staff', valueColor: blue),
+                    _infoRow(
+                      'Assigned To',
+                      'All lagan Staff',
+                      valueColor: blue,
+                    ),
                     const Divider(height: 32),
                     Row(
                       children: [
@@ -319,7 +338,10 @@ class IssueDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF7ED),
                             borderRadius: BorderRadius.circular(6),
@@ -342,85 +364,105 @@ class IssueDetailScreen extends StatelessWidget {
                         color: textSec,
                         fontSize: 12,
                         height: 1.4,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        width: 10,
-                        height: 10,
-                        decoration: const BoxDecoration(
-                          color: textSec,
-                          shape: BoxShape.circle,
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: textSec,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'TODO',
-                        style: AppTextStyles.style(
-                          color: textSec,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          '2',
+                        const SizedBox(width: 8),
+                        Text(
+                          'TODO',
                           style: AppTextStyles.style(
                             color: textSec,
-                            fontSize: 10,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          'JS',
-                          style: AppTextStyles.style(
-                            color: textSec,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '2',
+                            style: AppTextStyles.style(
+                              color: textSec,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      Icon(Icons.visibility_outlined, size: 20, color: textSec.withOpacity(0.6)),
-                      const SizedBox(width: 12),
-                      Icon(Icons.edit_outlined, size: 20, color: textSec.withOpacity(0.6)),
-                      const SizedBox(width: 12),
-                      Icon(Icons.delete_outline_rounded, size: 20, color: textSec.withOpacity(0.6)),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'JS',
+                            style: AppTextStyles.style(
+                              color: textSec,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          Icons.visibility_outlined,
+                          size: 20,
+                          color: textSec.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 20,
+                          color: textSec.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.delete_outline_rounded,
+                          size: 20,
+                          color: textSec.withOpacity(0.6),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
-  Widget _infoRow(String label, String value, {bool isBold = false, Color? valueColor}) {
+  Widget _infoRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? valueColor,
+  }) {
     return Row(
       children: [
         Text(
@@ -444,4 +486,3 @@ class IssueDetailScreen extends StatelessWidget {
     );
   }
 }
-

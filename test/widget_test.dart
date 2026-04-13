@@ -10,7 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mycrm/main.dart';
 
 void main() {
-  testWidgets('Login screen renders with dummy credentials', (WidgetTester tester) async {
+  testWidgets('Login screen renders with dummy credentials', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('Welcome Back'), findsOneWidget);

@@ -60,7 +60,12 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(compact ? 16 : 24, 16, compact ? 16 : 24, 24),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 24,
+              16,
+              compact ? 16 : 24,
+              24,
+            ),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 1040),
@@ -122,12 +127,40 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       children: [
         _card(
           title: 'Staff Information',
-          subtitle: 'Fields based on the member data shown in your staff directory.',
+          subtitle:
+              'Fields based on the member data shown in your staff directory.',
           child: _fieldGrid([
             _field('Profile Image', _profileImagePicker(), fullWidth: true),
-            _field('Full Name', _textField(_nameController, 'Philip Hartman', Icons.person_outline_rounded, onChanged: true), requiredField: true),
-            _field('Work Email', _textField(_emailController, 'name@company.com', Icons.mail_outline_rounded, keyboardType: TextInputType.emailAddress, onChanged: true), requiredField: true),
-            _field('Phone Number', _textField(_phoneController, '+91 98765 43210', Icons.phone_outlined, keyboardType: TextInputType.phone)),
+            _field(
+              'Full Name',
+              _textField(
+                _nameController,
+                'Philip Hartman',
+                Icons.person_outline_rounded,
+                onChanged: true,
+              ),
+              requiredField: true,
+            ),
+            _field(
+              'Work Email',
+              _textField(
+                _emailController,
+                'name@company.com',
+                Icons.mail_outline_rounded,
+                keyboardType: TextInputType.emailAddress,
+                onChanged: true,
+              ),
+              requiredField: true,
+            ),
+            _field(
+              'Phone Number',
+              _textField(
+                _phoneController,
+                '+91 98765 43210',
+                Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+              ),
+            ),
           ]),
         ),
         const SizedBox(height: 18),
@@ -137,8 +170,25 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           child: Column(
             children: [
               _fieldGrid([
-                _field('Role', _textField(_roleController, 'Client Manager', Icons.work_outline_rounded, onChanged: true), requiredField: true),
-                _field('Department / Team', _textField(_departmentController, 'Sales Operations', Icons.groups_2_outlined, onChanged: true)),
+                _field(
+                  'Role',
+                  _textField(
+                    _roleController,
+                    'Client Manager',
+                    Icons.work_outline_rounded,
+                    onChanged: true,
+                  ),
+                  requiredField: true,
+                ),
+                _field(
+                  'Department / Team',
+                  _textField(
+                    _departmentController,
+                    'Sales Operations',
+                    Icons.groups_2_outlined,
+                    onChanged: true,
+                  ),
+                ),
                 _field(
                   'Account Status',
                   Container(
@@ -151,10 +201,30 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(_isActive ? Icons.toggle_on_rounded : Icons.toggle_off_outlined, color: _isActive ? const Color(0xFF16A34A) : const Color(0xFF94A3B8)),
+                        Icon(
+                          _isActive
+                              ? Icons.toggle_on_rounded
+                              : Icons.toggle_off_outlined,
+                          color: _isActive
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFF94A3B8),
+                        ),
                         const SizedBox(width: 10),
-                        Expanded(child: Text(_isActive ? 'Active' : 'Inactive', style: AppTextStyles.style(color: const Color(0xFF162033), fontSize: 14, fontWeight: FontWeight.w700))),
-                        Switch(value: _isActive, onChanged: (value) => setState(() => _isActive = value)),
+                        Expanded(
+                          child: Text(
+                            _isActive ? 'Active' : 'Inactive',
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF162033),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Switch(
+                          value: _isActive,
+                          onChanged: (value) =>
+                              setState(() => _isActive = value),
+                        ),
                       ],
                     ),
                   ),
@@ -173,8 +243,20 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   children: [
                     const Icon(Icons.send_outlined, color: Color(0xFF1D6FEA)),
                     const SizedBox(width: 12),
-                    Expanded(child: Text('Send invite email after creation', style: AppTextStyles.style(color: const Color(0xFF162033), fontSize: 14, fontWeight: FontWeight.w700))),
-                    Switch(value: _sendInvite, onChanged: (value) => setState(() => _sendInvite = value)),
+                    Expanded(
+                      child: Text(
+                        'Send invite email after creation',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF162033),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: _sendInvite,
+                      onChanged: (value) => setState(() => _sendInvite = value),
+                    ),
                   ],
                 ),
               ),
@@ -193,14 +275,26 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
-                    decoration: _decoration('Create password', Icons.lock_outline_rounded).copyWith(
-                      suffixIcon: IconButton(
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: const Color(0xFF94A3B8)),
-                      ),
-                    ),
+                    decoration:
+                        _decoration(
+                          'Create password',
+                          Icons.lock_outline_rounded,
+                        ).copyWith(
+                          suffixIcon: IconButton(
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ),
                     validator: (value) {
-                      if (value == null || value.trim().length < 6) return 'Use at least 6 characters';
+                      if (value == null || value.trim().length < 6)
+                        return 'Use at least 6 characters';
                       return null;
                     },
                   ),
@@ -216,26 +310,57 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
             Expanded(
               child: OutlinedButton(
                 onPressed: _isSubmitting ? null : Get.back,
-                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52), side: const BorderSide(color: Color(0xFFD7E2EF)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                child: Text('Cancel', style: AppTextStyles.style(color: const Color(0xFF475569), fontSize: 14, fontWeight: FontWeight.w700)),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  side: const BorderSide(color: Color(0xFFD7E2EF)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  'Cancel',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF475569),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: _isSubmitting ? null : _showPreviewDialog,
-                style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(52), backgroundColor: const Color(0xFF1D6FEA), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  backgroundColor: const Color(0xFF1D6FEA),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
                 icon: _isSubmitting
                     ? const SizedBox(
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
-                    : const Icon(Icons.visibility_outlined, color: Colors.white),
-                label: Text(_isSubmitting ? 'Creating...' : 'Preview', style: AppTextStyles.style(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                    : const Icon(
+                        Icons.visibility_outlined,
+                        color: Colors.white,
+                      ),
+                label: Text(
+                  _isSubmitting ? 'Creating...' : 'Preview',
+                  style: AppTextStyles.style(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
           ],
@@ -246,7 +371,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
 
   Widget _profileImagePicker() {
     final hasImage = _selectedProfileImage != null;
-    final fileName = hasImage ? _selectedProfileImage!.name : 'No image selected';
+    final fileName = hasImage
+        ? _selectedProfileImage!.name
+        : 'No image selected';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -265,12 +392,21 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F0FE),
                   borderRadius: BorderRadius.circular(18),
-                  image: hasImage && _selectedProfileImage!.path != null ? DecorationImage(image: FileImage(File(_selectedProfileImage!.path!)), fit: BoxFit.cover) : null,
+                  image: hasImage && _selectedProfileImage!.path != null
+                      ? DecorationImage(
+                          image: FileImage(File(_selectedProfileImage!.path!)),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
                 alignment: Alignment.center,
                 child: hasImage
                     ? null
-                    : const Icon(Icons.person_outline_rounded, color: Color(0xFF1D6FEA), size: 28),
+                    : const Icon(
+                        Icons.person_outline_rounded,
+                        color: Color(0xFF1D6FEA),
+                        size: 28,
+                      ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -310,12 +446,21 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(46),
                     backgroundColor: const Color(0xFF1D6FEA),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  icon: Icon(hasImage ? Icons.edit_outlined : Icons.image_outlined, color: Colors.white),
+                  icon: Icon(
+                    hasImage ? Icons.edit_outlined : Icons.image_outlined,
+                    color: Colors.white,
+                  ),
                   label: Text(
                     hasImage ? 'Change Image' : 'Choose Image',
-                    style: AppTextStyles.style(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                    style: AppTextStyles.style(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
@@ -323,16 +468,27 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _isSubmitting ? null : () => setState(() => _selectedProfileImage = null),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => setState(() => _selectedProfileImage = null),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
                       side: const BorderSide(color: Color(0xFFD7E2EF)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    icon: const Icon(Icons.close_rounded, color: Color(0xFF475569)),
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF475569),
+                    ),
                     label: Text(
                       'Remove',
-                      style: AppTextStyles.style(color: const Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w700),
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF475569),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -345,28 +501,60 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   }
 
   Widget _previewPane({bool isDialog = false}) {
-    final name = _nameController.text.trim().isEmpty ? 'New Staff Member' : _nameController.text.trim();
-    final role = _roleController.text.trim().isEmpty ? 'Role not set' : _roleController.text.trim();
-    final email = _emailController.text.trim().isEmpty ? 'email@company.com' : _emailController.text.trim();
-    final department = _departmentController.text.trim().isEmpty ? 'Department not assigned' : _departmentController.text.trim();
-    final initials = name.split(' ').where((e) => e.isNotEmpty).take(2).map((e) => e[0]).join().toUpperCase();
+    final name = _nameController.text.trim().isEmpty
+        ? 'New Staff Member'
+        : _nameController.text.trim();
+    final role = _roleController.text.trim().isEmpty
+        ? 'Role not set'
+        : _roleController.text.trim();
+    final email = _emailController.text.trim().isEmpty
+        ? 'email@company.com'
+        : _emailController.text.trim();
+    final department = _departmentController.text.trim().isEmpty
+        ? 'Department not assigned'
+        : _departmentController.text.trim();
+    final initials = name
+        .split(' ')
+        .where((e) => e.isNotEmpty)
+        .take(2)
+        .map((e) => e[0])
+        .join()
+        .toUpperCase();
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(isDialog ? 18 : 22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFF163B64), Color(0xFF1D6FEA)]),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF163B64), Color(0xFF1D6FEA)],
+        ),
         borderRadius: BorderRadius.circular(28),
-        boxShadow: const [BoxShadow(color: Color(0x261D6FEA), blurRadius: 24, offset: Offset(0, 14))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x261D6FEA),
+            blurRadius: 24,
+            offset: Offset(0, 14),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Live Preview', style: AppTextStyles.style(color: Colors.white.withValues(alpha: 0.82), fontSize: 12, fontWeight: FontWeight.w700)),
+          Text(
+            'Live Preview',
+            style: AppTextStyles.style(
+              color: Colors.white.withValues(alpha: 0.82),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -379,11 +567,25 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFDCE7FF),
                         borderRadius: BorderRadius.circular(20),
-                        image: _selectedProfileImage?.path != null ? DecorationImage(image: FileImage(File(_selectedProfileImage!.path!)), fit: BoxFit.cover) : null,
+                        image: _selectedProfileImage?.path != null
+                            ? DecorationImage(
+                                image: FileImage(
+                                  File(_selectedProfileImage!.path!),
+                                ),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
                       alignment: Alignment.center,
                       child: _selectedProfileImage == null
-                          ? Text(initials.isEmpty ? 'NS' : initials, style: AppTextStyles.style(color: const Color(0xFF1D6FEA), fontSize: 22, fontWeight: FontWeight.w800))
+                          ? Text(
+                              initials.isEmpty ? 'NS' : initials,
+                              style: AppTextStyles.style(
+                                color: const Color(0xFF1D6FEA),
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            )
                           : null,
                     ),
                     const SizedBox(width: 14),
@@ -391,14 +593,33 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(name, style: AppTextStyles.style(color: const Color(0xFF162033), fontSize: 18, fontWeight: FontWeight.w800)),
+                          Text(
+                            name,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF162033),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
-                              _chip(role, const Color(0xFFE8F0FE), const Color(0xFF1D4ED8)),
-                              _chip(_isActive ? 'ACTIVE' : 'INACTIVE', _isActive ? const Color(0xFFDCFCE7) : const Color(0xFFE2E8F0), _isActive ? const Color(0xFF166534) : const Color(0xFF475569)),
+                              _chip(
+                                role,
+                                const Color(0xFFE8F0FE),
+                                const Color(0xFF1D4ED8),
+                              ),
+                              _chip(
+                                _isActive ? 'ACTIVE' : 'INACTIVE',
+                                _isActive
+                                    ? const Color(0xFFDCFCE7)
+                                    : const Color(0xFFE2E8F0),
+                                _isActive
+                                    ? const Color(0xFF166534)
+                                    : const Color(0xFF475569),
+                              ),
                             ],
                           ),
                         ],
@@ -417,13 +638,27 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.12))),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Onboarding Summary', style: AppTextStyles.style(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                Text(
+                  'Onboarding Summary',
+                  style: AppTextStyles.style(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const SizedBox(height: 10),
-                _summary('Invite email', _sendInvite ? 'Will be sent' : 'Manual onboarding'),
+                _summary(
+                  'Invite email',
+                  _sendInvite ? 'Will be sent' : 'Manual onboarding',
+                ),
                 const SizedBox(height: 8),
                 _summary('First login', 'Pending account creation'),
                 const SizedBox(height: 8),
@@ -439,17 +674,44 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   Widget _fieldGrid(List<Widget> children) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final double width = constraints.maxWidth >= 640 ? (constraints.maxWidth - 16) / 2 : constraints.maxWidth;
-        return Wrap(spacing: 16, runSpacing: 16, children: children.map((child) => SizedBox(width: child is _FullWidthField && constraints.maxWidth >= 640 ? constraints.maxWidth : width, child: child is _FullWidthField ? child.child : child)).toList());
+        final double width = constraints.maxWidth >= 640
+            ? (constraints.maxWidth - 16) / 2
+            : constraints.maxWidth;
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: children
+              .map(
+                (child) => SizedBox(
+                  width: child is _FullWidthField && constraints.maxWidth >= 640
+                      ? constraints.maxWidth
+                      : width,
+                  child: child is _FullWidthField ? child.child : child,
+                ),
+              )
+              .toList(),
+        );
       },
     );
   }
 
-  Widget _field(String label, Widget child, {bool requiredField = false, bool fullWidth = false}) {
+  Widget _field(
+    String label,
+    Widget child, {
+    bool requiredField = false,
+    bool fullWidth = false,
+  }) {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label${requiredField ? ' *' : ''}', style: AppTextStyles.style(color: const Color(0xFF334155), fontSize: 13, fontWeight: FontWeight.w700)),
+        Text(
+          '$label${requiredField ? ' *' : ''}',
+          style: AppTextStyles.style(
+            color: const Color(0xFF334155),
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(height: 8),
         child,
       ],
@@ -457,17 +719,29 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     return fullWidth ? _FullWidthField(child: content) : content;
   }
 
-  Widget _textField(TextEditingController controller, String hint, IconData icon, {TextInputType? keyboardType, bool onChanged = false}) {
+  Widget _textField(
+    TextEditingController controller,
+    String hint,
+    IconData icon, {
+    TextInputType? keyboardType,
+    bool onChanged = false,
+  }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       onChanged: onChanged ? (_) => setState(() {}) : null,
       decoration: _decoration(hint, icon),
       validator: (value) {
-        if ((controller == _nameController || controller == _emailController || controller == _roleController) && (value == null || value.trim().isEmpty)) {
+        if ((controller == _nameController ||
+                controller == _emailController ||
+                controller == _roleController) &&
+            (value == null || value.trim().isEmpty)) {
           return 'This field is required';
         }
-        if (controller == _emailController && value != null && value.isNotEmpty && !value.contains('@')) {
+        if (controller == _emailController &&
+            value != null &&
+            value.isNotEmpty &&
+            !value.contains('@')) {
           return 'Enter a valid email';
         }
         return null;
@@ -475,7 +749,11 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     );
   }
 
-  InputDecoration _decoration(String hint, IconData icon, {bool alignLabelWithHint = false}) {
+  InputDecoration _decoration(
+    String hint,
+    IconData icon, {
+    bool alignLabelWithHint = false,
+  }) {
     return InputDecoration(
       hintText: hint,
       alignLabelWithHint: alignLabelWithHint,
@@ -483,15 +761,34 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       fillColor: Colors.white,
       prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      hintStyle: AppTextStyles.style(color: const Color(0xFF94A3B8), fontSize: 14),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFD7E2EF))),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFF1D6FEA), width: 1.4)),
-      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFDC2626))),
-      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.4)),
+      hintStyle: AppTextStyles.style(
+        color: const Color(0xFF94A3B8),
+        fontSize: 14,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFD7E2EF)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF1D6FEA), width: 1.4),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFDC2626)),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFDC2626), width: 1.4),
+      ),
     );
   }
 
-  Widget _card({required String title, required String subtitle, required Widget child}) {
+  Widget _card({
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -499,14 +796,34 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
         border: Border.all(color: const Color(0xFFDCE7F3)),
-        boxShadow: const [BoxShadow(color: Color(0x120F172A), blurRadius: 24, offset: Offset(0, 12))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.style(color: const Color(0xFF162033), fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(
+            title,
+            style: AppTextStyles.style(
+              color: const Color(0xFF162033),
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text(subtitle, style: AppTextStyles.style(color: const Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
+          Text(
+            subtitle,
+            style: AppTextStyles.style(
+              color: const Color(0xFF64748B),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 18),
           child,
         ],
@@ -523,7 +840,11 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         child: Ink(
           height: 48,
           width: 48,
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: const Color(0xFFD7E2EF))),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFD7E2EF)),
+          ),
           child: Icon(icon, color: const Color(0xFF475569)),
         ),
       ),
@@ -533,8 +854,18 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   Widget _chip(String text, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(text, style: AppTextStyles.style(color: fg, fontSize: 11, fontWeight: FontWeight.w700)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: AppTextStyles.style(
+          color: fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 
@@ -543,7 +874,16 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       children: [
         Icon(icon, size: 18, color: const Color(0xFF94A3B8)),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: AppTextStyles.style(color: const Color(0xFF475569), fontSize: 13, fontWeight: FontWeight.w600))),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.style(
+              color: const Color(0xFF475569),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -551,8 +891,24 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   Widget _summary(String label, String value) {
     return Row(
       children: [
-        Expanded(child: Text(label, style: AppTextStyles.style(color: Colors.white.withValues(alpha: 0.7), fontSize: 12, fontWeight: FontWeight.w500))),
-        Text(value, style: AppTextStyles.style(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+        Expanded(
+          child: Text(
+            label,
+            style: AppTextStyles.style(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: AppTextStyles.style(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ],
     );
   }
@@ -630,7 +986,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
 
     final hasPermission = await _ensurePickerPermission(
       source: source,
-      actionLabel: source == ImageSource.camera ? 'capture a profile image' : 'choose a profile image from gallery',
+      actionLabel: source == ImageSource.camera
+          ? 'capture a profile image'
+          : 'choose a profile image from gallery',
     );
     if (!hasPermission) return;
 
@@ -655,7 +1013,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return Dialog(
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
           backgroundColor: Colors.transparent,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
@@ -679,11 +1040,17 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(50),
                             side: const BorderSide(color: Color(0xFFD7E2EF)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
                           child: Text(
                             'Back',
-                            style: AppTextStyles.style(color: const Color(0xFF475569), fontSize: 14, fontWeight: FontWeight.w700),
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF475569),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -699,12 +1066,21 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                           style: ElevatedButton.styleFrom(
                             minimumSize: const Size.fromHeight(50),
                             backgroundColor: const Color(0xFF1D6FEA),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
-                          icon: const Icon(Icons.add_rounded, color: Colors.white),
+                          icon: const Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                          ),
                           label: Text(
                             'Create Staff',
-                            style: AppTextStyles.style(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                            style: AppTextStyles.style(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -720,7 +1096,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   }
 
   (String, String) _splitName(String fullName) {
-    final parts = fullName.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    final parts = fullName
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
 
     if (parts.isEmpty) {
       return ('', '');
@@ -779,14 +1158,16 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                   icon: Icons.camera_alt_outlined,
                   title: 'Camera',
                   subtitle: 'Take a new profile picture',
-                  onTap: () => Navigator.of(sheetContext).pop(ImageSource.camera),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.camera),
                 ),
                 const SizedBox(height: 10),
                 _sourceTile(
                   icon: Icons.photo_library_outlined,
                   title: 'Gallery',
                   subtitle: 'Pick an image from device gallery',
-                  onTap: () => Navigator.of(sheetContext).pop(ImageSource.gallery),
+                  onTap: () =>
+                      Navigator.of(sheetContext).pop(ImageSource.gallery),
                 ),
               ],
             ),
@@ -828,9 +1209,23 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTextStyles.style(color: const Color(0xFF162033), fontSize: 14, fontWeight: FontWeight.w700)),
+                  Text(
+                    title,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF162033),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: AppTextStyles.style(color: const Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.w500)),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF64748B),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -882,10 +1277,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         margin: const EdgeInsets.all(16),
         mainButton: TextButton(
           onPressed: openAppSettings,
-          child: const Text(
-            'Settings',
-            style: TextStyle(color: Colors.white),
-          ),
+          child: const Text('Settings', style: TextStyle(color: Colors.white)),
         ),
       );
       return false;

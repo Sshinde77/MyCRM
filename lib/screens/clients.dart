@@ -66,7 +66,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
             final clients = snapshot.data ?? const <ClientModel>[];
             final filteredClients = _filterClients(clients);
             final totalClients = clients.length;
-            final activeClients = clients.where((client) => client.isActive).length;
+            final activeClients = clients
+                .where((client) => client.isActive)
+                .length;
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -187,10 +189,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Text(
-                        'View All',
-                        style: TextStyle(color: Colors.blue),
-                      ),
+                      Text('View All', style: TextStyle(color: Colors.blue)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -306,10 +305,7 @@ class _ClientsList extends StatelessWidget {
             const SizedBox(height: 8),
             const Text('Unable to load clients'),
             const SizedBox(height: 8),
-            TextButton(
-              onPressed: onRefresh,
-              child: const Text('Retry'),
-            ),
+            TextButton(onPressed: onRefresh, child: const Text('Retry')),
           ],
         ),
       );
@@ -335,7 +331,9 @@ class _ClientsList extends StatelessWidget {
             name: client.name.isNotEmpty ? client.name : 'Client',
             role: client.contactLine,
             email: client.email.isNotEmpty ? client.email : 'No email',
-            industry: client.industry.isNotEmpty ? client.industry : 'No industry',
+            industry: client.industry.isNotEmpty
+                ? client.industry
+                : 'No industry',
             website: client.website.isNotEmpty ? client.website : 'No website',
             active: client.isActive,
             onEdit: () {
@@ -384,7 +382,10 @@ class _StatCard extends StatelessWidget {
               Icon(icon, color: Colors.grey),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(20),
@@ -470,17 +471,17 @@ class _ClientCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     active ? 'ACTIVE' : 'INACTIVE',
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: statusColor, fontSize: 12),
                   ),
                 ),
               ],
@@ -522,9 +523,7 @@ class _ClientCard extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: isLink ? Colors.blue : Colors.black87,
-              ),
+              style: TextStyle(color: isLink ? Colors.blue : Colors.black87),
             ),
           ),
         ],

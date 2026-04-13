@@ -186,17 +186,11 @@ class _FilterCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _DateField(
-                  label: 'From Date',
-                  compact: compact,
-                ),
+                child: _DateField(label: 'From Date', compact: compact),
               ),
               SizedBox(width: compact ? 12 : 14),
               Expanded(
-                child: _DateField(
-                  label: 'To Date',
-                  compact: compact,
-                ),
+                child: _DateField(label: 'To Date', compact: compact),
               ),
             ],
           ),
@@ -227,10 +221,7 @@ class _FilterCard extends StatelessWidget {
 }
 
 class _DateField extends StatelessWidget {
-  const _DateField({
-    required this.label,
-    required this.compact,
-  });
+  const _DateField({required this.label, required this.compact});
 
   final String label;
   final bool compact;
@@ -350,10 +341,7 @@ class _AddServiceButton extends StatelessWidget {
 }
 
 class _ServiceCard extends StatelessWidget {
-  const _ServiceCard({
-    required this.service,
-    required this.compact,
-  });
+  const _ServiceCard({required this.service, required this.compact});
 
   final _ServiceItem service;
   final bool compact;
@@ -377,7 +365,12 @@ class _ServiceCard extends StatelessWidget {
       child: Column(
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(compact ? 16 : 18, compact ? 16 : 18, compact ? 16 : 18, 0),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 16 : 18,
+              compact ? 16 : 18,
+              compact ? 16 : 18,
+              0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -503,13 +496,17 @@ class _ServiceCard extends StatelessWidget {
             height: compact ? 58 : 62,
             child: Row(
               children: const [
-                Expanded(child: _CardAction(icon: Icons.remove_red_eye_outlined)),
+                Expanded(
+                  child: _CardAction(icon: Icons.remove_red_eye_outlined),
+                ),
                 _ActionDivider(),
                 Expanded(child: _CardAction(icon: Icons.edit_outlined)),
                 _ActionDivider(),
                 Expanded(child: _CardAction(icon: Icons.mail_outline_rounded)),
                 _ActionDivider(),
-                Expanded(child: _CardAction(icon: Icons.delete_outline_rounded)),
+                Expanded(
+                  child: _CardAction(icon: Icons.delete_outline_rounded),
+                ),
               ],
             ),
           ),
@@ -612,13 +609,7 @@ class _CardAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Icon(
-        icon,
-        color: const Color(0xFF64748B),
-        size: 28,
-      ),
-    );
+    return Center(child: Icon(icon, color: const Color(0xFF64748B), size: 28));
   }
 }
 
@@ -627,10 +618,7 @@ class _ActionDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      color: const Color(0xFFEAF0F6),
-    );
+    return Container(width: 1, color: const Color(0xFFEAF0F6));
   }
 }
 
@@ -657,4 +645,3 @@ class _ServiceItem {
   final String? expiryNote;
   final bool showExpiryAlert;
 }
-

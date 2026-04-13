@@ -122,7 +122,8 @@ class LeadModel {
         'date',
         'lead_date',
       ]),
-      assignedTo: _readAssignedStaffNames(assignedStaff) ??
+      assignedTo:
+          _readAssignedStaffNames(assignedStaff) ??
           _readNullableString(assignedSource, ['first_name']) ??
           _readNullableString(source, [
             'assigned_to_name',
@@ -135,20 +136,32 @@ class LeadModel {
             'username',
           ]),
       source: _readNullableString(source, ['source', 'lead_source']),
-      website: _readNullableString(source, [
-        'website',
-        'website_url',
-        'url',
+      website: _readNullableString(source, ['website', 'website_url', 'url']),
+      position: _readNullableString(source, [
+        'position',
+        'designation',
+        'role',
       ]),
-      position: _readNullableString(source, ['position', 'designation', 'role']),
       address: _readNullableString(source, ['address', 'street_address']),
       city: _readNullableString(source, ['city']),
       state: _readNullableString(source, ['state']),
       country: _readNullableString(source, ['country']),
-      zipCode: _readNullableString(source, ['zipCode', 'zip_code', 'postal_code']),
-      description: _readNullableString(source, ['description', 'notes', 'remark']),
+      zipCode: _readNullableString(source, [
+        'zipCode',
+        'zip_code',
+        'postal_code',
+      ]),
+      description: _readNullableString(source, [
+        'description',
+        'notes',
+        'remark',
+      ]),
       tags: _readStringList(source['tags']),
-      assignedStaffIds: _readAssignedStaffIds(assignedStaff, assignedSource, source),
+      assignedStaffIds: _readAssignedStaffIds(
+        assignedStaff,
+        assignedSource,
+        source,
+      ),
       avatarUrl: _readNullableString(source, [
         'avatar',
         'image',
@@ -226,10 +239,10 @@ class LeadModel {
   }
 
   String get displayLocation {
-    final parts = [city?.trim(), state?.trim()]
-        .whereType<String>()
-        .where((value) => value.isNotEmpty)
-        .toList();
+    final parts = [
+      city?.trim(),
+      state?.trim(),
+    ].whereType<String>().where((value) => value.isNotEmpty).toList();
     if (parts.isEmpty) {
       return 'Not available';
     }
@@ -257,15 +270,9 @@ class LeadModel {
       return true;
     }
 
-    return [
-      id,
-      leadCode,
-      name,
-      company,
-      email,
-      phone,
-      assignedTo,
-    ].whereType<String>().any((value) => value.toLowerCase().contains(normalized));
+    return [id, leadCode, name, company, email, phone, assignedTo]
+        .whereType<String>()
+        .any((value) => value.toLowerCase().contains(normalized));
   }
 
   static Map<String, dynamic> _extractSource(Map<String, dynamic> json) {
@@ -304,15 +311,20 @@ class LeadModel {
     for (final key in keys) {
       final value = json[key];
       if (value is List) {
-        return value.map((item) {
-          if (item is Map<String, dynamic>) {
-            return item;
-          }
-          if (item is Map) {
-            return item.map((key, value) => MapEntry(key.toString(), value));
-          }
-          return <String, dynamic>{};
-        }).where((item) => item.isNotEmpty).toList();
+        return value
+            .map((item) {
+              if (item is Map<String, dynamic>) {
+                return item;
+              }
+              if (item is Map) {
+                return item.map(
+                  (key, value) => MapEntry(key.toString(), value),
+                );
+              }
+              return <String, dynamic>{};
+            })
+            .where((item) => item.isNotEmpty)
+            .toList();
       }
     }
     return const [];
@@ -351,10 +363,12 @@ class LeadModel {
       }
     }
 
-    final directAssigned = _readString(
-      assignedSource,
-      ['id', '_id', 'staff_id', 'user_id'],
-    );
+    final directAssigned = _readString(assignedSource, [
+      'id',
+      '_id',
+      'staff_id',
+      'user_id',
+    ]);
     if (directAssigned.isNotEmpty) {
       ids.add(directAssigned);
     }
@@ -388,8 +402,9 @@ class LeadModel {
               return _readString(item, ['name', 'title', 'label']);
             }
             if (item is Map) {
-              final normalized =
-                  item.map((key, value) => MapEntry(key.toString(), value));
+              final normalized = item.map(
+                (key, value) => MapEntry(key.toString(), value),
+              );
               return _readString(normalized, ['name', 'title', 'label']);
             }
             return item.toString().trim();

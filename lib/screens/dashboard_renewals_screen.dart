@@ -113,8 +113,7 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
   }
 
   List<_RenewalRecord> get _visibleRecords {
-    final records =
-        _tabController.index == 0 ? _clientRecords : _vendorRecords;
+    final records = _tabController.index == 0 ? _clientRecords : _vendorRecords;
     final query = _searchController.text.trim().toLowerCase();
 
     return records.where((record) {
@@ -190,8 +189,9 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
                         else
                           ..._visibleRecords.map(
                             (record) => Padding(
-                              padding:
-                                  EdgeInsets.only(bottom: compact ? 10 : 12),
+                              padding: EdgeInsets.only(
+                                bottom: compact ? 10 : 12,
+                              ),
                               child: _RenewalRecordCard(
                                 record: record,
                                 compact: compact,
@@ -212,10 +212,7 @@ class _DashboardRenewalsScreenState extends State<DashboardRenewalsScreen>
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.compact,
-    required this.controller,
-  });
+  const _TopBar({required this.compact, required this.controller});
 
   final bool compact;
   final TabController controller;
@@ -233,7 +230,7 @@ class _TopBar extends StatelessWidget {
       child: Column(
         children: [
           SizedBox(
-              height: compact ? 50 : 54,
+            height: compact ? 50 : 54,
             child: Row(
               children: [
                 IconButton(
@@ -334,11 +331,11 @@ class _FilterAndSearchCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-           SizedBox(height: compact ? 10 : 12),
+          SizedBox(height: compact ? 10 : 12),
           Container(
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
-               borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFDCE6F2)),
             ),
             child: DropdownButtonFormField<String>(
@@ -356,7 +353,7 @@ class _FilterAndSearchCard extends StatelessWidget {
               ),
               style: AppTextStyles.style(
                 color: const Color(0xFF17213A),
-                 fontSize: compact ? 13 : 14,
+                fontSize: compact ? 13 : 14,
                 fontWeight: FontWeight.w600,
               ),
               items: filters
@@ -374,23 +371,23 @@ class _FilterAndSearchCard extends StatelessWidget {
               },
             ),
           ),
-           SizedBox(height: compact ? 12 : 14),
+          SizedBox(height: compact ? 12 : 14),
           Text(
             'Search',
             style: AppTextStyles.style(
               color: const Color(0xFF17213A),
-               fontSize: compact ? 14 : 15,
+              fontSize: compact ? 14 : 15,
               fontWeight: FontWeight.w700,
             ),
           ),
-           SizedBox(height: compact ? 10 : 12),
+          SizedBox(height: compact ? 10 : 12),
           TextField(
             controller: searchController,
             decoration: InputDecoration(
               hintText: 'Search name, service, or date',
               hintStyle: AppTextStyles.style(
                 color: const Color(0xFF94A3B8),
-                 fontSize: compact ? 12 : 13,
+                fontSize: compact ? 12 : 13,
                 fontWeight: FontWeight.w500,
               ),
               prefixIcon: const Icon(
@@ -400,8 +397,8 @@ class _FilterAndSearchCard extends StatelessWidget {
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
               contentPadding: EdgeInsets.symmetric(
-                  horizontal: compact ? 12 : 14,
-                  vertical: compact ? 12 : 13,
+                horizontal: compact ? 12 : 14,
+                vertical: compact ? 12 : 13,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -427,10 +424,7 @@ class _FilterAndSearchCard extends StatelessWidget {
 }
 
 class _RenewalRecordCard extends StatelessWidget {
-  const _RenewalRecordCard({
-    required this.record,
-    required this.compact,
-  });
+  const _RenewalRecordCard({required this.record, required this.compact});
 
   final _RenewalRecord record;
   final bool compact;
@@ -470,7 +464,7 @@ class _RenewalRecordCard extends StatelessWidget {
                   record.initials,
                   style: AppTextStyles.style(
                     color: const Color(0xFF1769F3),
-                     fontSize: compact ? 13 : 14,
+                    fontSize: compact ? 13 : 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -586,7 +580,7 @@ class _InfoChip extends StatelessWidget {
             label,
             style: AppTextStyles.style(
               color: const Color(0xFF94A3B8),
-                fontSize: compact ? 10 : 11,
+              fontSize: compact ? 10 : 11,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -595,7 +589,7 @@ class _InfoChip extends StatelessWidget {
             value,
             style: AppTextStyles.style(
               color: const Color(0xFF17213A),
-                fontSize: compact ? 12 : 13,
+              fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -636,7 +630,7 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-                fontSize: compact ? 12 : 13,
+              fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -665,4 +659,3 @@ class _RenewalRecord {
   final Color badgeColor;
   final String initials;
 }
-

@@ -5,7 +5,7 @@ import '../services/api_service.dart';
 
 class LeadProvider extends ChangeNotifier {
   LeadProvider({ApiService? apiService})
-      : _apiService = apiService ?? ApiService.instance;
+    : _apiService = apiService ?? ApiService.instance;
 
   final ApiService _apiService;
 
@@ -94,7 +94,7 @@ class LeadProvider extends ChangeNotifier {
     try {
       await _apiService.deleteLead(normalizedId);
       _allLeads = _allLeads
-          .where((lead) => (lead.id?.trim() ?? '') != normalizedId)
+          .where((lead) => (lead.id.trim()) != normalizedId)
           .toList(growable: false);
     } catch (error) {
       _errorMessage = _toMessage(error);

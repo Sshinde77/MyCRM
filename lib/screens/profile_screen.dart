@@ -178,9 +178,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 20),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final spacing = constraints.maxWidth <= 320 ? 12.0 : 16.0;
-                        final cardHeight =
-                            constraints.maxWidth <= 320 ? 170.0 : 182.0;
+                        final spacing = constraints.maxWidth <= 320
+                            ? 12.0
+                            : 16.0;
+                        final cardHeight = constraints.maxWidth <= 320
+                            ? 170.0
+                            : 182.0;
 
                         return GridView.builder(
                           shrinkWrap: true,
@@ -188,11 +191,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           itemCount: _actions.length,
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            mainAxisSpacing: spacing,
-                            crossAxisSpacing: spacing,
-                            mainAxisExtent: cardHeight,
-                          ),
+                                crossAxisCount: 2,
+                                mainAxisSpacing: spacing,
+                                crossAxisSpacing: spacing,
+                                mainAxisExtent: cardHeight,
+                              ),
                           itemBuilder: (context, index) {
                             final action = _actions[index];
                             return _ProfileActionCard(action: action);
@@ -390,10 +393,7 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _ProfileHeroCard extends StatelessWidget {
-  const _ProfileHeroCard({
-    required this.isLoggingOut,
-    required this.onLogout,
-  });
+  const _ProfileHeroCard({required this.isLoggingOut, required this.onLogout});
 
   final bool isLoggingOut;
   final VoidCallback onLogout;
@@ -586,4 +586,3 @@ class _ProfileAction {
   final String routeName;
   final Color accentColor;
 }
-

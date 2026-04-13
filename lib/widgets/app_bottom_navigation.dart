@@ -50,20 +50,12 @@ enum AppBottomNavTab {
 }
 
 class PrimaryBottomNavigation extends StatelessWidget {
-  const PrimaryBottomNavigation({
-    super.key,
-    required this.currentTab,
-  });
+  const PrimaryBottomNavigation({super.key, required this.currentTab});
 
   final AppBottomNavTab currentTab;
 
   static final List<MagicNavItem> _items = AppBottomNavTab.values
-      .map(
-        (tab) => MagicNavItem(
-          label: tab.label,
-          icon: tab.icon,
-        ),
-      )
+      .map((tab) => MagicNavItem(label: tab.label, icon: tab.icon))
       .toList(growable: false);
 
   void _handleTabChange(int index) {
@@ -166,8 +158,9 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                 AnimatedPositioned(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
-                  left: horizontalMargin + 
-                  8 +
+                  left:
+                      horizontalMargin +
+                      8 +
                       (itemWidth * _currentIndex) +
                       (itemWidth - bubbleSize) / 2,
                   top: 0,
@@ -206,58 +199,63 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                   right: horizontalMargin,
                   bottom: 6,
                   child: Padding(
-                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: List.generate(widget.items.length, (index) {
-                      final item = widget.items[index];
-                      final isActive = index == _currentIndex;
-                      return Expanded(
-                        child: InkWell(
-                          onTap: () => _handleTap(index),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 10, bottom: 6),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                AnimatedOpacity(
-                                  duration: const Duration(milliseconds: 220),
-                                  opacity: isActive ? 0.0 : 1.0,
-                                  child: Icon(
-                                    item.icon,
-                                    size: 18,
-                                    color: const Color(0xFF94A3B8),
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: AnimatedDefaultTextStyle(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      children: List.generate(widget.items.length, (index) {
+                        final item = widget.items[index];
+                        final isActive = index == _currentIndex;
+                        return Expanded(
+                          child: InkWell(
+                            onTap: () => _handleTap(index),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                top: 10,
+                                bottom: 6,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  AnimatedOpacity(
                                     duration: const Duration(milliseconds: 220),
-                                    style: TextStyle(
-                                      color: isActive
-                                          ? activeColor
-                                          : const Color(0xFF94A3B8),
-                                      fontSize: labelFontSize,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    child: Text(
-                                      item.label,
-                                      textAlign: TextAlign.center,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: false,
+                                    opacity: isActive ? 0.0 : 1.0,
+                                    child: Icon(
+                                      item.icon,
+                                      size: 18,
+                                      color: const Color(0xFF94A3B8),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: AnimatedDefaultTextStyle(
+                                      duration: const Duration(
+                                        milliseconds: 220,
+                                      ),
+                                      style: TextStyle(
+                                        color: isActive
+                                            ? activeColor
+                                            : const Color(0xFF94A3B8),
+                                        fontSize: labelFontSize,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      child: Text(
+                                        item.label,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        softWrap: false,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    }),
+                        );
+                      }),
+                    ),
                   ),
-                ),
                 ),
               ],
             ),

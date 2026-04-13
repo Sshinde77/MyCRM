@@ -9,10 +9,7 @@ import '../models/lead_model.dart';
 import '../services/api_service.dart';
 
 class AddLeadScreen extends StatefulWidget {
-  const AddLeadScreen({
-    super.key,
-    this.leadId,
-  });
+  const AddLeadScreen({super.key, this.leadId});
 
   final String? leadId;
 
@@ -97,7 +94,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         _statusOptions = options.statuses;
         _tagOptions = options.tags;
         _staffOptions = options.staff;
-        _selectedStatus = _resolveSelectedValue(_selectedStatus, _statusOptions);
+        _selectedStatus = _resolveSelectedValue(
+          _selectedStatus,
+          _statusOptions,
+        );
         _selectedTag = _resolveSelectedValue(_selectedTag, _tagOptions);
         _selectedStaffId = _resolveSelectedStaffId(
           _selectedStaffId,
@@ -177,18 +177,25 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       _selectedCity = (lead.city?.trim().isNotEmpty ?? false)
           ? lead.city!.trim()
           : _selectedCity;
-      _selectedStatus = _resolveSelectedValue(lead.status?.trim(), _statusOptions) ??
+      _selectedStatus =
+          _resolveSelectedValue(lead.status?.trim(), _statusOptions) ??
           lead.status?.trim();
-      _selectedTag = _resolveSelectedValue(
-        lead.tags.isNotEmpty ? lead.tags.first.trim() : null,
-        _tagOptions,
-      ) ??
+      _selectedTag =
+          _resolveSelectedValue(
+            lead.tags.isNotEmpty ? lead.tags.first.trim() : null,
+            _tagOptions,
+          ) ??
           (lead.tags.isNotEmpty ? lead.tags.first.trim() : null);
-      _selectedStaffId = _resolveSelectedStaffId(
-        lead.assignedStaffIds.isNotEmpty ? lead.assignedStaffIds.first.trim() : null,
-        _staffOptions,
-      ) ??
-          (lead.assignedStaffIds.isNotEmpty ? lead.assignedStaffIds.first.trim() : null);
+      _selectedStaffId =
+          _resolveSelectedStaffId(
+            lead.assignedStaffIds.isNotEmpty
+                ? lead.assignedStaffIds.first.trim()
+                : null,
+            _staffOptions,
+          ) ??
+          (lead.assignedStaffIds.isNotEmpty
+              ? lead.assignedStaffIds.first.trim()
+              : null);
     });
   }
 
@@ -514,11 +521,15 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                         initialCity: _selectedCity,
                         onChanged: (country, state, city) {
                           setState(() {
-                            _selectedCountry = country.isEmpty ? 'India' : country;
-                            _selectedState =
-                                state.isEmpty ? 'Maharashtra' : state;
-                            _selectedCity =
-                                city.isEmpty ? 'Mumbai Suburban' : city;
+                            _selectedCountry = country.isEmpty
+                                ? 'India'
+                                : country;
+                            _selectedState = state.isEmpty
+                                ? 'Maharashtra'
+                                : state;
+                            _selectedCity = city.isEmpty
+                                ? 'Mumbai Suburban'
+                                : city;
                           });
                         },
                       ),
@@ -552,7 +563,9 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: (_isSubmitting || _isBusy) ? null : _submit,
+                          onPressed: (_isSubmitting || _isBusy)
+                              ? null
+                              : _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1D8EF0),
                             foregroundColor: Colors.white,
@@ -690,10 +703,7 @@ class _FormOptionsStatusCard extends StatelessWidget {
             ),
           ),
           if (hasError)
-            TextButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
         ],
       ),
     );
@@ -718,12 +728,7 @@ class _ResponsiveFormGrid extends StatelessWidget {
           spacing: 16,
           runSpacing: 16,
           children: children
-              .map(
-                (child) => SizedBox(
-                  width: fieldWidth,
-                  child: child,
-                ),
-              )
+              .map((child) => SizedBox(width: fieldWidth, child: child))
               .toList(growable: false),
         );
       },
@@ -867,10 +872,7 @@ class _DropdownTile extends StatelessWidget {
 }
 
 class _DropdownItem {
-  const _DropdownItem({
-    required this.value,
-    required this.label,
-  });
+  const _DropdownItem({required this.value, required this.label});
 
   final String value;
   final String label;
