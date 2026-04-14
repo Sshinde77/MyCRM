@@ -54,4 +54,11 @@ class ApiConstants {
   static const String updateTask = '$baseUrl/tasks/{id}';
   static const String deleteTask = '$baseUrl/tasks/{id}';
   static const String taskformdata = '$baseUrl/tasks/form-options';
+
+  //calendar
+  static const String calendar = '$baseUrl/calendar/events';
+  static const String calendarDetail = '$baseUrl/calendar/events/{id}';
+  static const String updateCalendar = '$baseUrl/calendar/events/{id}';
+  static const String deleteCalendar = '$baseUrl/calendar/events/{id}';
+  static const String createcalendar = '$baseUrl/calendar/events';
 }

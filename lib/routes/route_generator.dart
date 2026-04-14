@@ -46,34 +46,38 @@ class RouteGenerator {
         return MaterialPageRoute(
           builder: (_) => CreateTaskScreen(
             taskId: _extractTaskId(settings.arguments),
-            initialTitle: _extractTaskString(
-              settings.arguments,
-              const ['title', 'name', 'task_title'],
-            ),
-            initialDescription: _extractTaskString(
-              settings.arguments,
-              const ['description', 'details'],
-            ),
-            initialProjectId: _extractTaskString(
-              settings.arguments,
-              const ['projectId', 'project_id'],
-            ),
-            initialPriority: _extractTaskString(
-              settings.arguments,
-              const ['priority', 'priority_level'],
-            ),
-            initialStatus: _extractTaskString(
-              settings.arguments,
-              const ['status', 'task_status'],
-            ),
-            initialStartDate: _extractTaskDate(
-              settings.arguments,
-              const ['startDate', 'start_date', 'starts_on'],
-            ),
-            initialDueDate: _extractTaskDate(
-              settings.arguments,
-              const ['dueDate', 'deadline', 'due_date', 'end_date'],
-            ),
+            initialTitle: _extractTaskString(settings.arguments, const [
+              'title',
+              'name',
+              'task_title',
+            ]),
+            initialDescription: _extractTaskString(settings.arguments, const [
+              'description',
+              'details',
+            ]),
+            initialProjectId: _extractTaskString(settings.arguments, const [
+              'projectId',
+              'project_id',
+            ]),
+            initialPriority: _extractTaskString(settings.arguments, const [
+              'priority',
+              'priority_level',
+            ]),
+            initialStatus: _extractTaskString(settings.arguments, const [
+              'status',
+              'task_status',
+            ]),
+            initialStartDate: _extractTaskDate(settings.arguments, const [
+              'startDate',
+              'start_date',
+              'starts_on',
+            ]),
+            initialDueDate: _extractTaskDate(settings.arguments, const [
+              'dueDate',
+              'deadline',
+              'due_date',
+              'end_date',
+            ]),
             initialAssigneeIds: _extractTaskStringList(
               settings.arguments,
               const ['assigneeIds'],
@@ -82,10 +86,9 @@ class RouteGenerator {
               settings.arguments,
               const ['followerIds'],
             ),
-            initialTags: _extractTaskStringList(
-              settings.arguments,
-              const ['tags'],
-            ),
+            initialTags: _extractTaskStringList(settings.arguments, const [
+              'tags',
+            ]),
           ),
         );
       case AppRoutes.leads:

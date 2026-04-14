@@ -5,6 +5,7 @@ import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_navigation/src/snackbar/snackbar.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
+import '../models/calendar_event_model.dart';
 import '../models/user_model.dart';
 import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
@@ -21,30 +22,21 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService.instance;
-  final List<_Appointment> _appointments = [
-    _Appointment(
-      title: 'Quarterly Review',
-      description: 'With Microsoft Marketing Team',
-      date: DateTime(2026, 3, 16),
-      time: const TimeOfDay(hour: 9, minute: 30),
-      emailRecipients: 'alex@mycrm.com',
-      whatsappRecipients: '+919876543210',
-    ),
-    _Appointment(
-      title: 'Contract Signing',
-      description: 'Stripe Integration Services',
-      date: DateTime(2026, 3, 16),
-      time: const TimeOfDay(hour: 14, minute: 0),
-      emailRecipients: 'contracts@mycrm.com',
-      whatsappRecipients: '+919876543211',
-    ),
-  ];
+  late List<_Appointment> _appointments;
+  bool _isLoadingCalendar = false;
+  bool _isSavingCalendar = false;
+  String? _calendarLoadError;
+  late DateTime _displayedMonth;
 
   UserModel? _currentUser;
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _displayedMonth = DateTime(now.year, now.month);
+    _appointments = _seedAppointments();
     _loadCurrentUser();
+    _loadCalendarEvents();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -78,8 +70,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     const pageBackground = Color(0xFFF5F7FB);
     const textSecondary = Color(0xFF74839D);
-    const blue = Color(0xFF1769F3);
-    const navy = Color(0xFF141C33);
 
     return Scaffold(
       backgroundColor: pageBackground,
@@ -119,83 +109,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _SupportTicketsSection(),
                   ),
                   const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                    decoration: BoxDecoration(
-                      color: navy,
-                      borderRadius: BorderRadius.circular(26),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isCompact = constraints.maxWidth < 360;
-
-                            return Wrap(
-                              spacing: 10,
-                              runSpacing: 10,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                Text(
-                                  "Today's Calendar",
-                                  style: AppTextStyles.style(
-                                    color: Colors.white,
-                                    fontSize: isCompact ? 15 : 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: _showAddAppointmentDialog,
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    backgroundColor: Colors.white.withOpacity(
-                                      0.08,
-                                    ),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: isCompact ? 10 : 12,
-                                      vertical: 8,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                  ),
-                                  icon: Icon(
-                                    Icons.add_rounded,
-                                    size: isCompact ? 16 : 18,
-                                  ),
-                                  label: Text(
-                                    'Add Appointment',
-                                    overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.style(
-                                      color: Colors.white,
-                                      fontSize: isCompact ? 11 : 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.calendar_today_outlined,
-                                  color: Colors.white.withOpacity(0.72),
-                                  size: isCompact ? 18 : 20,
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 18),
-                        for (var i = 0; i < _appointments.length; i++) ...[
-                          _CalendarItem(appointment: _appointments[i]),
-                          if (i != _appointments.length - 1)
-                            const SizedBox(height: 14),
-                        ],
-                      ],
-                    ),
+                  _CalendarAppointmentsSection(
+                    appointments: _appointments,
+                    displayedMonth: _displayedMonth,
+                    onAddAppointment: _handleCreateAppointment,
+                    onDateTap: _showAppointmentsForDate,
+                    onPreviousMonth: () {
+                      setState(() {
+                        _displayedMonth = DateTime(
+                          _displayedMonth.year,
+                          _displayedMonth.month - 1,
+                        );
+                      });
+                    },
+                    onNextMonth: () {
+                      setState(() {
+                        _displayedMonth = DateTime(
+                          _displayedMonth.year,
+                          _displayedMonth.month + 1,
+                        );
+                      });
+                    },
                   ),
+                  if (_isLoadingCalendar || _isSavingCalendar) ...[
+                    const SizedBox(height: 12),
+                    const LinearProgressIndicator(minHeight: 2),
+                  ],
+                  if (_calendarLoadError != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      _calendarLoadError!,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFFB42318),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   Text(
-                    'Dashboard preview closely follows the provided mockup with local sample data.',
+                    'Calendar appointments are loaded from the API when available.',
                     style: AppTextStyles.style(
                       color: textSecondary,
                       fontSize: 11,
@@ -211,15 +164,543 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Future<void> _showAddAppointmentDialog() async {
-    final formKey = GlobalKey<FormState>();
-    final titleController = TextEditingController();
-    final descriptionController = TextEditingController();
-    final emailController = TextEditingController();
-    final whatsappController = TextEditingController();
+  Future<void> _loadCalendarEvents() async {
+    setState(() {
+      _isLoadingCalendar = true;
+      _calendarLoadError = null;
+    });
 
-    DateTime? selectedDate;
-    TimeOfDay? selectedTime;
+    try {
+      final events = await _apiService.getCalendarEvents();
+      if (!mounted) {
+        return;
+      }
+
+      final mapped = events.map(_appointmentFromEvent).toList()
+        ..sort((a, b) {
+          final aDate = DateTime(
+            a.date.year,
+            a.date.month,
+            a.date.day,
+            a.time.hour,
+            a.time.minute,
+          );
+          final bDate = DateTime(
+            b.date.year,
+            b.date.month,
+            b.date.day,
+            b.time.hour,
+            b.time.minute,
+          );
+          return aDate.compareTo(bDate);
+        });
+
+      setState(() {
+        _appointments = mapped;
+        _isLoadingCalendar = false;
+      });
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingCalendar = false;
+        _calendarLoadError =
+            'Calendar failed to load (${error.response?.statusCode ?? 'network'}).';
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoadingCalendar = false;
+        _calendarLoadError = 'Calendar failed to load.';
+      });
+    }
+  }
+
+  _Appointment _appointmentFromEvent(CalendarEventModel event) {
+    final start = event.startAt ?? DateTime.now();
+    final date = DateTime(start.year, start.month, start.day);
+    final time = TimeOfDay.fromDateTime(start);
+
+    return _Appointment(
+      id: event.id.trim().isEmpty ? null : event.id.trim(),
+      title: event.title.trim().isEmpty ? 'Calendar Event' : event.title.trim(),
+      description: event.description.trim().isEmpty
+          ? 'Calendar event'
+          : event.description.trim(),
+      date: date,
+      time: time,
+      emailRecipients: event.emailRecipients?.trim() ?? '',
+      whatsappRecipients: event.whatsappRecipients?.trim() ?? '',
+      isFromApi: true,
+    );
+  }
+
+  Future<void> _showAppointmentDetail(_Appointment appointment) async {
+    final id = appointment.id;
+    if (id == null || id.trim().isEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(appointment.title),
+            content: Text(appointment.description),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return FutureBuilder<CalendarEventModel>(
+          future: _apiService.getCalendarEventDetail(id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const AlertDialog(
+                title: Text('Event Detail'),
+                content: SizedBox(
+                  height: 90,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              );
+            }
+
+            if (snapshot.hasError || !snapshot.hasData) {
+              return AlertDialog(
+                title: const Text('Event Detail'),
+                content: const Text('Unable to load event detail.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Close'),
+                  ),
+                ],
+              );
+            }
+
+            final event = snapshot.data!;
+            final startAt = event.startAt;
+            final endAt = event.endAt ?? startAt?.add(const Duration(hours: 1));
+            final friendlyWhen = startAt == null
+                ? 'Not available'
+                : '${_formatCalendarSheetDate(startAt)} at ${_formatTime(TimeOfDay.fromDateTime(startAt))}';
+            final friendlyEnd = endAt == null
+                ? null
+                : '${_formatCalendarSheetDate(endAt)} at ${_formatTime(TimeOfDay.fromDateTime(endAt))}';
+
+            final appointmentDraft = _appointmentFromEvent(event);
+
+            return AlertDialog(
+              titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 6),
+              contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              title: Text(
+                event.title.trim().isEmpty
+                    ? 'Event Detail'
+                    : event.title.trim(),
+                style: AppTextStyles.style(
+                  color: const Color(0xFF22314A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DetailLine(
+                      icon: Icons.schedule_rounded,
+                      label: 'When',
+                      value: friendlyWhen,
+                    ),
+                    if (friendlyEnd != null) ...[
+                      const SizedBox(height: 8),
+                      _DetailLine(
+                        icon: Icons.timelapse_rounded,
+                        label: 'Ends',
+                        value: friendlyEnd,
+                      ),
+                    ],
+                    if (event.description.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF7FAFE),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE3EBF5)),
+                        ),
+                        child: Text(
+                          event.description.trim(),
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF5F738F),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w500,
+                            height: 1.45,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if ((event.location ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _DetailLine(
+                        icon: Icons.place_outlined,
+                        label: 'Location',
+                        value: event.location!.trim(),
+                      ),
+                    ],
+                    if ((event.emailRecipients ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      _DetailLine(
+                        icon: Icons.email_outlined,
+                        label: 'Emails',
+                        value: event.emailRecipients!.trim(),
+                      ),
+                    ],
+                    if ((event.whatsappRecipients ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _DetailLine(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        label: 'WhatsApp',
+                        value: event.whatsappRecipients!.trim(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await _handleEditAppointment(appointmentDraft);
+                  },
+                  child: const Text('Edit'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text('Delete appointment?'),
+                          content: const Text(
+                            'This will permanently delete the appointment.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(true),
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFFB42318),
+                              ),
+                              child: const Text('Delete'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+
+                    if (confirmed != true) {
+                      return;
+                    }
+
+                    Navigator.of(context).pop();
+                    await _deleteCalendarEvent(id);
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFB42318),
+                  ),
+                  child: const Text('Delete'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _handleCreateAppointment() async {
+    final draft = await _showAppointmentDialog();
+    if (draft == null) {
+      return;
+    }
+
+    await _createCalendarEvent(draft);
+  }
+
+  Future<void> _handleEditAppointment(_Appointment initial) async {
+    final draft = await _showAppointmentDialog(initial: initial);
+    if (draft == null) {
+      return;
+    }
+
+    final id = draft.id;
+    if (id == null || id.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot edit: event id missing.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    await _updateCalendarEvent(draft);
+  }
+
+  DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+
+  String _formatApiTime(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  String? _extractThirtyMinuteSlotError(DioException error) {
+    String? message;
+
+    final data = error.response?.data;
+    if (data is Map) {
+      final mapped = data.map((key, value) => MapEntry(key.toString(), value));
+      final candidate = mapped['message'];
+      if (candidate is String && candidate.trim().isNotEmpty) {
+        message = candidate.trim();
+      }
+    } else if (data is String && data.trim().isNotEmpty) {
+      message = data.trim();
+    }
+
+    if (message == null) {
+      return null;
+    }
+
+    if (message.contains(
+      'Another appointment already exists within 30 minutes',
+    )) {
+      return message;
+    }
+
+    return null;
+  }
+
+  Future<void> _createCalendarEvent(_Appointment draft) async {
+    setState(() {
+      _isSavingCalendar = true;
+      _calendarLoadError = null;
+    });
+
+    try {
+      await _apiService.createCalendarEvent(
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+        eventDate: draft.date,
+        eventTime: _formatApiTime(draft.time),
+        emailRecipients: draft.emailRecipients.trim(),
+        whatsappRecipients: draft.whatsappRecipients.trim(),
+      );
+
+      if (!mounted) return;
+      await _loadCalendarEvents();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment created.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on DioException catch (error) {
+      if (!mounted) return;
+      final slotError = _extractThirtyMinuteSlotError(error);
+      if (slotError != null) {
+        setState(() => _calendarLoadError = slotError);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(slotError),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      setState(() {
+        _calendarLoadError =
+            'Failed to create appointment (${error.response?.statusCode ?? 'network'}).';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to create appointment.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _calendarLoadError = 'Failed to create appointment.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to create appointment.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingCalendar = false);
+      }
+    }
+  }
+
+  Future<void> _updateCalendarEvent(_Appointment draft) async {
+    final id = draft.id;
+    if (id == null || id.trim().isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isSavingCalendar = true;
+      _calendarLoadError = null;
+    });
+
+    try {
+      await _apiService.updateCalendarEvent(
+        id: id,
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+        eventDate: draft.date,
+        eventTime: _formatApiTime(draft.time),
+        emailRecipients: draft.emailRecipients.trim(),
+        whatsappRecipients: draft.whatsappRecipients.trim(),
+      );
+
+      if (!mounted) return;
+      await _loadCalendarEvents();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment updated.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on DioException catch (error) {
+      if (!mounted) return;
+      final slotError = _extractThirtyMinuteSlotError(error);
+      if (slotError != null) {
+        setState(() => _calendarLoadError = slotError);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(slotError),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      setState(() {
+        _calendarLoadError =
+            'Failed to update appointment (${error.response?.statusCode ?? 'network'}).';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update appointment.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _calendarLoadError = 'Failed to update appointment.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to update appointment.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingCalendar = false);
+      }
+    }
+  }
+
+  Future<void> _deleteCalendarEvent(String id) async {
+    setState(() {
+      _isSavingCalendar = true;
+      _calendarLoadError = null;
+    });
+
+    try {
+      await _apiService.deleteCalendarEvent(id);
+      if (!mounted) return;
+      await _loadCalendarEvents();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment deleted.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on DioException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _calendarLoadError =
+            'Failed to delete appointment (${error.response?.statusCode ?? 'network'}).';
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete appointment.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _calendarLoadError = 'Failed to delete appointment.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete appointment.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingCalendar = false);
+      }
+    }
+  }
+
+  Future<_Appointment?> _showAppointmentDialog({_Appointment? initial}) async {
+    final formKey = GlobalKey<FormState>();
+    final titleController = TextEditingController(text: initial?.title ?? '');
+    final descriptionController = TextEditingController(
+      text: initial?.description ?? '',
+    );
+    final emailController = TextEditingController(
+      text: initial?.emailRecipients ?? '',
+    );
+    final whatsappController = TextEditingController(
+      text: initial?.whatsappRecipients ?? '',
+    );
+
+    DateTime? selectedDate = initial?.date;
+    TimeOfDay? selectedTime = initial?.time;
 
     final saved = await showDialog<_Appointment>(
       context: context,
@@ -272,7 +753,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           Row(
                             children: [
                               Text(
-                                'Add Calendar Appointments',
+                                initial == null
+                                    ? 'Add Calendar Appointments'
+                                    : 'Edit Calendar Appointments',
                                 style: AppTextStyles.style(
                                   color: const Color(0xFF3A4656),
                                   fontSize: 16,
@@ -291,7 +774,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEFF5FF),
+                              color: const Color(0xFFF1F6FF),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: const Color(0xFFD5E4FF),
@@ -376,6 +859,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: _AppointmentFormField(
                                   label: 'Time',
                                   requiredMark: true,
+                                  helperText:
+                                      'Choose a slot with minimum 30 minutes difference from existing meetings.',
                                   child: TextFormField(
                                     readOnly: true,
                                     onTap: pickTime,
@@ -428,7 +913,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 22),
+                          const SizedBox(height: 16),
+                          const Divider(height: 22, color: Color(0xFFE5EAF3)),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -460,6 +946,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   }
                                   Navigator.of(context).pop(
                                     _Appointment(
+                                      id: initial?.id,
                                       title: titleController.text.trim(),
                                       description:
                                           descriptionController.text
@@ -474,6 +961,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       whatsappRecipients: whatsappController
                                           .text
                                           .trim(),
+                                      isFromApi: initial?.isFromApi ?? false,
                                     ),
                                   );
                                 },
@@ -489,7 +977,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  'Save Appointment',
+                                  initial == null
+                                      ? 'Save Appointment'
+                                      : 'Update Appointment',
                                   style: AppTextStyles.style(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -509,35 +999,146 @@ class _DashboardScreenState extends State<DashboardScreen> {
       },
     );
 
-    if (saved != null) {
-      setState(() {
-        _appointments.add(saved);
-        _appointments.sort((a, b) {
-          final aDate = DateTime(
-            a.date.year,
-            a.date.month,
-            a.date.day,
-            a.time.hour,
-            a.time.minute,
-          );
-          final bDate = DateTime(
-            b.date.year,
-            b.date.month,
-            b.date.day,
-            b.time.hour,
-            b.time.minute,
-          );
-          return aDate.compareTo(bDate);
-        });
-      });
+    return saved;
+  }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Appointment added to calendar'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  Future<void> _showAppointmentsForDate(DateTime date) async {
+    final dayAppointments =
+        _appointments
+            .where((appointment) => _isSameDate(appointment.date, date))
+            .toList()
+          ..sort((a, b) => _toMinutes(a.time).compareTo(_toMinutes(b.time)));
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 46,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD7E2F0),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  _formatCalendarSheetDate(date),
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF22314A),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dayAppointments.isEmpty
+                      ? 'No appointments scheduled for this date.'
+                      : '${dayAppointments.length} appointment${dayAppointments.length == 1 ? '' : 's'} scheduled.',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF7B8CA5),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (dayAppointments.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7FAFE),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: const Color(0xFFE3EBF5)),
+                    ),
+                    child: Text(
+                      'Tap "Add Appointments" to schedule a meeting for this day.',
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF5F738F),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )
+                else
+                  ...dayAppointments.map(
+                    (appointment) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: appointment.id == null
+                            ? null
+                            : () => _showAppointmentDetail(appointment),
+                        child: _AppointmentSheetCard(appointment: appointment),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<_Appointment> _seedAppointments() {
+    final now = DateTime.now();
+    final year = now.year;
+    final month = now.month;
+
+    DateTime dateFor(int preferredDay) {
+      return DateTime(year, month, _clampDay(year, month, preferredDay));
     }
+
+    return [
+      _Appointment(
+        title: 'Testing Review',
+        description: 'Product QA sync with internal team',
+        date: dateFor(now.day > 3 ? now.day - 2 : 5),
+        time: const TimeOfDay(hour: 15, minute: 26),
+        emailRecipients: 'qa@mycrm.com',
+        whatsappRecipients: '+919876543210',
+      ),
+      _Appointment(
+        title: 'Client Demo',
+        description: 'Live walkthrough for billing dashboard',
+        date: dateFor(now.day),
+        time: const TimeOfDay(hour: 11, minute: 0),
+        emailRecipients: 'sales@mycrm.com',
+        whatsappRecipients: '+919876543211',
+      ),
+      _Appointment(
+        title: 'Contract Signing',
+        description: 'Stripe integration services closure',
+        date: dateFor(now.day + 9),
+        time: const TimeOfDay(hour: 15, minute: 9),
+        emailRecipients: 'contracts@mycrm.com',
+        whatsappRecipients: '+919876543212',
+      ),
+      _Appointment(
+        title: 'Renewal Check-in',
+        description: 'Follow-up with enterprise support account',
+        date: dateFor(now.day + 11),
+        time: const TimeOfDay(hour: 10, minute: 15),
+        emailRecipients: 'renewals@mycrm.com',
+        whatsappRecipients: '+919876543213',
+      ),
+    ];
   }
 }
 
@@ -1367,47 +1968,423 @@ class _SupportTicketPreviewCard extends StatelessWidget {
   }
 }
 
-class _CalendarItem extends StatelessWidget {
-  const _CalendarItem({required this.appointment});
+class _CalendarAppointmentsSection extends StatelessWidget {
+  const _CalendarAppointmentsSection({
+    required this.appointments,
+    required this.displayedMonth,
+    required this.onAddAppointment,
+    required this.onDateTap,
+    required this.onPreviousMonth,
+    required this.onNextMonth,
+  });
+
+  final List<_Appointment> appointments;
+  final DateTime displayedMonth;
+  final VoidCallback onAddAppointment;
+  final ValueChanged<DateTime> onDateTap;
+  final VoidCallback onPreviousMonth;
+  final VoidCallback onNextMonth;
+
+  @override
+  Widget build(BuildContext context) {
+    final monthStart = DateTime(displayedMonth.year, displayedMonth.month);
+    final today = DateTime.now();
+    final firstGridDate = monthStart.subtract(
+      Duration(days: monthStart.weekday % 7),
+    );
+    final calendarDays = List.generate(
+      42,
+      (index) => DateTime(
+        firstGridDate.year,
+        firstGridDate.month,
+        firstGridDate.day + index,
+      ),
+    );
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFE3EAF5)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF7FAFF), Color(0xFFEEF4FF)],
+              ),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 380;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Calendar Appointments',
+                              style: AppTextStyles.style(
+                                color: const Color(0xFF2D3B54),
+                                fontSize: isCompact ? 16 : 17,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Create meetings and keep WhatsApp reminders aligned with scheduled time.',
+                              style: AppTextStyles.style(
+                                color: const Color(0xFF7A8CA5),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: onAddAppointment,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B84FF),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: Text(
+                            'Add Appointments',
+                            style: AppTextStyles.style(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _CalendarIconButton(
+                          icon: Icons.chevron_left_rounded,
+                          onTap: onPreviousMonth,
+                        ),
+                        const SizedBox(width: 8),
+                        _CalendarIconButton(
+                          icon: Icons.chevron_right_rounded,
+                          onTap: onNextMonth,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _formatMonthYear(monthStart),
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF2D3B54),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const _CalendarPillButton(
+                          label: 'Month',
+                          isPrimary: true,
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    for (final label in _weekdayLabels)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF2480F0),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: calendarDays.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    crossAxisSpacing: 0,
+                    mainAxisSpacing: 0,
+                    childAspectRatio: 0.62,
+                  ),
+                  itemBuilder: (context, index) {
+                    final date = calendarDays[index];
+                    final dayAppointments =
+                        appointments
+                            .where(
+                              (appointment) =>
+                                  _isSameDate(appointment.date, date),
+                            )
+                            .toList()
+                          ..sort(
+                            (a, b) => _toMinutes(
+                              a.time,
+                            ).compareTo(_toMinutes(b.time)),
+                          );
+
+                    return _CalendarDayCell(
+                      date: date,
+                      displayedMonth: monthStart,
+                      today: today,
+                      appointments: dayAppointments,
+                      onTap: () => onDateTap(date),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarDayCell extends StatelessWidget {
+  const _CalendarDayCell({
+    required this.date,
+    required this.displayedMonth,
+    required this.today,
+    required this.appointments,
+    required this.onTap,
+  });
+
+  final DateTime date;
+  final DateTime displayedMonth;
+  final DateTime today;
+  final List<_Appointment> appointments;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrentMonth = date.month == displayedMonth.month;
+    final isToday = _isSameDate(date, today);
+    final hasAppointments = appointments.isNotEmpty && isCurrentMonth;
+    final accentColor = hasAppointments
+        ? _appointmentAccentColor(appointments.first)
+        : const Color(0xFF2480F0);
+    final highlightColor = isToday
+        ? const Color(0xFFFFF8D9)
+        : hasAppointments
+        ? accentColor.withOpacity(0.08)
+        : Colors.white;
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.all(0.35),
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 4),
+        decoration: BoxDecoration(
+          color: highlightColor,
+          border: Border.all(
+            color: hasAppointments
+                ? accentColor.withOpacity(0.45)
+                : const Color(0xFFE8EDF5),
+            width: hasAppointments ? 1.25 : 1,
+          ),
+          boxShadow: hasAppointments
+              ? [
+                  BoxShadow(
+                    color: accentColor.withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isToday
+                      ? const Color(0xFFFFF0A6)
+                      : hasAppointments
+                      ? accentColor.withOpacity(0.14)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${date.day}',
+                  style: AppTextStyles.style(
+                    color: isCurrentMonth
+                        ? hasAppointments
+                              ? accentColor
+                              : const Color(0xFF2480F0)
+                        : const Color(0xFFBDD0E8),
+                    fontSize: 11,
+                    fontWeight: isToday || hasAppointments
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            if (hasAppointments) ...[
+              for (final appointment in appointments.take(2)) ...[
+                _CalendarEventBadge(appointment: appointment),
+                const SizedBox(height: 4),
+              ],
+              if (appointments.length > 2)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2, top: 2),
+                  child: Text(
+                    '+${appointments.length - 2} more',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF7084A2),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ] else if (isToday) ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 2, top: 6),
+                child: Text(
+                  'Focus time',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFFB38B00),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CalendarEventBadge extends StatelessWidget {
+  const _CalendarEventBadge({required this.appointment});
 
   final _Appointment appointment;
 
   @override
   Widget build(BuildContext context) {
+    final color = _appointmentAccentColor(appointment);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF273046),
-        borderRadius: BorderRadius.circular(18),
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 56,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _formatTimeNumber(appointment.time),
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF1769F3),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  appointment.time.period == DayPeriod.am ? 'AM' : 'PM',
-                  style: AppTextStyles.style(
-                    color: const Color(0xFFAAB5C6),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              '${_formatTimeNumber(appointment.time)} ${appointment.title}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.style(
+                color: color,
+                fontSize: 9.8,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
-          const SizedBox(width: 18),
+        ],
+      ),
+    );
+  }
+}
+
+class _AppointmentSheetCard extends StatelessWidget {
+  const _AppointmentSheetCard({required this.appointment});
+
+  final _Appointment appointment;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _appointmentAccentColor(appointment);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FBFE),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE2EAF5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 10,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1415,24 +2392,199 @@ class _CalendarItem extends StatelessWidget {
                 Text(
                   appointment.title,
                   style: AppTextStyles.style(
-                    color: Colors.white,
-                    fontSize: 15,
+                    color: const Color(0xFF22314A),
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
                   appointment.description,
                   style: AppTextStyles.style(
-                    color: const Color(0xFFAAB5C6),
-                    fontSize: 12.5,
+                    color: const Color(0xFF70839F),
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: [
+                    _AppointmentMetaChip(
+                      icon: Icons.access_time_rounded,
+                      label: _formatTime(appointment.time),
+                      color: color,
+                    ),
+                    _AppointmentMetaChip(
+                      icon: Icons.mail_outline_rounded,
+                      label: appointment.emailRecipients.isEmpty
+                          ? 'No email'
+                          : appointment.emailRecipients,
+                      color: const Color(0xFF5E7290),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DetailLine extends StatelessWidget {
+  const _DetailLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: const Color(0xFF5E7290)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF7A8798),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF22314A),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AppointmentMetaChip extends StatelessWidget {
+  const _AppointmentMetaChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 210),
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.style(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarIconButton extends StatelessWidget {
+  const _CalendarIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: const Color(0xFF2D3B54),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: Colors.white, size: 19),
+      ),
+    );
+  }
+}
+
+class _CalendarPillButton extends StatelessWidget {
+  const _CalendarPillButton({
+    required this.label,
+    this.onTap,
+    this.isPrimary = false,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool isPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: isPrimary ? const Color(0xFF2D3B54) : const Color(0xFFF1F5FB),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.style(
+          color: isPrimary ? Colors.white : const Color(0xFF687B98),
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: child,
     );
   }
 }
@@ -1493,20 +2645,24 @@ class _AppointmentFormField extends StatelessWidget {
 
 class _Appointment {
   const _Appointment({
+    this.id,
     required this.title,
     required this.description,
     required this.date,
     required this.time,
     required this.emailRecipients,
     required this.whatsappRecipients,
+    this.isFromApi = false,
   });
 
+  final String? id;
   final String title;
   final String description;
   final DateTime date;
   final TimeOfDay time;
   final String emailRecipients;
   final String whatsappRecipients;
+  final bool isFromApi;
 }
 
 InputDecoration _appointmentInputDecoration({
@@ -1559,6 +2715,83 @@ String _formatTimeNumber(TimeOfDay time) {
   final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
   final minute = time.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
+}
+
+const _weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+int _clampDay(int year, int month, int day) {
+  if (day < 1) {
+    return 1;
+  }
+
+  final lastDay = DateTime(year, month + 1, 0).day;
+  return day > lastDay ? lastDay : day;
+}
+
+bool _isSameDate(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+int _toMinutes(TimeOfDay time) => (time.hour * 60) + time.minute;
+
+String _formatMonthYear(DateTime date) {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+
+  return '${months[date.month - 1]} ${date.year}';
+}
+
+String _formatCalendarSheetDate(DateTime date) {
+  const weekdays = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ];
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return '${weekdays[date.weekday % 7]}, ${months[date.month - 1]} ${date.day}, ${date.year}';
+}
+
+Color _appointmentAccentColor(_Appointment appointment) {
+  final palette = [
+    const Color(0xFF22B573),
+    const Color(0xFF2A7FFF),
+    const Color(0xFFF59E0B),
+    const Color(0xFF8B5CF6),
+    const Color(0xFFEF4444),
+  ];
+  final key = '${appointment.title}${appointment.description}';
+  final index =
+      key.codeUnits.fold<int>(0, (sum, code) => sum + code) % palette.length;
+  return palette[index];
 }
 
 class _LegendDot extends StatelessWidget {

@@ -15,6 +15,7 @@ import '../models/project_detail_model.dart';
 import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
+import '../models/calendar_event_model.dart';
 import 'storage_service.dart';
 
 /// Thin wrapper around Dio so API calls share one base configuration.
@@ -195,6 +196,75 @@ class ApiService {
     final response = await get(ApiConstants.projects);
     final records = _normalizeList(response.data);
     return records.map(ProjectModel.fromJson).toList();
+  }
+
+  /// Loads calendar events for the authenticated user.
+  Future<List<CalendarEventModel>> getCalendarEvents() async {
+    final response = await get(ApiConstants.calendar);
+    final records = _normalizeList(response.data);
+    return records.map(CalendarEventModel.fromJson).toList();
+  }
+
+  /// Loads a single calendar event by id.
+  Future<CalendarEventModel> getCalendarEventDetail(String id) async {
+    final path = ApiConstants.calendarDetail.replaceFirst('{id}', id);
+    final response = await get(path);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return CalendarEventModel.fromJson(body);
+  }
+
+  /// Creates a new calendar event.
+  Future<CalendarEventModel> createCalendarEvent({
+    required String title,
+    required String description,
+    required DateTime eventDate,
+    required String eventTime,
+    required String emailRecipients,
+    required String whatsappRecipients,
+  }) async {
+    final payload = {
+      'title': title,
+      'description': description,
+      'event_date': _formatApiDate(eventDate),
+      'event_time': eventTime,
+      'email_recipients': emailRecipients,
+      'whatsapp_recipients': whatsappRecipients,
+    };
+
+    final response = await post(ApiConstants.createcalendar, data: payload);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return CalendarEventModel.fromJson(body);
+  }
+
+  /// Updates an existing calendar event.
+  Future<CalendarEventModel> updateCalendarEvent({
+    required String id,
+    required String title,
+    required String description,
+    required DateTime eventDate,
+    required String eventTime,
+    required String emailRecipients,
+    required String whatsappRecipients,
+  }) async {
+    final path = ApiConstants.updateCalendar.replaceFirst('{id}', id);
+    final payload = {
+      'title': title,
+      'description': description,
+      'event_date': _formatApiDate(eventDate),
+      'event_time': eventTime,
+      'email_recipients': emailRecipients,
+      'whatsapp_recipients': whatsappRecipients,
+    };
+
+    final response = await put(path, data: payload);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return CalendarEventModel.fromJson(body);
+  }
+
+  /// Deletes an existing calendar event.
+  Future<void> deleteCalendarEvent(String id) async {
+    final path = ApiConstants.deleteCalendar.replaceFirst('{id}', id);
+    await delete(path);
   }
 
   /// Loads a single project by id.
@@ -881,6 +951,9 @@ class ApiService {
       for (final key in [
         'data',
         'items',
+        'events',
+        'calendar_events',
+        'calendarEvents',
         'staff',
         'clients',
         'customers',
@@ -900,6 +973,9 @@ class ApiService {
           for (final nestedKey in [
             'data',
             'items',
+            'events',
+            'calendar_events',
+            'calendarEvents',
             'staff',
             'clients',
             'customers',
@@ -933,6 +1009,10 @@ class ApiService {
       for (final key in [
         'data',
         'staff',
+        'event',
+        'calendar',
+        'calendar_event',
+        'calendarEvent',
         'project',
         'client',
         'customer',
