@@ -10,8 +10,11 @@ import '../models/create_client_request_model.dart';
 import '../models/lead_form_options_model.dart';
 import '../models/lead_model.dart';
 import '../models/project_form_options_model.dart';
+import '../models/project_issue_model.dart';
 import '../models/project_model.dart';
 import '../models/project_detail_model.dart';
+import '../models/project_comment_model.dart';
+import '../models/project_milestone_model.dart';
 import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
@@ -87,6 +90,16 @@ class ApiService {
   Future<Response> postForm(String path, {required FormData data}) async {
     await _restoreAuthToken();
     return await _dio.post(
+      path,
+      data: data,
+      options: Options(headers: const {'Content-Type': 'multipart/form-data'}),
+    );
+  }
+
+  /// Multipart PUT helper for endpoints that accept form-data payloads.
+  Future<Response> putForm(String path, {required FormData data}) async {
+    await _restoreAuthToken();
+    return await _dio.put(
       path,
       data: data,
       options: Options(headers: const {'Content-Type': 'multipart/form-data'}),
@@ -274,6 +287,236 @@ class ApiService {
     final body = _normalizeMap(response.data);
     final source = _normalizeMap(_extractProjectDetailSource(body));
     return ProjectDetailModel.fromJson(source);
+  }
+
+  /// Loads project files by project id.
+  Future<List<ProjectFileRecord>> getProjectFiles(String id) async {
+    final path = ApiConstants.projectfiles.replaceFirst('{id}', id);
+    final response = await get(path);
+    final source = _extractListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected project files response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final records = source.map(_normalizeMap).toList();
+    return records
+        .map(ProjectFileRecord.fromJson)
+        .where((entry) => entry.name.isNotEmpty || entry.url.isNotEmpty)
+        .toList();
+  }
+
+  /// Loads comments for a project by id.
+  Future<List<ProjectCommentModel>> getProjectComments(String id) async {
+    final path = ApiConstants.projectcomments.replaceFirst('{id}', id);
+    final response = await get(path);
+    final source = _extractListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected project comments response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final records = source.map(_normalizeMap).toList();
+    return records
+        .map(ProjectCommentModel.fromJson)
+        .where((entry) => entry.comment.trim().isNotEmpty)
+        .toList();
+  }
+
+  /// Creates a comment for a project.
+  Future<ProjectCommentModel> createProjectComment({
+    required String projectId,
+    required String comment,
+  }) async {
+    final path = ApiConstants.createprojectcomments.replaceFirst(
+      '{id}',
+      projectId,
+    );
+    final response = await post(path, data: {'comment': comment.trim()});
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    return ProjectCommentModel.fromJson(source);
+  }
+
+  /// Uploads a file for a project.
+  Future<ProjectFileRecord> createProjectFile({
+    required String projectId,
+    required String filePath,
+    String? description,
+  }) async {
+    final path = ApiConstants.projectfiles.replaceFirst('{id}', projectId);
+    final fileName = filePath.split(RegExp(r'[\\/]')).last;
+    final payload = <String, dynamic>{
+      'file': await MultipartFile.fromFile(filePath, filename: fileName),
+    };
+    final normalizedDescription = (description ?? '').trim();
+    if (normalizedDescription.isNotEmpty) {
+      payload['description'] = normalizedDescription;
+    }
+
+    final response = await postForm(path, data: FormData.fromMap(payload));
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    return ProjectFileRecord.fromJson(source);
+  }
+
+  /// Deletes an uploaded project file.
+  Future<void> deleteProjectFile({
+    required String projectId,
+    required String fileId,
+  }) async {
+    final path = ApiConstants.deleteProjectFile
+        .replaceFirst('{projectId}', projectId)
+        .replaceFirst('{fileId}', fileId);
+    await delete(path);
+  }
+
+  /// Loads milestones for a project by id.
+  Future<List<ProjectMilestoneModel>> getProjectMilestones(String id) async {
+    final path = ApiConstants.projectmilestones.replaceFirst('{id}', id);
+    final response = await get(path);
+    final source = _extractListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected project milestones response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final records = source.map(_normalizeMap).toList();
+    return records.map(ProjectMilestoneModel.fromJson).toList();
+  }
+
+  /// Creates a milestone for a project.
+  Future<ProjectMilestoneModel> createProjectMilestone({
+    required String projectId,
+    required String title,
+    String? description,
+    String? status,
+    String? dueDate,
+  }) async {
+    final path = ApiConstants.createprojectmilestones.replaceFirst(
+      '{id}',
+      projectId,
+    );
+    final payload = _buildProjectMilestonePayload(
+      title: title,
+      description: description,
+      status: status,
+      dueDate: dueDate,
+    );
+    final response = await post(path, data: payload);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    return ProjectMilestoneModel.fromJson(source);
+  }
+
+  /// Updates an existing project milestone.
+  Future<ProjectMilestoneModel> updateProjectMilestone({
+    required String projectId,
+    required String milestoneId,
+    required String title,
+    String? description,
+    String? status,
+    String? dueDate,
+  }) async {
+    final path = ApiConstants.updateprojectmilestones
+        .replaceFirst('{projectId}', projectId)
+        .replaceFirst('{milestoneId}', milestoneId);
+    final payload = _buildProjectMilestonePayload(
+      title: title,
+      description: description,
+      status: status,
+      dueDate: dueDate,
+    );
+    final response = await put(path, data: payload);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    return ProjectMilestoneModel.fromJson(source);
+  }
+
+  /// Deletes a project milestone by id.
+  Future<void> deleteProjectMilestone({
+    required String projectId,
+    required String milestoneId,
+  }) async {
+    final path = ApiConstants.deleteProjectMilestone
+        .replaceFirst('{projectId}', projectId)
+        .replaceFirst('{milestoneId}', milestoneId);
+    await delete(path);
+  }
+
+  /// Loads issues for a project by id.
+  Future<List<ProjectIssueModel>> getProjectIssues(String id) async {
+    final path = ApiConstants.projectissues.replaceFirst('{id}', id);
+    final response = await get(path);
+    final source = _extractListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected project issues response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final records = source.map(_normalizeMap).toList();
+    return records.map(ProjectIssueModel.fromJson).toList();
+  }
+
+  /// Creates an issue for a project.
+  Future<ProjectIssueModel> createProjectIssue({
+    required String projectId,
+    required String issueDescription,
+    required String priority,
+    required String status,
+  }) async {
+    final path = ApiConstants.createprojectissues.replaceFirst(
+      '{id}',
+      projectId,
+    );
+    final payload = _buildProjectIssuePayload(
+      issueDescription: issueDescription,
+      priority: priority,
+      status: status,
+    );
+    final response = await post(path, data: payload);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    return ProjectIssueModel.fromJson(source);
+  }
+
+  /// Updates an existing project issue.
+  Future<ProjectIssueModel> updateProjectIssue({
+    required String projectId,
+    required String issueId,
+    required String issueDescription,
+    required String priority,
+    required String status,
+  }) async {
+    final path = ApiConstants.updateprojectissues
+        .replaceFirst('{projectId}', projectId)
+        .replaceFirst('{issueId}', issueId);
+    final payload = _buildProjectIssuePayload(
+      issueDescription: issueDescription,
+      priority: priority,
+      status: status,
+    );
+    final response = await put(path, data: payload);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    return ProjectIssueModel.fromJson(source);
+  }
+
+  /// Deletes a project issue by id.
+  Future<void> deleteProjectIssue({
+    required String projectId,
+    required String issueId,
+  }) async {
+    final path = ApiConstants.deleteProjectIssue
+        .replaceFirst('{projectId}', projectId)
+        .replaceFirst('{issueId}', issueId);
+    await delete(path);
   }
 
   /// Loads the lead list for the authenticated user.
@@ -654,6 +897,7 @@ class ApiService {
     required String endsType,
     DateTime? endsOn,
     int? endsAfter,
+    List<String> attachmentPaths = const [],
   }) async {
     final payload = _buildTodoPayload(
       title: title,
@@ -668,6 +912,17 @@ class ApiService {
       endsOn: endsOn,
       endsAfter: endsAfter,
     );
+    if (attachmentPaths.isNotEmpty) {
+      await postForm(
+        ApiConstants.createtodo,
+        data: await _buildTodoFormData(
+          payload: payload,
+          attachmentPaths: attachmentPaths,
+        ),
+      );
+      return;
+    }
+
     await post(ApiConstants.createtodo, data: payload);
   }
 
@@ -684,6 +939,7 @@ class ApiService {
     required String endsType,
     DateTime? endsOn,
     int? endsAfter,
+    List<String> attachmentPaths = const [],
   }) async {
     final path = ApiConstants.edittodo.replaceFirst('{id}', id);
     final payload = _buildTodoPayload(
@@ -699,6 +955,17 @@ class ApiService {
       endsOn: endsOn,
       endsAfter: endsAfter,
     );
+    if (attachmentPaths.isNotEmpty) {
+      await putForm(
+        path,
+        data: await _buildTodoFormData(
+          payload: payload,
+          attachmentPaths: attachmentPaths,
+        ),
+      );
+      return;
+    }
+
     await put(path, data: payload);
   }
 
@@ -958,6 +1225,18 @@ class ApiService {
         'clients',
         'customers',
         'projects',
+        'milestones',
+        'project_milestones',
+        'projectMilestones',
+        'issues',
+        'project_issues',
+        'projectIssues',
+        'comments',
+        'project_comments',
+        'projectComments',
+        'files',
+        'attachments',
+        'documents',
         'tasks',
         'task_lists',
         'todos',
@@ -980,6 +1259,18 @@ class ApiService {
             'clients',
             'customers',
             'projects',
+            'milestones',
+            'project_milestones',
+            'projectMilestones',
+            'issues',
+            'project_issues',
+            'projectIssues',
+            'comments',
+            'project_comments',
+            'projectComments',
+            'files',
+            'attachments',
+            'documents',
             'tasks',
             'task_lists',
             'todos',
@@ -1014,10 +1305,22 @@ class ApiService {
         'calendar_event',
         'calendarEvent',
         'project',
+        'comment',
+        'project_comment',
+        'projectComment',
+        'milestone',
+        'project_milestone',
+        'projectMilestone',
+        'issue',
+        'project_issue',
+        'projectIssue',
         'client',
         'customer',
         'task',
         'todo',
+        'file',
+        'project_file',
+        'projectFile',
         'item',
         'result',
         'lead',
@@ -1141,6 +1444,114 @@ class ApiService {
     return '$hour:$minute';
   }
 
+  Map<String, dynamic> _buildProjectMilestonePayload({
+    required String title,
+    String? description,
+    String? status,
+    String? dueDate,
+  }) {
+    final normalizedTitle = title.trim();
+    final normalizedDescription = (description ?? '').trim();
+    final normalizedStatus = _normalizeMilestoneStatus(status);
+    final normalizedDueDate = _normalizeDateForApi(dueDate);
+
+    // Keep payload keys aligned with backend contract for both create and update.
+    return <String, dynamic>{
+      'title': normalizedTitle,
+      'description': normalizedDescription,
+      'status': normalizedStatus,
+      'due_date': normalizedDueDate,
+    };
+  }
+
+  Map<String, dynamic> _buildProjectIssuePayload({
+    required String issueDescription,
+    required String priority,
+    required String status,
+  }) {
+    return <String, dynamic>{
+      'issue_description': issueDescription.trim(),
+      'priority': _normalizeProjectIssuePriority(priority),
+      'status': _normalizeProjectIssueStatus(status),
+    };
+  }
+
+  String _normalizeDateForApi(String? rawDate) {
+    final value = (rawDate ?? '').trim();
+    if (value.isEmpty) {
+      return '';
+    }
+
+    final ddMmYyyyMatch = RegExp(
+      r'^(\d{2})-(\d{2})-(\d{4})$',
+    ).firstMatch(value);
+    if (ddMmYyyyMatch != null) {
+      return '${ddMmYyyyMatch.group(3)}-${ddMmYyyyMatch.group(2)}-${ddMmYyyyMatch.group(1)}';
+    }
+
+    return value;
+  }
+
+  String _normalizeMilestoneStatus(String? rawStatus) {
+    final value = (rawStatus ?? '').trim().toLowerCase();
+    if (value.isEmpty) {
+      return 'pending';
+    }
+
+    switch (value) {
+      case 'in progress':
+      case 'in_progress':
+        return 'in_progress';
+      case 'at risk':
+      case 'at_risk':
+        return 'at_risk';
+      case 'completed':
+      case 'complete':
+        return 'completed';
+      case 'planned':
+        return 'planned';
+      case 'pending':
+        return 'pending';
+      default:
+        return value.replaceAll(' ', '_');
+    }
+  }
+
+  String _normalizeProjectIssueStatus(String? status) {
+    final value = (status ?? '').trim().toLowerCase();
+    if (value.isEmpty) {
+      return 'open';
+    }
+
+    switch (value) {
+      case 'in progress':
+      case 'in_progress':
+        return 'in_progress';
+      case 'resolved':
+      case 'closed':
+      case 'open':
+        return value;
+      default:
+        return value.replaceAll(' ', '_');
+    }
+  }
+
+  String _normalizeProjectIssuePriority(String? priority) {
+    final value = (priority ?? '').trim().toLowerCase();
+    if (value.isEmpty) {
+      return 'medium';
+    }
+
+    switch (value) {
+      case 'low':
+      case 'medium':
+      case 'high':
+        return value;
+      default:
+        return value.replaceAll(' ', '_');
+    }
+  }
+
   Map<String, dynamic> _buildTodoPayload({
     required String title,
     String? description,
@@ -1185,6 +1596,23 @@ class ApiService {
     }
 
     return payload;
+  }
+
+  Future<FormData> _buildTodoFormData({
+    required Map<String, dynamic> payload,
+    required List<String> attachmentPaths,
+  }) async {
+    final formPayload = <String, dynamic>{...payload};
+    if (attachmentPaths.isNotEmpty) {
+      formPayload['attachments[]'] = await Future.wait(
+        attachmentPaths.map((path) async {
+          final fileName = path.split(RegExp(r'[\\/]')).last;
+          return MultipartFile.fromFile(path, filename: fileName);
+        }),
+      );
+    }
+
+    return FormData.fromMap(formPayload);
   }
 
   Map<String, dynamic> _buildTaskListPayload({

@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
@@ -1177,6 +1180,34 @@ class _TaskListTile extends StatelessWidget {
                     ),
                   ),
                 ],
+                if (task.attachments.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Attachments',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF5D7491),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: task.attachments
+                            .map(
+                              (attachment) => _TaskAttachmentPreview(
+                                attachment: attachment,
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
@@ -1342,6 +1373,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   final _repeatEveryController = TextEditingController(text: '1');
   final _afterCountController = TextEditingController(text: '1');
 
+  List<_TodoAttachment> _selectedAttachments = const [];
   DateTime _selectedDate = DateTime.now();
   DateTime _startsDate = DateTime.now();
   DateTime _endsOnDate = DateTime.now();
@@ -1372,6 +1404,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     _reminderTime = task.reminderTime;
     _repeatUnit = _toTitleCase(task.repeatUnit);
     _endType = task.endType;
+    _selectedAttachments = List<_TodoAttachment>.from(task.attachments);
   }
 
   @override
@@ -1462,6 +1495,8 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             hintText: 'Add extra details for this task',
           ),
         ),
+        SizedBox(height: isCompact ? 10 : 12),
+        _buildAttachmentsField(),
         SizedBox(height: isCompact ? 10 : 12),
         useTwoColumns
             ? Column(
@@ -1771,6 +1806,111 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     );
   }
 
+  Widget _buildAttachmentsField() {
+    final existingAttachments = _selectedAttachments
+        .where((attachment) => !attachment.isLocalFile)
+        .toList();
+    final pendingAttachments = _selectedAttachments
+        .where((attachment) => attachment.isLocalFile)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(child: _FormFieldLabel(label: 'Attachments')),
+            TextButton.icon(
+              onPressed: _isSubmitting ? null : _pickAttachments,
+              icon: const Icon(Icons.attach_file_rounded, size: 18),
+              label: Text(
+                pendingAttachments.isEmpty ? 'Add Files' : 'Add More',
+                style: AppTextStyles.style(fontWeight: FontWeight.w700),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF1C86F2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFD6E2EF)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (existingAttachments.isNotEmpty) ...[
+                Text(
+                  'Existing files',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF55606E),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: existingAttachments
+                      .map(
+                        (attachment) => _AttachmentChip(label: attachment.name),
+                      )
+                      .toList(),
+                ),
+              ],
+              if (existingAttachments.isNotEmpty &&
+                  pendingAttachments.isNotEmpty)
+                const SizedBox(height: 12),
+              if (pendingAttachments.isNotEmpty) ...[
+                Text(
+                  'Selected to upload',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF55606E),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: pendingAttachments
+                      .map(
+                        (attachment) => _AttachmentChip(
+                          label: attachment.name,
+                          onRemove: () => _removeAttachment(attachment),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+              if (_selectedAttachments.isEmpty)
+                Text(
+                  'No attachments added yet.',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF91A0B5),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildReminderField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1903,6 +2043,51 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     }
   }
 
+  Future<void> _pickAttachments() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: false,
+    );
+    if (result == null || !mounted) {
+      return;
+    }
+
+    final pickedAttachments = result.files
+        .where((file) => (file.path ?? '').trim().isNotEmpty)
+        .map((file) => _TodoAttachment(name: file.name, localPath: file.path))
+        .toList();
+    if (pickedAttachments.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      final next = List<_TodoAttachment>.from(_selectedAttachments);
+      for (final attachment in pickedAttachments) {
+        final duplicate = next.any(
+          (item) =>
+              item.localPath != null &&
+              item.localPath!.toLowerCase() ==
+                  attachment.localPath!.toLowerCase(),
+        );
+        if (!duplicate) {
+          next.add(attachment);
+        }
+      }
+      _selectedAttachments = next;
+    });
+  }
+
+  void _removeAttachment(_TodoAttachment attachment) {
+    setState(() {
+      _selectedAttachments = _selectedAttachments
+          .where(
+            (item) =>
+                !(item.isLocalFile && item.localPath == attachment.localPath),
+          )
+          .toList();
+    });
+  }
+
   Future<void> _saveTask() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -1923,6 +2108,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       endsAfterCount: _endType == _TaskEndType.after
           ? int.tryParse(_afterCountController.text.trim())
           : null,
+      attachments: _selectedAttachments,
     );
 
     FocusScope.of(context).unfocus();
@@ -1948,6 +2134,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           endsType: task.endType.apiValue,
           endsOn: task.endsOn,
           endsAfter: task.endsAfterCount,
+          attachmentPaths: task.attachments
+              .where((attachment) => attachment.isLocalFile)
+              .map((attachment) => attachment.localPath!)
+              .toList(),
         );
       } else {
         await ApiService.instance.createTodo(
@@ -1962,6 +2152,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           endsType: task.endType.apiValue,
           endsOn: task.endsOn,
           endsAfter: task.endsAfterCount,
+          attachmentPaths: task.attachments
+              .where((attachment) => attachment.isLocalFile)
+              .map((attachment) => attachment.localPath!)
+              .toList(),
         );
       }
       if (!mounted) {
@@ -2168,6 +2362,148 @@ class _FormFieldLabel extends StatelessWidget {
   }
 }
 
+class _AttachmentChip extends StatelessWidget {
+  const _AttachmentChip({required this.label, this.onRemove});
+
+  final String label;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F6FD),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.attach_file_rounded,
+            size: 14,
+            color: Color(0xFF5D7491),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.style(
+                color: const Color(0xFF5D7491),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (onRemove != null) ...[
+            const SizedBox(width: 6),
+            InkWell(
+              onTap: onRemove,
+              borderRadius: BorderRadius.circular(999),
+              child: const Icon(
+                Icons.close_rounded,
+                size: 14,
+                color: Color(0xFF5D7491),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskAttachmentPreview extends StatelessWidget {
+  const _TaskAttachmentPreview({required this.attachment});
+
+  final _TodoAttachment attachment;
+
+  @override
+  Widget build(BuildContext context) {
+    // 🔹 Set your rectangle size here
+    final previewWidth = 240.0;
+    final previewHeight = 90.0;
+
+    final imageUrl = attachment.url;
+    final localPath = attachment.localPath;
+
+    final canPreviewAsImage =
+        _looksLikeImageAttachment(attachment.name) ||
+        _looksLikeImageAttachment(imageUrl);
+
+    final fallbackPreview = Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F1FC),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.insert_drive_file_rounded,
+        size: 22,
+        color: Color(0xFF5D7491),
+      ),
+    );
+
+    Widget previewContent = fallbackPreview;
+
+    // 🔹 Local image preview
+    if (canPreviewAsImage && localPath != null && localPath.trim().isNotEmpty) {
+      previewContent = ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.file(
+          File(localPath),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => fallbackPreview,
+        ),
+      );
+    }
+    // 🔹 Network image preview
+    else if (canPreviewAsImage &&
+        imageUrl != null &&
+        imageUrl.trim().isNotEmpty) {
+      previewContent = ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => fallbackPreview,
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: previewWidth,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: previewWidth,
+            height: previewHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFD6E2EF)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: previewContent,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            attachment.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.style(
+              color: const Color(0xFF5D7491),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TodoTask {
   const _TodoTask({
     this.id,
@@ -2182,6 +2518,7 @@ class _TodoTask {
     this.endsAfterCount,
     this.startTime,
     this.reminderTime,
+    this.attachments = const [],
     this.isCompleted = false,
   });
 
@@ -2198,6 +2535,7 @@ class _TodoTask {
     _TaskEndType? endType,
     DateTime? endsOn,
     int? endsAfterCount,
+    List<_TodoAttachment>? attachments,
     bool? isCompleted,
   }) {
     return _TodoTask(
@@ -2213,6 +2551,7 @@ class _TodoTask {
       endType: endType ?? this.endType,
       endsOn: endsOn ?? this.endsOn,
       endsAfterCount: endsAfterCount ?? this.endsAfterCount,
+      attachments: attachments ?? this.attachments,
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
@@ -2257,6 +2596,7 @@ class _TodoTask {
       endType: endType,
       endsOn: _tryParseApiDate(_readString(source, const ['ends_on'])),
       endsAfterCount: _readInt(source, const ['ends_after']),
+      attachments: _readAttachments(source),
       isCompleted: _readCompletionState(source),
     );
   }
@@ -2273,7 +2613,18 @@ class _TodoTask {
   final _TaskEndType endType;
   final DateTime? endsOn;
   final int? endsAfterCount;
+  final List<_TodoAttachment> attachments;
   final bool isCompleted;
+}
+
+class _TodoAttachment {
+  const _TodoAttachment({required this.name, this.url, this.localPath});
+
+  final String name;
+  final String? url;
+  final String? localPath;
+
+  bool get isLocalFile => (localPath ?? '').trim().isNotEmpty;
 }
 
 enum _TaskEndType { never, on, after }
@@ -2371,6 +2722,62 @@ int? _readInt(Map<String, dynamic> source, List<String> keys) {
   }
 
   return null;
+}
+
+List<_TodoAttachment> _readAttachments(Map<String, dynamic> source) {
+  dynamic raw = source['attachments'];
+  if (raw == null) {
+    raw = source['attachment'];
+  }
+  if (raw is! List) {
+    return const [];
+  }
+
+  return raw
+      .map((entry) {
+        if (entry is String) {
+          final trimmed = entry.trim();
+          if (trimmed.isEmpty) {
+            return null;
+          }
+          return _TodoAttachment(name: trimmed, url: trimmed);
+        }
+
+        if (entry is! Map) {
+          return null;
+        }
+
+        final item = entry.map((key, value) => MapEntry(key.toString(), value));
+        return _TodoAttachment(
+          name:
+              _readString(item, const [
+                'name',
+                'file_name',
+                'filename',
+                'title',
+              ]) ??
+              'Attachment',
+          url: _readString(item, const ['url', 'file', 'path']),
+        );
+      })
+      .whereType<_TodoAttachment>()
+      .toList();
+}
+
+bool _looksLikeImageAttachment(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return false;
+  }
+
+  final normalized = value.trim().toLowerCase();
+  final path = normalized.split('?').first;
+  return path.endsWith('.png') ||
+      path.endsWith('.jpg') ||
+      path.endsWith('.jpeg') ||
+      path.endsWith('.gif') ||
+      path.endsWith('.webp') ||
+      path.endsWith('.bmp') ||
+      path.endsWith('.svg');
 }
 
 DateTime? _tryParseApiDate(String? value) {

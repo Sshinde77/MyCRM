@@ -46,6 +46,24 @@ class ApiConstants {
   static const String updateProject = '$baseUrl/projects/{id}';
   static const String deleteProject = '$baseUrl/projects/{id}';
   static const String formdataProject = '$baseUrl/projects/form-options';
+  static const String projectfiles = '$baseUrl/projects/{id}/files';
+  static const String deleteProjectFile =
+      '$baseUrl/projects/{projectId}/files/{fileId}';
+  static const String projectmilestones = '$baseUrl/projects/{id}/milestones';
+  static const String createprojectmilestones =
+      '$baseUrl/projects/{id}/milestones';
+  static const String updateprojectmilestones =
+      '$baseUrl/projects/{projectId}/milestones/{milestoneId}';
+  static const String deleteProjectMilestone =
+      '$baseUrl/projects/{projectId}/milestones/{milestoneId}';
+  static const String projectissues = '$baseUrl/projects/{id}/issues';
+  static const String createprojectissues = '$baseUrl/projects/{id}/issues';
+  static const String updateprojectissues =
+      '$baseUrl/projects/{projectId}/issues/{issueId}';
+  static const String deleteProjectIssue =
+      '$baseUrl/projects/{projectId}/issues/{issueId}';
+  static const String projectcomments = '$baseUrl/projects/{id}/comments';
+  static const String createprojectcomments = '$baseUrl/projects/{id}/comments';
 
   //task
   static const String tasks = '$baseUrl/tasks';

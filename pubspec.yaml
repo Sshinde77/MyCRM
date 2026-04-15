@@ -26,11 +26,14 @@ dependencies:
   provider: ^6.1.5
   country_state_city_selector: ^1.0.6
   flutter_html: ^3.0.0
+  url_launcher: ^6.3.1
+
 # Packages used only during development and testing.
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # Flutter-specific configuration such as bundled assets.
 flutter:
@@ -38,3 +41,10 @@ flutter:
   assets:
     # Bundle the full assets folder so renamed images are picked up consistently.
     - assets/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo1.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/logo1.png"

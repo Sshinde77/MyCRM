@@ -744,6 +744,11 @@ class _SearchField extends StatelessWidget {
         onChanged: onChanged,
         decoration: InputDecoration(
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          errorBorder: InputBorder.none,
+          focusedErrorBorder: InputBorder.none,
           icon: const Icon(
             Icons.search_rounded,
             color: Color(0xFF9AA7B7),

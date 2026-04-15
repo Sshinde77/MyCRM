@@ -144,6 +144,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
                             onChanged: (_) => setState(() {}),
                             decoration: const InputDecoration(
                               border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
                               icon: Icon(Icons.search, color: Colors.grey),
                               hintText: 'Search clients...',
                               hintStyle: TextStyle(color: Colors.grey),

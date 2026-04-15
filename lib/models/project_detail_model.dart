@@ -25,6 +25,7 @@ class ProjectDetailModel {
     required this.memberIds,
     required this.employeeRecords,
     required this.taskRecords,
+    required this.fileRecords,
     required this.clientEmail,
     required this.clientPhone,
     required this.clientAddress,
@@ -55,6 +56,7 @@ class ProjectDetailModel {
   final List<String> memberIds;
   final List<ProjectAssignedEmployee> employeeRecords;
   final List<ProjectTaskRecord> taskRecords;
+  final List<ProjectFileRecord> fileRecords;
   final String clientEmail;
   final String clientPhone;
   final String clientAddress;
@@ -82,6 +84,15 @@ class ProjectDetailModel {
       'tasks',
       'task_items',
       'todos',
+    ]);
+    final fileEntries = _readObjectList(source, const [
+      'files',
+      'project_files',
+      'projectFiles',
+      'documents',
+      'project_documents',
+      'projectDocuments',
+      'attachments',
     ]);
 
     final rawProgress =
@@ -207,6 +218,10 @@ class ProjectDetailModel {
       taskRecords: taskEntries
           .map((entry) => ProjectTaskRecord.fromJson(entry))
           .where((entry) => entry.title.isNotEmpty || entry.id.isNotEmpty)
+          .toList(),
+      fileRecords: fileEntries
+          .map((entry) => ProjectFileRecord.fromJson(entry))
+          .where((entry) => entry.name.isNotEmpty || entry.url.isNotEmpty)
           .toList(),
       clientEmail: _readValue(customerMap, const [
         'email',
@@ -377,6 +392,104 @@ class ProjectDetailModel {
       return (value / 100).clamp(0, 1);
     }
     return value.clamp(0, 1);
+  }
+}
+
+class ProjectFileRecord {
+  const ProjectFileRecord({
+    required this.id,
+    required this.name,
+    required this.url,
+    required this.sizeBytes,
+    required this.uploadedOn,
+  });
+
+  final String id;
+  final String name;
+  final String url;
+  final int? sizeBytes;
+  final String uploadedOn;
+
+  String get extension {
+    final value = name.trim().isNotEmpty ? name.trim() : url.trim();
+    final withoutQuery = value.split('?').first;
+    final last = withoutQuery.split('/').last;
+    final dot = last.lastIndexOf('.');
+    if (dot <= 0 || dot == last.length - 1) return '';
+    return last.substring(dot + 1).toLowerCase();
+  }
+
+  factory ProjectFileRecord.fromJson(Map<String, dynamic> json) {
+    final url = ProjectDetailModel._readValue(json, const [
+      'url',
+      'file_url',
+      'file_path',
+      'filePath',
+      'download_url',
+      'downloadUrl',
+      'link',
+      'href',
+      'path',
+      'file',
+      'value',
+    ]);
+
+    final name = ProjectDetailModel._readValue(json, const [
+      'name',
+      'filename',
+      'file_name',
+      'fileName',
+      'original_name',
+      'originalName',
+      'title',
+      'label',
+    ], fallback: _inferName(url));
+
+    return ProjectFileRecord(
+      id: ProjectDetailModel._readValue(json, const [
+        'id',
+        'file_id',
+        'fileId',
+      ]),
+      name: name,
+      url: url,
+      sizeBytes: _readInt(json, const [
+        'size',
+        'file_size',
+        'fileSize',
+        'bytes',
+      ]),
+      uploadedOn: ProjectDetailModel._readValue(json, const [
+        'uploaded_on',
+        'uploadedOn',
+        'uploaded_at',
+        'uploadedAt',
+        'created_at',
+        'createdAt',
+        'date',
+      ]),
+    );
+  }
+
+  static String _inferName(String url) {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return '';
+    final withoutQuery = trimmed.split('?').first;
+    final last = withoutQuery.split('/').last.trim();
+    return last;
+  }
+
+  static int? _readInt(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) {
+        final parsed = int.tryParse(value.trim());
+        if (parsed != null) return parsed;
+      }
+    }
+    return null;
   }
 }
 
