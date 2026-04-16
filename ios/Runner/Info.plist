@@ -51,5 +51,7 @@
 	<string>Allow photo access while selecting and uploading a staff profile image.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Allow camera access so you can capture a staff profile image.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Allow Face ID to securely sign in to your MyCRM account.</string>
 </dict>
 </plist>

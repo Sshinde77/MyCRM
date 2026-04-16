@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
@@ -24,6 +25,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   final _phoneController = TextEditingController();
   late final String _staffId;
   late Future<StaffMemberModel> _staffFuture;
+  late Future<_StaffActivitySummary> _activityFuture;
   String? _selectedRole;
   String? _selectedStatus;
   String _teamValue = '';
@@ -36,11 +38,13 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     super.initState();
     _staffId = (widget.staffId ?? Get.arguments ?? '').toString();
     _staffFuture = ApiService.instance.getStaffDetail(_staffId);
+    _activityFuture = _loadStaffActivitySummary();
   }
 
   void _reload() {
     setState(() {
       _staffFuture = ApiService.instance.getStaffDetail(_staffId);
+      _activityFuture = _loadStaffActivitySummary();
       _didInitializeForm = false;
     });
   }
@@ -122,71 +126,194 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                 final member = snapshot.data!;
                 _initializeForm(member);
 
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _ProfileHeaderCard(member: member),
-                      const SizedBox(height: 24),
-                      _SectionTitle(title: 'ACTIVITY TIME SUMMARY'),
-                      const SizedBox(height: 12),
-                      Row(
+                return FutureBuilder<_StaffActivitySummary>(
+                  future: _activityFuture,
+                  builder: (context, activitySnapshot) {
+                    final summary =
+                        activitySnapshot.data ?? _StaffActivitySummary.empty();
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: _ActionSummaryCard(
-                              title: 'Projects',
-                              value: '0',
-                              subtitle: 'Assigned projects',
-                              icon: Icons.assignment_rounded,
-                              color: const Color(0xFF3B82F6),
-                              buttonLabel: 'View All',
-                              onTap: () => Get.toNamed(AppRoutes.projects),
-                            ),
+                          _ProfileHeaderCard(member: member),
+                          const SizedBox(height: 24),
+                          _SectionTitle(title: 'ACTIVITY TIME SUMMARY'),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _ActionSummaryCard(
+                                  title: 'Projects',
+                                  value: '${summary.projectCount}',
+                                  subtitle: 'Assigned projects',
+                                  icon: Icons.assignment_rounded,
+                                  color: const Color(0xFF3B82F6),
+                                  buttonLabel: 'View All',
+                                  onTap: () => Get.toNamed(
+                                    AppRoutes.projects,
+                                    arguments: <String, dynamic>{
+                                      'staffId': _staffId,
+                                      'staffName': member.name,
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _ActionSummaryCard(
+                                  title: 'Tasks',
+                                  value: '${summary.taskCount}',
+                                  subtitle: 'Assigned tasks',
+                                  icon: Icons.check_circle_outline_rounded,
+                                  color: const Color(0xFF22C55E),
+                                  buttonLabel: 'View',
+                                  onTap: () => Get.toNamed(AppRoutes.tasks),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _ActionSummaryCard(
-                              title: 'Tasks',
-                              value: '0',
-                              subtitle: 'Assigned tasks',
-                              icon: Icons.check_circle_outline_rounded,
-                              color: const Color(0xFF22C55E),
-                              buttonLabel: 'View',
-                              onTap: () => Get.toNamed(AppRoutes.tasks),
-                            ),
+                          const SizedBox(height: 24),
+                          _EditProfileForm(
+                            formKey: _formKey,
+                            firstNameController: _firstNameController,
+                            lastNameController: _lastNameController,
+                            emailController: _emailController,
+                            phoneController: _phoneController,
+                            selectedRole: _selectedRole ?? 'Staff',
+                            selectedStatus: _selectedStatus ?? 'Active',
+                            onRoleChanged: (value) =>
+                                setState(() => _selectedRole = value),
+                            onStatusChanged: (value) =>
+                                setState(() => _selectedStatus = value),
+                            isSaving: _isSaving,
+                            onSave: _saveChanges,
                           ),
+                          const SizedBox(height: 24),
+                          const _ChartPlaceholder(
+                            title: 'MONTHLY PERFORMANCE TREND',
+                          ),
+                          const SizedBox(height: 24),
+                          _PriorityBreakdownCard(summary: summary),
+                          const SizedBox(height: 40),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      _EditProfileForm(
-                        formKey: _formKey,
-                        firstNameController: _firstNameController,
-                        lastNameController: _lastNameController,
-                        emailController: _emailController,
-                        phoneController: _phoneController,
-                        selectedRole: _selectedRole ?? 'Staff',
-                        selectedStatus: _selectedStatus ?? 'Active',
-                        onRoleChanged: (value) =>
-                            setState(() => _selectedRole = value),
-                        onStatusChanged: (value) =>
-                            setState(() => _selectedStatus = value),
-                        isSaving: _isSaving,
-                        onSave: _saveChanges,
-                      ),
-                      const SizedBox(height: 24),
-                      const _ChartPlaceholder(
-                        title: 'MONTHLY PERFORMANCE TREND',
-                      ),
-                      const SizedBox(height: 24),
-                      _PriorityBreakdownCard(member: member),
-                      const SizedBox(height: 40),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
     );
+  }
+
+  Future<_StaffActivitySummary> _loadStaffActivitySummary() async {
+    if (_staffId.trim().isEmpty) {
+      return _StaffActivitySummary.empty();
+    }
+
+    try {
+      final responses = await Future.wait<dynamic>([
+        ApiService.instance.getProjectsList(),
+        ApiService.instance.getTasksList(),
+      ]);
+
+      final projects = responses[0] as List<ProjectModel>;
+      final tasks = responses[1] as List<dynamic>;
+
+      final projectCount = projects
+          .where((project) => _isProjectAssignedToStaff(project))
+          .length;
+
+      var taskCount = 0;
+      var highCount = 0;
+      var mediumCount = 0;
+      var lowCount = 0;
+
+      for (final task in tasks) {
+        if (task is! Map<String, dynamic> && task is! Map) {
+          continue;
+        }
+        final normalizedTask = task is Map<String, dynamic>
+            ? task
+            : task.map((key, value) => MapEntry(key.toString(), value));
+        if (!_isTaskAssignedToStaff(normalizedTask)) {
+          continue;
+        }
+
+        taskCount += 1;
+        final priority = _readTaskPriority(normalizedTask);
+        if (priority == 'high' ||
+            priority == 'urgent' ||
+            priority == 'critical') {
+          highCount += 1;
+        } else if (priority == 'medium') {
+          mediumCount += 1;
+        } else if (priority == 'low') {
+          lowCount += 1;
+        }
+      }
+
+      return _StaffActivitySummary(
+        projectCount: projectCount,
+        taskCount: taskCount,
+        highPriorityTaskCount: highCount,
+        mediumPriorityTaskCount: mediumCount,
+        lowPriorityTaskCount: lowCount,
+      );
+    } catch (_) {
+      return _StaffActivitySummary.empty();
+    }
+  }
+
+  bool _isProjectAssignedToStaff(ProjectModel project) {
+    return project.members.any((member) => member.id.trim() == _staffId);
+  }
+
+  bool _isTaskAssignedToStaff(Map<String, dynamic> task) {
+    final assigneeSources = <dynamic>[task['assignees'], task['assigned_to']];
+
+    for (final source in assigneeSources) {
+      if (source is! List) continue;
+
+      for (final entry in source) {
+        if (entry is String && entry.trim() == _staffId) {
+          return true;
+        }
+
+        if (entry is num && entry.toString().trim() == _staffId) {
+          return true;
+        }
+
+        if (entry is! Map && entry is! Map<String, dynamic>) {
+          continue;
+        }
+
+        final normalized = entry is Map<String, dynamic>
+            ? entry
+            : entry.map((key, value) => MapEntry(key.toString(), value));
+        final id =
+            (normalized['id'] ??
+                    normalized['user_id'] ??
+                    normalized['staff_id'] ??
+                    '')
+                .toString()
+                .trim();
+        if (id == _staffId) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  String _readTaskPriority(Map<String, dynamic> task) {
+    final value = (task['priority'] ?? task['priority_level'] ?? '')
+        .toString()
+        .trim()
+        .toLowerCase();
+    return value;
   }
 
   void _initializeForm(StaffMemberModel member) {
@@ -810,18 +937,15 @@ class _ChartPlaceholder extends StatelessWidget {
 }
 
 class _PriorityBreakdownCard extends StatelessWidget {
-  const _PriorityBreakdownCard({required this.member});
+  const _PriorityBreakdownCard({required this.summary});
 
-  final StaffMemberModel member;
+  final _StaffActivitySummary summary;
 
   @override
   Widget build(BuildContext context) {
-    final departmentCount = member.departments.isEmpty
-        ? 1
-        : member.departments.length;
-    final roleStrength = member.role?.trim().isNotEmpty == true ? 70 : 35;
-    final teamStrength = member.team?.trim().isNotEmpty == true ? 80 : 25;
-    final statusStrength = member.isActive ? 90 : 20;
+    final highPercent = summary.highPriorityPercent;
+    final mediumPercent = summary.mediumPriorityPercent;
+    final lowPercent = summary.lowPriorityPercent;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -841,7 +965,7 @@ class _PriorityBreakdownCard extends StatelessWidget {
                 height: 100,
                 width: 100,
                 child: CircularProgressIndicator(
-                  value: departmentCount / (departmentCount + 1),
+                  value: highPercent / 100,
                   strokeWidth: 12,
                   color: const Color(0xFFFB923C),
                   backgroundColor: const Color(0xFFF1F5F9),
@@ -852,20 +976,20 @@ class _PriorityBreakdownCard extends StatelessWidget {
                 child: Column(
                   children: [
                     _PriorityItem(
-                      label: 'Role',
-                      percent: '$roleStrength%',
+                      label: 'High',
+                      percent: '$highPercent%',
                       color: const Color(0xFF3B82F6),
                     ),
                     const SizedBox(height: 8),
                     _PriorityItem(
-                      label: 'Team',
-                      percent: '$teamStrength%',
+                      label: 'Medium',
+                      percent: '$mediumPercent%',
                       color: const Color(0xFFFB923C),
                     ),
                     const SizedBox(height: 8),
                     _PriorityItem(
-                      label: 'Status',
-                      percent: '$statusStrength%',
+                      label: 'Low',
+                      percent: '$lowPercent%',
                       color: const Color(0xFF94A3B8),
                     ),
                   ],
@@ -877,6 +1001,39 @@ class _PriorityBreakdownCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _StaffActivitySummary {
+  const _StaffActivitySummary({
+    required this.projectCount,
+    required this.taskCount,
+    required this.highPriorityTaskCount,
+    required this.mediumPriorityTaskCount,
+    required this.lowPriorityTaskCount,
+  });
+
+  final int projectCount;
+  final int taskCount;
+  final int highPriorityTaskCount;
+  final int mediumPriorityTaskCount;
+  final int lowPriorityTaskCount;
+
+  factory _StaffActivitySummary.empty() => const _StaffActivitySummary(
+    projectCount: 0,
+    taskCount: 0,
+    highPriorityTaskCount: 0,
+    mediumPriorityTaskCount: 0,
+    lowPriorityTaskCount: 0,
+  );
+
+  int get _safeTaskTotal => taskCount == 0 ? 1 : taskCount;
+
+  int get highPriorityPercent =>
+      ((highPriorityTaskCount / _safeTaskTotal) * 100).round();
+  int get mediumPriorityPercent =>
+      ((mediumPriorityTaskCount / _safeTaskTotal) * 100).round();
+  int get lowPriorityPercent =>
+      ((lowPriorityTaskCount / _safeTaskTotal) * 100).round();
 }
 
 class _PriorityItem extends StatelessWidget {

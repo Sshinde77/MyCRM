@@ -120,53 +120,58 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
+      bottom: false, // ✅ remove extra system padding
       child: LayoutBuilder(
         builder: (context, constraints) {
           final width = constraints.maxWidth;
-          final horizontalMargin = width < 360 ? 12.0 : 16.0;
+          final horizontalMargin = width < 360 ? 5.0 : 5.0;
           final barWidth = width - (horizontalMargin * 2);
           final itemWidth = (barWidth - 16) / widget.items.length;
-          final barHeight = width < 360 ? 60.0 : 66.0;
+          final barHeight = width < 360 ? 60.0 : 64.0;
           final bubbleSize = (itemWidth * 0.7).clamp(40.0, 54.0);
-          final labelFontSize = width < 360 ? 9.5 : 10.5;
+          final labelFontSize = width < 360 ? 10.5 : 12.5;
           final activeColor = widget.items[_currentIndex].activeColor;
 
           return SizedBox(
-            height: barHeight + 26,
+            // ✅ Enough height so bubble doesn't cut
+            height: barHeight + (bubbleSize * 0.01),
             child: Stack(
+              clipBehavior: Clip.none, // ✅ allow smooth floating
               alignment: Alignment.bottomCenter,
               children: [
-                Container(
-                  height: barHeight,
-                  margin: EdgeInsets.symmetric(
-                    horizontal: horizontalMargin,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(26),
-                    border: Border.all(color: const Color(0xFFE6ECF3)),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color(0x1A0F172A),
-                        blurRadius: 18,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
+                // 🔳 Background Bar
+                Positioned(
+                  bottom: 0,
+                  left: horizontalMargin,
+                  right: horizontalMargin,
+                  child: Container(
+                    height: barHeight,
+                    margin: const EdgeInsets.symmetric(vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(color: const Color(0xFFE6ECF3)),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1A0F172A),
+                          blurRadius: 18,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
+
+                // 🔵 Floating Bubble
+                Positioned(
+                  top: -bubbleSize * 0.35, // ✅ slight float, not cut
                   left:
                       horizontalMargin +
                       8 +
                       (itemWidth * _currentIndex) +
                       (itemWidth - bubbleSize) / 2,
-                  top: 0,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
                     width: bubbleSize,
                     height: bubbleSize,
                     decoration: BoxDecoration(
@@ -182,18 +187,15 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: AnimatedScale(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeInOut,
-                      scale: 1.05,
-                      child: Icon(
-                        widget.items[_currentIndex].icon,
-                        color: activeColor,
-                        size: bubbleSize * 0.45,
-                      ),
+                    child: Icon(
+                      widget.items[_currentIndex].icon,
+                      color: activeColor,
+                      size: bubbleSize * 0.45,
                     ),
                   ),
                 ),
+
+                // 📌 Nav Items
                 Positioned(
                   left: horizontalMargin,
                   right: horizontalMargin,
@@ -204,15 +206,13 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                       children: List.generate(widget.items.length, (index) {
                         final item = widget.items[index];
                         final isActive = index == _currentIndex;
+
                         return Expanded(
                           child: InkWell(
                             onTap: () => _handleTap(index),
                             borderRadius: BorderRadius.circular(20),
                             child: Padding(
-                              padding: const EdgeInsets.only(
-                                top: 10,
-                                bottom: 6,
-                              ),
+                              padding: const EdgeInsets.only(top: 6, bottom: 4),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -221,31 +221,22 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
                                     opacity: isActive ? 0.0 : 1.0,
                                     child: Icon(
                                       item.icon,
-                                      size: 18,
+                                      size: 25,
                                       color: const Color(0xFF94A3B8),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: AnimatedDefaultTextStyle(
-                                      duration: const Duration(
-                                        milliseconds: 220,
-                                      ),
-                                      style: TextStyle(
-                                        color: isActive
-                                            ? activeColor
-                                            : const Color(0xFF94A3B8),
-                                        fontSize: labelFontSize,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      child: Text(
-                                        item.label,
-                                        textAlign: TextAlign.center,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        softWrap: false,
-                                      ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    item.label,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: isActive
+                                          ? activeColor
+                                          : const Color(0xFF94A3B8),
+                                      fontSize: labelFontSize,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],

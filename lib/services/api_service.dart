@@ -19,7 +19,7 @@ import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import '../models/calendar_event_model.dart';
-import 'storage_service.dart';
+import '../core/services/secure_storage_service.dart';
 
 /// Thin wrapper around Dio so API calls share one base configuration.
 class ApiService {
@@ -33,6 +33,54 @@ class ApiService {
         responseBody: true,
         error: true,
         logPrint: (object) => debugPrint(object.toString()),
+      ),
+    );
+
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (error, handler) async {
+          final statusCode = error.response?.statusCode;
+          final requestOptions = error.requestOptions;
+
+          if (statusCode != 401 ||
+              requestOptions.extra['auth_retry'] == true ||
+              _isAuthEndpoint(requestOptions.path)) {
+            handler.next(error);
+            return;
+          }
+
+          final refreshed = await _refreshTokensIfPossible();
+          if (!refreshed) {
+            handler.next(error);
+            return;
+          }
+
+          final token = await _storage.read(
+            SecureStorageService.accessTokenKey,
+          );
+          if (token == null || token.isEmpty) {
+            handler.next(error);
+            return;
+          }
+
+          requestOptions.extra['auth_retry'] = true;
+          requestOptions.headers['Authorization'] = 'Bearer $token';
+
+          try {
+            final response = await _dio.fetch(requestOptions);
+            handler.resolve(response);
+          } catch (retryError) {
+            handler.next(
+              retryError is DioException
+                  ? retryError
+                  : DioException(
+                      requestOptions: requestOptions,
+                      error: retryError,
+                      type: DioExceptionType.unknown,
+                    ),
+            );
+          }
+        },
       ),
     );
   }
@@ -51,7 +99,88 @@ class ApiService {
     ),
   );
 
-  final StorageService _storage = StorageService.instance;
+  final SecureStorageService _storage = SecureStorageService.instance;
+
+  bool _isAuthEndpoint(String path) {
+    final normalized = path.toLowerCase();
+    return normalized.contains('/login') ||
+        normalized.contains('/logout') ||
+        normalized.contains('/refresh');
+  }
+
+  Future<bool> _refreshTokensIfPossible() async {
+    try {
+      final refreshToken = await _storage.read(
+        SecureStorageService.refreshTokenKey,
+      );
+      if (refreshToken == null || refreshToken.trim().isEmpty) {
+        await _clearAuthData();
+        return false;
+      }
+
+      final response = await _dio.post(
+        ApiConstants.refreshToken,
+        data: {'refresh_token': refreshToken},
+        options: Options(headers: const {'Authorization': null}),
+      );
+
+      final body = _normalizeMap(response.data);
+      final tokenSource = _extractTokenSource(body);
+      final accessToken = _readNullableString(tokenSource, const [
+        'access_token',
+        'accessToken',
+        'token',
+        'jwt',
+      ]);
+      final newRefreshToken = _readNullableString(tokenSource, const [
+        'refresh_token',
+        'refreshToken',
+      ]);
+
+      if (accessToken == null || accessToken.trim().isEmpty) {
+        await _clearAuthData();
+        return false;
+      }
+
+      await _storage.write(SecureStorageService.accessTokenKey, accessToken);
+      if (newRefreshToken != null && newRefreshToken.trim().isNotEmpty) {
+        await _storage.write(
+          SecureStorageService.refreshTokenKey,
+          newRefreshToken.trim(),
+        );
+      }
+
+      _dio.options.headers['Authorization'] = 'Bearer $accessToken';
+      return true;
+    } on DioException {
+      await _clearAuthData();
+      return false;
+    } catch (_) {
+      await _clearAuthData();
+      return false;
+    }
+  }
+
+  String? _readNullableString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString();
+      }
+    }
+    return null;
+  }
+
+  Map<String, dynamic> _extractTokenSource(Map<String, dynamic> json) {
+    final nestedData = json['data'];
+    if (nestedData is Map<String, dynamic>) {
+      return nestedData;
+    }
+    if (nestedData is Map) {
+      return nestedData.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return json;
+  }
 
   /// Basic GET helper for endpoints that only need query parameters.
   Future<Response> get(
@@ -121,37 +250,53 @@ class ApiService {
   }
 
   Future<void> _persistAuth(LoginResponseModel response) async {
-    await _storage.ensureInitialized();
+    await _storage.migrateLegacyPrefsIfNeeded();
 
-    if (response.token != null && response.token!.isNotEmpty) {
-      await _storage.setString(StorageService.authTokenKey, response.token!);
-      _dio.options.headers['Authorization'] = 'Bearer ${response.token!}';
+    final accessToken = response.accessToken;
+    if (accessToken != null && accessToken.trim().isNotEmpty) {
+      await _storage.write(
+        SecureStorageService.accessTokenKey,
+        accessToken.trim(),
+      );
+      _dio.options.headers['Authorization'] = 'Bearer ${accessToken.trim()}';
     }
 
-    await _storage.setString(
-      StorageService.currentUserKey,
+    final refreshToken = response.refreshToken;
+    if (refreshToken != null && refreshToken.trim().isNotEmpty) {
+      await _storage.write(
+        SecureStorageService.refreshTokenKey,
+        refreshToken.trim(),
+      );
+    }
+
+    await _storage.write(
+      SecureStorageService.currentUserKey,
       response.user.toRawJson(),
     );
   }
 
   Future<void> _persistUser(UserModel user) async {
-    await _storage.ensureInitialized();
-    await _storage.setString(StorageService.currentUserKey, user.toRawJson());
+    await _storage.write(SecureStorageService.currentUserKey, user.toRawJson());
   }
 
   Future<void> _restoreAuthToken() async {
-    await _storage.ensureInitialized();
-    final token = _storage.getString(StorageService.authTokenKey);
+    await _storage.migrateLegacyPrefsIfNeeded();
+    final token = await _storage.read(SecureStorageService.accessTokenKey);
     if (token != null && token.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Bearer $token';
     }
   }
 
   Future<void> _clearAuthData() async {
-    await _storage.ensureInitialized();
-    await _storage.remove(StorageService.authTokenKey);
-    await _storage.remove(StorageService.currentUserKey);
+    await _storage.delete(SecureStorageService.accessTokenKey);
+    await _storage.delete(SecureStorageService.refreshTokenKey);
+    await _storage.delete(SecureStorageService.currentUserKey);
     _dio.options.headers.remove('Authorization');
+  }
+
+  /// Clears locally persisted auth data without calling the backend.
+  Future<void> clearStoredAuth() async {
+    await _clearAuthData();
   }
 
   Map<String, dynamic> _normalizeMap(dynamic data) {
@@ -172,8 +317,8 @@ class ApiService {
 
   /// Returns the persisted user if one is available locally.
   Future<UserModel?> getStoredUser() async {
-    await _storage.ensureInitialized();
-    final rawUser = _storage.getString(StorageService.currentUserKey);
+    await _storage.migrateLegacyPrefsIfNeeded();
+    final rawUser = await _storage.read(SecureStorageService.currentUserKey);
     if (rawUser == null || rawUser.isEmpty) {
       return null;
     }
@@ -790,6 +935,37 @@ class ApiService {
     return <String, dynamic>{...body, ...detail};
   }
 
+  /// Loads comments for a task by id.
+  Future<List<ProjectCommentModel>> getTaskComments(String id) async {
+    final path = ApiConstants.taskcomments.replaceFirst('{id}', id);
+    final response = await get(path);
+    final source = _extractListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected task comments response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final records = source.map(_normalizeMap).toList();
+    return records
+        .map(ProjectCommentModel.fromJson)
+        .where((entry) => entry.comment.trim().isNotEmpty)
+        .toList();
+  }
+
+  /// Creates a comment for a task.
+  Future<ProjectCommentModel> createTaskComment({
+    required String taskId,
+    required String comment,
+  }) async {
+    final path = ApiConstants.createtaskcomments.replaceFirst('{id}', taskId);
+    final response = await post(path, data: {'comment': comment.trim()});
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    return ProjectCommentModel.fromJson(source);
+  }
+
   /// Creates a task-list record with one or more nested tasks.
   Future<Map<String, dynamic>> createTaskList({
     required String title,
@@ -940,6 +1116,7 @@ class ApiService {
     DateTime? endsOn,
     int? endsAfter,
     List<String> attachmentPaths = const [],
+    List<String> existingAttachmentUrls = const [],
   }) async {
     final path = ApiConstants.edittodo.replaceFirst('{id}', id);
     final payload = _buildTodoPayload(
@@ -955,18 +1132,20 @@ class ApiService {
       endsOn: endsOn,
       endsAfter: endsAfter,
     );
-    if (attachmentPaths.isNotEmpty) {
-      await putForm(
-        path,
-        data: await _buildTodoFormData(
-          payload: payload,
-          attachmentPaths: attachmentPaths,
-        ),
-      );
-      return;
-    }
-
-    await put(path, data: payload);
+    final normalizedExistingUrls = existingAttachmentUrls
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .toList();
+    final updatePayload = <String, dynamic>{...payload, '_method': 'PUT'};
+    updatePayload['existing_attachments'] = normalizedExistingUrls;
+    updatePayload['existing_attachment_urls'] = normalizedExistingUrls;
+    await postForm(
+      path,
+      data: await _buildTodoFormData(
+        payload: updatePayload,
+        attachmentPaths: attachmentPaths,
+      ),
+    );
   }
 
   Future<void> deleteTodo({

@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
-import '../services/api_service.dart';
+import '../controllers/auth_controller.dart';
 import '../widgets/app_bottom_navigation.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final ApiService _apiService = ApiService.instance;
+  final AuthController _authController = Get.find<AuthController>();
   bool _isLoggingOut = false;
 
   Future<void> _logout() async {
@@ -28,7 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      await _apiService.logout();
+      await _authController.logout();
       if (!mounted) {
         return;
       }
@@ -175,6 +175,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       isLoggingOut: _isLoggingOut,
                       onLogout: _logout,
                     ),
+                    const SizedBox(height: 14),
+                    _BiometricLoginCard(controller: _authController),
                     const SizedBox(height: 20),
                     LayoutBuilder(
                       builder: (context, constraints) {
@@ -211,6 +213,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+}
+
+class _BiometricLoginCard extends StatelessWidget {
+  const _BiometricLoginCard({required this.controller});
+
+  final AuthController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final enabled = controller.biometricEnabled.value;
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFE7EDF5)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x120C334D),
+              blurRadius: 16,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: SwitchListTile(
+          value: enabled,
+          onChanged: (value) async {
+            if (!value) {
+              await controller.disableBiometricLogin();
+              return;
+            }
+            await controller.enableBiometricLogin();
+          },
+          title: Text(
+            'Biometric Login',
+            style: AppTextStyles.style(
+              color: const Color(0xFF153A63),
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(
+            enabled
+                ? 'Enabled. Unlock MyCRM using fingerprint/face.'
+                : 'Enable fingerprint/face unlock for faster sign-in.',
+            style: AppTextStyles.style(
+              color: const Color(0xFF6B7C8F),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          secondary: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF18C6D3).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.fingerprint_rounded,
+              color: Color(0xFF18C6D3),
+            ),
+          ),
+          activeColor: const Color(0xFF18C6D3),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        ),
+      );
+    });
   }
 }
 

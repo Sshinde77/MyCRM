@@ -9,6 +9,7 @@ class ApiConstants {
   static const String login = '$baseUrl/login';
   static const String user = '$baseUrl/me';
   static const String logout = '$baseUrl/logout';
+  static const String refreshToken = '$baseUrl/refresh';
 
   //Staff Api
   static const String createstaff = '$baseUrl/staff';
@@ -72,6 +73,8 @@ class ApiConstants {
   static const String updateTask = '$baseUrl/tasks/{id}';
   static const String deleteTask = '$baseUrl/tasks/{id}';
   static const String taskformdata = '$baseUrl/tasks/form-options';
+  static const String taskcomments = '$baseUrl/tasks/{id}/comments';
+  static const String createtaskcomments = '$baseUrl/tasks/{id}/comments';
 
   //calendar
   static const String calendar = '$baseUrl/calendar/events';

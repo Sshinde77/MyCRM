@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/screens/document_preview_screen.dart';
 import 'package:mycrm/services/api_service.dart';
 
 /// Mobile-first tasks screen inspired by the provided mockup.
@@ -1367,6 +1368,7 @@ class _AddTaskDialog extends StatefulWidget {
 }
 
 class _AddTaskDialogState extends State<_AddTaskDialog> {
+  static const int _maxAttachmentSizeBytes = 10240 * 1024;
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -1864,7 +1866,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   runSpacing: 8,
                   children: existingAttachments
                       .map(
-                        (attachment) => _AttachmentChip(label: attachment.name),
+                        (attachment) => _AttachmentChip(
+                          label: attachment.name,
+                          onRemove: () => _removeAttachment(attachment),
+                        ),
                       )
                       .toList(),
                 ),
@@ -2052,10 +2057,37 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       return;
     }
 
-    final pickedAttachments = result.files
-        .where((file) => (file.path ?? '').trim().isNotEmpty)
-        .map((file) => _TodoAttachment(name: file.name, localPath: file.path))
-        .toList();
+    final oversizedFiles = <String>[];
+    final pickedAttachments = <_TodoAttachment>[];
+
+    for (final file in result.files) {
+      final path = (file.path ?? '').trim();
+      if (path.isEmpty) {
+        continue;
+      }
+
+      if (file.size > _maxAttachmentSizeBytes) {
+        oversizedFiles.add(file.name);
+        continue;
+      }
+
+      pickedAttachments.add(_TodoAttachment(name: file.name, localPath: path));
+    }
+
+    if (oversizedFiles.isNotEmpty) {
+      final details = oversizedFiles.length == 1
+          ? oversizedFiles.first
+          : '${oversizedFiles.length} files';
+      Get.snackbar(
+        'File too large',
+        '$details exceed 10240 KB limit.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    }
+
     if (pickedAttachments.isEmpty) {
       return;
     }
@@ -2078,13 +2110,20 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   }
 
   void _removeAttachment(_TodoAttachment attachment) {
+    final targetPath = (attachment.localPath ?? '').trim();
+    final targetUrl = (attachment.url ?? '').trim();
     setState(() {
-      _selectedAttachments = _selectedAttachments
-          .where(
-            (item) =>
-                !(item.isLocalFile && item.localPath == attachment.localPath),
-          )
-          .toList();
+      _selectedAttachments = _selectedAttachments.where((item) {
+        final itemPath = (item.localPath ?? '').trim();
+        final itemUrl = (item.url ?? '').trim();
+        final sameLocal = targetPath.isNotEmpty && itemPath == targetPath;
+        final sameUrl = targetUrl.isNotEmpty && itemUrl == targetUrl;
+        final sameNameNoSource =
+            targetPath.isEmpty &&
+            targetUrl.isEmpty &&
+            item.name == attachment.name;
+        return !(sameLocal || sameUrl || sameNameNoSource);
+      }).toList();
     });
   }
 
@@ -2138,6 +2177,11 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
               .where((attachment) => attachment.isLocalFile)
               .map((attachment) => attachment.localPath!)
               .toList(),
+          existingAttachmentUrls: task.attachments
+              .where((attachment) => !attachment.isLocalFile)
+              .map((attachment) => (attachment.url ?? '').trim())
+              .where((url) => url.isNotEmpty)
+              .toList(),
         );
       } else {
         await ApiService.instance.createTodo(
@@ -2184,8 +2228,16 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           ? 'Failed to update task.'
           : 'Failed to create task.';
 
-      if (responseData is Map && responseData['message'] != null) {
-        message = responseData['message'].toString();
+      if (responseData is Map) {
+        final normalized = responseData.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        final validationMessage = _readFirstValidationErrorMessage(normalized);
+        if (validationMessage != null && validationMessage.trim().isNotEmpty) {
+          message = validationMessage.trim();
+        } else if (normalized['message'] != null) {
+          message = normalized['message'].toString();
+        }
       } else if (error.message != null && error.message!.trim().isNotEmpty) {
         message = error.message!.trim();
       }
@@ -2415,9 +2467,113 @@ class _AttachmentChip extends StatelessWidget {
 }
 
 class _TaskAttachmentPreview extends StatelessWidget {
-  const _TaskAttachmentPreview({required this.attachment});
+  const _TaskAttachmentPreview({required this.attachment, this.onTap});
 
   final _TodoAttachment attachment;
+  final VoidCallback? onTap;
+
+  Future<void> _handleTap(BuildContext context) async {
+    if (onTap != null) {
+      onTap!();
+      return;
+    }
+
+    final imageUrl = (attachment.url ?? '').trim();
+    final localPath = (attachment.localPath ?? '').trim();
+    final isImage =
+        _looksLikeImageAttachment(attachment.name) ||
+        _looksLikeImageAttachment(imageUrl);
+
+    if (isImage) {
+      final mediaSize = MediaQuery.of(context).size;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          return Dialog(
+            insetPadding: const EdgeInsets.all(18),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                children: [
+                  SizedBox(
+                    width: mediaSize.width * 0.9,
+                    height: mediaSize.height * 0.75,
+                    child: ColoredBox(
+                      color: Colors.black,
+                      child: InteractiveViewer(
+                        minScale: 0.8,
+                        maxScale: 4.0,
+                        child: Center(
+                          child: localPath.isNotEmpty
+                              ? Image.file(
+                                  File(localPath),
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.broken_image_outlined,
+                                    color: Colors.white70,
+                                    size: 44,
+                                  ),
+                                )
+                              : Image.network(
+                                  imageUrl,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.broken_image_outlined,
+                                    color: Colors.white70,
+                                    size: 44,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: IconButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+      return;
+    }
+
+    if (imageUrl.isNotEmpty) {
+      await DocumentPreviewScreen.openDocument(
+        context,
+        fileUrl: imageUrl,
+        localPath: localPath.isEmpty ? null : localPath,
+      );
+      return;
+    }
+
+    if (localPath.isNotEmpty) {
+      await DocumentPreviewScreen.openDocument(
+        context,
+        fileUrl: localPath,
+        localPath: localPath,
+      );
+      return;
+    }
+
+    Get.snackbar(
+      'Preview unavailable',
+      'This file cannot be opened from here.',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFF7C2D12),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2474,31 +2630,35 @@ class _TaskAttachmentPreview extends StatelessWidget {
 
     return SizedBox(
       width: previewWidth,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: previewWidth,
-            height: previewHeight,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFD6E2EF)),
+      child: InkWell(
+        onTap: () => _handleTap(context),
+        borderRadius: BorderRadius.circular(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: previewWidth,
+              height: previewHeight,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFD6E2EF)),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: previewContent,
             ),
-            clipBehavior: Clip.antiAlias,
-            child: previewContent,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            attachment.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.style(
-              color: const Color(0xFF5D7491),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 4),
+            Text(
+              attachment.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.style(
+                color: const Color(0xFF5D7491),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2699,6 +2859,28 @@ String? _readString(Map<String, dynamic> source, List<String> keys) {
     }
   }
 
+  return null;
+}
+
+String? _readFirstValidationErrorMessage(Map<String, dynamic> payload) {
+  final rawErrors = payload['errors'];
+  if (rawErrors is Map) {
+    for (final value in rawErrors.values) {
+      if (value is List && value.isNotEmpty) {
+        final first = value.first;
+        if (first != null) {
+          final asText = first.toString().trim();
+          if (asText.isNotEmpty) {
+            return asText;
+          }
+        }
+      }
+
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+  }
   return null;
 }
 

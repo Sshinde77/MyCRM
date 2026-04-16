@@ -2,10 +2,16 @@ import 'user_model.dart';
 
 /// Auth response returned from the login endpoint.
 class LoginResponseModel {
-  const LoginResponseModel({required this.user, this.token, this.message});
+  const LoginResponseModel({
+    required this.user,
+    this.accessToken,
+    this.refreshToken,
+    this.message,
+  });
 
   final UserModel user;
-  final String? token;
+  final String? accessToken;
+  final String? refreshToken;
   final String? message;
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
@@ -14,11 +20,15 @@ class LoginResponseModel {
 
     return LoginResponseModel(
       user: UserModel.fromJson(normalizedUser),
-      token: _readNullableString(normalizedTokenSource, [
-        'token',
+      accessToken: _readNullableString(normalizedTokenSource, const [
         'access_token',
         'accessToken',
+        'token',
         'jwt',
+      ]),
+      refreshToken: _readNullableString(normalizedTokenSource, const [
+        'refresh_token',
+        'refreshToken',
       ]),
       message: _readNullableString(json, ['message', 'detail']),
     );

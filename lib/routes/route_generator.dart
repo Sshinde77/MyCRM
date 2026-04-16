@@ -7,6 +7,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/clients.dart';
 import '../screens/client_detail_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/biometric_gate_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/projects_screen.dart';
 import '../screens/add_project_screen.dart';
@@ -38,6 +39,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case AppRoutes.login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case AppRoutes.biometricGate:
+        return MaterialPageRoute(builder: (_) => const BiometricGateScreen());
       case AppRoutes.dashboard:
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
       case AppRoutes.tasks:

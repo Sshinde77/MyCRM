@@ -20,10 +20,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   final TextEditingController _searchController = TextEditingController();
   late Future<List<ProjectModel>> _projectsFuture;
   String? _deletingProjectId;
+  String? _staffFilterId;
 
   @override
   void initState() {
     super.initState();
+    final arguments = Get.arguments;
+    if (arguments is Map) {
+      final map = arguments.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      final staffId = (map['staffId'] ?? '').toString().trim();
+      if (staffId.isNotEmpty) {
+        _staffFilterId = staffId;
+      }
+    }
     _projectsFuture = ApiService.instance.getProjectsList();
   }
 
@@ -204,6 +215,17 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     }).toList();
   }
 
+  List<ProjectModel> _applyStaffFilter(List<ProjectModel> projects) {
+    final staffId = _staffFilterId?.trim() ?? '';
+    if (staffId.isEmpty) {
+      return projects;
+    }
+
+    return projects.where((project) {
+      return project.members.any((member) => member.id.trim() == staffId);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,7 +237,8 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         child: FutureBuilder<List<ProjectModel>>(
           future: _projectsFuture,
           builder: (context, snapshot) {
-            final projects = snapshot.data ?? const <ProjectModel>[];
+            final allProjects = snapshot.data ?? const <ProjectModel>[];
+            final projects = _applyStaffFilter(allProjects);
             final filteredProjects = _filterProjects(projects);
 
             return LayoutBuilder(

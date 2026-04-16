@@ -3,8 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/constants/app_colors.dart';
+
+import '../core/services/biometric_service.dart';
 import '../routes/app_routes.dart';
-import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import '../utils/validators.dart';
 
 /// Login page styled to match the provided reference design.
@@ -19,10 +21,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final ApiService _apiService = ApiService.instance;
+  final AuthService _authService = AuthService();
+  final BiometricService _biometricService = BiometricService();
 
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  bool _isBiometricSubmitting = false;
+  bool _showBiometricButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricAvailability();
+  }
 
   @override
   void dispose() {
@@ -47,13 +58,21 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await _apiService.login(
+      final response = await _authService.login(
         email: email,
         password: password,
       );
 
       if (!mounted) {
         return;
+      }
+
+      final isBiometricEnabled = await _authService.isBiometricEnabled();
+      if (!isBiometricEnabled) {
+        final enableBiometric = await _askEnableBiometric();
+        if (enableBiometric == true) {
+          await _enableBiometricAfterLogin();
+        }
       }
 
       Get.offNamed(AppRoutes.dashboard);
@@ -110,6 +129,143 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     }
+  }
+
+  Future<void> _loadBiometricAvailability() async {
+    final canUse = await _authService.shouldShowBiometricLoginButton();
+    if (!mounted) return;
+    setState(() {
+      _showBiometricButton = canUse;
+    });
+  }
+
+  Future<void> _enableBiometricAfterLogin() async {
+    final availability = await _biometricService.checkAvailability();
+    if (!availability.isUsable) {
+      Get.snackbar(
+        'Biometric not available',
+        availability.status == BiometricAvailabilityStatus.notEnrolled
+            ? 'Please enable fingerprint/face in device settings'
+            : 'Biometric not available',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    final result = await _biometricService.authenticate(
+      reason: 'Authenticate to enable biometric login',
+    );
+    if (!result.isSuccess) {
+      Get.snackbar(
+        'Authentication failed',
+        'Authentication failed',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB3261E),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    await _authService.setBiometricEnabled(true);
+    if (!mounted) return;
+    setState(() {
+      _showBiometricButton = true;
+    });
+  }
+
+  Future<void> _unlockWithBiometrics() async {
+    if (_isBiometricSubmitting || _isSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isBiometricSubmitting = true;
+    });
+
+    try {
+      final availability = await _biometricService.checkAvailability();
+      if (!availability.isUsable) {
+        final message =
+            availability.status == BiometricAvailabilityStatus.notEnrolled
+            ? 'Please enable fingerprint/face in device settings'
+            : 'Biometric not available';
+        _showBiometricError(message);
+        return;
+      }
+
+      final result = await _biometricService.authenticate(
+        reason: 'Authenticate to unlock MyCRM',
+      );
+      if (!result.isSuccess) {
+        _showBiometricError('Authentication failed');
+        return;
+      }
+
+      final valid = await _authService.validateSession();
+      if (!valid) {
+        await _authService.clearSession(clearBiometricFlag: true);
+        if (mounted) {
+          setState(() {
+            _showBiometricButton = false;
+          });
+        }
+        _showBiometricError('Session expired. Please login with password.');
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      Get.offNamed(AppRoutes.dashboard);
+    } catch (_) {
+      _showBiometricError('Authentication failed');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBiometricSubmitting = false;
+        });
+      }
+    }
+  }
+
+  void _showBiometricError(String message) {
+    Get.snackbar(
+      'Authentication failed',
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color(0xFFB3261E),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
+  Future<bool?> _askEnableBiometric() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Enable biometric login?'),
+          content: const Text(
+            'Use fingerprint/face to quickly unlock MyCRM next time you open the app.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Not now'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Enable'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -333,6 +489,57 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+                        if (_showBiometricButton) ...[
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _isBiometricSubmitting
+                                  ? null
+                                  : _unlockWithBiometrics,
+                              icon: _isBiometricSubmitting
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.fingerprint_rounded),
+                              label: Text(
+                                'Unlock with Fingerprint / Face',
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF153A63),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: const Size.fromHeight(50),
+                                side: const BorderSide(
+                                  color: Color(0xFF16C5DC),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TextButton(
+                            onPressed: () {
+                              FocusScope.of(context).unfocus();
+                            },
+                            child: Text(
+                              'Login with Email & Password',
+                              style: AppTextStyles.style(
+                                color: const Color(0xFF16C5DC),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 30),
                       ],
                     ),

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/project_comment_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
 class TaskDetailScreen extends StatefulWidget {
@@ -116,6 +117,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                         _AttachmentsCard(
                                           attachments: detail.attachments,
                                         ),
+                                        const SizedBox(height: 24),
+                                        _TaskCommentsCard(
+                                          taskId: widget.taskId,
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -134,6 +139,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                   _AttachmentsCard(
                                     attachments: detail.attachments,
                                   ),
+                                  const SizedBox(height: 20),
+                                  _TaskCommentsCard(taskId: widget.taskId),
                                 ],
                               ),
                       ],
@@ -339,6 +346,289 @@ class _AttachmentsCard extends StatelessWidget {
                   )
                   .toList(),
             ),
+    );
+  }
+}
+
+class _TaskCommentsCard extends StatefulWidget {
+  const _TaskCommentsCard({required this.taskId});
+
+  final String taskId;
+
+  @override
+  State<_TaskCommentsCard> createState() => _TaskCommentsCardState();
+}
+
+class _TaskCommentsCardState extends State<_TaskCommentsCard> {
+  final TextEditingController _controller = TextEditingController();
+  late Future<List<ProjectCommentModel>> _future;
+  bool _isSubmitting = false;
+  String? _submitError;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant _TaskCommentsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.taskId != widget.taskId) {
+      _future = _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<List<ProjectCommentModel>> _load() async {
+    final taskId = widget.taskId.trim();
+    if (taskId.isEmpty) {
+      return const [];
+    }
+    return ApiService.instance.getTaskComments(taskId);
+  }
+
+  Future<void> _submitComment() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) {
+      setState(() => _submitError = 'Please enter a comment.');
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _submitError = null;
+    });
+
+    try {
+      await ApiService.instance.createTaskComment(
+        taskId: widget.taskId.trim(),
+        comment: text,
+      );
+      _controller.clear();
+      if (!mounted) return;
+      setState(() {
+        _future = _load();
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        if (error is DioException &&
+            error.response?.data is Map &&
+            error.response?.data['message'] != null) {
+          _submitError = error.response!.data['message'].toString();
+        } else {
+          _submitError = 'Unable to post comment. Please try again.';
+        }
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _DetailCard(
+      title: 'Comments',
+      accent: const Color(0xFF1D8CF8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder<List<ProjectCommentModel>>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.only(bottom: 18),
+                  child: _SoftEmpty(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    message: 'Loading comments...',
+                  ),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Unable to load comments.',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFFB42318),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () => setState(() {
+                          _future = _load();
+                        }),
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              final comments = snapshot.data ?? const <ProjectCommentModel>[];
+              if (comments.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(bottom: 18),
+                  child: _SoftEmpty(
+                    icon: Icons.chat_bubble_outline_rounded,
+                    message: 'No comments yet.',
+                  ),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 18),
+                child: Column(
+                  children: comments
+                      .map(
+                        (entry) => Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: _TaskCommentItem(comment: entry),
+                        ),
+                      )
+                      .toList(),
+                ),
+              );
+            },
+          ),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFD2DAE6)),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: TextField(
+              controller: _controller,
+              minLines: 3,
+              maxLines: 5,
+              onChanged: (_) {
+                if (_submitError != null) {
+                  setState(() => _submitError = null);
+                }
+              },
+              decoration: InputDecoration(
+                hintText: 'Add a comment...',
+                hintStyle: AppTextStyles.style(
+                  color: const Color(0xFF637184),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+                contentPadding: const EdgeInsets.all(14),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+              ),
+            ),
+          ),
+          if (_submitError != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _submitError!,
+              style: AppTextStyles.style(
+                color: const Color(0xFFB42318),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _isSubmitting ? null : _submitComment,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1D8CF8),
+              foregroundColor: Colors.white,
+              minimumSize: const Size(138, 44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 0,
+            ),
+            child: _isSubmitting
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    'Post Comment',
+                    style: AppTextStyles.style(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TaskCommentItem extends StatelessWidget {
+  const _TaskCommentItem({required this.comment});
+
+  final ProjectCommentModel comment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _PersonAvatar(imageUrl: comment.userAvatarUrl, name: comment.userName),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                comment.userName,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF0F172A),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                comment.comment,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF334155),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _timeAgo(comment.createdAtRaw),
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1155,6 +1445,38 @@ String _formatDisplayDate(DateTime? value) {
   final month = value.month.toString().padLeft(2, '0');
   final day = value.day.toString().padLeft(2, '0');
   return '$year-$month-$day';
+}
+
+String _timeAgo(String raw) {
+  final value = raw.trim();
+  if (value.isEmpty) {
+    return 'Just now';
+  }
+
+  final parsed = DateTime.tryParse(value);
+  if (parsed == null) {
+    return value;
+  }
+
+  final localTime = parsed.toLocal();
+  final diff = DateTime.now().difference(localTime);
+
+  if (diff.inSeconds < 60) {
+    return '${diff.inSeconds.clamp(1, 59)} second${diff.inSeconds == 1 ? '' : 's'} ago';
+  }
+  if (diff.inMinutes < 60) {
+    return '${diff.inMinutes} minute${diff.inMinutes == 1 ? '' : 's'} ago';
+  }
+  if (diff.inHours < 24) {
+    return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+  }
+  if (diff.inDays < 30) {
+    return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+  }
+
+  return '${localTime.day.toString().padLeft(2, '0')}-'
+      '${localTime.month.toString().padLeft(2, '0')}-'
+      '${localTime.year}';
 }
 
 (Color, Color) _statusPalette(String status) {
