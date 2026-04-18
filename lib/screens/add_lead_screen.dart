@@ -7,6 +7,7 @@ import '../core/constants/app_text_styles.dart';
 import '../models/lead_form_options_model.dart';
 import '../models/lead_model.dart';
 import '../services/api_service.dart';
+import '../widgets/common_screen_app_bar.dart';
 
 class AddLeadScreen extends StatefulWidget {
   const AddLeadScreen({super.key, this.leadId});
@@ -371,11 +372,8 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
-      appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Lead' : 'Add New Lead'),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
+      appBar: CommonScreenAppBar(
+        title: _isEditMode ? 'Edit Lead' : 'Add New Lead',
       ),
       body: SafeArea(
         child: Form(

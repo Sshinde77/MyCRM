@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class DashboardRenewalsScreen extends StatefulWidget {
   const DashboardRenewalsScreen({super.key});
@@ -231,30 +232,10 @@ class _TopBar extends StatelessWidget {
         children: [
           SizedBox(
             height: compact ? 50 : 54,
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: Get.back,
-                  icon: Icon(
-                    Icons.arrow_back_rounded,
-                    color: const Color(0xFF334155),
-                    size: compact ? 24 : 26,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Upcoming Renewals',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF17213A),
-                      fontSize: compact ? 18 : 19,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
+            child: CommonTopBar(
+              title: 'Upcoming Renewals',
+              compact: compact,
+              onBack: Get.back,
             ),
           ),
           Align(

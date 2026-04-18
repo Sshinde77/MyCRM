@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 import '../routes/app_routes.dart';
 
@@ -248,39 +249,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _CircleIconButton(
-          icon: Icons.arrow_back_ios_new_rounded,
-          onTap: Get.back,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Staff',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF162033),
-                  fontSize: compact ? 22 : 24,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                'Manage team members and workspace access',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF64748B),
-                  fontSize: compact ? 12 : 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const _CircleIconButton(icon: Icons.notifications_none_rounded),
-      ],
-    );
+    return CommonTopBar(title: 'Staff', compact: compact, onBack: Get.back);
   }
 }
 

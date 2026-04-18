@@ -1,10 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/project_model.dart';
 
 import '../models/client_detail_model.dart';
-import '../routes/app_routes.dart';
 import '../services/api_service.dart';
+import '../widgets/common_screen_app_bar.dart';
 
 class ClientDetailScreen extends StatefulWidget {
   const ClientDetailScreen({super.key, this.clientId});
@@ -16,22 +18,42 @@ class ClientDetailScreen extends StatefulWidget {
 }
 
 class _ClientDetailScreenState extends State<ClientDetailScreen> {
-  late Future<ClientDetailModel> _clientFuture;
+  late Future<_ClientDetailBundle> _detailFuture;
   String? _clientId;
 
   @override
   void initState() {
     super.initState();
     _clientId = widget.clientId ?? _extractClientId(Get.arguments);
-    _clientFuture = _clientId == null || _clientId!.isEmpty
-        ? Future.error('Client id missing')
-        : ApiService.instance.getClientDetail(_clientId!);
+    _detailFuture = _loadClientBundle();
+  }
+
+  Future<_ClientDetailBundle> _loadClientBundle() async {
+    final clientId = (_clientId ?? '').trim();
+    if (clientId.isEmpty) {
+      throw Exception('Client id missing');
+    }
+
+    final responses = await Future.wait<dynamic>([
+      ApiService.instance.getClientDetail(clientId),
+      ApiService.instance.getClientProjectsList(clientId),
+      ApiService.instance.getClientTasksList(clientId),
+    ]);
+
+    final client = responses[0] as ClientDetailModel;
+    final projects = responses[1] as List<ProjectModel>;
+    final rawTasks = responses[2] as List<Map<String, dynamic>>;
+
+    return _ClientDetailBundle(
+      client: client,
+      projects: projects,
+      tasks: rawTasks.map(_ClientTaskSummary.fromJson).toList(),
+    );
   }
 
   void _reload() {
-    if (_clientId == null || _clientId!.isEmpty) return;
     setState(() {
-      _clientFuture = ApiService.instance.getClientDetail(_clientId!);
+      _detailFuture = _loadClientBundle();
     });
   }
 
@@ -53,38 +75,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     const pageBg = Color(0xFFF7FAFF);
     const textMain = Color(0xFF141C33);
     const textSec = Color(0xFF74839D);
-    const blue = Color(0xFF1769F3);
 
     return Scaffold(
       backgroundColor: pageBg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: textMain),
-          onPressed: () => Get.back(),
-        ),
-        title: Text(
-          'Client Details',
-          style: AppTextStyles.style(
-            color: textMain,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded, color: textSec),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: textSec),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: FutureBuilder<ClientDetailModel>(
-        future: _clientFuture,
+      appBar: const CommonScreenAppBar(title: 'Client Details'),
+      body: FutureBuilder<_ClientDetailBundle>(
+        future: _detailFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -92,111 +88,136 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
           if (snapshot.hasError) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.cloud_off, color: Color(0xFF94A3B8)),
-                  const SizedBox(height: 8),
-                  Text(
-                    snapshot.error.toString(),
-                    style: AppTextStyles.style(
-                      fontSize: 13,
-                      color: const Color(0xFF64748B),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.cloud_off, color: Color(0xFF94A3B8)),
+                    const SizedBox(height: 8),
+                    Text(
+                      _readErrorMessage(snapshot.error),
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.style(
+                        fontSize: 13,
+                        color: const Color(0xFF64748B),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _reload,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1D6FEA),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _reload,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1D6FEA),
+                      ),
+                      child: const Text('Retry'),
                     ),
-                    child: const Text('Retry'),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }
 
-          final client = snapshot.data;
-          if (client == null) {
+          final bundle = snapshot.data;
+          if (bundle == null) {
             return const Center(child: Text('Client not found'));
           }
 
+          final client = bundle.client;
           return SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      _ProfileHeader(client: client),
-                      const SizedBox(height: 20),
-                      const Row(
-                        children: [
-                          Expanded(
-                            child: _StatBox(
-                              icon: Icons.folder_open,
-                              value: '1',
-                              label: 'Total Projects',
-                              color: Color(0xFFE0E7FF),
-                              iconColor: Colors.blue,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: _StatBox(
-                              icon: Icons.assignment_outlined,
-                              value: '1',
-                              label: 'Active Tasks',
-                              color: Color(0xFFFEF3C7),
-                              iconColor: Colors.orange,
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: _StatBox(
-                              icon: Icons.error_outline,
-                              value: '1',
-                              label: 'Open Issues',
-                              color: Color(0xFFFEE2E2),
-                              iconColor: Colors.red,
-                            ),
-                          ),
-                        ],
+                _ProfileHeader(client: client),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatBox(
+                        icon: Icons.folder_open_rounded,
+                        value: '${bundle.projects.length}',
+                        label: 'Projects',
+                        color: const Color(0xFFE0E7FF),
+                        iconColor: const Color(0xFF1769F3),
                       ),
-                      const SizedBox(height: 20),
-                      _ClientInfoCard(client: client),
-                      const SizedBox(height: 20),
-                      const _SectionHeader(
-                        title: 'Projects',
-                        showViewAll: true,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatBox(
+                        icon: Icons.assignment_outlined,
+                        value: '${bundle.tasks.length}',
+                        label: 'Tasks',
+                        color: const Color(0xFFFEF3C7),
+                        iconColor: const Color(0xFFF59E0B),
                       ),
-                      const SizedBox(height: 12),
-                      const _ProjectCard(),
-                      const SizedBox(height: 20),
-                      const _SectionHeader(title: 'Recent Tasks'),
-                      const SizedBox(height: 12),
-                      const _TaskCard(),
-                      const SizedBox(height: 20),
-                      const _SectionHeader(title: 'Open Issues', count: 1),
-                      const SizedBox(height: 12),
-                      const _IssueCard(),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatBox(
+                        icon: client.isActive
+                            ? Icons.check_circle_outline
+                            : Icons.pause_circle_outline,
+                        value: client.isActive ? 'Active' : 'Inactive',
+                        label: 'Status',
+                        color: client.isActive
+                            ? const Color(0xFFD1FAE5)
+                            : const Color(0xFFE2E8F0),
+                        iconColor: client.isActive
+                            ? const Color(0xFF059669)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 20),
+                _ClientInfoCard(client: client),
+                const SizedBox(height: 20),
+                _SectionHeader(
+                  title: 'Projects',
+                  count: bundle.projects.length,
+                ),
+                const SizedBox(height: 12),
+                if (bundle.projects.isEmpty)
+                  const _EmptyRelatedState(
+                    message: 'No projects found for this client.',
+                  )
+                else
+                  Column(
+                    children: bundle.projects
+                        .map((project) => _ProjectListCard(project: project))
+                        .toList(),
+                  ),
+                const SizedBox(height: 20),
+                _SectionHeader(title: 'Tasks', count: bundle.tasks.length),
+                const SizedBox(height: 12),
+                if (bundle.tasks.isEmpty)
+                  const _EmptyRelatedState(
+                    message: 'No tasks found for this client.',
+                  )
+                else
+                  Column(
+                    children: bundle.tasks
+                        .map((task) => _TaskListCard(task: task))
+                        .toList(),
+                  ),
               ],
             ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: blue,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
+}
+
+class _ClientDetailBundle {
+  const _ClientDetailBundle({
+    required this.client,
+    required this.projects,
+    required this.tasks,
+  });
+
+  final ClientDetailModel client;
+  final List<ProjectModel> projects;
+  final List<_ClientTaskSummary> tasks;
 }
 
 class _ProfileHeader extends StatelessWidget {
@@ -233,12 +254,14 @@ class _ProfileHeader extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          displayName,
-                          style: AppTextStyles.style(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF141C33),
+                        Expanded(
+                          child: Text(
+                            displayName,
+                            style: AppTextStyles.style(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF141C33),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -292,7 +315,7 @@ class _ProfileHeader extends StatelessWidget {
 
   Widget _infoRow(IconData icon, String text, {bool isLink = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Icon(icon, size: 18, color: const Color(0xFF74839D)),
@@ -316,12 +339,6 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _StatBox extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-  final Color iconColor;
-
   const _StatBox({
     required this.icon,
     required this.value,
@@ -329,6 +346,12 @@ class _StatBox extends StatelessWidget {
     required this.color,
     required this.iconColor,
   });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -352,8 +375,10 @@ class _StatBox extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF141C33),
             ),
@@ -474,11 +499,11 @@ class _ClientInfoCard extends StatelessWidget {
 }
 
 class _InfoField extends StatelessWidget {
+  const _InfoField({required this.label, required this.value, this.valueColor});
+
   final String label;
   final String value;
   final Color? valueColor;
-
-  const _InfoField({required this.label, required this.value, this.valueColor});
 
   @override
   Widget build(BuildContext context) {
@@ -509,190 +534,54 @@ class _InfoField extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  final String title;
-  final bool showViewAll;
-  final int? count;
+  const _SectionHeader({required this.title, required this.count});
 
-  const _SectionHeader({
-    required this.title,
-    this.showViewAll = false,
-    this.count,
-  });
+  final String title;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Text(
-              title,
-              style: AppTextStyles.style(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: const Color(0xFF141C33),
-              ),
-            ),
-            if (count != null) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFEE2E2),
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  count.toString(),
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
+        Text(
+          title,
+          style: AppTextStyles.style(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF141C33),
+          ),
         ),
-        if (showViewAll)
-          Text(
-            'View All',
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F0FE),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            '$count',
             style: AppTextStyles.style(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
               color: const Color(0xFF1769F3),
             ),
           ),
+        ),
       ],
     );
   }
 }
 
-class _ProjectCard extends StatelessWidget {
-  const _ProjectCard();
+class _ProjectListCard extends StatelessWidget {
+  const _ProjectListCard({required this.project});
+
+  final ProjectModel project;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Laith Barrera',
-                style: AppTextStyles.style(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF141C33),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE0E7FF),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'In Progress',
-                  style: AppTextStyles.style(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1769F3),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_outlined,
-                size: 14,
-                color: Color(0xFF74839D),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '01 Jan',
-                style: AppTextStyles.style(
-                  fontSize: 12,
-                  color: const Color(0xFF74839D),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Icon(
-                Icons.calendar_month_outlined,
-                size: 14,
-                color: Color(0xFF74839D),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '30 Jun',
-                style: AppTextStyles.style(
-                  fontSize: 12,
-                  color: const Color(0xFF74839D),
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFEE2E2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  'HIGH PRIORITY',
-                  style: AppTextStyles.style(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.red,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () {
-                Get.toNamed(AppRoutes.projectDetail);
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: Text(
-                'View Project Details',
-                style: AppTextStyles.style(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF141C33),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TaskCard extends StatelessWidget {
-  const _TaskCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -702,67 +591,51 @@ class _TaskCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Ut voluptatem conseq',
-                      style: AppTextStyles.style(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF141C33),
-                      ),
-                    ),
-                    Text(
-                      'Project: Laith Barrera',
-                      style: AppTextStyles.style(
-                        fontSize: 12,
-                        color: const Color(0xFF74839D),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                ),
                 child: Text(
-                  'Not Started',
+                  project.title.isNotEmpty ? project.title : 'Untitled Project',
                   style: AppTextStyles.style(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF74839D),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF141C33),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Due: 24 May',
-                style: AppTextStyles.style(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
+              _StatusChip(label: project.status),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            project.client.isNotEmpty ? project.client : 'No client name',
+            style: AppTextStyles.style(
+              fontSize: 13,
+              color: const Color(0xFF74839D),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _MetaText(
+                icon: Icons.play_circle_outline_rounded,
+                text: 'Start: ${project.startDate}',
+              ),
+              _MetaText(
+                icon: Icons.event_outlined,
+                text: 'Deadline: ${project.deadline}',
+              ),
+              _MetaText(
+                icon: Icons.group_outlined,
+                text: '${project.members.length} members',
+              ),
+              _MetaText(
+                icon: Icons.show_chart_rounded,
+                text: '${(project.progress * 100).round()}% progress',
               ),
             ],
           ),
@@ -772,122 +645,292 @@ class _TaskCard extends StatelessWidget {
   }
 }
 
-class _IssueCard extends StatelessWidget {
-  const _IssueCard();
+class _TaskListCard extends StatelessWidget {
+  const _TaskListCard({required this.task});
+
+  final _ClientTaskSummary task;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Get.toNamed(AppRoutes.issueDetail);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF1F2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.bug_report_outlined,
-                    size: 20,
-                    color: Colors.red,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Issue #1',
-                            style: AppTextStyles.style(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF141C33),
-                            ),
-                          ),
-                          Text(
-                            'OPEN',
-                            style: AppTextStyles.style(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        'Laith Barrera • Web App Interface',
-                        style: AppTextStyles.style(
-                          fontSize: 12,
-                          color: const Color(0xFF74839D),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'The navigation bar on mobile view gets cut off when scrolling horizontally...',
-                        style: AppTextStyles.style(
-                          fontSize: 12,
-                          color: const Color(0xFF74839D),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF1F2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    'CRITICAL',
-                    style: AppTextStyles.style(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.red,
-                    ),
-                  ),
-                ),
-                Text(
-                  'Added: 18 May',
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  task.title,
                   style: AppTextStyles.style(
-                    fontSize: 11,
-                    color: const Color(0xFF74839D),
-                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF141C33),
                   ),
                 ),
-              ],
+              ),
+              const SizedBox(width: 12),
+              _StatusChip(label: task.status),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Project: ${task.projectName}',
+            style: AppTextStyles.style(
+              fontSize: 12,
+              color: const Color(0xFF1769F3),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (task.description.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              task.description,
+              style: AppTextStyles.style(
+                fontSize: 12,
+                color: const Color(0xFF74839D),
+                height: 1.4,
+              ),
             ),
           ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            children: [
+              _MetaText(
+                icon: Icons.flag_outlined,
+                text: 'Priority: ${task.priority}',
+              ),
+              _MetaText(
+                icon: Icons.calendar_month_outlined,
+                text: 'Due: ${task.deadlineLabel}',
+              ),
+              if (task.id.isNotEmpty)
+                _MetaText(icon: Icons.tag_outlined, text: 'ID: ${task.id}'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaText extends StatelessWidget {
+  const _MetaText({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: const Color(0xFF74839D)),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: AppTextStyles.style(
+            fontSize: 11,
+            color: const Color(0xFF74839D),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = label.trim().toLowerCase();
+    final background =
+        normalized.contains('complete') ||
+            normalized.contains('done') ||
+            normalized.contains('active')
+        ? const Color(0xFFD1FAE5)
+        : normalized.contains('progress') || normalized.contains('running')
+        ? const Color(0xFFDBEAFE)
+        : normalized.contains('pending') || normalized.contains('start')
+        ? const Color(0xFFF1F5F9)
+        : const Color(0xFFFEF3C7);
+    final foreground =
+        normalized.contains('complete') ||
+            normalized.contains('done') ||
+            normalized.contains('active')
+        ? const Color(0xFF059669)
+        : normalized.contains('progress') || normalized.contains('running')
+        ? const Color(0xFF1769F3)
+        : normalized.contains('pending') || normalized.contains('start')
+        ? const Color(0xFF64748B)
+        : const Color(0xFFD97706);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label.isNotEmpty ? label : 'Unknown',
+        style: AppTextStyles.style(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: foreground,
         ),
       ),
     );
   }
+}
+
+class _EmptyRelatedState extends StatelessWidget {
+  const _EmptyRelatedState({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.inbox_outlined, color: Color(0xFF94A3B8)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.style(
+                fontSize: 13,
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClientTaskSummary {
+  const _ClientTaskSummary({
+    required this.id,
+    required this.title,
+    required this.projectName,
+    required this.description,
+    required this.status,
+    required this.priority,
+    required this.deadlineLabel,
+  });
+
+  final String id;
+  final String title;
+  final String projectName;
+  final String description;
+  final String status;
+  final String priority;
+  final String deadlineLabel;
+
+  factory _ClientTaskSummary.fromJson(Map<String, dynamic> json) {
+    final project = _readMap(json['project']);
+    final deadline = _readString(json, const [
+      'deadline',
+      'due_date',
+      'dueDate',
+      'end_date',
+    ]);
+
+    return _ClientTaskSummary(
+      id: _readString(json, const ['id', 'task_id']) ?? '',
+      title:
+          _readString(json, const ['title', 'name', 'task_title', 'subject']) ??
+          'Untitled Task',
+      projectName:
+          _readString(project, const ['name', 'title']) ??
+          _readString(json, const ['project_name', 'project']) ??
+          'Unassigned Project',
+      description:
+          _readString(json, const ['description', 'details', 'summary']) ?? '',
+      status:
+          _readString(json, const ['status', 'task_status']) ?? 'Not Started',
+      priority:
+          _readString(json, const ['priority', 'priority_level']) ?? 'Normal',
+      deadlineLabel: _formatDate(deadline),
+    );
+  }
+}
+
+Map<String, dynamic> _readMap(dynamic value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return value.map((key, item) => MapEntry(key.toString(), item));
+  }
+  return const <String, dynamic>{};
+}
+
+String? _readString(Map<String, dynamic> source, List<String> keys) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value == null) {
+      continue;
+    }
+
+    final normalized = value.toString().trim();
+    if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
+String _formatDate(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return 'Not set';
+  }
+
+  final date = DateTime.tryParse(value.trim());
+  if (date == null) {
+    return value.trim();
+  }
+
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  return '$day-$month-${date.year}';
+}
+
+String _readErrorMessage(Object? error) {
+  if (error is DioException) {
+    final data = error.response?.data;
+    if (data is Map && data['message'] != null) {
+      return data['message'].toString();
+    }
+    final message = error.message?.trim() ?? '';
+    if (message.isNotEmpty) {
+      return message;
+    }
+  }
+
+  final fallback = error?.toString().trim() ?? '';
+  return fallback.isEmpty ? 'Failed to load client details.' : fallback;
 }

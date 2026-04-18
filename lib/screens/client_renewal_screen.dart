@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class ClientRenewalScreen extends StatelessWidget {
   const ClientRenewalScreen({super.key});
@@ -88,52 +89,10 @@ class _TopBar extends StatelessWidget {
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
       ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: Get.back,
-            icon: Icon(
-              Icons.arrow_back_rounded,
-              color: const Color(0xFF475569),
-              size: compact ? 30 : 32,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              'Services',
-              style: AppTextStyles.style(
-                color: const Color(0xFF17213A),
-                fontSize: compact ? 21 : 23,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Icon(
-            Icons.search_rounded,
-            color: const Color(0xFF475569),
-            size: compact ? 31 : 33,
-          ),
-          SizedBox(width: compact ? 16 : 18),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(
-                Icons.notifications_none_rounded,
-                color: const Color(0xFF475569),
-                size: compact ? 31 : 33,
-              ),
-              const Positioned(
-                right: 1,
-                top: 2,
-                child: CircleAvatar(
-                  radius: 3.5,
-                  backgroundColor: Color(0xFFEF4444),
-                ),
-              ),
-            ],
-          ),
-        ],
+      child: CommonTopBar(
+        title: 'Services',
+        compact: compact,
+        onBack: Get.back,
       ),
     );
   }

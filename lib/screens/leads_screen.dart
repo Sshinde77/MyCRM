@@ -6,6 +6,7 @@ import '../core/constants/app_text_styles.dart';
 import '../models/lead_model.dart';
 import '../providers/lead_provider.dart';
 import '../routes/app_routes.dart';
+import '../widgets/common_screen_app_bar.dart';
 
 class LeadsScreen extends StatefulWidget {
   const LeadsScreen({super.key});
@@ -56,68 +57,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
                       vertical: 16,
                     ),
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: Get.back,
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: textDark,
-                              size: 20,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Leads',
-                                  style: AppTextStyles.style(
-                                    color: textDark,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  'Enterprise Dashboard',
-                                  style: AppTextStyles.style(
-                                    color: textLight,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (!isCompact)
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: lightBlue,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Stack(
-                                children: [
-                                  Icon(
-                                    Icons.notifications_none_rounded,
-                                    color: primaryBlue,
-                                  ),
-                                  Positioned(
-                                    right: 2,
-                                    top: 2,
-                                    child: CircleAvatar(
-                                      radius: 4,
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
+                      CommonTopBar(title: 'Leads', compact: isCompact),
                       const SizedBox(height: 24),
                       Wrap(
                         spacing: 16,

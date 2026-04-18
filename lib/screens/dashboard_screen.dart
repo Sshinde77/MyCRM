@@ -25,8 +25,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late List<_Appointment> _appointments;
   bool _isLoadingCalendar = false;
   bool _isSavingCalendar = false;
+  bool _isLoadingSummary = false;
   String? _calendarLoadError;
+  String? _summaryLoadError;
   late DateTime _displayedMonth;
+  int _projectCount = 0;
+  int _taskCount = 0;
+  Map<String, int> _taskStatusCounts = const {
+    'notStarted': 0,
+    'inProgress': 0,
+    'onHold': 0,
+    'completed': 0,
+    'cancelled': 0,
+  };
 
   UserModel? _currentUser;
   @override
@@ -37,6 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _appointments = _seedAppointments();
     _loadCurrentUser();
     _loadCalendarEvents();
+    _loadDashboardSummary();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -94,14 +106,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _RenewalSection(),
                   ),
                   const SizedBox(height: 16),
-                  const _SectionCard(
+                  _SectionCard(
                     padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
-                    child: _ProjectSummarySection(),
+                    child: _ProjectSummarySection(
+                      projectCount: _projectCount,
+                      taskCount: _taskCount,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  const _SectionCard(
+                  _SectionCard(
                     padding: EdgeInsets.fromLTRB(18, 18, 18, 20),
-                    child: _TaskSummarySection(),
+                    child: _TaskSummarySection(
+                      taskStatusCounts: _taskStatusCounts,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const _SectionCard(
@@ -135,10 +152,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 12),
                     const LinearProgressIndicator(minHeight: 2),
                   ],
+                  if (_isLoadingSummary) ...[
+                    const SizedBox(height: 8),
+                    const LinearProgressIndicator(minHeight: 2),
+                  ],
                   if (_calendarLoadError != null) ...[
                     const SizedBox(height: 12),
                     Text(
                       _calendarLoadError!,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFFB42318),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  if (_summaryLoadError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _summaryLoadError!,
                       style: AppTextStyles.style(
                         color: const Color(0xFFB42318),
                         fontSize: 11.5,
@@ -217,6 +249,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _calendarLoadError = 'Calendar failed to load.';
       });
     }
+  }
+
+  Future<void> _loadDashboardSummary() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingSummary = true;
+        _summaryLoadError = null;
+      });
+    }
+
+    try {
+      final results = await Future.wait<dynamic>([
+        _apiService.getProjectsList(),
+        _apiService.getTasksList(),
+      ]);
+
+      final projects = (results[0] as List).length;
+      final taskRecords = (results[1] as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+      final taskStatuses = _extractTaskStatuses(taskRecords);
+
+      final statusCounts = <String, int>{
+        'notStarted': 0,
+        'inProgress': 0,
+        'onHold': 0,
+        'completed': 0,
+        'cancelled': 0,
+      };
+      for (final status in taskStatuses) {
+        final bucket = _statusBucket(status);
+        statusCounts[bucket] = (statusCounts[bucket] ?? 0) + 1;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _projectCount = projects;
+        _taskCount = taskStatuses.length;
+        _taskStatusCounts = statusCounts;
+        _isLoadingSummary = false;
+      });
+    } on DioException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingSummary = false;
+        _summaryLoadError =
+            'Summary failed to load (${error.response?.statusCode ?? 'network'}).';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingSummary = false;
+        _summaryLoadError = 'Summary failed to load.';
+      });
+    }
+  }
+
+  List<String> _extractTaskStatuses(List<Map<String, dynamic>> taskRecords) {
+    final statuses = <String>[];
+
+    for (final record in taskRecords) {
+      final nested = record['tasks'];
+      if (nested is List && nested.isNotEmpty) {
+        for (final task in nested) {
+          final taskMap = task is Map<String, dynamic>
+              ? task
+              : task is Map
+              ? task.map((key, value) => MapEntry(key.toString(), value))
+              : const <String, dynamic>{};
+          statuses.add(_readTaskStatus(taskMap));
+        }
+        continue;
+      }
+
+      statuses.add(_readTaskStatus(record));
+    }
+
+    return statuses;
+  }
+
+  String _readTaskStatus(Map<String, dynamic> task) {
+    final status = (task['status'] ?? task['task_status'] ?? '')
+        .toString()
+        .trim();
+    return status.isEmpty ? 'Not Started' : status;
+  }
+
+  String _statusBucket(String status) {
+    final value = status.toLowerCase();
+    if (value.contains('cancel')) {
+      return 'cancelled';
+    }
+    if (value.contains('complete') || value == 'done' || value == 'closed') {
+      return 'completed';
+    }
+    if (value.contains('hold')) {
+      return 'onHold';
+    }
+    if (value.contains('progress') ||
+        value.contains('running') ||
+        value.contains('active')) {
+      return 'inProgress';
+    }
+    return 'notStarted';
   }
 
   _Appointment _appointmentFromEvent(CalendarEventModel event) {
@@ -1155,33 +1291,9 @@ class _HeaderSection extends StatelessWidget {
     final role = user?.role?.trim().isNotEmpty == true
         ? user!.role!.trim()
         : 'Team Member';
-    final avatarLetter = displayName.isNotEmpty
-        ? displayName.characters.first.toUpperCase()
-        : 'M';
 
     return Row(
       children: [
-        Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8EEF8),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          alignment: Alignment.center,
-          child: CircleAvatar(
-            radius: 19,
-            backgroundColor: const Color(0xFFB9C7DA),
-            child: Text(
-              avatarLetter,
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1633,7 +1745,13 @@ class _RenewalTile extends StatelessWidget {
 }
 
 class _ProjectSummarySection extends StatelessWidget {
-  const _ProjectSummarySection();
+  const _ProjectSummarySection({
+    required this.projectCount,
+    required this.taskCount,
+  });
+
+  final int projectCount;
+  final int taskCount;
 
   @override
   Widget build(BuildContext context) {
@@ -1646,11 +1764,11 @@ class _ProjectSummarySection extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         Row(
-          children: const [
+          children: [
             Expanded(
               child: _ProjectMetricCard(
                 title: 'Projects',
-                value: '02',
+                value: '$projectCount',
                 accentColor: Color(0xFF2D9CDB),
               ),
             ),
@@ -1658,7 +1776,7 @@ class _ProjectSummarySection extends StatelessWidget {
             Expanded(
               child: _ProjectMetricCard(
                 title: 'Tasks',
-                value: '13',
+                value: '$taskCount',
                 accentColor: Color(0xFFFFB020),
               ),
             ),
@@ -1720,7 +1838,9 @@ class _LineChartMock extends StatelessWidget {
 }
 
 class _TaskSummarySection extends StatelessWidget {
-  const _TaskSummarySection();
+  const _TaskSummarySection({required this.taskStatusCounts});
+
+  final Map<String, int> taskStatusCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -1738,23 +1858,50 @@ class _TaskSummarySection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 18),
-        _TaskSummaryChart(),
+        _TaskSummaryChart(taskStatusCounts: taskStatusCounts),
       ],
     );
   }
 }
 
 class _TaskSummaryChart extends StatelessWidget {
+  const _TaskSummaryChart({required this.taskStatusCounts});
+
+  final Map<String, int> taskStatusCounts;
+
   @override
   Widget build(BuildContext context) {
-    const taskItems = [
-      ('Not Started', 0, Color(0xFF6C778D)),
-      ('In Progress', 6, Color(0xFF1769F3)),
-      ('On Hold', 1, Color(0xFFF5B71F)),
-      ('Completed', 6, Color(0xFF20D39B)),
-      ('Cancelled', 0, Color(0xFFFF4D6D)),
+    final taskItems = [
+      (
+        'Not Started',
+        taskStatusCounts['notStarted'] ?? 0,
+        const Color(0xFF6C778D),
+      ),
+      (
+        'In Progress',
+        taskStatusCounts['inProgress'] ?? 0,
+        const Color(0xFF1769F3),
+      ),
+      ('On Hold', taskStatusCounts['onHold'] ?? 0, const Color(0xFFF5B71F)),
+      (
+        'Completed',
+        taskStatusCounts['completed'] ?? 0,
+        const Color(0xFF20D39B),
+      ),
+      (
+        'Cancelled',
+        taskStatusCounts['cancelled'] ?? 0,
+        const Color(0xFFFF4D6D),
+      ),
     ];
     final total = taskItems.fold<int>(0, (sum, item) => sum + item.$2);
+    final donutSegments = taskItems
+        .where((item) => item.$2 > 0)
+        .map(
+          (item) =>
+              _TaskDonutSegment(value: item.$2.toDouble(), color: item.$3),
+        )
+        .toList();
 
     return Column(
       children: [
@@ -1764,11 +1911,7 @@ class _TaskSummaryChart extends StatelessWidget {
             height: 140,
             child: CustomPaint(
               painter: _TaskDonutPainter(
-                segments: const [
-                  _TaskDonutSegment(value: 6, color: Color(0xFF1769F3)),
-                  _TaskDonutSegment(value: 1, color: Color(0xFFF95A2C)),
-                  _TaskDonutSegment(value: 6, color: Color(0xFF20D39B)),
-                ],
+                segments: donutSegments,
                 backgroundColor: const Color(0xFFEAF0F8),
               ),
               child: Center(

@@ -8,6 +8,7 @@ import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/project_detail_model.dart';
 import 'package:mycrm/models/project_form_options_model.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class AddProjectScreen extends StatefulWidget {
   const AddProjectScreen({super.key, this.projectId});
@@ -594,22 +595,8 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F7FB),
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: Get.back,
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E2740)),
-        ),
-        title: Text(
-          _isEditMode ? 'Edit Project' : 'Create Project',
-          style: AppTextStyles.style(
-            color: const Color(0xFF1E2740),
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+      appBar: CommonScreenAppBar(
+        title: _isEditMode ? 'Edit Project' : 'Create Project',
       ),
       body: SafeArea(
         child: LayoutBuilder(

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../core/constants/app_text_styles.dart';
 import '../models/lead_model.dart';
 import '../providers/lead_detail_provider.dart';
+import '../widgets/common_screen_app_bar.dart';
 import 'add_lead_screen.dart';
 
 class LeadDetailScreen extends StatelessWidget {
@@ -91,32 +92,10 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(
-            Icons.arrow_back_rounded,
-            color: Color(0xFF5C6B82),
-            size: 28,
-          ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            titleText,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.style(
-              color: LeadDetailScreen.title,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
+    return CommonTopBar(
+      title: titleText,
+      compact: MediaQuery.of(context).size.width < 360,
+      onBack: () => Navigator.of(context).maybePop(),
     );
   }
 }

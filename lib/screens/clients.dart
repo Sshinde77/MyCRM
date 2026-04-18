@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../models/client_model.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
+import '../widgets/common_screen_app_bar.dart';
 
 class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key});
@@ -75,35 +76,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: Get.back,
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Color(0xFF111827),
-                          size: 20,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Clients',
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          const Icon(Icons.notifications_none, size: 26),
-                        ],
-                      ),
-                    ],
-                  ),
+                  const CommonTopBar(title: 'Clients'),
                   const SizedBox(height: 20),
                   Row(
                     children: [

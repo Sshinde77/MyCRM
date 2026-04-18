@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import '../routes/app_routes.dart';
 
 class IssueManagementScreen extends StatefulWidget {
@@ -454,58 +455,10 @@ class _MobileAppBar extends StatelessWidget {
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Color(0xFFD8E1EF))),
       ),
-      child: Row(
-        children: [
-          InkWell(
-            onTap: () => Get.back(),
-            borderRadius: BorderRadius.circular(compact ? 12 : 14),
-            child: Container(
-              height: compact ? 38 : 40,
-              width: compact ? 38 : 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(compact ? 12 : 14),
-                border: Border.all(color: const Color(0xFFD8E1EF)),
-              ),
-              child: Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: const Color(0xFF334155),
-                size: compact ? 16 : 18,
-              ),
-            ),
-          ),
-          SizedBox(width: compact ? 10 : 12),
-          Expanded(
-            child: Text(
-              'Issue Management',
-              overflow: TextOverflow.ellipsis,
-              style: _ts(
-                const Color(0xFF17213A),
-                compact ? 17 : 18,
-                FontWeight.w700,
-              ),
-            ),
-          ),
-          const Icon(
-            Icons.notifications_none_rounded,
-            color: Color(0xFF64748B),
-            size: 24,
-          ),
-          Container(
-            height: compact ? 28 : 30,
-            width: 1,
-            margin: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
-            color: const Color(0xFFD8E1EF),
-          ),
-          Container(
-            height: compact ? 34 : 36,
-            width: compact ? 34 : 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFFED0A3),
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
+      child: CommonTopBar(
+        title: 'Issue Management',
+        compact: compact,
+        onBack: Get.back,
       ),
     );
   }

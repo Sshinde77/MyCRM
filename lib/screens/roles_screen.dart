@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class RolesScreen extends StatelessWidget {
   const RolesScreen({super.key});
@@ -9,40 +10,7 @@ class RolesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF1E293B),
-            size: 20,
-          ),
-          onPressed: () => Get.back(),
-        ),
-        centerTitle: false,
-        title: Text(
-          'Roles',
-          style: AppTextStyles.style(
-            color: const Color(0xFF1E293B),
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded, color: Color(0xFF64748B)),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF64748B),
-            ),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      appBar: const CommonScreenAppBar(title: 'Roles'),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: const Color(0xFF3B82F6),

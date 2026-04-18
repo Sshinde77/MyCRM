@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/routes/app_routes.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -89,36 +90,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   }
 
   Widget _header(bool compact) {
-    return Row(
-      children: [
-        _iconShell(icon: Icons.arrow_back_ios_new_rounded, onTap: Get.back),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Add New Staff',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF162033),
-                  fontSize: compact ? 24 : 30,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Create a responsive staff profile with account access and onboarding details.',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF64748B),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (!compact) _iconShell(icon: Icons.notifications_none_rounded),
-      ],
+    return CommonTopBar(
+      title: 'Add New Staff',
+      compact: compact,
+      onBack: Get.back,
     );
   }
 

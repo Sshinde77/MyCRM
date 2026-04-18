@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class DocumentPreviewScreen extends StatefulWidget {
   const DocumentPreviewScreen({
@@ -213,13 +214,13 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
     final sourceForType = _localPath ?? _fileUrl;
     if (!DocumentPreviewScreen.isPdf(sourceForType)) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Document Preview')),
+        appBar: const CommonScreenAppBar(title: 'Document Preview'),
         body: const Center(child: Text('Unsupported file format.')),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('PDF Preview')),
+      appBar: const CommonScreenAppBar(title: 'PDF Preview'),
       body: _buildPdfViewer(),
     );
   }

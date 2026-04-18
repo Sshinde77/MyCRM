@@ -17,12 +17,16 @@ class ApiConstants {
   static const String staffdetail = '$baseUrl/staff/{id}';
   static const String deletestaff = '$baseUrl/staff/{id}';
   static const String editstaff = '$baseUrl/staff/{id}';
+  static const String staffprojects = '$baseUrl/staff/{id}/projects';
+  static const String stafftasks = '$baseUrl/staff/{id}/tasks';
 
   //Clients Api
   static const String clients = '$baseUrl/clients';
   static const String clientDetail = '$baseUrl/clients/{id}';
   static const String updateClient = '$baseUrl/clients/{id}';
   static const String deleteClient = '$baseUrl/clients/{id}';
+  static const String clientsprojects = '$baseUrl/clients/{id}/projects';
+  static const String clientstasks = '$baseUrl/clients/{id}/tasks';
 
   //Leads Api
   static const String leads = '$baseUrl/leads';
@@ -65,6 +69,7 @@ class ApiConstants {
       '$baseUrl/projects/{projectId}/issues/{issueId}';
   static const String projectcomments = '$baseUrl/projects/{id}/comments';
   static const String createprojectcomments = '$baseUrl/projects/{id}/comments';
+  static const String projectussage = '$baseUrl/projects/{id}/usage';
 
   //task
   static const String tasks = '$baseUrl/tasks';
@@ -82,4 +87,11 @@ class ApiConstants {
   static const String updateCalendar = '$baseUrl/calendar/events/{id}';
   static const String deleteCalendar = '$baseUrl/calendar/events/{id}';
   static const String createcalendar = '$baseUrl/calendar/events';
+
+  //vendor
+  static const String vendors = '$baseUrl/vendors';
+  static const String createvendors = '$baseUrl/vendors';
+  static const String vendorDetail = '$baseUrl/vendors/{id}';
+  static const String updateVendor = '$baseUrl/vendors/{id}';
+  static const String deleteVendor = '$baseUrl/vendors/{id}';
 }

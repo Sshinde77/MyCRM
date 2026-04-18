@@ -13,12 +13,14 @@ import '../models/project_form_options_model.dart';
 import '../models/project_issue_model.dart';
 import '../models/project_model.dart';
 import '../models/project_detail_model.dart';
+import '../models/project_usage_model.dart';
 import '../models/project_comment_model.dart';
 import '../models/project_milestone_model.dart';
 import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import '../models/calendar_event_model.dart';
+import '../models/vendor_model.dart';
 import '../core/services/secure_storage_service.dart';
 
 /// Thin wrapper around Dio so API calls share one base configuration.
@@ -218,6 +220,7 @@ class ApiService {
   /// Multipart POST helper for endpoints that accept form-data payloads.
   Future<Response> postForm(String path, {required FormData data}) async {
     await _restoreAuthToken();
+    _debugLogFormData(path: path, data: data);
     return await _dio.post(
       path,
       data: data,
@@ -349,9 +352,27 @@ class ApiService {
     return records.map(ClientModel.fromJson).toList();
   }
 
+  /// Loads the vendor list for the authenticated user.
+  Future<List<VendorModel>> getVendorsList() async {
+    final response = await get(ApiConstants.vendors);
+    final records = _normalizeList(response.data);
+    return records.map(VendorModel.fromJson).toList();
+  }
+
   /// Loads the project list for the authenticated user.
   Future<List<ProjectModel>> getProjectsList() async {
     final response = await get(ApiConstants.projects);
+    final records = _normalizeList(response.data);
+    return records.map(ProjectModel.fromJson).toList();
+  }
+
+  /// Loads projects assigned to a specific staff member.
+  Future<List<ProjectModel>> getStaffProjectsList(String staffId) async {
+    final id = staffId.trim();
+    if (id.isEmpty) return const <ProjectModel>[];
+
+    final path = ApiConstants.staffprojects.replaceFirst('{id}', id);
+    final response = await get(path);
     final records = _normalizeList(response.data);
     return records.map(ProjectModel.fromJson).toList();
   }
@@ -432,6 +453,14 @@ class ApiService {
     final body = _normalizeMap(response.data);
     final source = _normalizeMap(_extractProjectDetailSource(body));
     return ProjectDetailModel.fromJson(source);
+  }
+
+  Future<ProjectUsageModel> getProjectUsage(String id) async {
+    final path = ApiConstants.projectussage.replaceFirst('{id}', id);
+    final response = await get(path);
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractProjectDetailSource(body));
+    return ProjectUsageModel.fromJson(source);
   }
 
   /// Loads project files by project id.
@@ -926,6 +955,16 @@ class ApiService {
     return _normalizeList(response.data);
   }
 
+  /// Loads tasks assigned to a specific staff member.
+  Future<List<Map<String, dynamic>>> getStaffTasksList(String staffId) async {
+    final id = staffId.trim();
+    if (id.isEmpty) return const <Map<String, dynamic>>[];
+
+    final path = ApiConstants.stafftasks.replaceFirst('{id}', id);
+    final response = await get(path);
+    return _normalizeList(response.data);
+  }
+
   /// Loads a single task record by id.
   Future<Map<String, dynamic>> getTaskDetail(String id) async {
     final path = ApiConstants.taskDetail.replaceFirst('{id}', id);
@@ -1137,13 +1176,12 @@ class ApiService {
         .where((url) => url.isNotEmpty)
         .toList();
     final updatePayload = <String, dynamic>{...payload, '_method': 'PUT'};
-    updatePayload['existing_attachments'] = normalizedExistingUrls;
-    updatePayload['existing_attachment_urls'] = normalizedExistingUrls;
     await postForm(
       path,
       data: await _buildTodoFormData(
         payload: updatePayload,
         attachmentPaths: attachmentPaths,
+        existingAttachmentUrls: normalizedExistingUrls,
       ),
     );
   }
@@ -1262,6 +1300,43 @@ class ApiService {
     }
   }
 
+  /// Loads a single vendor by id.
+  Future<VendorModel> getVendorDetail(String id) async {
+    final path = ApiConstants.vendorDetail.replaceFirst('{id}', id);
+    try {
+      final response = await get(path);
+      final body = _normalizeMap(response.data);
+      return VendorModel.fromJson(body);
+    } on DioException {
+      final fallback = await _tryVendorDetailFromList(id);
+      if (fallback != null) {
+        return fallback;
+      }
+      rethrow;
+    }
+  }
+
+  /// Loads projects linked to a single client.
+  Future<List<ProjectModel>> getClientProjectsList(String clientId) async {
+    final id = clientId.trim();
+    if (id.isEmpty) return const <ProjectModel>[];
+
+    final path = ApiConstants.clientsprojects.replaceFirst('{id}', id);
+    final response = await get(path);
+    final records = _normalizeList(response.data);
+    return records.map(ProjectModel.fromJson).toList();
+  }
+
+  /// Loads tasks linked to a single client.
+  Future<List<Map<String, dynamic>>> getClientTasksList(String clientId) async {
+    final id = clientId.trim();
+    if (id.isEmpty) return const <Map<String, dynamic>>[];
+
+    final path = ApiConstants.clientstasks.replaceFirst('{id}', id);
+    final response = await get(path);
+    return _normalizeList(response.data);
+  }
+
   /// Loads a single staff member by id.
   Future<StaffMemberModel> getStaffDetail(String id) async {
     final path = ApiConstants.staffdetail.replaceFirst('{id}', id);
@@ -1360,6 +1435,54 @@ class ApiService {
     await put(path, data: request.toJson());
   }
 
+  /// Creates a new vendor.
+  Future<void> createVendor({
+    required String name,
+    required String email,
+    required String phone,
+    required String address,
+    required String status,
+  }) async {
+    await post(
+      ApiConstants.createvendors,
+      data: {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'address': address,
+        'status': status,
+      },
+    );
+  }
+
+  /// Updates an existing vendor.
+  Future<void> updateVendor({
+    required String id,
+    required String name,
+    required String email,
+    required String phone,
+    required String address,
+    required String status,
+  }) async {
+    final path = ApiConstants.updateVendor.replaceFirst('{id}', id);
+    await put(
+      path,
+      data: {
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'address': address,
+        'status': status,
+      },
+    );
+  }
+
+  /// Deletes an existing vendor.
+  Future<void> deleteVendor(String id) async {
+    final path = ApiConstants.deleteVendor.replaceFirst('{id}', id);
+    await delete(path);
+  }
+
   /// Deletes an existing client.
   Future<void> deleteClient(String id) async {
     final path = ApiConstants.deleteClient.replaceFirst('{id}', id);
@@ -1403,6 +1526,7 @@ class ApiService {
         'staff',
         'clients',
         'customers',
+        'vendors',
         'projects',
         'milestones',
         'project_milestones',
@@ -1437,6 +1561,7 @@ class ApiService {
             'staff',
             'clients',
             'customers',
+            'vendors',
             'projects',
             'milestones',
             'project_milestones',
@@ -1495,6 +1620,7 @@ class ApiService {
         'projectIssue',
         'client',
         'customer',
+        'vendor',
         'task',
         'todo',
         'file',
@@ -1549,6 +1675,22 @@ class ApiService {
       final entryId = normalized['id']?.toString();
       if (entryId == id) {
         return ClientDetailModel.fromJson(normalized);
+      }
+    }
+
+    return null;
+  }
+
+  Future<VendorModel?> _tryVendorDetailFromList(String id) async {
+    final response = await get(ApiConstants.vendors);
+    final source = _extractListSource(response.data);
+    if (source is! List) return null;
+
+    for (final entry in source) {
+      final normalized = _normalizeMap(entry);
+      final entryId = normalized['id']?.toString();
+      if (entryId == id) {
+        return VendorModel.fromJson(normalized);
       }
     }
 
@@ -1780,18 +1922,68 @@ class ApiService {
   Future<FormData> _buildTodoFormData({
     required Map<String, dynamic> payload,
     required List<String> attachmentPaths,
+    List<String>? existingAttachmentUrls,
   }) async {
-    final formPayload = <String, dynamic>{...payload};
-    if (attachmentPaths.isNotEmpty) {
-      formPayload['attachments[]'] = await Future.wait(
-        attachmentPaths.map((path) async {
-          final fileName = path.split(RegExp(r'[\\/]')).last;
-          return MultipartFile.fromFile(path, filename: fileName);
-        }),
+    final formData = FormData();
+
+    payload.forEach((key, value) {
+      if (value == null) {
+        return;
+      }
+
+      if (value is Iterable) {
+        for (final item in value) {
+          if (item != null) {
+            formData.fields.add(MapEntry('$key[]', item.toString()));
+          }
+        }
+        return;
+      }
+
+      formData.fields.add(MapEntry(key, value.toString()));
+    });
+
+    if (existingAttachmentUrls != null) {
+      if (existingAttachmentUrls.isEmpty) {
+        formData.fields.add(const MapEntry('existing_attachments', ''));
+        formData.fields.add(const MapEntry('existing_attachment_urls', ''));
+        formData.fields.add(const MapEntry('existing_attachments[]', ''));
+        formData.fields.add(const MapEntry('existing_attachment_urls[]', ''));
+      } else {
+        for (final url in existingAttachmentUrls) {
+          formData.fields.add(MapEntry('existing_attachments', url));
+          formData.fields.add(MapEntry('existing_attachment_urls', url));
+          formData.fields.add(MapEntry('existing_attachments[]', url));
+          formData.fields.add(MapEntry('existing_attachment_urls[]', url));
+        }
+      }
+    }
+
+    for (final path in attachmentPaths) {
+      final fileName = path.split(RegExp(r'[\\/]')).last;
+      formData.files.add(
+        MapEntry(
+          'attachments[]',
+          await MultipartFile.fromFile(path, filename: fileName),
+        ),
       );
     }
 
-    return FormData.fromMap(formPayload);
+    return formData;
+  }
+
+  void _debugLogFormData({required String path, required FormData data}) {
+    final fields = data.fields
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join(', ');
+    final files = data.files
+        .map((entry) => '${entry.key}=${entry.value.filename}')
+        .join(', ');
+
+    debugPrint('*** Multipart Debug ***');
+    debugPrint('path: $path');
+    debugPrint('fields: ${fields.isEmpty ? '(none)' : fields}');
+    debugPrint('files: ${files.isEmpty ? '(none)' : files}');
   }
 
   Map<String, dynamic> _buildTaskListPayload({

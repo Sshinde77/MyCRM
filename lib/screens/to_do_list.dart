@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/screens/document_preview_screen.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 /// Mobile-first tasks screen inspired by the provided mockup.
 class ToDoListScreen extends StatefulWidget {
@@ -466,70 +467,10 @@ class _TasksHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 360;
-        final buttonSize = isCompact ? 38.0 : 42.0;
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _HeaderCircleButton(
-              icon: Icons.arrow_back_ios_new_rounded,
-              onTap: onBack,
-              size: buttonSize,
-            ),
-            SizedBox(width: isCompact ? 10 : 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'To-Do List',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF1E2B3C),
-                      fontSize: isCompact ? 19 : 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    'Plan your day with a clean personal task flow.',
-                    maxLines: isCompact ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF72839A),
-                      fontSize: isCompact ? 11.5 : 12.5,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: isCompact ? 8 : 10),
-            Container(
-              width: buttonSize,
-              height: buttonSize,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x120F172A),
-                    blurRadius: 16,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'S',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF1B87E6),
-                  fontSize: isCompact ? 14 : 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
+        return CommonTopBar(
+          title: 'To-Do List',
+          compact: isCompact,
+          onBack: onBack,
         );
       },
     );

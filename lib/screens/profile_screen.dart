@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../routes/app_routes.dart';
+import '../screens/to_do_list.dart' as to_do;
 import '../controllers/auth_controller.dart';
 import '../widgets/app_bottom_navigation.dart';
 
@@ -425,15 +426,6 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          height: 52,
-          width: 52,
-          decoration: const BoxDecoration(
-            color: Color(0xFF1E3A6D),
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,6 +449,11 @@ class _ProfileHeader extends StatelessWidget {
             ],
           ),
         ),
+        _CircleIconButton(
+          icon: Icons.checklist_rounded,
+          onTap: () => Get.to(() => const to_do.ToDoListScreen()),
+        ),
+        const SizedBox(width: 10),
         const _CircleIconButton(icon: Icons.notifications_none_rounded),
       ],
     );

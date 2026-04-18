@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class IssueDetailScreen extends StatelessWidget {
   const IssueDetailScreen({super.key});
@@ -14,52 +15,7 @@ class IssueDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: pageBg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: textMain),
-          onPressed: () => Get.back(),
-        ),
-        title: Text(
-          'Issue Details',
-          style: AppTextStyles.style(
-            color: textMain,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: textSec,
-                ),
-                onPressed: () {},
-              ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  height: 8,
-                  width: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: textSec),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      appBar: const CommonScreenAppBar(title: 'Issue Details'),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),

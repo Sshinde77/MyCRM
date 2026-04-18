@@ -6,6 +6,7 @@ import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class CreateTaskScreen extends StatefulWidget {
   const CreateTaskScreen({
@@ -100,21 +101,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F7FB),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        titleSpacing: 0,
-        title: Text(
-          _isEditMode ? 'EDIT TASK' : 'ADD TASK',
-          style: AppTextStyles.style(
-            color: const Color(0xFF334155),
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.6,
-          ),
-        ),
-      ),
+      appBar: CommonScreenAppBar(title: _isEditMode ? 'Edit Task' : 'Add Task'),
       body: SafeArea(
         top: false,
         child: Column(

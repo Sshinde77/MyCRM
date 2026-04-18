@@ -23,6 +23,7 @@ import '../screens/issue_detail_screen.dart';
 import '../screens/renewal_master_screen.dart';
 import '../screens/client_renewal_screen.dart';
 import '../screens/vendor_renewal_screen.dart';
+import '../screens/vendor_directory_screen.dart';
 import '../screens/dashboard_renewals_screen.dart';
 import '../screens/staff_screen.dart';
 import '../screens/add_staff_screen.dart';
@@ -44,7 +45,12 @@ class RouteGenerator {
       case AppRoutes.dashboard:
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
       case AppRoutes.tasks:
-        return MaterialPageRoute(builder: (_) => const TasksScreen());
+        return MaterialPageRoute(
+          builder: (_) => TasksScreen(
+            staffId: _extractStaffId(settings.arguments),
+            staffName: _extractStaffName(settings.arguments),
+          ),
+        );
       case AppRoutes.editTask:
         return MaterialPageRoute(
           builder: (_) => CreateTaskScreen(
@@ -112,7 +118,12 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.projects:
-        return MaterialPageRoute(builder: (_) => const ProjectsScreen());
+        return MaterialPageRoute(
+          builder: (_) => ProjectsScreen(
+            staffId: _extractStaffId(settings.arguments),
+            staffName: _extractStaffName(settings.arguments),
+          ),
+        );
       case AppRoutes.addProject:
         return MaterialPageRoute(
           builder: (_) => AddProjectScreen(
@@ -154,15 +165,7 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.renewalVendor:
-        return MaterialPageRoute(
-          builder: (_) => const RenewalDetailScreen(
-            title: 'Vendor',
-            description:
-                'Open vendor renewal records and manage vendor-specific renewal workflows.',
-            icon: Icons.local_shipping_outlined,
-            accentColor: Color(0xFFEA580C),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const VendorDirectoryScreen());
       case AppRoutes.dashboardRenewals:
         return MaterialPageRoute(
           builder: (_) => const DashboardRenewalsScreen(),
@@ -261,6 +264,48 @@ class RouteGenerator {
 
   static String? _extractTaskId(dynamic args) {
     return _extractTaskString(args, const ['id', 'taskId', 'task_id']);
+  }
+
+  static String? _extractStaffId(dynamic args) {
+    if (args == null) return null;
+    if (args is String) {
+      final normalized = args.trim();
+      return normalized.isEmpty ? null : normalized;
+    }
+    if (args is int) {
+      return args.toString();
+    }
+    if (args is Map) {
+      final raw =
+          args['staffId'] ??
+          args['staff_id'] ??
+          args['user_id'] ??
+          args['employee_id'] ??
+          args['id'];
+      if (raw == null) return null;
+      final normalized = raw.toString().trim();
+      return normalized.isEmpty || normalized.toLowerCase() == 'null'
+          ? null
+          : normalized;
+    }
+    return null;
+  }
+
+  static String? _extractStaffName(dynamic args) {
+    if (args == null) return null;
+    if (args is Map) {
+      final raw =
+          args['staffName'] ??
+          args['staff_name'] ??
+          args['employee_name'] ??
+          args['name'];
+      if (raw == null) return null;
+      final normalized = raw.toString().trim();
+      return normalized.isEmpty || normalized.toLowerCase() == 'null'
+          ? null
+          : normalized;
+    }
+    return null;
   }
 
   static String? _extractTaskString(dynamic args, List<String> keys) {

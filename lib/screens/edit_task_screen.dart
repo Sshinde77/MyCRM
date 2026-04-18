@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class EditTaskScreen extends StatefulWidget {
   const EditTaskScreen({super.key});
@@ -47,22 +48,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
-      appBar: AppBar(
-        title: Text(
-          'EDIT TASK',
-          style: AppTextStyles.style(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF5D6B7F),
-          ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF5D6B7F)),
-          onPressed: () => Get.back(),
-        ),
-      ),
+      appBar: const CommonScreenAppBar(title: 'Edit Task'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Container(

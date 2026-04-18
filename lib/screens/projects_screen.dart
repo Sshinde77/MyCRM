@@ -6,11 +6,15 @@ import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
 import '../routes/app_routes.dart';
+import '../screens/to_do_list.dart' as to_do;
 import '../widgets/app_bottom_navigation.dart';
 
 /// Projects overview screen inspired by the provided mockup.
 class ProjectsScreen extends StatefulWidget {
-  const ProjectsScreen({super.key});
+  const ProjectsScreen({super.key, this.staffId, this.staffName});
+
+  final String? staffId;
+  final String? staffName;
 
   @override
   State<ProjectsScreen> createState() => _ProjectsScreenState();
@@ -21,21 +25,39 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   late Future<List<ProjectModel>> _projectsFuture;
   String? _deletingProjectId;
   String? _staffFilterId;
+  String _staffFilterName = '';
 
   @override
   void initState() {
     super.initState();
-    final arguments = Get.arguments;
-    if (arguments is Map) {
-      final map = arguments.map(
-        (key, value) => MapEntry(key.toString(), value),
-      );
-      final staffId = (map['staffId'] ?? '').toString().trim();
-      if (staffId.isNotEmpty) {
-        _staffFilterId = staffId;
+    final widgetStaffId = (widget.staffId ?? '').toString().trim();
+    final widgetStaffName = (widget.staffName ?? '').toString().trim();
+    if (widgetStaffId.isNotEmpty) {
+      _staffFilterId = widgetStaffId;
+    }
+    if (widgetStaffName.isNotEmpty) {
+      _staffFilterName = widgetStaffName;
+    }
+
+    if ((_staffFilterId ?? '').trim().isEmpty) {
+      final arguments = Get.arguments;
+      if (arguments is Map) {
+        final map = arguments.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        final staffId = (map['staffId'] ?? '').toString().trim();
+        final staffName = (map['staffName'] ?? '').toString().trim();
+        if (staffId.isNotEmpty) {
+          _staffFilterId = staffId;
+        }
+        if (_staffFilterName.trim().isEmpty && staffName.isNotEmpty) {
+          _staffFilterName = staffName;
+        }
       }
     }
-    _projectsFuture = ApiService.instance.getProjectsList();
+    _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
+        ? ApiService.instance.getStaffProjectsList(_staffFilterId!)
+        : ApiService.instance.getProjectsList();
   }
 
   @override
@@ -46,7 +68,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   void _reload() {
     setState(() {
-      _projectsFuture = ApiService.instance.getProjectsList();
+      _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
+          ? ApiService.instance.getStaffProjectsList(_staffFilterId!)
+          : ApiService.instance.getProjectsList();
     });
   }
 
@@ -217,13 +241,45 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   List<ProjectModel> _applyStaffFilter(List<ProjectModel> projects) {
     final staffId = _staffFilterId?.trim() ?? '';
-    if (staffId.isEmpty) {
+    final staffName = _normalizeName(_staffFilterName);
+    if (staffId.isEmpty && staffName.isEmpty) {
       return projects;
     }
 
     return projects.where((project) {
-      return project.members.any((member) => member.id.trim() == staffId);
+      return project.members.any((member) {
+        final memberId = member.id.trim();
+        if (staffId.isNotEmpty && memberId == staffId) {
+          return true;
+        }
+        if (staffName.isEmpty) {
+          return false;
+        }
+        final memberName = _normalizeName(member.name);
+        if (memberName.isEmpty) {
+          return false;
+        }
+        if (memberName == staffName) {
+          return true;
+        }
+        if (memberName.length >= 3 &&
+            staffName.length >= 3 &&
+            (memberName.contains(staffName) ||
+                staffName.contains(memberName))) {
+          return true;
+        }
+        return false;
+      });
     }).toList();
+  }
+
+  String _normalizeName(String value) {
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    return parts.join(' ').toLowerCase();
   }
 
   @override
@@ -238,7 +294,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           future: _projectsFuture,
           builder: (context, snapshot) {
             final allProjects = snapshot.data ?? const <ProjectModel>[];
-            final projects = _applyStaffFilter(allProjects);
+            final staffId = _staffFilterId?.trim() ?? '';
+            final projects = staffId.isNotEmpty
+                ? allProjects
+                : _applyStaffFilter(allProjects);
             final filteredProjects = _filterProjects(projects);
 
             return LayoutBuilder(
@@ -320,54 +379,21 @@ class _ProjectsHeader extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Projects',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF1E2A3B),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Enterprise Management System',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF76839A),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        _HeaderIconButton(icon: Icons.notifications_none_rounded, onTap: () {}),
-        const SizedBox(width: 10),
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFD9C4),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x110F172A),
-                blurRadius: 10,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
           child: Text(
-            'UI',
+            'Projects',
             style: AppTextStyles.style(
               color: const Color(0xFF1E2A3B),
+              fontSize: 22,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
+        _HeaderIconButton(
+          icon: Icons.checklist_rounded,
+          onTap: () => Get.to(() => const to_do.ToDoListScreen()),
+        ),
+        const SizedBox(width: 10),
+        _HeaderIconButton(icon: Icons.notifications_none_rounded, onTap: () {}),
       ],
     );
   }

@@ -5,6 +5,7 @@ import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 import '../routes/app_routes.dart';
 
@@ -62,47 +63,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF1E293B),
-            size: 20,
-          ),
-          onPressed: Get.back,
-        ),
-        title: Text(
-          'User Profile',
-          style: AppTextStyles.style(
-            color: const Color(0xFF1E293B),
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF64748B),
-            ),
-            onPressed: () {},
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Color(0xFFFFEDD5),
-              child: Icon(
-                Icons.person_rounded,
-                color: Color(0xFFF97316),
-                size: 20,
-              ),
-            ),
-          ),
-        ],
-      ),
+      appBar: const CommonScreenAppBar(title: 'User Profile'),
       body: _staffId.isEmpty
           ? const _DetailErrorState(
               title: 'Staff ID missing',
@@ -169,7 +130,13 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                                   icon: Icons.check_circle_outline_rounded,
                                   color: const Color(0xFF22C55E),
                                   buttonLabel: 'View',
-                                  onTap: () => Get.toNamed(AppRoutes.tasks),
+                                  onTap: () => Get.toNamed(
+                                    AppRoutes.tasks,
+                                    arguments: <String, dynamic>{
+                                      'staffId': _staffId,
+                                      'staffName': member.name,
+                                    },
+                                  ),
                                 ),
                               ),
                             ],
@@ -214,16 +181,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
     try {
       final responses = await Future.wait<dynamic>([
-        ApiService.instance.getProjectsList(),
-        ApiService.instance.getTasksList(),
+        ApiService.instance.getStaffProjectsList(_staffId),
+        ApiService.instance.getStaffTasksList(_staffId),
       ]);
 
       final projects = responses[0] as List<ProjectModel>;
       final tasks = responses[1] as List<dynamic>;
 
-      final projectCount = projects
-          .where((project) => _isProjectAssignedToStaff(project))
-          .length;
+      final projectCount = projects.length;
 
       var taskCount = 0;
       var highCount = 0;
@@ -264,10 +229,6 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     } catch (_) {
       return _StaffActivitySummary.empty();
     }
-  }
-
-  bool _isProjectAssignedToStaff(ProjectModel project) {
-    return project.members.any((member) => member.id.trim() == _staffId);
   }
 
   bool _isTaskAssignedToStaff(Map<String, dynamic> task) {

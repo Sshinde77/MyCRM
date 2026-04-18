@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:file_picker/file_picker.dart';
@@ -7,9 +9,11 @@ import 'package:mycrm/models/project_milestone_model.dart';
 import 'package:mycrm/models/project_issue_model.dart';
 import 'package:mycrm/models/project_detail_model.dart';
 import 'package:mycrm/models/project_comment_model.dart';
+import 'package:mycrm/models/project_usage_model.dart';
 import 'package:mycrm/providers/project_issue_provider.dart';
 import 'package:mycrm/providers/project_milestone_provider.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
@@ -138,36 +142,7 @@ class _BodyState extends State<_Body> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            IconButton(
-              onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(
-                Icons.arrow_back_rounded,
-                color: Color(0xFF5E6E86),
-                size: 30,
-              ),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Project Details',
-                style: AppTextStyles.style(
-                  color: ProjectDetailScreen.title,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.notifications_none_rounded,
-              color: Color(0xFF5E6E86),
-              size: 26,
-            ),
-          ],
-        ),
+        const CommonTopBar(title: 'Project Details'),
         const SizedBox(height: 20),
         _Card(
           child: Column(
@@ -386,7 +361,7 @@ class _BodyState extends State<_Body> {
       case _ProjectDetailTab.files:
         return _FilesSection(projectId: project.id);
       case _ProjectDetailTab.usage:
-        return _PlaceholderSection(title: _selectedTab.title);
+        return _UsageSection(projectId: project.id);
       case _ProjectDetailTab.milestones:
         return _MilestonesSection(projectId: project.id);
       case _ProjectDetailTab.issues:
@@ -3789,6 +3764,18 @@ class _BadgeColors {
   final Color foreground;
 }
 
+class _UsageColors {
+  const _UsageColors({
+    required this.background,
+    required this.foreground,
+    required this.gradient,
+  });
+
+  final Color background;
+  final Color foreground;
+  final List<Color> gradient;
+}
+
 class _Card extends StatelessWidget {
   const _Card({required this.child});
   final Widget child;
@@ -3810,6 +3797,330 @@ class _Card extends StatelessWidget {
     ),
     child: child,
   );
+}
+
+class _UsageSection extends StatefulWidget {
+  const _UsageSection({required this.projectId});
+
+  final String projectId;
+
+  @override
+  State<_UsageSection> createState() => _UsageSectionState();
+}
+
+class _UsageSectionState extends State<_UsageSection> {
+  late Future<ProjectUsageModel> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<ProjectUsageModel> _load() async {
+    return ApiService.instance.getProjectUsage(widget.projectId);
+  }
+
+  void _reload() {
+    setState(() {
+      _future = _load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<ProjectUsageModel>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _StateCard(
+            icon: Icons.pie_chart_outline_rounded,
+            title: 'Loading usage statistics...',
+          );
+        }
+
+        if (snapshot.hasError) {
+          return _UsageErrorCard(onRetry: _reload);
+        }
+
+        final usage = snapshot.data;
+        if (usage == null) {
+          return const _Card(
+            child: _EmptySectionState(
+              message: 'No usage statistics available.',
+            ),
+          );
+        }
+
+        final statuses = usage.statuses;
+        return _Card(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final chartSize = constraints.maxWidth < 360 ? 210.0 : 230.0;
+              const cardSpacing = 12.0;
+              final itemWidth = constraints.maxWidth < 520
+                  ? (constraints.maxWidth - cardSpacing) / 2
+                  : (constraints.maxWidth - (cardSpacing * 2)) / 3;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Project Usage Statistics',
+                    style: AppTextStyles.style(
+                      color: ProjectDetailScreen.title,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Task status distribution',
+                    style: AppTextStyles.style(
+                      color: ProjectDetailScreen.muted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Center(
+                    child: SizedBox(
+                      width: chartSize,
+                      height: chartSize,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CustomPaint(
+                            size: Size.square(chartSize),
+                            painter: _UsageDonutPainter(statuses: statuses),
+                          ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${usage.totalTasks}',
+                                style: AppTextStyles.style(
+                                  color: ProjectDetailScreen.title,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Total tasks',
+                                style: AppTextStyles.style(
+                                  color: ProjectDetailScreen.muted,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: cardSpacing,
+                    runSpacing: cardSpacing,
+                    children: statuses
+                        .map(
+                          (status) => SizedBox(
+                            width: itemWidth,
+                            child: _UsageLegendCard(stat: status),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _UsageLegendCard extends StatelessWidget {
+  const _UsageLegendCard({required this.stat});
+
+  final ProjectUsageStat stat;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _usageColors(stat.key);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFD),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE3EAF5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: colors.background,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  stat.label,
+                  style: AppTextStyles.style(
+                    color: ProjectDetailScreen.title,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${stat.percentage.toStringAsFixed(1)}%',
+            style: AppTextStyles.style(
+              color: ProjectDetailScreen.title,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${stat.taskCount} tasks',
+            style: AppTextStyles.style(
+              color: ProjectDetailScreen.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: (stat.percentage / 100).clamp(0, 1),
+              minHeight: 7,
+              backgroundColor: const Color(0xFFE2E8F0),
+              valueColor: AlwaysStoppedAnimation<Color>(colors.background),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UsageDonutPainter extends CustomPainter {
+  const _UsageDonutPainter({required this.statuses});
+
+  final List<ProjectUsageStat> statuses;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final strokeWidth = size.width * 0.2;
+    final center = size.center(Offset.zero);
+    final radius = (math.min(size.width, size.height) - strokeWidth) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    final backgroundPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt
+      ..color = const Color(0xFFE9EEF5);
+
+    canvas.drawArc(rect, 0, math.pi * 2, false, backgroundPaint);
+
+    final total = statuses.fold<int>(0, (sum, item) => sum + item.taskCount);
+    if (total <= 0) {
+      return;
+    }
+
+    double startAngle = -math.pi / 2;
+    for (final status in statuses) {
+      if (status.taskCount <= 0) {
+        continue;
+      }
+
+      final sweepAngle = (status.taskCount / total) * math.pi * 2;
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.butt
+        ..shader = SweepGradient(
+          startAngle: startAngle,
+          endAngle: startAngle + sweepAngle,
+          colors: _usageColors(status.key).gradient,
+        ).createShader(rect);
+
+      canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+      startAngle += sweepAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _UsageDonutPainter oldDelegate) {
+    return oldDelegate.statuses != statuses;
+  }
+}
+
+class _UsageErrorCard extends StatelessWidget {
+  const _UsageErrorCard({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Column(
+        children: [
+          const Icon(
+            Icons.pie_chart_outline_rounded,
+            size: 34,
+            color: Color(0xFFB42318),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Unable to load usage statistics',
+            style: AppTextStyles.style(
+              color: ProjectDetailScreen.title,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Retry the request to fetch project usage data.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.style(
+              color: ProjectDetailScreen.muted,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: onRetry,
+            style: FilledButton.styleFrom(
+              backgroundColor: ProjectDetailScreen.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Badge extends StatelessWidget {
@@ -4115,6 +4426,47 @@ _BadgeColors _statusColors(String status) {
     return const _BadgeColors(Color(0xFFFFF3D6), Color(0xFFD97706));
   }
   return const _BadgeColors(Color(0xFFF1F5F9), Color(0xFF475569));
+}
+
+_UsageColors _usageColors(String key) {
+  switch (key) {
+    case 'not_started':
+      return const _UsageColors(
+        background: Color(0xFF6B7280),
+        foreground: Colors.white,
+        gradient: [Color(0xFF6B7280), Color(0xFF94A3B8)],
+      );
+    case 'in_progress':
+      return const _UsageColors(
+        background: Color(0xFF1D8BFF),
+        foreground: Colors.white,
+        gradient: [Color(0xFF4F6AE0), Color(0xFF2DD4BF)],
+      );
+    case 'on_hold':
+      return const _UsageColors(
+        background: Color(0xFFFBBF24),
+        foreground: Colors.white,
+        gradient: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+      );
+    case 'completed':
+      return const _UsageColors(
+        background: Color(0xFF22C55E),
+        foreground: Colors.white,
+        gradient: [Color(0xFF4ADE80), Color(0xFF16A34A)],
+      );
+    case 'cancelled':
+      return const _UsageColors(
+        background: Color(0xFFF43F5E),
+        foreground: Colors.white,
+        gradient: [Color(0xFFF87171), Color(0xFFE11D48)],
+      );
+    default:
+      return const _UsageColors(
+        background: Color(0xFFCBD5E1),
+        foreground: Color(0xFF1E2740),
+        gradient: [Color(0xFFCBD5E1), Color(0xFF94A3B8)],
+      );
+  }
 }
 
 String _initials(String value) {

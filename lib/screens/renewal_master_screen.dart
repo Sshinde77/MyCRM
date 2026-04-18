@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 import '../routes/app_routes.dart';
 
@@ -63,24 +64,10 @@ class RenewalMasterScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        _RoundIconButton(
-                          icon: Icons.arrow_back_ios_new_rounded,
-                          onTap: Get.back,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Renewal Master',
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF162033),
-                              fontSize: compact ? 22 : 24,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
+                    CommonTopBar(
+                      title: 'Renewal Master',
+                      compact: compact,
+                      onBack: Get.back,
                     ),
                     const SizedBox(height: 16),
                     Container(
@@ -179,24 +166,10 @@ class RenewalDetailScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        _RoundIconButton(
-                          icon: Icons.arrow_back_ios_new_rounded,
-                          onTap: Get.back,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF162033),
-                              fontSize: compact ? 22 : 24,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
+                    CommonTopBar(
+                      title: title,
+                      compact: compact,
+                      onBack: Get.back,
                     ),
                     const SizedBox(height: 18),
                     Container(

@@ -4,12 +4,16 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/screens/create_task_screen.dart';
 import 'package:mycrm/screens/task_detail_screen.dart';
+import 'package:mycrm/screens/to_do_list.dart' as to_do;
 import 'package:mycrm/services/api_service.dart';
 
 import '../widgets/app_bottom_navigation.dart';
 
 class TasksScreen extends StatefulWidget {
-  const TasksScreen({super.key});
+  const TasksScreen({super.key, this.staffId, this.staffName});
+
+  final String? staffId;
+  final String? staffName;
 
   @override
   State<TasksScreen> createState() => _TasksScreenState();
@@ -20,10 +24,37 @@ class _TasksScreenState extends State<TasksScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _loadError;
+  String? _staffFilterId;
+  String _staffFilterName = '';
 
   @override
   void initState() {
     super.initState();
+    final widgetStaffId = (widget.staffId ?? '').toString().trim();
+    final widgetStaffName = (widget.staffName ?? '').toString().trim();
+    if (widgetStaffId.isNotEmpty) {
+      _staffFilterId = widgetStaffId;
+    }
+    if (widgetStaffName.isNotEmpty) {
+      _staffFilterName = widgetStaffName;
+    }
+
+    if ((_staffFilterId ?? '').trim().isEmpty) {
+      final arguments = Get.arguments;
+      if (arguments is Map) {
+        final map = arguments.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        final staffId = (map['staffId'] ?? '').toString().trim();
+        final staffName = (map['staffName'] ?? '').toString().trim();
+        if (staffId.isNotEmpty) {
+          _staffFilterId = staffId;
+        }
+        if (_staffFilterName.trim().isEmpty && staffName.isNotEmpty) {
+          _staffFilterName = staffName;
+        }
+      }
+    }
     _searchController.addListener(_handleSearchChanged);
     _loadTasks();
   }
@@ -74,32 +105,28 @@ class _TasksScreenState extends State<TasksScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Text(
+                    'Tasks',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF111827),
+                      fontSize: compact ? 22 : 24,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Row(
                     children: [
-                      Text(
-                        'Tasks',
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF111827),
-                          fontSize: compact ? 22 : 24,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      _circleIcon(
+                        Icons.checklist_rounded,
+                        compact: compact,
+                        onTap: () => Get.to(() => const to_do.ToDoListScreen()),
                       ),
-                      SizedBox(height: compact ? 2 : 4),
-                      Text(
-                        'Manage your enterprise workflow',
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF6B7280),
-                          fontSize: compact ? 11 : 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      SizedBox(width: compact ? 8 : 10),
+                      _circleIcon(
+                        Icons.notifications_none_rounded,
+                        compact: compact,
+                        onTap: () {},
                       ),
                     ],
-                  ),
-                  _circleIcon(
-                    Icons.refresh_rounded,
-                    compact: compact,
-                    onTap: _isLoading ? null : _loadTasks,
                   ),
                 ],
               ),
@@ -245,10 +272,24 @@ class _TasksScreenState extends State<TasksScreen> {
     }
 
     try {
-      final records = await ApiService.instance.getTasksList();
+      final staffId = _staffFilterId?.trim() ?? '';
+      final useStaffEndpoint = staffId.isNotEmpty;
+      final records = useStaffEndpoint
+          ? await ApiService.instance.getStaffTasksList(staffId)
+          : await ApiService.instance.getTasksList();
       final tasks = <_TaskRecord>[];
       for (final record in records) {
-        tasks.addAll(_TaskRecord.fromApiRecord(record));
+        final parsed = _TaskRecord.fromApiRecord(record);
+        if (useStaffEndpoint) {
+          tasks.addAll(parsed);
+          continue;
+        }
+
+        for (final task in parsed) {
+          if (_matchesStaffFilter(task, record)) {
+            tasks.add(task);
+          }
+        }
       }
 
       if (!mounted) {
@@ -285,6 +326,81 @@ class _TasksScreenState extends State<TasksScreen> {
             : error.toString().trim();
       });
     }
+  }
+
+  bool _matchesStaffFilter(_TaskRecord task, Map<String, dynamic> rawRecord) {
+    final staffId = _staffFilterId?.trim() ?? '';
+    final staffName = _normalizeName(_staffFilterName);
+    if (staffId.isEmpty && staffName.isEmpty) {
+      return true;
+    }
+
+    if (staffId.isNotEmpty && task.assigneeIds.contains(staffId)) {
+      return true;
+    }
+
+    if (staffName.isEmpty) {
+      return false;
+    }
+
+    final assignees = rawRecord['assignees'];
+    if (assignees is! List) {
+      return false;
+    }
+
+    for (final entry in assignees) {
+      if (entry is String &&
+          _normalizeName(entry) == staffName &&
+          staffName.isNotEmpty) {
+        return true;
+      }
+
+      if (entry is! Map && entry is! Map<String, dynamic>) {
+        continue;
+      }
+
+      final normalized = entry is Map<String, dynamic>
+          ? entry
+          : entry.map((key, value) => MapEntry(key.toString(), value));
+
+      final combinedName = [
+        (normalized['first_name'] ?? normalized['firstName'] ?? '').toString(),
+        (normalized['last_name'] ?? normalized['lastName'] ?? '').toString(),
+      ].map((part) => part.trim()).where((part) => part.isNotEmpty).join(' ');
+
+      final name =
+          (combinedName.isNotEmpty
+                  ? combinedName
+                  : (normalized['name'] ??
+                            normalized['full_name'] ??
+                            normalized['employee_name'] ??
+                            normalized['staff_name'] ??
+                            '')
+                        .toString())
+              .trim();
+
+      final normalizedName = _normalizeName(name);
+      if (normalizedName.isNotEmpty && normalizedName == staffName) {
+        return true;
+      }
+      if (normalizedName.length >= 3 &&
+          staffName.length >= 3 &&
+          (normalizedName.contains(staffName) ||
+              staffName.contains(normalizedName))) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  String _normalizeName(String value) {
+    final parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    return parts.join(' ').toLowerCase();
   }
 
   Future<void> _openCreateTaskScreen() async {

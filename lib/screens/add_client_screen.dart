@@ -8,6 +8,7 @@ import '../models/update_client_request_model.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../models/client_detail_model.dart';
+import '../widgets/common_screen_app_bar.dart';
 
 class AddClientScreen extends StatefulWidget {
   const AddClientScreen({super.key, this.clientId, this.isEdit = false});
@@ -190,20 +191,8 @@ class _AddClientScreenState extends State<AddClientScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
-      appBar: AppBar(
-        title: Text(_isEditMode ? 'Edit Client' : 'Add Client'),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: TextButton(
-              onPressed: () => Get.toNamed(AppRoutes.clients),
-              child: const Text('Back to Clients'),
-            ),
-          ),
-        ],
+      appBar: CommonScreenAppBar(
+        title: _isEditMode ? 'Edit Client' : 'Add Client',
       ),
       body: SafeArea(
         child: SingleChildScrollView(
