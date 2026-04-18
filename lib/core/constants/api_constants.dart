@@ -94,4 +94,16 @@ class ApiConstants {
   static const String vendorDetail = '$baseUrl/vendors/{id}';
   static const String updateVendor = '$baseUrl/vendors/{id}';
   static const String deleteVendor = '$baseUrl/vendors/{id}';
+
+  //vendor renewals
+  static const String vendorRenewals = '$baseUrl/vendor-renewals';
+  static const String vendorRenewalsDetail = '$baseUrl/vendor-renewals/{id}';
+  static const String updateVendorRenewal = '$baseUrl/vendor-renewals/{id}';
+  static const String deleteVendorRenewal = '$baseUrl/vendor-renewals/{id}';
+
+  //client renewals
+  static const String clientRenewals = '$baseUrl/client-renewals';
+  static const String clientRenewalsDetail = '$baseUrl/client-renewals/{id}';
+  static const String updateClientRenewal = '$baseUrl/client-renewals/{id}';
+  static const String deleteClientRenewal = '$baseUrl/client-renewals/{id}';
 }

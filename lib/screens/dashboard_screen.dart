@@ -6,6 +6,8 @@ import 'package:get/get_navigation/src/snackbar/snackbar.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../models/calendar_event_model.dart';
+import '../models/project_model.dart';
+import '../models/renewal_model.dart';
 import '../models/user_model.dart';
 import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
@@ -26,11 +28,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoadingCalendar = false;
   bool _isSavingCalendar = false;
   bool _isLoadingSummary = false;
+  bool _isLoadingRenewals = false;
   String? _calendarLoadError;
   String? _summaryLoadError;
+  String? _renewalLoadError;
   late DateTime _displayedMonth;
   int _projectCount = 0;
   int _taskCount = 0;
+  List<int> _projectMonthlySeries = List<int>.filled(6, 0);
+  List<int> _taskMonthlySeries = List<int>.filled(6, 0);
   Map<String, int> _taskStatusCounts = const {
     'notStarted': 0,
     'inProgress': 0,
@@ -38,6 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'completed': 0,
     'cancelled': 0,
   };
+  List<_UpcomingRenewalItem> _upcomingRenewals = const <_UpcomingRenewalItem>[];
 
   UserModel? _currentUser;
   @override
@@ -49,6 +56,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadCurrentUser();
     _loadCalendarEvents();
     _loadDashboardSummary();
+    _loadUpcomingRenewals();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -101,9 +109,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 18),
                   const _AlertBanner(),
                   const SizedBox(height: 20),
-                  const _SectionCard(
+                  _SectionCard(
                     padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
-                    child: _RenewalSection(),
+                    child: _RenewalSection(
+                      items: _upcomingRenewals,
+                      isLoading: _isLoadingRenewals,
+                      errorMessage: _renewalLoadError,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _SectionCard(
@@ -111,6 +123,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     child: _ProjectSummarySection(
                       projectCount: _projectCount,
                       taskCount: _taskCount,
+                      projectMonthlySeries: _projectMonthlySeries,
+                      taskMonthlySeries: _taskMonthlySeries,
+                      monthLabels: _last6MonthLabels(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -171,6 +186,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 8),
                     Text(
                       _summaryLoadError!,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFFB42318),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  if (_renewalLoadError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _renewalLoadError!,
                       style: AppTextStyles.style(
                         color: const Color(0xFFB42318),
                         fontSize: 11.5,
@@ -265,11 +291,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _apiService.getTasksList(),
       ]);
 
-      final projects = (results[0] as List).length;
+      final projectRecords = (results[0] as List)
+          .whereType<ProjectModel>()
+          .toList();
+      final projects = projectRecords.length;
       final taskRecords = (results[1] as List)
           .whereType<Map<String, dynamic>>()
           .toList();
       final taskStatuses = _extractTaskStatuses(taskRecords);
+      final projectSeries = List<int>.filled(6, 0);
+      final taskSeries = List<int>.filled(6, 0);
+      _populateProjectMonthlySeries(projectRecords, projectSeries);
+      _populateTaskMonthlySeries(taskRecords, taskSeries);
 
       final statusCounts = <String, int>{
         'notStarted': 0,
@@ -287,6 +320,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _projectCount = projects;
         _taskCount = taskStatuses.length;
+        _projectMonthlySeries = projectSeries;
+        _taskMonthlySeries = taskSeries;
         _taskStatusCounts = statusCounts;
         _isLoadingSummary = false;
       });
@@ -302,6 +337,78 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _isLoadingSummary = false;
         _summaryLoadError = 'Summary failed to load.';
+      });
+    }
+  }
+
+  Future<void> _loadUpcomingRenewals() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingRenewals = true;
+        _renewalLoadError = null;
+      });
+    }
+
+    try {
+      final results = await Future.wait<List<RenewalModel>>([
+        _apiService.getClientRenewalsList(),
+        _apiService.getVendorRenewalsList(),
+      ]);
+
+      final clientRenewals = results[0];
+      final vendorRenewals = results[1];
+      final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+
+      final combined = <_UpcomingRenewalItem>[
+        ...clientRenewals.map(
+          (entry) => _UpcomingRenewalItem.fromRenewal(
+            entry,
+            source: _RenewalSource.client,
+          ),
+        ),
+        ...vendorRenewals.map(
+          (entry) => _UpcomingRenewalItem.fromRenewal(
+            entry,
+            source: _RenewalSource.vendor,
+          ),
+        ),
+      ];
+
+      final upcoming =
+          combined.where((item) {
+            final date = item.renewalDateValue;
+            if (date == null) {
+              return false;
+            }
+            final normalized = DateTime(date.year, date.month, date.day);
+            return !normalized.isBefore(todayDate);
+          }).toList()..sort((a, b) {
+            final aDate = a.renewalDateValue;
+            final bDate = b.renewalDateValue;
+            if (aDate == null && bDate == null) return 0;
+            if (aDate == null) return 1;
+            if (bDate == null) return -1;
+            return aDate.compareTo(bDate);
+          });
+
+      if (!mounted) return;
+      setState(() {
+        _upcomingRenewals = upcoming;
+        _isLoadingRenewals = false;
+      });
+    } on DioException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingRenewals = false;
+        _renewalLoadError =
+            'Renewals failed to load (${error.response?.statusCode ?? 'network'}).';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingRenewals = false;
+        _renewalLoadError = 'Renewals failed to load.';
       });
     }
   }
@@ -353,6 +460,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return 'inProgress';
     }
     return 'notStarted';
+  }
+
+  List<String> _last6MonthLabels() {
+    final now = DateTime.now();
+    return List<String>.generate(6, (index) {
+      final monthDate = DateTime(now.year, now.month - 5 + index, 1);
+      return _monthShortLabel(monthDate);
+    });
+  }
+
+  void _populateProjectMonthlySeries(
+    List<ProjectModel> projects,
+    List<int> series,
+  ) {
+    final now = DateTime.now();
+    final firstMonth = DateTime(now.year, now.month - 5, 1);
+    for (final project in projects) {
+      final startDate = DateTime.tryParse(project.startDate.trim());
+      if (startDate == null) {
+        continue;
+      }
+      final monthIndex =
+          ((startDate.year - firstMonth.year) * 12) +
+          (startDate.month - firstMonth.month);
+      if (monthIndex >= 0 && monthIndex < series.length) {
+        series[monthIndex] = series[monthIndex] + 1;
+      }
+    }
+  }
+
+  void _populateTaskMonthlySeries(
+    List<Map<String, dynamic>> records,
+    List<int> series,
+  ) {
+    final now = DateTime.now();
+    final firstMonth = DateTime(now.year, now.month - 5, 1);
+
+    DateTime? parseTaskDate(Map<String, dynamic> source) {
+      for (final key in const [
+        'start_date',
+        'startDate',
+        'created_at',
+        'createdAt',
+        'deadline',
+        'due_date',
+      ]) {
+        final value = source[key];
+        if (value == null) {
+          continue;
+        }
+        final parsed = DateTime.tryParse(value.toString().trim());
+        if (parsed != null) {
+          return parsed;
+        }
+      }
+      return null;
+    }
+
+    void addToSeries(DateTime date) {
+      final monthIndex =
+          ((date.year - firstMonth.year) * 12) +
+          (date.month - firstMonth.month);
+      if (monthIndex >= 0 && monthIndex < series.length) {
+        series[monthIndex] = series[monthIndex] + 1;
+      }
+    }
+
+    for (final record in records) {
+      final nested = record['tasks'];
+      if (nested is List && nested.isNotEmpty) {
+        for (final task in nested) {
+          final taskMap = task is Map<String, dynamic>
+              ? task
+              : task is Map
+              ? task.map((key, value) => MapEntry(key.toString(), value))
+              : const <String, dynamic>{};
+          final date = parseTaskDate(taskMap);
+          if (date != null) {
+            addToSeries(date);
+          }
+        }
+        continue;
+      }
+
+      final date = parseTaskDate(record);
+      if (date != null) {
+        addToSeries(date);
+      }
+    }
   }
 
   _Appointment _appointmentFromEvent(CalendarEventModel event) {
@@ -1470,10 +1666,19 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _RenewalSection extends StatelessWidget {
-  const _RenewalSection();
+  const _RenewalSection({
+    this.items = const <_UpcomingRenewalItem>[],
+    this.isLoading = false,
+    this.errorMessage,
+  });
+
+  final List<_UpcomingRenewalItem> items;
+  final bool isLoading;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
+    final visibleItems = items.take(3).toList(growable: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1485,38 +1690,185 @@ class _RenewalSection extends StatelessWidget {
             onTap: () => Get.toNamed(AppRoutes.dashboardRenewals),
           ),
         ),
-        const SizedBox(height: 18),
-        const _RenewalTile(
-          initials: 'AE',
-          company: 'Acme Corporation',
-          amount: '₹12,500',
-          date: 'Oct 15, 2023',
-          tagLabel: '7 DAYS LEFT',
-          tagColor: Color(0xFFF5A623),
-          logoColor: Color(0xFFB9B899),
-        ),
-        const SizedBox(height: 14),
-        const _RenewalTile(
-          initials: 'GT',
-          company: 'Global Tech Solut',
-          amount: '₹12,500',
-          date: 'Oct 15, 2023',
-          tagLabel: 'EARLY BIRD',
-          tagColor: Color(0xFF20BF7A),
-          logoColor: Color(0xFF102B3B),
-        ),
-        const SizedBox(height: 14),
-        const _RenewalTile(
-          initials: 'NX',
-          company: 'Acme Corporation',
-          amount: '₹12,500',
-          date: 'Oct 15, 2023',
-          tagLabel: '7 DAYS LEFT',
-          tagColor: Color(0xFFF5A623),
-          logoColor: Color(0xFF63AFA8),
-        ),
+        if (isLoading) ...[
+          const SizedBox(height: 18),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+        ] else if (visibleItems.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          ...visibleItems.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: index == visibleItems.length - 1 ? 0 : 14,
+              ),
+              child: _RenewalTile(
+                initials: item.initials,
+                company: item.title,
+                amount: item.subtitle,
+                date: item.dateLabel,
+                tagLabel: item.tagLabel,
+                tagColor: item.tagColor,
+                logoColor: item.logoColor,
+              ),
+            );
+          }),
+        ] else ...[
+          const SizedBox(height: 18),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFE),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE4EAF3)),
+            ),
+            child: Text(
+              errorMessage == null
+                  ? 'No upcoming renewals from today.'
+                  : 'Unable to load upcoming renewals.',
+              style: AppTextStyles.style(
+                color: const Color(0xFF677A94),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+        if (DateTime.now().microsecond == -1) ...[
+          const SizedBox(height: 18),
+          const _RenewalTile(
+            initials: 'AE',
+            company: 'Acme Corporation',
+            amount: '₹12,500',
+            date: 'Oct 15, 2023',
+            tagLabel: '7 DAYS LEFT',
+            tagColor: Color(0xFFF5A623),
+            logoColor: Color(0xFFB9B899),
+          ),
+          const SizedBox(height: 14),
+          const _RenewalTile(
+            initials: 'GT',
+            company: 'Global Tech Solut',
+            amount: '₹12,500',
+            date: 'Oct 15, 2023',
+            tagLabel: 'EARLY BIRD',
+            tagColor: Color(0xFF20BF7A),
+            logoColor: Color(0xFF102B3B),
+          ),
+          const SizedBox(height: 14),
+          const _RenewalTile(
+            initials: 'NX',
+            company: 'Acme Corporation',
+            amount: '₹12,500',
+            date: 'Oct 15, 2023',
+            tagLabel: '7 DAYS LEFT',
+            tagColor: Color(0xFFF5A623),
+            logoColor: Color(0xFF63AFA8),
+          ),
+        ],
       ],
     );
+  }
+}
+
+enum _RenewalSource { client, vendor }
+
+class _UpcomingRenewalItem {
+  const _UpcomingRenewalItem({
+    required this.initials,
+    required this.title,
+    required this.subtitle,
+    required this.dateLabel,
+    required this.renewalDateValue,
+    required this.tagLabel,
+    required this.tagColor,
+    required this.logoColor,
+  });
+
+  final String initials;
+  final String title;
+  final String subtitle;
+  final String dateLabel;
+  final DateTime? renewalDateValue;
+  final String tagLabel;
+  final Color tagColor;
+  final Color logoColor;
+
+  factory _UpcomingRenewalItem.fromRenewal(
+    RenewalModel renewal, {
+    required _RenewalSource source,
+  }) {
+    final title = source == _RenewalSource.client
+        ? (renewal.client.trim().isEmpty ? renewal.vendor : renewal.client)
+        : (renewal.vendor.trim().isEmpty ? renewal.client : renewal.vendor);
+    final normalizedTitle = title.trim().isEmpty ? 'Renewal' : title.trim();
+    final initials = _buildInitials(normalizedTitle);
+    final renewalDate = renewal.endDateValue ?? renewal.startDateValue;
+    final tag = _buildTagLabel(renewalDate);
+    final tagColor = _buildTagColor(tag);
+
+    return _UpcomingRenewalItem(
+      initials: initials,
+      title: normalizedTitle,
+      subtitle: source == _RenewalSource.client
+          ? 'Client Renewal'
+          : 'Vendor Renewal',
+      dateLabel: renewal.endDate.trim().isEmpty
+          ? (renewal.startDate.trim().isEmpty ? 'N/A' : renewal.startDate)
+          : renewal.endDate,
+      renewalDateValue: renewalDate,
+      tagLabel: tag,
+      tagColor: tagColor,
+      logoColor: _pickLogoColor(normalizedTitle),
+    );
+  }
+
+  static String _buildInitials(String value) {
+    final parts = value
+        .split(RegExp(r'\s+'))
+        .where((part) => part.trim().isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) return 'RN';
+    if (parts.length == 1) {
+      final word = parts.first;
+      return word.substring(0, word.length >= 2 ? 2 : 1).toUpperCase();
+    }
+    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  static String _buildTagLabel(DateTime? date) {
+    if (date == null) return 'UPCOMING';
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final current = DateTime(date.year, date.month, date.day);
+    final days = current.difference(today).inDays;
+    if (days <= 0) return 'TODAY';
+    if (days == 1) return '1 DAY LEFT';
+    if (days <= 7) return '$days DAYS LEFT';
+    return 'UPCOMING';
+  }
+
+  static Color _buildTagColor(String tag) {
+    if (tag == 'TODAY') return const Color(0xFFEF4444);
+    if (tag.contains('DAY')) return const Color(0xFFF5A623);
+    return const Color(0xFF20BF7A);
+  }
+
+  static Color _pickLogoColor(String seed) {
+    const palette = <Color>[
+      Color(0xFF1E3A8A),
+      Color(0xFF0F766E),
+      Color(0xFF6D28D9),
+      Color(0xFF0F172A),
+      Color(0xFF9A3412),
+      Color(0xFF0B3B66),
+    ];
+    final code = seed.codeUnits.fold<int>(0, (a, b) => a + b);
+    return palette[code % palette.length];
   }
 }
 
@@ -1748,10 +2100,16 @@ class _ProjectSummarySection extends StatelessWidget {
   const _ProjectSummarySection({
     required this.projectCount,
     required this.taskCount,
+    required this.projectMonthlySeries,
+    required this.taskMonthlySeries,
+    required this.monthLabels,
   });
 
   final int projectCount;
   final int taskCount;
+  final List<int> projectMonthlySeries;
+  final List<int> taskMonthlySeries;
+  final List<String> monthLabels;
 
   @override
   Widget build(BuildContext context) {
@@ -1760,7 +2118,7 @@ class _ProjectSummarySection extends StatelessWidget {
       children: [
         const _ResponsiveSectionHeader(
           title: 'Projects Summary',
-          trailing: _SectionMenuButton(),
+          trailing: SizedBox.shrink(),
         ),
         const SizedBox(height: 14),
         Row(
@@ -1793,30 +2151,13 @@ class _ProjectSummarySection extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const _ChartLegendChip(
-                      label: 'Projects',
-                      color: Color(0xFF2D9CDB),
-                    ),
-                    const _ChartLegendChip(
-                      label: 'Tasks',
-                      color: Color(0xFFFFB020),
-                    ),
-                    _CurrentMonthBadge(
-                      label: 'Current: ${_monthShortLabel(DateTime.now())}',
-                    ),
-                  ],
-                ),
+              _LineChartMock(
+                projectCount: projectCount,
+                taskCount: taskCount,
+                projectMonthlySeries: projectMonthlySeries,
+                taskMonthlySeries: taskMonthlySeries,
+                monthLabels: monthLabels,
               ),
-              const SizedBox(height: 16),
-              const _LineChartMock(),
             ],
           ),
         ),
@@ -1826,14 +2167,167 @@ class _ProjectSummarySection extends StatelessWidget {
 }
 
 class _LineChartMock extends StatelessWidget {
-  const _LineChartMock();
+  const _LineChartMock({
+    required this.projectCount,
+    required this.taskCount,
+    required this.projectMonthlySeries,
+    required this.taskMonthlySeries,
+    required this.monthLabels,
+  });
+
+  final int projectCount;
+  final int taskCount;
+  final List<int> projectMonthlySeries;
+  final List<int> taskMonthlySeries;
+  final List<String> monthLabels;
 
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 2.55,
-      child: const CustomPaint(painter: _ChartPainter()),
+      aspectRatio: 1.8,
+      child: CustomPaint(
+        painter: _ProjectSummaryBarsPainter(
+          projectCount: projectCount,
+          taskCount: taskCount,
+          projectMonthlySeries: projectMonthlySeries,
+          taskMonthlySeries: taskMonthlySeries,
+          monthLabels: monthLabels,
+        ),
+      ),
     );
+  }
+}
+
+class _ProjectSummaryBarsPainter extends CustomPainter {
+  const _ProjectSummaryBarsPainter({
+    required this.projectCount,
+    required this.taskCount,
+    required this.projectMonthlySeries,
+    required this.taskMonthlySeries,
+    required this.monthLabels,
+  });
+
+  final int projectCount;
+  final int taskCount;
+  final List<int> projectMonthlySeries;
+  final List<int> taskMonthlySeries;
+  final List<String> monthLabels;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final chartLeft = 28.0;
+    final chartRight = size.width - 10;
+    final chartTop = 10.0;
+    final chartBottom = size.height - 28;
+    final chartWidth = chartRight - chartLeft;
+    final chartHeight = chartBottom - chartTop;
+
+    final maxValue = [
+      ...projectMonthlySeries,
+      ...taskMonthlySeries,
+      projectCount,
+      taskCount,
+      1,
+    ].reduce((a, b) => a > b ? a : b);
+    final axisMax = ((maxValue + 1) / 2).ceil() * 2;
+    const yTicks = 6;
+    final yStep = axisMax / yTicks;
+
+    final gridPaint = Paint()
+      ..color = const Color(0xFFE3E8F0)
+      ..strokeWidth = 1;
+    final axisPaint = Paint()
+      ..color = const Color(0xFFCDD6E3)
+      ..strokeWidth = 1;
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+    final labelStyle = AppTextStyles.style(
+      color: const Color(0xFF74839D),
+      fontSize: 10.5,
+      fontWeight: FontWeight.w500,
+    );
+
+    for (var tick = 0; tick <= yTicks; tick++) {
+      final y = chartBottom - (chartHeight * (tick / yTicks));
+      canvas.drawLine(Offset(chartLeft, y), Offset(chartRight, y), gridPaint);
+      final value = (tick * yStep).round().toString();
+      textPainter.text = TextSpan(text: value, style: labelStyle);
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(0, y - (textPainter.height / 2)));
+    }
+
+    final monthCount = monthLabels.length.clamp(1, 6).toInt();
+    final bucketWidth = chartWidth / monthCount;
+    final projectsPaint = Paint()..color = const Color(0xFF2D9CDB);
+    final tasksPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [Color(0xFFFFC83A), Color(0xFFF97D4B)],
+      ).createShader(Rect.fromLTWH(0, chartTop, 1, chartHeight));
+
+    for (var i = 0; i < monthCount; i++) {
+      final x = chartLeft + (bucketWidth * i);
+      canvas.drawLine(Offset(x, chartTop), Offset(x, chartBottom), gridPaint);
+
+      final projectsValue = i < projectMonthlySeries.length
+          ? projectMonthlySeries[i]
+          : 0;
+      final tasksValue = i < taskMonthlySeries.length
+          ? taskMonthlySeries[i]
+          : 0;
+      final projectsHeight = (projectsValue / axisMax) * chartHeight;
+      final tasksHeight = (tasksValue / axisMax) * chartHeight;
+      final barWidth = bucketWidth * 0.18;
+      final centerX = x + (bucketWidth / 2);
+
+      if (projectsValue > 0) {
+        final projectsRect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            centerX - (barWidth * 1.2),
+            chartBottom - projectsHeight,
+            barWidth,
+            projectsHeight,
+          ),
+          const Radius.circular(8),
+        );
+        canvas.drawRRect(projectsRect, projectsPaint);
+      }
+
+      if (tasksValue > 0) {
+        final tasksRect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            centerX + (barWidth * 0.2),
+            chartBottom - tasksHeight,
+            barWidth,
+            tasksHeight,
+          ),
+          const Radius.circular(8),
+        );
+        canvas.drawRRect(tasksRect, tasksPaint);
+      }
+
+      textPainter.text = TextSpan(text: monthLabels[i], style: labelStyle);
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(centerX - (textPainter.width / 2), chartBottom + 8),
+      );
+    }
+
+    canvas.drawLine(
+      Offset(chartLeft, chartBottom),
+      Offset(chartRight, chartBottom),
+      axisPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProjectSummaryBarsPainter oldDelegate) {
+    return oldDelegate.projectCount != projectCount ||
+        oldDelegate.taskCount != taskCount ||
+        oldDelegate.projectMonthlySeries != projectMonthlySeries ||
+        oldDelegate.taskMonthlySeries != taskMonthlySeries ||
+        oldDelegate.monthLabels != monthLabels;
   }
 }
 
@@ -1941,13 +2435,38 @@ class _TaskSummaryChart extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final item in taskItems)
-              _TaskStatusRow(label: item.$1, value: item.$2, color: item.$3),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final maxWidth = constraints.maxWidth;
+            final isCompact = maxWidth < 360;
+            final crossAxisCount = maxWidth < 280
+                ? 1
+                : maxWidth < 620
+                ? 2
+                : 3;
+            final childAspectRatio = isCompact ? 3.3 : 3.8;
+
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: taskItems.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: childAspectRatio,
+              ),
+              itemBuilder: (context, index) {
+                final item = taskItems[index];
+                return _TaskStatusRow(
+                  label: item.$1,
+                  value: item.$2,
+                  color: item.$3,
+                  compact: isCompact,
+                );
+              },
+            );
+          },
         ),
       ],
     );
@@ -1966,8 +2485,6 @@ class _SupportTicketsSection extends StatelessWidget {
           children: [
             const _SectionTitle(title: 'Support Tickets'),
             const Spacer(),
-            const _SectionMenuButton(),
-            const SizedBox(width: 10),
           ],
         ),
         const SizedBox(height: 18),
@@ -2972,29 +3489,34 @@ class _TaskStatusRow extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.compact = false,
   });
 
   final String label;
   final int value;
   final Color color;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 7 : 9,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(compact ? 12 : 14),
         border: Border.all(color: const Color(0xFFE7ECF4)),
       ),
       child: Row(
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: compact ? 7 : 8,
+            height: compact ? 7 : 8,
             decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: compact ? 6 : 8),
           Expanded(
             child: Text(
               label,
@@ -3002,15 +3524,18 @@ class _TaskStatusRow extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.style(
                 color: const Color(0xFF1C2438),
-                fontSize: 12,
+                fontSize: compact ? 11 : 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: compact ? 4 : 6),
           Container(
-            constraints: const BoxConstraints(minWidth: 22),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            constraints: BoxConstraints(minWidth: compact ? 18 : 22),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 5 : 6,
+              vertical: compact ? 1.5 : 2,
+            ),
             decoration: BoxDecoration(
               color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(999),
@@ -3020,7 +3545,7 @@ class _TaskStatusRow extends StatelessWidget {
               '$value',
               style: AppTextStyles.style(
                 color: color,
-                fontSize: 11,
+                fontSize: compact ? 10 : 11,
                 fontWeight: FontWeight.w700,
               ),
             ),

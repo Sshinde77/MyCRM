@@ -162,7 +162,7 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
             : 'The vendor has been added successfully.',
         backgroundColor: const Color(0xFF153A63),
       );
-      Get.back(result: true);
+      Navigator.of(context).pop(true);
     } on DioException catch (error) {
       if (!mounted) {
         return;
@@ -358,7 +358,9 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
                         SizedBox(
                           height: 46,
                           child: OutlinedButton(
-                            onPressed: _isSubmitting ? null : () => Get.back(),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => Navigator.of(context).pop(),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFF17213A),
                               backgroundColor: const Color(0xFFF8FAFC),

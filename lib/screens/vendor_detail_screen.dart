@@ -23,6 +23,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
       TextEditingController();
   late Future<VendorModel> _detailFuture;
   String? _vendorId;
+  bool _hasChanges = false;
 
   @override
   void initState() {
@@ -47,11 +48,16 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
     });
   }
 
+  void _closeScreen() {
+    Navigator.of(context).pop(_hasChanges);
+  }
+
   Future<void> _openEditVendor(VendorModel detail) async {
     final updated = await Get.to<bool>(
       () => VendorFormScreen(vendorId: detail.id, vendor: detail),
     );
     if (updated == true) {
+      _hasChanges = true;
       _reload();
     }
   }
@@ -100,127 +106,133 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
     final isMobile = width < 720;
     final sidePadding = isMobile ? 16.0 : 24.0;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
-      body: SafeArea(
-        child: FutureBuilder<VendorModel>(
-          future: _detailFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    return WillPopScope(
+      onWillPop: () async {
+        _closeScreen();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF3F6FB),
+        body: SafeArea(
+          child: FutureBuilder<VendorModel>(
+            future: _detailFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.cloud_off, color: Color(0xFF94A3B8)),
-                      const SizedBox(height: 10),
-                      Text(
-                        _readVendorError(snapshot.error),
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF64748B),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_off, color: Color(0xFF94A3B8)),
+                        const SizedBox(height: 10),
+                        Text(
+                          _readVendorError(snapshot.error),
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF64748B),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      ElevatedButton(
-                        onPressed: _reload,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1D8BFF),
-                          foregroundColor: Colors.white,
+                        const SizedBox(height: 14),
+                        ElevatedButton(
+                          onPressed: _reload,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1D8BFF),
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Retry'),
                         ),
-                        child: const Text('Retry'),
-                      ),
-                    ],
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              final detail = snapshot.data;
+              if (detail == null) {
+                return const Center(child: Text('Vendor not found'));
+              }
+
+              final filteredServices = _filteredServices(detail);
+
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(sidePadding, 18, sidePadding, 24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 980),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TopBar(title: 'Vendor details', onBack: _closeScreen),
+                        const SizedBox(height: 18),
+                        _SectionHeader(
+                          title: 'Vendor Details',
+                          actions: Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              _PrimaryActionButton(
+                                label: 'Edit',
+                                icon: Icons.edit_outlined,
+                                onTap: () => _openEditVendor(detail),
+                              ),
+                              _SecondaryActionButton(
+                                label: 'Back to List',
+                                icon: Icons.arrow_back_rounded,
+                                onTap: _closeScreen,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _Card(
+                          child: isMobile
+                              ? _VendorDetailMobile(detail: detail)
+                              : _VendorDetailTable(detail: detail),
+                        ),
+                        const SizedBox(height: 18),
+                        _SectionHeader(
+                          title: 'Vendor Services',
+                          actions: _PrimaryActionButton(
+                            label: 'Add New Service',
+                            icon: Icons.add_rounded,
+                            onTap: () {},
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _Card(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _ServiceToolbar(
+                                controller: _serviceSearchController,
+                                isMobile: isMobile,
+                              ),
+                              const SizedBox(height: 14),
+                              if (filteredServices.isEmpty)
+                                const _EmptyState(
+                                  message: 'No services found for this vendor.',
+                                )
+                              else
+                                isMobile
+                                    ? _ServiceMobileList(rows: filteredServices)
+                                    : _ServiceTable(rows: filteredServices),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
-            }
-
-            final detail = snapshot.data;
-            if (detail == null) {
-              return const Center(child: Text('Vendor not found'));
-            }
-
-            final filteredServices = _filteredServices(detail);
-
-            return SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(sidePadding, 18, sidePadding, 24),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 980),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _TopBar(title: 'Vendor details', onBack: Get.back),
-                      const SizedBox(height: 18),
-                      _SectionHeader(
-                        title: 'Vendor Details',
-                        actions: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            _PrimaryActionButton(
-                              label: 'Edit',
-                              icon: Icons.edit_outlined,
-                              onTap: () => _openEditVendor(detail),
-                            ),
-                            _SecondaryActionButton(
-                              label: 'Back to List',
-                              icon: Icons.arrow_back_rounded,
-                              onTap: Get.back,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _Card(
-                        child: isMobile
-                            ? _VendorDetailMobile(detail: detail)
-                            : _VendorDetailTable(detail: detail),
-                      ),
-                      const SizedBox(height: 18),
-                      _SectionHeader(
-                        title: 'Vendor Services',
-                        actions: _PrimaryActionButton(
-                          label: 'Add New Service',
-                          icon: Icons.add_rounded,
-                          onTap: () {},
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _Card(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _ServiceToolbar(
-                              controller: _serviceSearchController,
-                              isMobile: isMobile,
-                            ),
-                            const SizedBox(height: 14),
-                            if (filteredServices.isEmpty)
-                              const _EmptyState(
-                                message: 'No services found for this vendor.',
-                              )
-                            else
-                              isMobile
-                                  ? _ServiceMobileList(rows: filteredServices)
-                                  : _ServiceTable(rows: filteredServices),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+            },
+          ),
         ),
       ),
     );

@@ -1,33 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:mycrm/core/constants/app_text_styles.dart';
-import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:provider/provider.dart';
+
+import '../core/constants/app_text_styles.dart';
+import '../models/renewal_model.dart';
+import '../providers/renewal_list_provider.dart';
+import '../routes/app_routes.dart';
+import '../widgets/common_screen_app_bar.dart';
 
 class ClientRenewalScreen extends StatelessWidget {
   const ClientRenewalScreen({super.key});
 
-  static const List<_ServiceItem> _services = [
-    _ServiceItem(
-      title: 'Domain Registration',
-      client: 'Roshan Yadav',
-      vendor: 'G. V. Khade Vidhyalaya',
-      startDate: '12 Jan 2024',
-      endDate: '11 Jan 2025',
-      billing: 'Annual',
-      status: 'Active',
-      expiryNote: 'Expires tomorrow',
-      showExpiryAlert: true,
-    ),
-    _ServiceItem(
-      title: 'SSL Certificate',
-      client: 'Priya Sharma',
-      vendor: 'Hostinger India',
-      startDate: '05 Mar 2024',
-      endDate: '04 Mar 2025',
-      billing: 'One-time',
-      status: 'Active',
-    ),
-  ];
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<RenewalListProvider>(
+      create: (_) =>
+          RenewalListProvider(type: RenewalType.client)..loadRenewals(),
+      child: const _ClientRenewalBody(),
+    );
+  }
+}
+
+class _ClientRenewalBody extends StatelessWidget {
+  const _ClientRenewalBody();
 
   @override
   Widget build(BuildContext context) {
@@ -53,15 +48,7 @@ class ClientRenewalScreen extends StatelessWidget {
                         SizedBox(height: compact ? 16 : 18),
                         _AddServiceButton(compact: compact),
                         SizedBox(height: compact ? 16 : 18),
-                        ..._services.map(
-                          (service) => Padding(
-                            padding: EdgeInsets.only(bottom: compact ? 14 : 16),
-                            child: _ServiceCard(
-                              service: service,
-                              compact: compact,
-                            ),
-                          ),
-                        ),
+                        _RenewalListSection(compact: compact),
                       ],
                     ),
                   ),
@@ -71,6 +58,52 @@ class ClientRenewalScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _RenewalListSection extends StatelessWidget {
+  const _RenewalListSection({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<RenewalListProvider>(
+      builder: (context, provider, _) {
+        if (provider.isLoading && provider.renewals.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 28),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (provider.errorMessage != null && provider.renewals.isEmpty) {
+          return _ErrorCard(
+            compact: compact,
+            message: provider.errorMessage!,
+            onRetry: () => context.read<RenewalListProvider>().loadRenewals(
+              forceRefresh: true,
+            ),
+          );
+        }
+
+        if (provider.renewals.isEmpty) {
+          return _EmptyCard(compact: compact);
+        }
+
+        return Column(
+          children: provider.renewals
+              .map((renewal) => _ServiceItem.fromRenewal(renewal))
+              .map(
+                (service) => Padding(
+                  padding: EdgeInsets.only(bottom: compact ? 14 : 16),
+                  child: _ServiceCard(service: service, compact: compact),
+                ),
+              )
+              .toList(growable: false),
+        );
+      },
     );
   }
 }
@@ -435,12 +468,14 @@ class _ServiceCard extends StatelessWidget {
                         size: compact ? 20 : 22,
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        service.expiryNote!,
-                        style: AppTextStyles.style(
-                          color: const Color(0xFFEF4444),
-                          fontSize: compact ? 14 : 15,
-                          fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Text(
+                          service.expiryNote,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFFEF4444),
+                            fontSize: compact ? 14 : 15,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -454,16 +489,26 @@ class _ServiceCard extends StatelessWidget {
           SizedBox(
             height: compact ? 58 : 62,
             child: Row(
-              children: const [
+              children: [
                 Expanded(
-                  child: _CardAction(icon: Icons.remove_red_eye_outlined),
+                  child: _CardAction(
+                    icon: Icons.remove_red_eye_outlined,
+                    onTap: () {
+                      Get.toNamed(
+                        AppRoutes.clientRenewalDetail,
+                        arguments: service.renewal,
+                      );
+                    },
+                  ),
                 ),
                 _ActionDivider(),
-                Expanded(child: _CardAction(icon: Icons.edit_outlined)),
+                const Expanded(child: _CardAction(icon: Icons.edit_outlined)),
                 _ActionDivider(),
-                Expanded(child: _CardAction(icon: Icons.mail_outline_rounded)),
+                const Expanded(
+                  child: _CardAction(icon: Icons.mail_outline_rounded),
+                ),
                 _ActionDivider(),
-                Expanded(
+                const Expanded(
                   child: _CardAction(icon: Icons.delete_outline_rounded),
                 ),
               ],
@@ -562,13 +607,19 @@ class _VerticalDivider extends StatelessWidget {
 }
 
 class _CardAction extends StatelessWidget {
-  const _CardAction({required this.icon});
+  const _CardAction({required this.icon, this.onTap});
 
   final IconData icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Center(child: Icon(icon, color: const Color(0xFF64748B), size: 28));
+    return InkWell(
+      onTap: onTap,
+      child: Center(
+        child: Icon(icon, color: const Color(0xFF64748B), size: 28),
+      ),
+    );
   }
 }
 
@@ -581,8 +632,85 @@ class _ActionDivider extends StatelessWidget {
   }
 }
 
+class _ErrorCard extends StatelessWidget {
+  const _ErrorCard({
+    required this.compact,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final bool compact;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 16 : 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(compact ? 22 : 24),
+        border: Border.all(color: const Color(0xFFDCE6F2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Unable to load client renewals',
+            style: AppTextStyles.style(
+              color: const Color(0xFF17213A),
+              fontSize: compact ? 15 : 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: compact ? 8 : 10),
+          Text(
+            message,
+            style: AppTextStyles.style(
+              color: const Color(0xFF64748B),
+              fontSize: compact ? 13 : 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: compact ? 12 : 14),
+          TextButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  const _EmptyCard({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 16 : 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(compact ? 22 : 24),
+        border: Border.all(color: const Color(0xFFDCE6F2)),
+      ),
+      child: Text(
+        'No client renewals available.',
+        style: AppTextStyles.style(
+          color: const Color(0xFF64748B),
+          fontSize: compact ? 14 : 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
 class _ServiceItem {
   const _ServiceItem({
+    required this.renewal,
     required this.title,
     required this.client,
     required this.vendor,
@@ -590,10 +718,11 @@ class _ServiceItem {
     required this.endDate,
     required this.billing,
     required this.status,
-    this.expiryNote,
+    required this.expiryNote,
     this.showExpiryAlert = false,
   });
 
+  final RenewalModel renewal;
   final String title;
   final String client;
   final String vendor;
@@ -601,6 +730,26 @@ class _ServiceItem {
   final String endDate;
   final String billing;
   final String status;
-  final String? expiryNote;
+  final String expiryNote;
   final bool showExpiryAlert;
+
+  factory _ServiceItem.fromRenewal(RenewalModel renewal) {
+    return _ServiceItem(
+      renewal: renewal,
+      title: renewal.title,
+      client: renewal.client,
+      vendor: renewal.vendor,
+      startDate: _orFallback(renewal.startDate, 'N/A'),
+      endDate: _orFallback(renewal.endDate, 'N/A'),
+      billing: _orFallback(renewal.billing, 'N/A'),
+      status: _orFallback(renewal.status, 'Unknown'),
+      expiryNote: _orFallback(renewal.expiryNote, 'Renewal due soon'),
+      showExpiryAlert: renewal.showExpiryAlert,
+    );
+  }
+
+  static String _orFallback(String value, String fallback) {
+    final normalized = value.trim();
+    return normalized.isEmpty ? fallback : normalized;
+  }
 }

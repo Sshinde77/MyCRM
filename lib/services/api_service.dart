@@ -20,6 +20,7 @@ import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import '../models/calendar_event_model.dart';
+import '../models/renewal_model.dart';
 import '../models/vendor_model.dart';
 import '../core/services/secure_storage_service.dart';
 
@@ -357,6 +358,52 @@ class ApiService {
     final response = await get(ApiConstants.vendors);
     final records = _normalizeList(response.data);
     return records.map(VendorModel.fromJson).toList();
+  }
+
+  /// Loads vendor renewals for the authenticated user.
+  Future<List<RenewalModel>> getVendorRenewalsList() async {
+    final response = await get(ApiConstants.vendorRenewals);
+    final records = _normalizeList(response.data);
+    return records.map(RenewalModel.fromJson).toList();
+  }
+
+  /// Loads client renewals for the authenticated user.
+  Future<List<RenewalModel>> getClientRenewalsList() async {
+    final response = await get(ApiConstants.clientRenewals);
+    final records = _normalizeList(response.data);
+    return records.map(RenewalModel.fromJson).toList();
+  }
+
+  /// Loads a single vendor renewal by id.
+  Future<RenewalModel> getVendorRenewalDetail(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid vendor renewal id.');
+    }
+
+    final path = ApiConstants.vendorRenewalsDetail.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final response = await get(path);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return RenewalModel.fromJson(body);
+  }
+
+  /// Loads a single client renewal by id.
+  Future<RenewalModel> getClientRenewalDetail(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid client renewal id.');
+    }
+
+    final path = ApiConstants.clientRenewalsDetail.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final response = await get(path);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return RenewalModel.fromJson(body);
   }
 
   /// Loads the project list for the authenticated user.
@@ -1527,6 +1574,11 @@ class ApiService {
         'clients',
         'customers',
         'vendors',
+        'renewals',
+        'vendor_renewals',
+        'vendorRenewals',
+        'client_renewals',
+        'clientRenewals',
         'projects',
         'milestones',
         'project_milestones',
@@ -1562,6 +1614,11 @@ class ApiService {
             'clients',
             'customers',
             'vendors',
+            'renewals',
+            'vendor_renewals',
+            'vendorRenewals',
+            'client_renewals',
+            'clientRenewals',
             'projects',
             'milestones',
             'project_milestones',
@@ -1621,6 +1678,12 @@ class ApiService {
         'client',
         'customer',
         'vendor',
+        'renewal',
+        'vendor_renewal',
+        'vendorRenewal',
+        'client_renewal',
+        'clientRenewal',
+        'service',
         'task',
         'todo',
         'file',

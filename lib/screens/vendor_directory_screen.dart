@@ -66,6 +66,15 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
     }
   }
 
+  Future<void> _openVendorDetail(VendorModel vendor) async {
+    final updated = await Get.to<bool>(
+      () => VendorDetailScreen(vendorId: vendor.id),
+    );
+    if (updated == true) {
+      _reload();
+    }
+  }
+
   Future<void> _deleteVendor(VendorModel vendor) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -231,12 +240,14 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                           useMobileLayout
                               ? _VendorMobileList(
                                   rows: visibleRows,
+                                  onViewVendor: _openVendorDetail,
                                   onEditVendor: _openEditVendor,
                                   onDeleteVendor: _deleteVendor,
                                 )
                               : _VendorTable(
                                   rows: visibleRows,
                                   compact: compact,
+                                  onViewVendor: _openVendorDetail,
                                   onEditVendor: _openEditVendor,
                                   onDeleteVendor: _deleteVendor,
                                 ),
@@ -542,11 +553,13 @@ class _VendorToolbar extends StatelessWidget {
 class _VendorMobileList extends StatelessWidget {
   const _VendorMobileList({
     required this.rows,
+    required this.onViewVendor,
     required this.onEditVendor,
     required this.onDeleteVendor,
   });
 
   final List<VendorModel> rows;
+  final ValueChanged<VendorModel> onViewVendor;
   final ValueChanged<VendorModel> onEditVendor;
   final ValueChanged<VendorModel> onDeleteVendor;
 
@@ -579,6 +592,7 @@ class _VendorMobileList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: _VendorMobileCard(
                 row: row,
+                onViewVendor: () => onViewVendor(row),
                 onEditVendor: () => onEditVendor(row),
                 onDeleteVendor: () => onDeleteVendor(row),
               ),
@@ -592,11 +606,13 @@ class _VendorMobileList extends StatelessWidget {
 class _VendorMobileCard extends StatelessWidget {
   const _VendorMobileCard({
     required this.row,
+    required this.onViewVendor,
     required this.onEditVendor,
     required this.onDeleteVendor,
   });
 
   final VendorModel row;
+  final VoidCallback onViewVendor;
   final VoidCallback onEditVendor;
   final VoidCallback onDeleteVendor;
 
@@ -661,7 +677,7 @@ class _VendorMobileCard extends StatelessWidget {
             children: [
               _ActionIcon(
                 icon: Icons.remove_red_eye_outlined,
-                onTap: () => Get.to(() => VendorDetailScreen(vendorId: row.id)),
+                onTap: onViewVendor,
               ),
               const SizedBox(width: 8),
               _ActionIcon(icon: Icons.edit_square, onTap: onEditVendor),
@@ -734,12 +750,14 @@ class _VendorTable extends StatelessWidget {
   const _VendorTable({
     required this.rows,
     required this.compact,
+    required this.onViewVendor,
     required this.onEditVendor,
     required this.onDeleteVendor,
   });
 
   final List<VendorModel> rows;
   final bool compact;
+  final ValueChanged<VendorModel> onViewVendor;
   final ValueChanged<VendorModel> onEditVendor;
   final ValueChanged<VendorModel> onDeleteVendor;
 
@@ -833,9 +851,7 @@ class _VendorTable extends StatelessWidget {
                         children: [
                           _ActionIcon(
                             icon: Icons.remove_red_eye_outlined,
-                            onTap: () => Get.to(
-                              () => VendorDetailScreen(vendorId: row.id),
-                            ),
+                            onTap: () => onViewVendor(row),
                           ),
                           const SizedBox(width: 8),
                           _ActionIcon(

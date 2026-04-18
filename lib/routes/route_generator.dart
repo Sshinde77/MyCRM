@@ -22,7 +22,9 @@ import '../screens/issue_management_screen.dart';
 import '../screens/issue_detail_screen.dart';
 import '../screens/renewal_master_screen.dart';
 import '../screens/client_renewal_screen.dart';
+import '../screens/client_renewal_detail_screen.dart';
 import '../screens/vendor_renewal_screen.dart';
+import '../screens/vendor_renewal_detail_screen.dart';
 import '../screens/vendor_directory_screen.dart';
 import '../screens/dashboard_renewals_screen.dart';
 import '../screens/staff_screen.dart';
@@ -30,6 +32,7 @@ import '../screens/add_staff_screen.dart';
 import '../screens/add_client_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
+import '../models/renewal_model.dart';
 
 /// Builds screens for every named route in the app.
 class RouteGenerator {
@@ -154,6 +157,18 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const ClientRenewalScreen());
       case AppRoutes.vendorRenewal:
         return MaterialPageRoute(builder: (_) => const VendorRenewalScreen());
+      case AppRoutes.clientRenewalDetail:
+        return MaterialPageRoute(
+          builder: (_) => ClientRenewalDetailScreen(
+            renewal: _extractRenewal(settings.arguments),
+          ),
+        );
+      case AppRoutes.vendorRenewalDetail:
+        return MaterialPageRoute(
+          builder: (_) => VendorRenewalDetailScreen(
+            renewal: _extractRenewal(settings.arguments),
+          ),
+        );
       case AppRoutes.renewalClient:
         return MaterialPageRoute(
           builder: (_) => const RenewalDetailScreen(
@@ -234,6 +249,21 @@ class RouteGenerator {
       return rawEdit == true || rawEdit == 'true' || rawEdit == 1;
     }
     return false;
+  }
+
+  static RenewalModel? _extractRenewal(dynamic args) {
+    if (args is RenewalModel) {
+      return args;
+    }
+    if (args is Map<String, dynamic>) {
+      return RenewalModel.fromJson(args);
+    }
+    if (args is Map) {
+      return RenewalModel.fromJson(
+        args.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+    return null;
   }
 
   static String _extractLeadId(dynamic args) {

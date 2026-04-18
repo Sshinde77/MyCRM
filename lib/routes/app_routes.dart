@@ -18,6 +18,10 @@ class AppRoutes {
   static const String renewalMaster = '/profile/renewal-master';
   static const String clientRenewal = '/profile/renewal-master/client-renewal';
   static const String vendorRenewal = '/profile/renewal-master/vendor-renewal';
+  static const String clientRenewalDetail =
+      '/profile/renewal-master/client-renewal/detail';
+  static const String vendorRenewalDetail =
+      '/profile/renewal-master/vendor-renewal/detail';
   static const String renewalClient = '/profile/renewal-master/client';
   static const String renewalVendor = '/profile/renewal-master/vendor';
   static const String dashboardRenewals = '/dashboard/renewals';
