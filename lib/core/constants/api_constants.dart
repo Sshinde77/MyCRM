@@ -11,6 +11,9 @@ class ApiConstants {
   static const String logout = '$baseUrl/logout';
   static const String refreshToken = '$baseUrl/refresh';
 
+  //Roles Api
+  static const String roles = '$baseUrl/roles';
+
   //Staff Api
   static const String createstaff = '$baseUrl/staff';
   static const String liststaff = '$baseUrl/staff';

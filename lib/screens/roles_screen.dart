@@ -1,9 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/role_model.dart';
+import 'package:mycrm/providers/role_provider.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:provider/provider.dart';
 
-class RolesScreen extends StatelessWidget {
+class RolesScreen extends StatefulWidget {
   const RolesScreen({super.key});
+
+  @override
+  State<RolesScreen> createState() => _RolesScreenState();
+}
+
+class _RolesScreenState extends State<RolesScreen> {
+  bool _hasRequestedLoad = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_hasRequestedLoad) {
+      return;
+    }
+
+    _hasRequestedLoad = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      context.read<RoleProvider>().loadRoles();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,107 +42,237 @@ class RolesScreen extends StatelessWidget {
         elevation: 4,
         child: const Icon(Icons.add, color: Colors.white, size: 32),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-        child: Column(
-          children: [
-            // Summary Cards Row
-            Row(
-              children: [
-                const Expanded(
-                  child: _SummaryCard(
-                    title: 'TOTAL ROLES',
-                    count: '3',
-                    icon: Icons.people_outline_rounded,
-                    backgroundColor: Color(0xFFEFF6FF),
-                    accentColor: Color(0xFF3B82F6),
+      body: Consumer<RoleProvider>(
+        builder: (context, provider, _) {
+          return RefreshIndicator(
+            onRefresh: () => provider.loadRoles(forceRefresh: true),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _SummaryCard(
+                          title: 'TOTAL ROLES',
+                          count: provider.totalRoles.toString(),
+                          icon: Icons.people_outline_rounded,
+                          backgroundColor: const Color(0xFFEFF6FF),
+                          accentColor: const Color(0xFF3B82F6),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SummaryCard(
+                          title: 'ACTIVE',
+                          count: provider.activeRoles.toString(),
+                          icon: Icons.check_circle_outline_rounded,
+                          backgroundColor: const Color(0xFFF0FDF4),
+                          accentColor: const Color(0xFF22C55E),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _SummaryCard(
+                          title: 'PERMISSIONS',
+                          count: provider.permissionsCount.toString(),
+                          icon: Icons.lock_outline_rounded,
+                          backgroundColor: const Color(0xFFFFFBEB),
+                          accentColor: const Color(0xFFF59E0B),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: _SummaryCard(
-                    title: 'ACTIVE',
-                    count: '3',
-                    icon: Icons.check_circle_outline_rounded,
-                    backgroundColor: Color(0xFFF0FDF4),
-                    accentColor: Color(0xFF22C55E),
+                  const SizedBox(height: 24),
+                  _RoleSearchField(
+                    initialValue: provider.searchQuery,
+                    onChanged: provider.updateSearchQuery,
                   ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: _SummaryCard(
-                    title: 'PERMISSIONS',
-                    count: '63',
-                    icon: Icons.lock_outline_rounded,
-                    backgroundColor: Color(0xFFFFFBEB),
-                    accentColor: Color(0xFFF59E0B),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
-            // Search Bar
-            Container(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
-                  ),
+                  const SizedBox(height: 24),
+                  if (provider.isLoading && provider.totalRoles == 0)
+                    const _RolesLoadingState()
+                  else if (provider.errorMessage != null &&
+                      provider.totalRoles == 0)
+                    _RolesErrorState(
+                      message: provider.errorMessage!,
+                      onRetry: () => provider.loadRoles(forceRefresh: true),
+                    )
+                  else if (provider.roles.isEmpty)
+                    const _RolesEmptyState()
+                  else
+                    ..._buildRoleCards(provider.roles),
                 ],
               ),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search roles by name...',
-                  hintStyle: AppTextStyles.style(
-                    color: const Color(0xFF94A3B8),
-                    fontSize: 14,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _buildRoleCards(List<RoleModel> roles) {
+    final children = <Widget>[];
+    for (var index = 0; index < roles.length; index++) {
+      final role = roles[index];
+      children.add(
+        _RoleCard(
+          title: role.displayName,
+          description: role.displayDescription,
+          permissions: role.permissionsCount,
+          status: role.displayStatus,
+          isActive: role.isActive,
+        ),
+      );
+      if (index != roles.length - 1) {
+        children.add(const SizedBox(height: 16));
+      }
+    }
+    return children;
+  }
+}
+
+class _RoleSearchField extends StatelessWidget {
+  const _RoleSearchField({required this.initialValue, required this.onChanged});
+
+  final String initialValue;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        initialValue: initialValue,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          hintText: 'Search roles by name...',
+          hintStyle: AppTextStyles.style(
+            color: const Color(0xFF94A3B8),
+            fontSize: 14,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: Color(0xFF94A3B8),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RolesLoadingState extends StatelessWidget {
+  const _RolesLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 48),
+      child: Center(child: CircularProgressIndicator(color: Color(0xFF3B82F6))),
+    );
+  }
+}
+
+class _RolesErrorState extends StatelessWidget {
+  const _RolesErrorState({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFEE2E2)),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFEF4444),
+            size: 32,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.style(
+              color: const Color(0xFF64748B),
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: onRetry,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3B82F6),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
-            const SizedBox(height: 24),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-            // Roles List
-            _RoleCard(
-              title: 'Super Admin',
-              description: 'Full system access and configuration.',
-              permissions: 63,
-              status: 'Active',
+class _RolesEmptyState extends StatelessWidget {
+  const _RolesEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        children: [
+          const Icon(
+            Icons.people_outline_rounded,
+            color: Color(0xFF94A3B8),
+            size: 36,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No roles found.',
+            style: AppTextStyles.style(
+              color: const Color(0xFF475569),
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 16),
-            _RoleCard(
-              title: 'Client',
-              description: 'Standard client portal access.',
-              permissions: 45,
-              status: 'Active',
-            ),
-            const SizedBox(height: 16),
-            _RoleCard(
-              title: 'Staff',
-              description: 'Internal team management access.',
-              permissions: 52,
-              status: 'Active',
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -179,12 +335,14 @@ class _RoleCard extends StatelessWidget {
     required this.description,
     required this.permissions,
     required this.status,
+    required this.isActive,
   });
 
   final String title;
   final String description;
   final int permissions;
   final String status;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
@@ -222,13 +380,17 @@ class _RoleCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
+                  color: isActive
+                      ? const Color(0xFFDCFCE7)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   status,
                   style: AppTextStyles.style(
-                    color: const Color(0xFF166534),
+                    color: isActive
+                        ? const Color(0xFF166534)
+                        : const Color(0xFF64748B),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

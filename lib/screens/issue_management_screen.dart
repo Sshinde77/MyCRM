@@ -153,12 +153,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _Header(compact: compact),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: side),
-                              child: _BlueButton(compact: compact),
-                            ),
-                            SizedBox(height: compact ? 14 : 18),
+                            
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: side),
                               child: Container(
@@ -464,136 +459,7 @@ class _MobileAppBar extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.compact});
 
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        compact ? 14 : 18,
-        compact ? 10 : 14,
-        compact ? 14 : 18,
-        compact ? 14 : 16,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: _ts(
-                      const Color(0xFF64748B),
-                      compact ? 12 : 13,
-                      FontWeight.w500,
-                    ),
-                    children: const [
-                      TextSpan(text: 'Dashboard'),
-                      TextSpan(text: '  >  '),
-                      TextSpan(
-                        text: 'Client Issue Management',
-                        style: TextStyle(color: Color(0xFF3B82F6)),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: compact ? 6 : 8),
-                Text(
-                  'Issue Management',
-                  style: _ts(
-                    const Color(0xFF17213A),
-                    compact ? 22 : 24,
-                    FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: compact ? 10 : 12),
-          Container(
-            height: compact ? 46 : 52,
-            width: compact ? 46 : 52,
-            decoration: const BoxDecoration(
-              color: Color(0xFF17213A),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x220F172A),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.settings_rounded,
-              color: Colors.white,
-              size: compact ? 22 : 24,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BlueButton extends StatelessWidget {
-  const _BlueButton({required this.compact});
-
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => Get.snackbar(
-        'New Issue',
-        'Hook this button to your issue creation flow.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF1D4ED8),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-      ),
-      borderRadius: BorderRadius.circular(compact ? 18 : 20),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: compact ? 14 : 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF3E82F1),
-          borderRadius: BorderRadius.circular(compact ? 18 : 20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0x223E82F1),
-              blurRadius: compact ? 12 : 16,
-              offset: Offset(0, compact ? 6 : 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_circle_outline_rounded,
-              color: Colors.white,
-              size: compact ? 22 : 24,
-            ),
-            SizedBox(width: compact ? 8 : 10),
-            Flexible(
-              child: Text(
-                'Add New Project Issue',
-                textAlign: TextAlign.center,
-                style: _ts(Colors.white, compact ? 15 : 16, FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _IssueCard extends StatelessWidget {
   const _IssueCard({required this.issue, required this.compact});

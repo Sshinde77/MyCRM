@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'app_routes.dart';
 import '../providers/lead_detail_provider.dart';
 import '../providers/lead_provider.dart';
+import '../providers/role_provider.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/clients.dart';
 import '../screens/client_detail_screen.dart';
@@ -214,7 +215,12 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.accessControl:
-        return MaterialPageRoute(builder: (_) => const RolesScreen());
+        return MaterialPageRoute(
+          builder: (_) => ChangeNotifierProvider(
+            create: (_) => RoleProvider(),
+            child: const RolesScreen(),
+          ),
+        );
       case AppRoutes.settings:
         return MaterialPageRoute(
           builder: (_) => const ProfileSectionScreen(

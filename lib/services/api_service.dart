@@ -17,6 +17,7 @@ import '../models/project_detail_model.dart';
 import '../models/project_usage_model.dart';
 import '../models/project_comment_model.dart';
 import '../models/project_milestone_model.dart';
+import '../models/role_model.dart';
 import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
@@ -421,6 +422,13 @@ class ApiService {
     final response = await get(ApiConstants.clients);
     final records = _normalizeList(response.data);
     return records.map(ClientModel.fromJson).toList();
+  }
+
+  /// Loads the roles list for the authenticated user.
+  Future<List<RoleModel>> getRolesList() async {
+    final response = await get(ApiConstants.roles);
+    final records = _normalizeList(response.data);
+    return records.map(RoleModel.fromJson).toList();
   }
 
   /// Loads the vendor list for the authenticated user.
@@ -1810,6 +1818,7 @@ class ApiService {
         'events',
         'calendar_events',
         'calendarEvents',
+        'roles',
         'staff',
         'clients',
         'customers',
@@ -1850,6 +1859,7 @@ class ApiService {
             'events',
             'calendar_events',
             'calendarEvents',
+            'roles',
             'staff',
             'clients',
             'customers',

@@ -140,9 +140,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final horizontalPadding = screenWidth <= 320 ? 14.0 : 20.0;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
       bottomNavigationBar: const PrimaryBottomNavigation(
@@ -157,62 +154,128 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              horizontalPadding,
-              16,
-              horizontalPadding,
-              24,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProfileHeader(actionsCount: _actions.length),
-                    const SizedBox(height: 20),
-                    _ProfileHeroCard(
-                      isLoggingOut: _isLoggingOut,
-                      onLogout: _logout,
-                    ),
-                    const SizedBox(height: 14),
-                    _BiometricLoginCard(controller: _authController),
-                    const SizedBox(height: 20),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final spacing = constraints.maxWidth <= 320
-                            ? 12.0
-                            : 16.0;
-                        final cardHeight = constraints.maxWidth <= 320
-                            ? 170.0
-                            : 182.0;
+          child: LayoutBuilder(
+            builder: (context, viewport) {
+              final width = viewport.maxWidth;
+              final horizontalPadding = width < 360
+                  ? 14.0
+                  : width < 720
+                  ? 20.0
+                  : 32.0;
+              final contentWidth = width >= 900 ? 920.0 : 520.0;
 
-                        return GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _actions.length,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                mainAxisSpacing: spacing,
-                                crossAxisSpacing: spacing,
-                                mainAxisExtent: cardHeight,
-                              ),
-                          itemBuilder: (context, index) {
-                            final action = _actions[index];
-                            return _ProfileActionCard(action: action);
-                          },
-                        );
-                      },
-                    ),
-                  ],
+              return SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  16,
+                  horizontalPadding,
+                  24,
                 ),
-              ),
-            ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: contentWidth),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ProfileHeader(actionsCount: _actions.length),
+                        const SizedBox(height: 20),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isWide = constraints.maxWidth >= 760;
+                            if (isWide) {
+                              return IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: _ProfileHeroCard(
+                                        isLoggingOut: _isLoggingOut,
+                                        onLogout: _logout,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      flex: 2,
+                                      child: _BiometricLoginCard(
+                                        controller: _authController,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return Column(
+                              children: [
+                                _ProfileHeroCard(
+                                  isLoggingOut: _isLoggingOut,
+                                  onLogout: _logout,
+                                ),
+                                const SizedBox(height: 14),
+                                _BiometricLoginCard(
+                                  controller: _authController,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        _ProfileActionsGrid(actions: _actions),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProfileActionsGrid extends StatelessWidget {
+  const _ProfileActionsGrid({required this.actions});
+
+  final List<_ProfileAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        final spacing = maxWidth < 360 ? 12.0 : 16.0;
+        final crossAxisCount = maxWidth < 340
+            ? 1
+            : maxWidth < 680
+            ? 2
+            : maxWidth < 900
+            ? 3
+            : 4;
+        final cardHeight = crossAxisCount == 1
+            ? 88.0
+            : maxWidth < 360
+            ? 112.0
+            : 126.0;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: actions.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: spacing,
+            crossAxisSpacing: spacing,
+            mainAxisExtent: cardHeight,
+          ),
+          itemBuilder: (context, index) {
+            final action = actions[index];
+            return _ProfileActionCard(action: action);
+          },
+        );
+      },
     );
   }
 }
@@ -226,18 +289,12 @@ class _BiometricLoginCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Obx(() {
       final enabled = controller.biometricEnabled.value;
+      final narrow = MediaQuery.of(context).size.width < 360;
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFE7EDF5)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x120C334D),
-              blurRadius: 16,
-              offset: Offset(0, 10),
-            ),
-          ],
         ),
         child: SwitchListTile(
           value: enabled,
@@ -267,10 +324,10 @@ class _BiometricLoginCard extends StatelessWidget {
             ),
           ),
           secondary: Container(
-            width: 44,
-            height: 44,
+            width: narrow ? 40 : 44,
+            height: narrow ? 40 : 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF18C6D3).withOpacity(0.12),
+              color: const Color(0xFF18C6D3).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(
@@ -278,8 +335,8 @@ class _BiometricLoginCard extends StatelessWidget {
               color: Color(0xFF18C6D3),
             ),
           ),
-          activeColor: const Color(0xFF18C6D3),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          activeThumbColor: const Color(0xFF18C6D3),
+          contentPadding: EdgeInsets.symmetric(horizontal: narrow ? 12 : 16),
         ),
       );
     });
@@ -363,7 +420,7 @@ class ProfileSectionScreen extends StatelessWidget {
                             height: 58,
                             width: 58,
                             decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.12),
+                              color: accentColor.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(18),
                             ),
                             child: Icon(icon, color: accentColor, size: 28),
@@ -549,65 +606,102 @@ class _ProfileActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardWidth = MediaQuery.of(context).size.width;
-    final isNarrow = cardWidth <= 320;
-
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: () => Get.toNamed(action.routeName),
-        borderRadius: BorderRadius.circular(24),
-        child: Ink(
-          padding: EdgeInsets.fromLTRB(
-            isNarrow ? 14 : 18,
-            isNarrow ? 14 : 18,
-            isNarrow ? 14 : 18,
-            isNarrow ? 12 : 16,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth < 150;
+          final isListTile = constraints.maxWidth >= 240;
+          final iconSize = isNarrow ? 42.0 : 50.0;
+          final padding = isNarrow ? 12.0 : 16.0;
+
+          return InkWell(
+            onTap: () => Get.toNamed(action.routeName),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x120F172A),
-                blurRadius: 18,
-                offset: Offset(0, 10),
+            child: Ink(
+              padding: EdgeInsets.all(padding),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: isNarrow ? 46 : 52,
-                width: isNarrow ? 46 : 52,
-                decoration: BoxDecoration(
-                  color: action.accentColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  action.icon,
-                  color: action.accentColor,
-                  size: isNarrow ? 21 : 23,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                action.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.style(
-                  color: const Color(0xFF162033),
-                  fontSize: isNarrow ? 14 : 15,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 2),
-            ],
-          ),
-        ),
+              child: isListTile
+                  ? Row(
+                      children: [
+                        _ProfileActionIcon(
+                          action: action,
+                          size: iconSize,
+                          iconSize: isNarrow ? 20 : 23,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(child: _ProfileActionTitle(action: action)),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _ProfileActionIcon(
+                          action: action,
+                          size: iconSize,
+                          iconSize: isNarrow ? 20 : 23,
+                        ),
+                        const Spacer(),
+                        _ProfileActionTitle(
+                          action: action,
+                          fontSize: isNarrow ? 13.5 : 15,
+                        ),
+                      ],
+                    ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ProfileActionIcon extends StatelessWidget {
+  const _ProfileActionIcon({
+    required this.action,
+    required this.size,
+    required this.iconSize,
+  });
+
+  final _ProfileAction action;
+  final double size;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        color: action.accentColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(action.icon, color: action.accentColor, size: iconSize),
+    );
+  }
+}
+
+class _ProfileActionTitle extends StatelessWidget {
+  const _ProfileActionTitle({required this.action, this.fontSize = 15});
+
+  final _ProfileAction action;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      action.title,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: AppTextStyles.style(
+        color: const Color(0xFF162033),
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        height: 1.35,
       ),
     );
   }
