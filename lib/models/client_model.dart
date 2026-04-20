@@ -42,6 +42,8 @@ class ClientModel {
       ]),
       name: _readString(source, [
         'name',
+        'cname',
+        'coname',
         'client_name',
         'company',
         'companyName',

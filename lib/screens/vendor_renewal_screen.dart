@@ -21,13 +21,53 @@ class VendorRenewalScreen extends StatelessWidget {
   }
 }
 
-class _VendorRenewalBody extends StatelessWidget {
+class _VendorRenewalBody extends StatefulWidget {
   const _VendorRenewalBody();
+
+  @override
+  State<_VendorRenewalBody> createState() => _VendorRenewalBodyState();
+}
+
+class _VendorRenewalBodyState extends State<_VendorRenewalBody>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      _refreshRenewals();
+    }
+  }
+
+  Future<void> _refreshRenewals() async {
+    if (!mounted) {
+      return;
+    }
+    await context.read<RenewalListProvider>().loadRenewals(forceRefresh: true);
+  }
+
+  Future<void> _openDetail(RenewalModel renewal) async {
+    await Get.toNamed(AppRoutes.vendorRenewalDetail, arguments: renewal);
+    if (!mounted) {
+      return;
+    }
+    await _refreshRenewals();
+  }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final compact = width <= 360;
+    final compact = width <= 380;
     final side = compact ? 16.0 : 20.0;
 
     return Scaffold(
@@ -48,7 +88,10 @@ class _VendorRenewalBody extends StatelessWidget {
                         SizedBox(height: compact ? 16 : 18),
                         _AddServiceButton(compact: compact),
                         SizedBox(height: compact ? 16 : 18),
-                        _RenewalListSection(compact: compact),
+                        _RenewalListSection(
+                          compact: compact,
+                          onView: (renewal) => _openDetail(renewal),
+                        ),
                       ],
                     ),
                   ),
@@ -63,9 +106,13 @@ class _VendorRenewalBody extends StatelessWidget {
 }
 
 class _RenewalListSection extends StatelessWidget {
-  const _RenewalListSection({required this.compact});
+  const _RenewalListSection({
+    required this.compact,
+    required this.onView,
+  });
 
   final bool compact;
+  final ValueChanged<RenewalModel> onView;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +145,11 @@ class _RenewalListSection extends StatelessWidget {
               .map(
                 (service) => Padding(
                   padding: EdgeInsets.only(bottom: compact ? 14 : 16),
-                  child: _ServiceCard(service: service, compact: compact),
+                  child: _ServiceCard(
+                    service: service,
+                    compact: compact,
+                    onView: () => onView(service.renewal),
+                  ),
                 ),
               )
               .toList(growable: false),
@@ -116,7 +167,7 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: compact ? 72 : 78,
+      height: compact ? 68 : 72,
       padding: EdgeInsets.symmetric(horizontal: compact ? 16 : 20),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -140,10 +191,10 @@ class _FilterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(compact ? 16 : 18),
+      padding: EdgeInsets.all(compact ? 14 : 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 24 : 28),
+        borderRadius: BorderRadius.circular(compact ? 18 : 20),
         border: Border.all(color: const Color(0xFFDCE6F2)),
         boxShadow: const [
           BoxShadow(
@@ -168,13 +219,13 @@ class _FilterCard extends StatelessWidget {
                 'Filter Renewal Period',
                 style: AppTextStyles.style(
                   color: const Color(0xFF334155),
-                  fontSize: compact ? 16 : 17,
+                  fontSize: compact ? 14 : 15,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          SizedBox(height: compact ? 16 : 18),
+          SizedBox(height: compact ? 14 : 16),
           Row(
             children: [
               Expanded(
@@ -186,7 +237,7 @@ class _FilterCard extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: compact ? 16 : 18),
+          SizedBox(height: compact ? 14 : 16),
           Row(
             children: [
               Expanded(
@@ -236,18 +287,18 @@ class _DateField extends StatelessWidget {
           width: double.infinity,
           padding: EdgeInsets.symmetric(
             horizontal: compact ? 14 : 16,
-            vertical: compact ? 13 : 14,
+            vertical: compact ? 11 : 12,
           ),
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(compact ? 16 : 18),
+            borderRadius: BorderRadius.circular(compact ? 14 : 16),
             border: Border.all(color: const Color(0xFFDCE6F2)),
           ),
           child: Text(
             'mm/dd/yyyy',
             style: AppTextStyles.style(
               color: const Color(0xFF17213A),
-              fontSize: compact ? 14 : 15,
+              fontSize: compact ? 13 : 14,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -271,10 +322,10 @@ class _ActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: compact ? 52 : 56,
+      height: compact ? 46 : 50,
       decoration: BoxDecoration(
         color: filled ? const Color(0xFF156CF1) : Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 18 : 20),
+        borderRadius: BorderRadius.circular(compact ? 14 : 16),
         border: Border.all(
           color: filled ? const Color(0xFF156CF1) : const Color(0xFFDCE6F2),
         ),
@@ -284,7 +335,7 @@ class _ActionButton extends StatelessWidget {
         label,
         style: AppTextStyles.style(
           color: filled ? Colors.white : const Color(0xFF334155),
-          fontSize: compact ? 16 : 17,
+          fontSize: compact ? 14 : 15,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -301,10 +352,10 @@ class _AddServiceButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: compact ? 18 : 20),
+      padding: EdgeInsets.symmetric(vertical: compact ? 14 : 16),
       decoration: BoxDecoration(
         color: const Color(0xFF156CF1),
-        borderRadius: BorderRadius.circular(compact ? 20 : 22),
+        borderRadius: BorderRadius.circular(compact ? 14 : 16),
         boxShadow: const [
           BoxShadow(
             color: Color(0x22156CF1),
@@ -316,13 +367,13 @@ class _AddServiceButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.add_rounded, color: Colors.white, size: compact ? 28 : 32),
+          Icon(Icons.add_rounded, color: Colors.white, size: compact ? 22 : 24),
           SizedBox(width: compact ? 10 : 12),
           Text(
             'Add New Vendor',
             style: AppTextStyles.style(
               color: Colors.white,
-              fontSize: compact ? 17 : 18,
+              fontSize: compact ? 15 : 16,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -333,10 +384,15 @@ class _AddServiceButton extends StatelessWidget {
 }
 
 class _ServiceCard extends StatelessWidget {
-  const _ServiceCard({required this.service, required this.compact});
+  const _ServiceCard({
+    required this.service,
+    required this.compact,
+    required this.onView,
+  });
 
   final _ServiceItem service;
   final bool compact;
+  final VoidCallback onView;
 
   @override
   Widget build(BuildContext context) {
@@ -344,7 +400,7 @@ class _ServiceCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 22 : 24),
+        borderRadius: BorderRadius.circular(compact ? 18 : 20),
         border: Border.all(color: const Color(0xFFDCE6F2)),
         boxShadow: const [
           BoxShadow(
@@ -387,7 +443,7 @@ class _ServiceCard extends StatelessWidget {
                             service.title,
                             style: AppTextStyles.style(
                               color: const Color(0xFF17213A),
-                              fontSize: compact ? 19 : 21,
+                              fontSize: compact ? 17 : 18,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -396,8 +452,8 @@ class _ServiceCard extends StatelessWidget {
                     ),
                     Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: compact ? 12 : 14,
-                        vertical: compact ? 6 : 7,
+                        horizontal: compact ? 10 : 12,
+                        vertical: compact ? 5 : 6,
                       ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFDCFCE7),
@@ -407,7 +463,7 @@ class _ServiceCard extends StatelessWidget {
                         service.status,
                         style: AppTextStyles.style(
                           color: const Color(0xFF15803D),
-                          fontSize: compact ? 12 : 13,
+                          fontSize: compact ? 11 : 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -487,19 +543,11 @@ class _ServiceCard extends StatelessWidget {
           ),
           const Divider(height: 1, color: Color(0xFFEAF0F6)),
           SizedBox(
-            height: compact ? 58 : 62,
+            height: compact ? 52 : 56,
             child: Row(
               children: [
                 Expanded(
-                  child: _CardAction(
-                    icon: Icons.remove_red_eye_outlined,
-                    onTap: () {
-                      Get.toNamed(
-                        AppRoutes.vendorRenewalDetail,
-                        arguments: service.renewal,
-                      );
-                    },
-                  ),
+                  child: _CardAction(icon: Icons.remove_red_eye_outlined, onTap: onView),
                 ),
                 _ActionDivider(),
                 const Expanded(child: _CardAction(icon: Icons.edit_outlined)),
@@ -617,7 +665,7 @@ class _CardAction extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Center(
-        child: Icon(icon, color: const Color(0xFF64748B), size: 28),
+        child: Icon(icon, color: const Color(0xFF64748B), size: 23),
       ),
     );
   }

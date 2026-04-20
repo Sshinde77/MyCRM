@@ -1,11 +1,16 @@
 class RenewalModel {
   const RenewalModel({
     required this.id,
+    required this.clientId,
+    required this.vendorId,
     required this.title,
     required this.client,
     required this.clientEmail,
     required this.vendor,
     required this.vendorEmail,
+    required this.serviceDetails,
+    required this.remarkText,
+    required this.remarkColor,
     required this.planType,
     required this.remark,
     required this.startDate,
@@ -13,6 +18,7 @@ class RenewalModel {
     required this.startDateValue,
     required this.endDateValue,
     required this.billing,
+    required this.billingDateValue,
     required this.status,
     required this.expiryNote,
     required this.createdAt,
@@ -20,11 +26,16 @@ class RenewalModel {
   });
 
   final String id;
+  final String clientId;
+  final String vendorId;
   final String title;
   final String client;
   final String clientEmail;
   final String vendor;
   final String vendorEmail;
+  final String serviceDetails;
+  final String remarkText;
+  final String remarkColor;
   final String planType;
   final String remark;
   final String startDate;
@@ -32,6 +43,7 @@ class RenewalModel {
   final DateTime? startDateValue;
   final DateTime? endDateValue;
   final String billing;
+  final DateTime? billingDateValue;
   final String status;
   final String expiryNote;
   final String createdAt;
@@ -78,6 +90,13 @@ class RenewalModel {
       'expiryDate',
       'to_date',
       'toDate',
+    ]);
+    final rawBillingDate = _readString(source, const [
+      'billing_date',
+      'billingDate',
+      'billing',
+      'due_date',
+      'dueDate',
     ]);
 
     final title = _readString(source, const [
@@ -136,6 +155,14 @@ class RenewalModel {
         'service_id',
         'serviceId',
       ]),
+      clientId: _firstNonEmpty([
+        _readString(source, const ['client_id', 'clientId']),
+        _readString(clientMap, const ['id', 'client_id', 'clientId']),
+      ]),
+      vendorId: _firstNonEmpty([
+        _readString(source, const ['vendor_id', 'vendorId']),
+        _readString(vendorMap, const ['id', 'vendor_id', 'vendorId']),
+      ]),
       title: title.isEmpty ? 'Service' : title,
       client: client.isEmpty ? 'Unknown client' : client,
       clientEmail: _readString(source, const [
@@ -154,6 +181,14 @@ class RenewalModel {
         ]),
         _readString(vendorMap, const ['email', 'vendor_email', 'vendorEmail']),
       ]),
+      serviceDetails: _readString(source, const [
+        'service_details',
+        'serviceDetails',
+        'details',
+        'description',
+      ]),
+      remarkText: _readString(source, const ['remark_text', 'remarkText']),
+      remarkColor: _readString(source, const ['remark_color', 'remarkColor']),
       planType: _readString(source, const [
         'plan_type',
         'planType',
@@ -171,15 +206,8 @@ class RenewalModel {
       endDate: _formatShortDate(rawEndDate),
       startDateValue: _tryParseDate(rawStartDate),
       endDateValue: _tryParseDate(rawEndDate),
-      billing: _readString(source, const [
-        'billing',
-        'billing_type',
-        'billingType',
-        'billing_cycle',
-        'billingCycle',
-        'billing_date',
-        'billingDate',
-      ]),
+      billing: _formatShortDate(rawBillingDate),
+      billingDateValue: _tryParseDate(rawBillingDate),
       status: _normalizeStatus(source),
       expiryNote: _readString(source, const [
         'expiry_note',
@@ -192,7 +220,14 @@ class RenewalModel {
         _readString(source, const ['created_at', 'createdAt']),
       ),
       updatedAt: _formatDateTime(
-        _readString(source, const ['updated_at', 'updatedAt']),
+        _readString(source, const [
+          'updated_at',
+          'updatedAt',
+          'last_updated',
+          'lastUpdated',
+          'modified_at',
+          'modifiedAt',
+        ]),
       ),
     );
   }

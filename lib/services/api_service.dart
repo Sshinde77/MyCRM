@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants/api_constants.dart';
@@ -27,17 +28,19 @@ import '../core/services/secure_storage_service.dart';
 /// Thin wrapper around Dio so API calls share one base configuration.
 class ApiService {
   ApiService._internal() {
-    _dio.interceptors.add(
-      LogInterceptor(
-        request: true,
-        requestHeader: true,
-        requestBody: true,
-        responseHeader: false,
-        responseBody: true,
-        error: true,
-        logPrint: (object) => debugPrint(object.toString()),
-      ),
-    );
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: true,
+          requestBody: true,
+          responseHeader: false,
+          responseBody: false,
+          error: true,
+          logPrint: (object) => debugPrint(object.toString()),
+        ),
+      );
+    }
 
     _dio.interceptors.add(
       InterceptorsWrapper(
@@ -404,6 +407,96 @@ class ApiService {
     final response = await get(path);
     final body = _normalizeMap(_extractDetailSource(response.data));
     return RenewalModel.fromJson(body);
+  }
+
+  /// Creates a client renewal/service record.
+  Future<RenewalModel> createClientRenewal({
+    required String clientId,
+    required String vendorId,
+    required String serviceName,
+    required String serviceDetails,
+    required String remarkText,
+    required String remarkColor,
+    required DateTime startDate,
+    required DateTime endDate,
+    required DateTime billingDate,
+    required String status,
+  }) async {
+    final payload = FormData.fromMap({
+      'client_id': clientId.trim(),
+      'vendor_id': vendorId.trim(),
+      'service_name': serviceName.trim(),
+      'service_details': serviceDetails.trim(),
+      'remark_text': remarkText.trim(),
+      'remark_color': remarkColor.trim(),
+      'start_date': _formatApiDate(startDate),
+      'end_date': _formatApiDate(endDate),
+      'billing_date': _formatApiDate(billingDate),
+      'status': status.trim().toLowerCase(),
+    });
+
+    final response = await postForm(
+      ApiConstants.createclientRenewals,
+      data: payload,
+    );
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return RenewalModel.fromJson(body);
+  }
+
+  /// Updates an existing client renewal/service record.
+  Future<RenewalModel> updateClientRenewal({
+    required String id,
+    required String clientId,
+    required String vendorId,
+    required String serviceName,
+    required String serviceDetails,
+    required String remarkText,
+    required String remarkColor,
+    required DateTime startDate,
+    required DateTime endDate,
+    required DateTime billingDate,
+    required String status,
+  }) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid client renewal id.');
+    }
+
+    final path = ApiConstants.updateClientRenewal.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final payload = FormData.fromMap({
+      'client_id': clientId.trim(),
+      'vendor_id': vendorId.trim(),
+      'service_name': serviceName.trim(),
+      'service_details': serviceDetails.trim(),
+      'remark_text': remarkText.trim(),
+      'remark_color': remarkColor.trim(),
+      'start_date': _formatApiDate(startDate),
+      'end_date': _formatApiDate(endDate),
+      'billing_date': _formatApiDate(billingDate),
+      'status': status.trim().toLowerCase(),
+      '_method': 'put',
+    });
+
+    final response = await postForm(path, data: payload);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return RenewalModel.fromJson(body);
+  }
+
+  /// Deletes an existing client renewal/service record.
+  Future<void> deleteClientRenewal(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid client renewal id.');
+    }
+
+    final path = ApiConstants.deleteClientRenewal.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    await delete(path);
   }
 
   /// Loads the project list for the authenticated user.

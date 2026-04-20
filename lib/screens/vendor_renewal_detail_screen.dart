@@ -194,31 +194,40 @@ class _DetailCard extends StatelessWidget {
               compact ? 10 : 12,
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
                     title,
                     style: AppTextStyles.style(
                       color: const Color(0xFF1F2937),
-                      fontSize: compact ? 22 : 26,
+                      fontSize: compact ? 18 : 20,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-                _HeaderButton(
-                  icon: Icons.edit_outlined,
-                  label: 'Edit',
-                  filled: true,
-                  onTap: () {
-                    Get.snackbar('Info', 'Edit action will be added next.');
-                  },
-                ),
-                const SizedBox(width: 8),
-                _HeaderButton(
-                  icon: Icons.arrow_back_rounded,
-                  label: 'Back to List',
-                  filled: false,
-                  onTap: Get.back,
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _HeaderButton(
+                          icon: Icons.edit_outlined,
+                          label: 'Edit',
+                          filled: true,
+                          onTap: () {
+                            Get.snackbar(
+                              'Info',
+                              'Edit action will be added next.',
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -259,7 +268,7 @@ class _DetailRow extends StatelessWidget {
             textAlign: TextAlign.end,
             style: AppTextStyles.style(
               color: const Color(0xFF334155),
-              fontSize: compact ? 17 : 19,
+              fontSize: compact ? 14 : 15,
               fontWeight: FontWeight.w500,
             ),
           );
@@ -278,12 +287,12 @@ class _DetailRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: compact ? 130 : 180,
+            width: compact ? 120 : 156,
             child: Text(
               '${row.label}:',
               style: AppTextStyles.style(
                 color: const Color(0xFF111827),
-                fontSize: compact ? 17 : 19,
+                fontSize: compact ? 14 : 15,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -317,8 +326,8 @@ class _HeaderButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
       child: Container(
-        height: 38,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: filled ? const Color(0xFF1389F3) : const Color(0xFF64748B),
           borderRadius: BorderRadius.circular(6),
@@ -331,7 +340,7 @@ class _HeaderButton extends StatelessWidget {
               label,
               style: AppTextStyles.style(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
             ),
