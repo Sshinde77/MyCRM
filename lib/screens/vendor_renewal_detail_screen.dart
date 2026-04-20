@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../core/constants/app_text_styles.dart';
 import '../models/renewal_model.dart';
 import '../services/api_service.dart';
+import 'vendor_renewal_form_screen.dart';
 import '../widgets/common_screen_app_bar.dart';
 
 class VendorRenewalDetailScreen extends StatefulWidget {
@@ -62,6 +63,30 @@ class _VendorRenewalDetailScreenState extends State<VendorRenewalDetailScreen> {
     });
   }
 
+  Future<void> _openEditForm(RenewalModel? renewal) async {
+    if (renewal == null) {
+      Get.snackbar(
+        'Edit unavailable',
+        'Vendor service details are not available yet.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    final shouldRefresh = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => VendorRenewalFormScreen(initialRenewal: renewal),
+      ),
+    );
+
+    if (shouldRefresh == true && mounted) {
+      setState(() {
+        _seed = renewal;
+        _detailFuture = _loadDetail();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.of(context).size.width <= 380;
@@ -113,6 +138,7 @@ class _VendorRenewalDetailScreenState extends State<VendorRenewalDetailScreen> {
                     title: 'Vendor Service Details',
                     compact: compact,
                     rows: _buildRows(current),
+                    onEdit: () => _openEditForm(current),
                   ),
                 ),
               ),
@@ -163,11 +189,13 @@ class _DetailCard extends StatelessWidget {
     required this.title,
     required this.compact,
     required this.rows,
+    required this.onEdit,
   });
 
   final String title;
   final bool compact;
   final List<_DetailRowData> rows;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -218,12 +246,7 @@ class _DetailCard extends StatelessWidget {
                           icon: Icons.edit_outlined,
                           label: 'Edit',
                           filled: true,
-                          onTap: () {
-                            Get.snackbar(
-                              'Info',
-                              'Edit action will be added next.',
-                            );
-                          },
+                          onTap: onEdit,
                         ),
                       ],
                     ),

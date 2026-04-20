@@ -107,8 +107,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _HeaderSection(user: _currentUser),
                   const SizedBox(height: 18),
-                  const _AlertBanner(),
-                  const SizedBox(height: 20),
                   _SectionCard(
                     padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
                     child: _RenewalSection(
@@ -1559,79 +1557,6 @@ class _HeaderActionButton extends StatelessWidget {
           height: 50,
           child: Icon(icon, color: const Color(0xFF61728F), size: size),
         ),
-      ),
-    );
-  }
-}
-
-class _AlertBanner extends StatelessWidget {
-  const _AlertBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE82626),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x40E82626),
-            blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: const BoxDecoration(
-              color: Color(0x33FFFFFF),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.white,
-              size: 30,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Overdue Renewals',
-                  style: AppTextStyles.style(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '8 accounts require immediate action',
-                  style: AppTextStyles.style(
-                    color: Colors.white,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '08',
-            style: AppTextStyles.style(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }

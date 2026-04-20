@@ -29,17 +29,7 @@ import '../core/services/secure_storage_service.dart';
 class ApiService {
   ApiService._internal() {
     if (kDebugMode) {
-      _dio.interceptors.add(
-        LogInterceptor(
-          request: true,
-          requestHeader: true,
-          requestBody: true,
-          responseHeader: false,
-          responseBody: false,
-          error: true,
-          logPrint: (object) => debugPrint(object.toString()),
-        ),
-      );
+      _dio.interceptors.add(_buildDebugLoggingInterceptor());
     }
 
     _dio.interceptors.add(
@@ -106,6 +96,83 @@ class ApiService {
   );
 
   final SecureStorageService _storage = SecureStorageService.instance;
+
+  Interceptor _buildDebugLoggingInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        debugPrint('*** API Calling ***');
+        debugPrint('${options.method} ${options.uri}');
+        if (options.queryParameters.isNotEmpty) {
+          debugPrint('query: ${_sanitizeForLog(options.queryParameters)}');
+        }
+        if (options.data != null) {
+          debugPrint('request: ${_sanitizeForLog(options.data)}');
+        }
+        handler.next(options);
+      },
+      onResponse: (response, handler) {
+        debugPrint('*** API Response ***');
+        debugPrint(
+          '${response.requestOptions.method} ${response.requestOptions.uri}',
+        );
+        debugPrint('status: ${response.statusCode}');
+        debugPrint('response: ${_sanitizeForLog(response.data)}');
+        handler.next(response);
+      },
+      onError: (error, handler) {
+        debugPrint('*** API Error ***');
+        debugPrint(
+          '${error.requestOptions.method} ${error.requestOptions.uri}',
+        );
+        debugPrint('status: ${error.response?.statusCode ?? 'N/A'}');
+        debugPrint('message: ${error.message ?? error.error}');
+        if (error.response?.data != null) {
+          debugPrint('response: ${_sanitizeForLog(error.response?.data)}');
+        }
+        handler.next(error);
+      },
+    );
+  }
+
+  dynamic _sanitizeForLog(dynamic value) {
+    if (value is FormData) {
+      return {
+        'fields': {
+          for (final field in value.fields)
+            field.key: _sanitizeForLogField(field.key, field.value),
+        },
+        'files': [
+          for (final file in value.files)
+            {'field': file.key, 'filename': file.value.filename},
+        ],
+      };
+    }
+
+    if (value is Map) {
+      return value.map(
+        (key, entryValue) => MapEntry(
+          key.toString(),
+          _sanitizeForLogField(key.toString(), entryValue),
+        ),
+      );
+    }
+
+    if (value is Iterable) {
+      return value.map(_sanitizeForLog).toList(growable: false);
+    }
+
+    return value;
+  }
+
+  dynamic _sanitizeForLogField(String key, dynamic value) {
+    final normalizedKey = key.toLowerCase();
+    if (normalizedKey.contains('password') ||
+        normalizedKey.contains('token') ||
+        normalizedKey == 'authorization') {
+      return '***';
+    }
+    return _sanitizeForLog(value);
+  }
 
   bool _isAuthEndpoint(String path) {
     final normalized = path.toLowerCase();
@@ -407,6 +474,86 @@ class ApiService {
     final response = await get(path);
     final body = _normalizeMap(_extractDetailSource(response.data));
     return RenewalModel.fromJson(body);
+  }
+
+  /// Creates a vendor renewal/service record.
+  Future<RenewalModel> createVendorRenewal({
+    required String vendorId,
+    required String serviceName,
+    required String serviceDetails,
+    required String planType,
+    required DateTime startDate,
+    required DateTime endDate,
+    required DateTime billingDate,
+    required String status,
+  }) async {
+    final payload = FormData.fromMap({
+      'vendor_id': vendorId.trim(),
+      'service_name': serviceName.trim(),
+      'service_details': serviceDetails.trim(),
+      'plan_type': planType.trim().toLowerCase(),
+      'start_date': _formatApiDate(startDate),
+      'end_date': _formatApiDate(endDate),
+      'billing_date': _formatApiDate(billingDate),
+      'status': status.trim().toLowerCase(),
+    });
+
+    final response = await postForm(
+      ApiConstants.createvendorRenewals,
+      data: payload,
+    );
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return RenewalModel.fromJson(body);
+  }
+
+  /// Updates an existing vendor renewal/service record.
+  Future<RenewalModel> updateVendorRenewal({
+    required String id,
+    required String vendorId,
+    required String serviceName,
+    required String serviceDetails,
+    required String planType,
+    required DateTime startDate,
+    required DateTime endDate,
+    required DateTime billingDate,
+    required String status,
+  }) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid vendor renewal id.');
+    }
+
+    final path = ApiConstants.updateVendorRenewal.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final payload = FormData.fromMap({
+      'vendor_id': vendorId.trim(),
+      'service_name': serviceName.trim(),
+      'service_details': serviceDetails.trim(),
+      'plan_type': planType.trim().toLowerCase(),
+      'start_date': _formatApiDate(startDate),
+      'end_date': _formatApiDate(endDate),
+      'billing_date': _formatApiDate(billingDate),
+      'status': status.trim().toLowerCase(),
+      '_method': 'put',
+    });
+
+    final response = await postForm(path, data: payload);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return RenewalModel.fromJson(body);
+  }
+
+  /// Deletes an existing vendor renewal/service record.
+  Future<void> deleteVendorRenewal(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid vendor renewal id.');
+    }
+
+    final path = '${ApiConstants.vendorRenewals}/$normalizedId';
+    debugPrint('deleteVendorRenewal path: $path');
+    await delete(path);
   }
 
   /// Creates a client renewal/service record.

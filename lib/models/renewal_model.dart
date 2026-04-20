@@ -174,12 +174,21 @@ class RenewalModel {
       vendor: vendor.isEmpty ? 'Unknown vendor' : vendor,
       vendorEmail: _firstNonEmpty([
         _readString(source, const [
+          'email_id',
+          'emailId',
+          'email',
           'vendor_email',
           'vendorEmail',
           'provider_email',
           'providerEmail',
         ]),
-        _readString(vendorMap, const ['email', 'vendor_email', 'vendorEmail']),
+        _readString(vendorMap, const [
+          'email_id',
+          'emailId',
+          'email',
+          'vendor_email',
+          'vendorEmail',
+        ]),
       ]),
       serviceDetails: _readString(source, const [
         'service_details',

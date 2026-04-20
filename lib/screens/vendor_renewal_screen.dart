@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,8 @@ import '../core/constants/app_text_styles.dart';
 import '../models/renewal_model.dart';
 import '../providers/renewal_list_provider.dart';
 import '../routes/app_routes.dart';
+import '../services/api_service.dart';
+import '../screens/vendor_renewal_form_screen.dart';
 import '../widgets/common_screen_app_bar.dart';
 
 class VendorRenewalScreen extends StatelessWidget {
@@ -64,6 +67,122 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     await _refreshRenewals();
   }
 
+  Future<void> _openServiceForm({RenewalModel? renewal}) async {
+    final shouldRefresh = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => VendorRenewalFormScreen(initialRenewal: renewal),
+      ),
+    );
+
+    if (shouldRefresh == true && mounted) {
+      await _refreshRenewals();
+    }
+  }
+
+  Future<void> _deleteRenewal(RenewalModel renewal) async {
+    final renewalId = renewal.id.trim();
+    debugPrint('Vendor renewal delete tapped: id=$renewalId');
+    if (renewalId.isEmpty) {
+      debugPrint('Vendor renewal delete blocked: missing id');
+      Get.snackbar(
+        'Delete failed',
+        'Invalid vendor service id.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Vendor Service'),
+          content: Text(
+            'Are you sure you want to delete "${renewal.title.trim().isEmpty ? 'this vendor service' : renewal.title}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) {
+      debugPrint('Vendor renewal delete cancelled: id=$renewalId');
+      return;
+    }
+
+    try {
+      debugPrint('Vendor renewal delete API start: id=$renewalId');
+      await ApiService.instance.deleteVendorRenewal(renewalId);
+      debugPrint('Vendor renewal delete API success: id=$renewalId');
+      if (!mounted) {
+        return;
+      }
+      await _refreshRenewals();
+      if (!mounted) {
+        return;
+      }
+      Get.snackbar(
+        'Deleted',
+        'Vendor service deleted successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF153A63),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      String message = 'Failed to delete vendor service.';
+      if (error is DioException) {
+        final data = error.response?.data;
+        if (data is Map && data['message'] != null) {
+          message = data['message'].toString();
+        } else {
+          final dioMessage = error.message?.trim() ?? '';
+          if (dioMessage.isNotEmpty) {
+            message = dioMessage;
+          }
+        }
+      } else {
+        final raw = error.toString().trim();
+        if (raw.startsWith('Exception: ')) {
+          message = raw.substring('Exception: '.length);
+        } else if (raw.isNotEmpty) {
+          message = raw;
+        }
+      }
+      debugPrint('Vendor renewal delete API failed: id=$renewalId');
+      debugPrint('Vendor renewal delete error: $error');
+      debugPrint('Vendor renewal delete message: $message');
+
+      Get.snackbar(
+        'Delete failed',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFFB91C1C),
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -86,11 +205,17 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
                       children: [
                         _FilterCard(compact: compact),
                         SizedBox(height: compact ? 16 : 18),
-                        _AddServiceButton(compact: compact),
+                        _AddServiceButton(
+                          compact: compact,
+                          onTap: () => _openServiceForm(),
+                        ),
                         SizedBox(height: compact ? 16 : 18),
                         _RenewalListSection(
                           compact: compact,
                           onView: (renewal) => _openDetail(renewal),
+                          onEdit: (renewal) =>
+                              _openServiceForm(renewal: renewal),
+                          onDelete: (renewal) => _deleteRenewal(renewal),
                         ),
                       ],
                     ),
@@ -109,10 +234,14 @@ class _RenewalListSection extends StatelessWidget {
   const _RenewalListSection({
     required this.compact,
     required this.onView,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final bool compact;
   final ValueChanged<RenewalModel> onView;
+  final ValueChanged<RenewalModel> onEdit;
+  final ValueChanged<RenewalModel> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +278,8 @@ class _RenewalListSection extends StatelessWidget {
                     service: service,
                     compact: compact,
                     onView: () => onView(service.renewal),
+                    onEdit: () => onEdit(service.renewal),
+                    onDelete: () => onDelete(service.renewal),
                   ),
                 ),
               )
@@ -344,40 +475,49 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _AddServiceButton extends StatelessWidget {
-  const _AddServiceButton({required this.compact});
+  const _AddServiceButton({required this.compact, required this.onTap});
 
   final bool compact;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: compact ? 14 : 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF156CF1),
-        borderRadius: BorderRadius.circular(compact ? 14 : 16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x22156CF1),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_rounded, color: Colors.white, size: compact ? 22 : 24),
-          SizedBox(width: compact ? 10 : 12),
-          Text(
-            'Add New Vendor',
-            style: AppTextStyles.style(
-              color: Colors.white,
-              fontSize: compact ? 15 : 16,
-              fontWeight: FontWeight.w700,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(compact ? 14 : 16),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(vertical: compact ? 14 : 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF156CF1),
+          borderRadius: BorderRadius.circular(compact ? 14 : 16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x22156CF1),
+              blurRadius: 16,
+              offset: Offset(0, 8),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_rounded,
+              color: Colors.white,
+              size: compact ? 22 : 24,
+            ),
+            SizedBox(width: compact ? 10 : 12),
+            Text(
+              'Add New Vendor',
+              style: AppTextStyles.style(
+                color: Colors.white,
+                fontSize: compact ? 15 : 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -388,11 +528,15 @@ class _ServiceCard extends StatelessWidget {
     required this.service,
     required this.compact,
     required this.onView,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final _ServiceItem service;
   final bool compact;
   final VoidCallback onView;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -547,17 +691,25 @@ class _ServiceCard extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: _CardAction(icon: Icons.remove_red_eye_outlined, onTap: onView),
+                  child: _CardAction(
+                    icon: Icons.remove_red_eye_outlined,
+                    onTap: onView,
+                  ),
                 ),
                 _ActionDivider(),
-                const Expanded(child: _CardAction(icon: Icons.edit_outlined)),
+                Expanded(
+                  child: _CardAction(icon: Icons.edit_outlined, onTap: onEdit),
+                ),
                 _ActionDivider(),
                 const Expanded(
                   child: _CardAction(icon: Icons.mail_outline_rounded),
                 ),
                 _ActionDivider(),
-                const Expanded(
-                  child: _CardAction(icon: Icons.delete_outline_rounded),
+                Expanded(
+                  child: _CardAction(
+                    icon: Icons.delete_outline_rounded,
+                    onTap: onDelete,
+                  ),
                 ),
               ],
             ),
