@@ -1547,21 +1547,6 @@ class _ProjectQuickActions extends StatelessWidget {
   }
 }
 
-void _showProjectActionMessage(
-  BuildContext context,
-  String title,
-  String message,
-) {
-  Get.snackbar(
-    title,
-    message,
-    snackPosition: SnackPosition.BOTTOM,
-    backgroundColor: const Color(0xFF153A63),
-    colorText: Colors.white,
-    margin: const EdgeInsets.all(16),
-  );
-}
-
 class _ProjectInfoItem extends StatelessWidget {
   const _ProjectInfoItem({required this.icon, required this.label});
 

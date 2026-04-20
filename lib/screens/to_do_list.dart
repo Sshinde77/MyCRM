@@ -97,8 +97,6 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
                               onRetry: _loadTodos,
                             ),
                           ),
-                        // _SmartListsPanel(),
-                        // SizedBox(height: 16),
                         _TaskStatePanel(
                           eyebrow: 'Active',
                           title: 'Unfinished Tasks',
@@ -124,8 +122,6 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
                           onDeleteTask: _handleDeleteTask,
                           onToggleTaskStatus: _handleToggleTaskStatus,
                         ),
-                        const SizedBox(height: 18),
-                        // _FocusTipsCard(),
                       ],
                     ),
                   ),
@@ -477,42 +473,6 @@ class _TasksHeader extends StatelessWidget {
   }
 }
 
-class _HeaderCircleButton extends StatelessWidget {
-  const _HeaderCircleButton({required this.icon, this.onTap, this.size = 42});
-
-  final IconData icon;
-  final VoidCallback? onTap;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x120F172A),
-                blurRadius: 14,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Icon(icon, color: const Color(0xFF2F4158), size: size * 0.45),
-        ),
-      ),
-    );
-  }
-}
-
 class _TasksHeroSection extends StatelessWidget {
   const _TasksHeroSection({
     required this.onAddTask,
@@ -839,55 +799,6 @@ class _HeroStatCard extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SmartListsPanel extends StatelessWidget {
-  const _SmartListsPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    return _TasksCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          _CardEyebrow(label: 'Overview'),
-          SizedBox(height: 4),
-          _CardTitle(title: 'Smart lists'),
-          SizedBox(height: 8),
-          _SectionDescription(
-            text:
-                'Keep recurring, reminder, and today-specific tasks in one place.',
-          ),
-          SizedBox(height: 18),
-          _SmartListTile(
-            icon: Icons.wb_sunny_outlined,
-            iconColor: Color(0xFF22B6FF),
-            iconBackground: Color(0xFFE8F8FF),
-            title: 'My Day',
-            subtitle: 'Tasks you should keep in front of you.',
-          ),
-          SizedBox(height: 12),
-          _SmartListTile(
-            icon: Icons.autorenew_rounded,
-            iconColor: Color(0xFFFF9C43),
-            iconBackground: Color(0xFFFFF3E6),
-            title: 'Recurring',
-            subtitle: 'Day, week, month and year schedules.',
-          ),
-          SizedBox(height: 12),
-          _SmartListTile(
-            icon: Icons.notifications_active_outlined,
-            iconColor: Color(0xFF28B86B),
-            iconBackground: Color(0xFFEAFBF1),
-            title: 'Reminders',
-            subtitle: 'Email alerts arrive at your selected time.',
-          ),
-          SizedBox(height: 16),
-          _HowItWorksCard(),
         ],
       ),
     );
@@ -2408,17 +2319,11 @@ class _AttachmentChip extends StatelessWidget {
 }
 
 class _TaskAttachmentPreview extends StatelessWidget {
-  const _TaskAttachmentPreview({required this.attachment, this.onTap});
+  const _TaskAttachmentPreview({required this.attachment});
 
   final _TodoAttachment attachment;
-  final VoidCallback? onTap;
 
   Future<void> _handleTap(BuildContext context) async {
-    if (onTap != null) {
-      onTap!();
-      return;
-    }
-
     final imageUrl = (attachment.url ?? '').trim();
     final localPath = (attachment.localPath ?? '').trim();
     final isImage =
@@ -2989,66 +2894,6 @@ String _toTitleCase(String value) {
   return '${normalized[0].toUpperCase()}${normalized.substring(1)}';
 }
 
-class _FocusTipsCard extends StatelessWidget {
-  const _FocusTipsCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.lightbulb_outline_rounded,
-                  color: Color(0xFF67E8F9),
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Stay consistent',
-                  style: AppTextStyles.style(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Build a modern daily workflow by adding recurring patterns, reminders, and clear task priorities for each user.',
-            style: AppTextStyles.style(
-              color: const Color(0xFFB9C7DB),
-              fontSize: 12.5,
-              height: 1.65,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TasksCard extends StatelessWidget {
   const _TasksCard({required this.child});
 
@@ -3108,137 +2953,6 @@ class _CardTitle extends StatelessWidget {
         color: const Color(0xFF28384B),
         fontSize: 20,
         fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _SectionDescription extends StatelessWidget {
-  const _SectionDescription({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: AppTextStyles.style(
-        color: const Color(0xFF7F90A6),
-        fontSize: 12.5,
-        height: 1.0,
-        fontWeight: FontWeight.w500,
-      ),
-    );
-  }
-}
-
-class _SmartListTile extends StatelessWidget {
-  const _SmartListTile({
-    required this.icon,
-    required this.iconColor,
-    required this.iconBackground,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBackground;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFEFF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE4ECF4)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: iconBackground,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            alignment: Alignment.center,
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF2B3B54),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF8D9CB0),
-                    fontSize: 12,
-                    height: 1.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HowItWorksCard extends StatelessWidget {
-  const _HowItWorksCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF38BDF8), Color(0xFF67E8F9)],
-        ),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'How it works',
-            style: AppTextStyles.style(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Set a repeat pattern, choose reminder time, and the task stays personal to the current logged-in user.',
-            style: AppTextStyles.style(
-              color: Colors.white,
-              fontSize: 12,
-              height: 1.6,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }

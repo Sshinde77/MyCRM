@@ -367,9 +367,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8F0FE),
                   borderRadius: BorderRadius.circular(18),
-                  image: hasImage && _selectedProfileImage!.path != null
+                  image: hasImage
                       ? DecorationImage(
-                          image: FileImage(File(_selectedProfileImage!.path!)),
+                          image: FileImage(File(_selectedProfileImage!.path)),
                           fit: BoxFit.cover,
                         )
                       : null,
@@ -542,10 +542,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFDCE7FF),
                         borderRadius: BorderRadius.circular(20),
-                        image: _selectedProfileImage?.path != null
+                        image: _selectedProfileImage != null
                             ? DecorationImage(
                                 image: FileImage(
-                                  File(_selectedProfileImage!.path!),
+                                  File(_selectedProfileImage!.path),
                                 ),
                                 fit: BoxFit.cover,
                               )
@@ -802,26 +802,6 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           const SizedBox(height: 18),
           child,
         ],
-      ),
-    );
-  }
-
-  Widget _iconShell({required IconData icon, VoidCallback? onTap}) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          height: 48,
-          width: 48,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFD7E2EF)),
-          ),
-          child: Icon(icon, color: const Color(0xFF475569)),
-        ),
       ),
     );
   }

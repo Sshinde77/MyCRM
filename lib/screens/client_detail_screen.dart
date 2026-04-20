@@ -73,8 +73,6 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   @override
   Widget build(BuildContext context) {
     const pageBg = Color(0xFFF7FAFF);
-    const textMain = Color(0xFF141C33);
-    const textSec = Color(0xFF74839D);
 
     return Scaffold(
       backgroundColor: pageBg,

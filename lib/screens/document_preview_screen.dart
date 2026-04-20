@@ -226,8 +226,9 @@ class _DocumentPreviewScreenState extends State<DocumentPreviewScreen> {
   }
 
   Widget _buildPdfViewer() {
-    if (_localPath != null && _localPath!.isNotEmpty) {
-      final file = File(_localPath!);
+    final localPath = _localPath;
+    if (localPath != null && localPath.isNotEmpty) {
+      final file = File(localPath);
       if (file.existsSync()) {
         return SfPdfViewer.file(file);
       }

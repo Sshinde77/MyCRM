@@ -1092,30 +1092,6 @@ class _ToolbarButton extends StatelessWidget {
   }
 }
 
-class _CircleButton extends StatelessWidget {
-  const _CircleButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          height: 42,
-          width: 42,
-          child: Icon(icon, color: const Color(0xFF475569), size: 20),
-        ),
-      ),
-    );
-  }
-}
-
 class _HeaderCell extends StatelessWidget {
   const _HeaderCell({this.label, this.child});
 

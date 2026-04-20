@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:get/get_navigation/src/snackbar/snackbar.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../models/calendar_event_model.dart';
@@ -795,10 +794,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     await _updateCalendarEvent(draft);
-  }
-
-  DateTime _combineDateAndTime(DateTime date, TimeOfDay time) {
-    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
   String _formatApiTime(TimeOfDay time) {
@@ -3134,19 +3129,14 @@ class _CalendarIconButton extends StatelessWidget {
 }
 
 class _CalendarPillButton extends StatelessWidget {
-  const _CalendarPillButton({
-    required this.label,
-    this.onTap,
-    this.isPrimary = false,
-  });
+  const _CalendarPillButton({required this.label, this.isPrimary = false});
 
   final String label;
-  final VoidCallback? onTap;
   final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
-    final child = Container(
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: isPrimary ? const Color(0xFF2D3B54) : const Color(0xFFF1F5FB),
@@ -3160,16 +3150,6 @@ class _CalendarPillButton extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
-    );
-
-    if (onTap == null) {
-      return child;
-    }
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: child,
     );
   }
 }
@@ -3379,36 +3359,6 @@ Color _appointmentAccentColor(_Appointment appointment) {
   return palette[index];
 }
 
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: AppTextStyles.style(
-            color: const Color(0xFF6E7F99),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _TaskStatusRow extends StatelessWidget {
   const _TaskStatusRow({
     required this.label,
@@ -3481,143 +3431,6 @@ class _TaskStatusRow extends StatelessWidget {
   }
 }
 
-class _SectionMenuButton extends StatelessWidget {
-  const _SectionMenuButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(
-        popupMenuTheme: PopupMenuThemeData(
-          color: Colors.white,
-          elevation: 10,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-      ),
-      child: PopupMenuButton<String>(
-        tooltip: 'More actions',
-        color: Colors.white,
-        padding: EdgeInsets.zero,
-        offset: const Offset(0, 38),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        onSelected: (value) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$value clicked'),
-              behavior: SnackPosition.BOTTOM == null
-                  ? SnackBarBehavior.fixed
-                  : SnackBarBehavior.floating,
-              duration: const Duration(milliseconds: 1200),
-            ),
-          );
-        },
-        itemBuilder: (context) => const [
-          PopupMenuItem<String>(
-            value: 'Refresh',
-            child: _SectionMenuItem(
-              icon: Icons.refresh_rounded,
-              label: 'Refresh',
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'Export',
-            child: _SectionMenuItem(
-              icon: Icons.file_download_outlined,
-              label: 'Export',
-            ),
-          ),
-          PopupMenuItem<String>(
-            value: 'View All',
-            child: _SectionMenuItem(
-              icon: Icons.visibility_outlined,
-              label: 'View All',
-            ),
-          ),
-        ],
-        child: Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FB),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.more_horiz_rounded,
-            color: Color(0xFF7D8CA3),
-            size: 18,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionMenuItem extends StatelessWidget {
-  const _SectionMenuItem({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: const Color(0xFF607089)),
-        const SizedBox(width: 10),
-        Text(
-          label,
-          style: AppTextStyles.style(
-            color: const Color(0xFF1C2438),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ChartLegendChip extends StatelessWidget {
-  const _ChartLegendChip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD7E1EE)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: const Color(0xFF1C2438),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ProjectMetricCard extends StatelessWidget {
   const _ProjectMetricCard({
     required this.title,
@@ -3671,32 +3484,6 @@ class _ProjectMetricCard extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CurrentMonthBadge extends StatelessWidget {
-  const _CurrentMonthBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFD7E1EE)),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.style(
-          color: const Color(0xFF667891),
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
       ),
     );
   }
@@ -3846,108 +3633,4 @@ class _TaskDonutPainter extends CustomPainter {
     return oldDelegate.segments != segments ||
         oldDelegate.backgroundColor != backgroundColor;
   }
-}
-
-class _ChartPainter extends CustomPainter {
-  const _ChartPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final chartLeft = 28.0;
-    final chartBottom = size.height - 28;
-    final chartTop = 18.0;
-    final chartRight = size.width - 10;
-    final chartWidth = chartRight - chartLeft;
-    final chartHeight = chartBottom - chartTop;
-
-    final labelStyle = AppTextStyles.style(
-      color: const Color(0xFF6E7B90),
-      fontSize: 10.5,
-      fontWeight: FontWeight.w500,
-    );
-
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    final gridPaint = Paint()
-      ..color = const Color(0xFFF0F4F9)
-      ..strokeWidth = 1;
-
-    const maxValue = 14;
-    final months = List.generate(6, (index) {
-      final now = DateTime.now();
-      final monthDate = DateTime(now.year, now.month - 5 + index, 1);
-      return _monthShortLabel(monthDate);
-    });
-    const projectValues = [1, 2, 1, 3, 2, 2];
-    const taskValues = [4, 6, 5, 8, 7, 13];
-
-    for (var i = 0; i <= maxValue; i += 2) {
-      final y = chartBottom - (chartHeight * i / maxValue);
-      canvas.drawLine(Offset(chartLeft, y), Offset(chartRight, y), gridPaint);
-      textPainter.text = TextSpan(text: '$i', style: labelStyle);
-      textPainter.layout();
-      textPainter.paint(canvas, Offset(0, y - textPainter.height / 2));
-    }
-
-    final groupWidth = chartWidth / months.length;
-    for (var i = 0; i <= months.length; i++) {
-      final x = chartLeft + (groupWidth * i);
-      if (i < months.length) {
-        canvas.drawLine(
-          Offset(x, chartTop),
-          Offset(x, chartBottom),
-          Paint()
-            ..color = const Color(0xFFF6F8FC)
-            ..strokeWidth = 0.8,
-        );
-      }
-    }
-
-    for (var i = 0; i < months.length; i++) {
-      final xCenter = chartLeft + (groupWidth * i) + groupWidth / 2;
-      textPainter.text = TextSpan(text: months[i], style: labelStyle);
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(xCenter - textPainter.width / 2, chartBottom + 8),
-      );
-
-      final projectHeight = chartHeight * (projectValues[i] / maxValue);
-      final taskHeight = chartHeight * (taskValues[i] / maxValue);
-      final projectRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(
-          xCenter - 16,
-          chartBottom - projectHeight,
-          14,
-          projectHeight,
-        ),
-        const Radius.circular(8),
-      );
-      final taskRect = RRect.fromRectAndRadius(
-        Rect.fromLTWH(xCenter + 2, chartBottom - taskHeight, 14, taskHeight),
-        const Radius.circular(8),
-      );
-
-      canvas.drawRRect(projectRect, Paint()..color = const Color(0xFF2D9CDB));
-      canvas.drawRRect(
-        taskRect,
-        Paint()
-          ..shader = const LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [Color(0xFFFFC83A), Color(0xFFFF8A50)],
-          ).createShader(taskRect.outerRect),
-      );
-    }
-
-    canvas.drawLine(
-      Offset(chartLeft, chartBottom),
-      Offset(chartRight, chartBottom),
-      Paint()
-        ..color = const Color(0xFFC9D4E3)
-        ..strokeWidth = 1.2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

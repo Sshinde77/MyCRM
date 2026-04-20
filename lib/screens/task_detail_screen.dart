@@ -788,44 +788,6 @@ class _DetailCard extends StatelessWidget {
   }
 }
 
-class _DetailBadge extends StatelessWidget {
-  const _DetailBadge({
-    required this.label,
-    required this.background,
-    required this.foreground,
-  });
-
-  final String label;
-  final Color background;
-  final Color foreground;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.style(
-          color: foreground,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
 class _DetailTopBar extends StatelessWidget {
   const _DetailTopBar({required this.onBack});
 
@@ -898,40 +860,6 @@ class _TaskHero extends StatelessWidget {
               _HeroStat(label: 'start Date', value: detail.startDateText),
               _HeroStat(label: 'Due Date', value: detail.deadlineText),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroChip extends StatelessWidget {
-  const _HeroChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 15, color: const Color(0xFF1677FF)),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: const Color(0xFF334155),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
           ),
         ],
       ),
@@ -1427,37 +1355,6 @@ String _timeAgo(String raw) {
   return '${localTime.day.toString().padLeft(2, '0')}-'
       '${localTime.month.toString().padLeft(2, '0')}-'
       '${localTime.year}';
-}
-
-(Color, Color) _statusPalette(String status) {
-  final value = status.trim().toLowerCase();
-  if (value == 'completed' || value == 'done' || value == 'closed') {
-    return (const Color(0xFFE8F8EE), const Color(0xFF15803D));
-  }
-  if (value == 'in progress' || value == 'running' || value == 'active') {
-    return (const Color(0xFFE7F0FF), const Color(0xFF1D4ED8));
-  }
-  if (value == 'on hold') {
-    return (const Color(0xFFE2E8F0), const Color(0xFF475569));
-  }
-  if (value == 'pending' || value == 'todo') {
-    return (const Color(0xFFFFF4E5), const Color(0xFFB45309));
-  }
-  return (const Color(0xFFF1F5F9), const Color(0xFF475569));
-}
-
-(Color, Color) _priorityPalette(String priority) {
-  final value = priority.trim().toLowerCase();
-  if (value == 'high' || value == 'urgent' || value == 'critical') {
-    return (const Color(0xFFFFE6E6), const Color(0xFFDC2626));
-  }
-  if (value == 'medium') {
-    return (const Color(0xFFFFF0B3), const Color(0xFF8A6200));
-  }
-  if (value == 'low') {
-    return (const Color(0xFFE8F8EE), const Color(0xFF16A34A));
-  }
-  return (const Color(0xFFF1F5F9), const Color(0xFF475569));
 }
 
 String _initials(String value) {

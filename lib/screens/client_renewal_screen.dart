@@ -1398,21 +1398,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   Widget build(BuildContext context) {
     final insetBottom = MediaQuery.of(context).viewInsets.bottom;
     final compact = MediaQuery.of(context).size.width <= 440;
-    final vendorName = _vendors
-        .firstWhere(
-          (entry) => entry.id == _selectedVendorId,
-          orElse: () => const VendorModel(
-            id: '',
-            vendorName: 'N/A',
-            email: '',
-            contactNo: '',
-            address: '',
-            status: 'Inactive',
-            createdAt: '',
-            updatedAt: '',
-          ),
-        )
-        .vendorName;
 
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),

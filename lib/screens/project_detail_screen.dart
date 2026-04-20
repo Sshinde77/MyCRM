@@ -2541,21 +2541,6 @@ class _CommentItem extends StatelessWidget {
   }
 }
 
-class _PlaceholderSection extends StatelessWidget {
-  const _PlaceholderSection({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Card(
-      child: const _EmptySectionState(
-        message: 'This section is ready for API data and UI mapping.',
-      ),
-    );
-  }
-}
-
 class _FilesSection extends StatefulWidget {
   const _FilesSection({required this.projectId});
 
@@ -3293,15 +3278,10 @@ class _FileRow extends StatelessWidget {
 }
 
 class _FilePreview extends StatelessWidget {
-  const _FilePreview({
-    required this.file,
-    required this.previewUrl,
-    this.expanded = false,
-  });
+  const _FilePreview({required this.file, required this.previewUrl});
 
   final ProjectFileRecord file;
   final String previewUrl;
-  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
@@ -3309,12 +3289,12 @@ class _FilePreview extends StatelessWidget {
       return ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: AspectRatio(
-          aspectRatio: expanded ? 16 / 10 : 16 / 9,
+          aspectRatio: 16 / 9,
           child: Image.network(
             previewUrl,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) =>
-                _DocumentPreviewCard(file: file, expanded: expanded),
+                _DocumentPreviewCard(file: file, expanded: false),
             loadingBuilder: (context, child, progress) {
               if (progress == null) return child;
               return Container(
@@ -3328,7 +3308,7 @@ class _FilePreview extends StatelessWidget {
       );
     }
 
-    return _DocumentPreviewCard(file: file, expanded: expanded);
+    return _DocumentPreviewCard(file: file, expanded: false);
   }
 
   static bool _isImage(String ext) => const {
@@ -3491,86 +3471,6 @@ class _PrimaryActionButton extends StatelessWidget {
   }
 }
 
-class _TableHeader extends StatelessWidget {
-  const _TableHeader({required this.columns});
-
-  final List<_TableColumn> columns;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFE7EDF6))),
-      ),
-      child: Row(
-        children: columns
-            .map(
-              (column) => SizedBox(
-                width: column.width,
-                child: Text(
-                  column.title,
-                  style: AppTextStyles.style(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            )
-            .toList(),
-      ),
-    );
-  }
-}
-
-class _TableColumn {
-  const _TableColumn({required this.title, required this.width});
-
-  final String title;
-  final double width;
-}
-
-class _TableRow extends StatelessWidget {
-  const _TableRow({required this.cells});
-
-  final List<Widget> cells;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFFEFF4FA))),
-      ),
-      child: Row(children: cells),
-    );
-  }
-}
-
-class _TextCell extends StatelessWidget {
-  const _TextCell(this.text, {required this.width, this.accent = false});
-
-  final String text;
-  final double width;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Text(
-        text,
-        style: AppTextStyles.style(
-          color: accent ? ProjectDetailScreen.blue : ProjectDetailScreen.title,
-          fontSize: 14,
-          fontWeight: accent ? FontWeight.w600 : FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
-
 class _EmployeeInfoCard extends StatelessWidget {
   const _EmployeeInfoCard({required this.employee});
 
@@ -3631,74 +3531,6 @@ class _EmployeeInfoCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AssigneeCell extends StatelessWidget {
-  const _AssigneeCell({required this.task, required this.width});
-
-  final ProjectTaskRecord task;
-  final double width;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Row(
-        children: [
-          _Avatar(name: task.assigneeName, imageUrl: task.assigneeAvatarUrl),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              task.assigneeName,
-              style: AppTextStyles.style(
-                color: ProjectDetailScreen.title,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BadgeCell extends StatelessWidget {
-  const _BadgeCell({
-    required this.label,
-    required this.width,
-    required this.colors,
-  });
-
-  final String label;
-  final double width;
-  final _BadgeColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: colors.background,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            label,
-            style: AppTextStyles.style(
-              color: colors.foreground,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
       ),
     );
   }

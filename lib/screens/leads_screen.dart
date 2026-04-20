@@ -35,7 +35,6 @@ class _LeadsScreenState extends State<LeadsScreen> {
   @override
   Widget build(BuildContext context) {
     const Color primaryBlue = Color(0xFF1D6FEA);
-    const Color lightBlue = Color(0xFFE3F2FD);
     const Color textDark = Color(0xFF1E2A3B);
     const Color textLight = Color(0xFF76839A);
 
