@@ -118,7 +118,15 @@ class ApiConstants {
   static const String clientIssuesDetail = '$baseUrl/client-issues/{id}';
   static const String updateClientIssue = '$baseUrl/client-issues/{id}';
   static const String deleteClientIssue = '$baseUrl/client-issues/{id}';
-  static const String clientissueformdata = '$baseUrl/client-issues/form-options';
-
-
+  static const String clientIssueStatus = '$baseUrl/client-issues/{id}/status';
+  static const String clientissueformdata =
+      '$baseUrl/client-issues/form-options';
+  static const String createClientIssueTask =
+      '$baseUrl/client-issues/{id}/tasks';
+  static const String assignClientIssueTeam =
+      '$baseUrl/client-issues/{id}/assign';
+  static const String clientIssueTaskDetail =
+      '$baseUrl/client-issues/{issueId}/tasks/{taskId}';
+  static const String clientIssueTaskStatus =
+      '$baseUrl/client-issues/{issueId}/tasks/{taskId}/status';
 }

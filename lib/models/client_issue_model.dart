@@ -1,3 +1,5 @@
+import 'package:mycrm/models/client_issue_task_model.dart';
+
 class ClientIssueModel {
   const ClientIssueModel({
     required this.id,
@@ -11,6 +13,7 @@ class ClientIssueModel {
     required this.assignedTeam,
     required this.assignedTo,
     required this.assignedBy,
+    required this.tasks,
   });
 
   final String id;
@@ -24,6 +27,7 @@ class ClientIssueModel {
   final String assignedTeam;
   final String assignedTo;
   final String assignedBy;
+  final List<ClientIssueTaskModel> tasks;
 
   String get displayId => id.isEmpty ? '#ISS' : '#ISS-$id';
 
@@ -226,6 +230,7 @@ class ClientIssueModel {
           'username',
         ]),
       ]),
+      tasks: _readTaskList(source),
     );
   }
 
@@ -248,7 +253,9 @@ class ClientIssueModel {
       }
       if (value is Map) {
         final merged = Map<String, dynamic>.from(normalized);
-        merged.addAll(value.map((key, value) => MapEntry(key.toString(), value)));
+        merged.addAll(
+          value.map((key, value) => MapEntry(key.toString(), value)),
+        );
         return merged;
       }
     }
@@ -279,7 +286,8 @@ class ClientIssueModel {
     ]);
     if (direct.isNotEmpty) return direct;
 
-    final assigned = json['assigned_to'] ?? json['assignedTo'] ?? json['assignees'];
+    final assigned =
+        json['assigned_to'] ?? json['assignedTo'] ?? json['assignees'];
     if (assigned is List) {
       final names = assigned
           .map((entry) {
@@ -316,6 +324,26 @@ class ClientIssueModel {
     return '';
   }
 
+  static List<ClientIssueTaskModel> _readTaskList(Map<String, dynamic> json) {
+    final value = json['tasks'];
+    if (value is! List) return const <ClientIssueTaskModel>[];
+
+    return value
+        .map((entry) {
+          if (entry is Map<String, dynamic>) {
+            return ClientIssueTaskModel.fromJson(entry);
+          }
+          if (entry is Map) {
+            return ClientIssueTaskModel.fromJson(
+              entry.map((key, value) => MapEntry(key.toString(), value)),
+            );
+          }
+          return null;
+        })
+        .whereType<ClientIssueTaskModel>()
+        .toList(growable: false);
+  }
+
   static String _readString(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
@@ -338,9 +366,9 @@ class ClientIssueModel {
       final parsed = DateTime.tryParse(normalized);
       if (parsed != null) return parsed;
 
-      final ddMmYyyy = RegExp(r'^(\d{2})-(\d{2})-(\d{4})$').firstMatch(
-        normalized,
-      );
+      final ddMmYyyy = RegExp(
+        r'^(\d{2})-(\d{2})-(\d{4})$',
+      ).firstMatch(normalized);
       if (ddMmYyyy != null) {
         return DateTime.tryParse(
           '${ddMmYyyy.group(3)}-${ddMmYyyy.group(2)}-${ddMmYyyy.group(1)}',
@@ -421,6 +449,48 @@ class ClientIssueSelectOption {
         'contact_person',
         'name',
       ]),
+    );
+  }
+
+  static String _readString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null || value is Map || value is List) continue;
+      final normalized = value.toString().trim();
+      if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+        return normalized;
+      }
+    }
+    return '';
+  }
+}
+
+class ClientIssueTeamOption {
+  const ClientIssueTeamOption({
+    required this.name,
+    required this.description,
+    required this.iconPath,
+  });
+
+  final String name;
+  final String description;
+  final String iconPath;
+
+  String get displayName {
+    final normalized = name.trim();
+    return normalized.isEmpty ? 'Unnamed Team' : normalized;
+  }
+
+  String get displayDescription {
+    final normalized = description.trim();
+    return normalized.isEmpty ? 'No description available.' : normalized;
+  }
+
+  factory ClientIssueTeamOption.fromJson(Map<String, dynamic> json) {
+    return ClientIssueTeamOption(
+      name: _readString(json, const ['name', 'team_name', 'teamName']),
+      description: _readString(json, const ['description', 'details']),
+      iconPath: _readString(json, const ['icon_path', 'iconPath', 'icon']),
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../models/calendar_event_model.dart';
+import '../models/client_issue_model.dart';
 import '../models/project_model.dart';
 import '../models/renewal_model.dart';
 import '../models/user_model.dart';
@@ -28,9 +29,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isSavingCalendar = false;
   bool _isLoadingSummary = false;
   bool _isLoadingRenewals = false;
+  bool _isLoadingTickets = false;
   String? _calendarLoadError;
   String? _summaryLoadError;
   String? _renewalLoadError;
+  String? _ticketsLoadError;
   late DateTime _displayedMonth;
   int _projectCount = 0;
   int _taskCount = 0;
@@ -44,6 +47,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     'cancelled': 0,
   };
   List<_UpcomingRenewalItem> _upcomingRenewals = const <_UpcomingRenewalItem>[];
+  List<ClientIssueModel> _recentIssues = const <ClientIssueModel>[];
 
   UserModel? _currentUser;
   @override
@@ -56,6 +60,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadCalendarEvents();
     _loadDashboardSummary();
     _loadUpcomingRenewals();
+    _loadRecentIssues();
   }
 
   Future<void> _loadCurrentUser() async {
@@ -133,9 +138,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const _SectionCard(
+                  _SectionCard(
                     padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
-                    child: _SupportTicketsSection(),
+                    child: _SupportTicketsSection(
+                      issues: _recentIssues,
+                      isLoading: _isLoadingTickets,
+                      errorMessage: _ticketsLoadError,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _CalendarAppointmentsSection(
@@ -194,6 +203,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 8),
                     Text(
                       _renewalLoadError!,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFFB42318),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                  if (_ticketsLoadError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _ticketsLoadError!,
                       style: AppTextStyles.style(
                         color: const Color(0xFFB42318),
                         fontSize: 11.5,
@@ -406,6 +426,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _isLoadingRenewals = false;
         _renewalLoadError = 'Renewals failed to load.';
+      });
+    }
+  }
+
+  Future<void> _loadRecentIssues() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingTickets = true;
+        _ticketsLoadError = null;
+      });
+    }
+
+    try {
+      final issues = await _apiService.getClientIssuesList();
+      final sorted = List<ClientIssueModel>.from(issues)
+        ..sort((a, b) {
+          final aDate = a.createdAt;
+          final bDate = b.createdAt;
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+          return bDate.compareTo(aDate);
+        });
+
+      if (!mounted) return;
+      setState(() {
+        _recentIssues = sorted.take(3).toList(growable: false);
+        _isLoadingTickets = false;
+      });
+    } on DioException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingTickets = false;
+        _ticketsLoadError =
+            'Support tickets failed to load (${error.response?.statusCode ?? 'network'}).';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingTickets = false;
+        _ticketsLoadError = 'Support tickets failed to load.';
       });
     }
   }
@@ -2394,7 +2455,15 @@ class _TaskSummaryChart extends StatelessWidget {
 }
 
 class _SupportTicketsSection extends StatelessWidget {
-  const _SupportTicketsSection();
+  const _SupportTicketsSection({
+    required this.issues,
+    required this.isLoading,
+    required this.errorMessage,
+  });
+
+  final List<ClientIssueModel> issues;
+  final bool isLoading;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -2421,14 +2490,36 @@ class _SupportTicketsSection extends StatelessWidget {
             ),
           ),
         ),
-        const _SupportTicketPreviewCard(),
+        const SizedBox(height: 12),
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else if (issues.isEmpty)
+          Text(
+            errorMessage ?? 'No support tickets available.',
+            style: AppTextStyles.style(
+              color: const Color(0xFF73839B),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+            ),
+          )
+        else
+          Column(
+            children: issues
+                .map((issue) => _SupportTicketPreviewCard(issue: issue))
+                .toList(growable: false),
+          ),
       ],
     );
   }
 }
 
 class _SupportTicketPreviewCard extends StatelessWidget {
-  const _SupportTicketPreviewCard();
+  const _SupportTicketPreviewCard({required this.issue});
+
+  final ClientIssueModel issue;
 
   @override
   Widget build(BuildContext context) {
@@ -2454,7 +2545,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Satyam Tiwari',
+                  issue.displayClient,
                   style: AppTextStyles.style(
                     color: const Color(0xFF6C7D96),
                     fontSize: 12.5,
@@ -2468,13 +2559,13 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE3F8FE),
+                  color: _priorityPillBg(issue.priority),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  'Low',
+                  issue.displayPriority,
                   style: AppTextStyles.style(
-                    color: const Color(0xFF1DB8E9),
+                    color: _priorityPillFg(issue.priority),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -2484,7 +2575,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Ddhrh',
+            issue.displayTitle,
             style: AppTextStyles.style(
               color: const Color(0xFF1B2237),
               fontSize: 18,
@@ -2495,7 +2586,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Crackteck',
+                issue.displayProject,
                 style: AppTextStyles.style(
                   color: const Color(0xFF73839B),
                   fontSize: 12.5,
@@ -2513,13 +2604,13 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFEEF1),
+                  color: _statusPillBg(issue.status),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  'Open',
+                  issue.displayStatus,
                   style: AppTextStyles.style(
-                    color: const Color(0xFFFF4D6D),
+                    color: _statusPillFg(issue.status),
                     fontSize: 10.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -2533,7 +2624,7 @@ class _SupportTicketPreviewCard extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'Mar 14, 2026 10:39',
+                issue.displayDate,
                 style: AppTextStyles.style(
                   color: const Color(0xFF73839B),
                   fontSize: 12,
@@ -2546,6 +2637,56 @@ class _SupportTicketPreviewCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Color _priorityPillBg(String priority) {
+  final normalized = priority.trim().toLowerCase();
+  if (normalized == 'high' || normalized == 'critical') {
+    return const Color(0xFFFFEEF1);
+  }
+  if (normalized == 'medium') {
+    return const Color(0xFFFFF5E5);
+  }
+  return const Color(0xFFE3F8FE);
+}
+
+Color _priorityPillFg(String priority) {
+  final normalized = priority.trim().toLowerCase();
+  if (normalized == 'high' || normalized == 'critical') {
+    return const Color(0xFFE11D48);
+  }
+  if (normalized == 'medium') {
+    return const Color(0xFFD97706);
+  }
+  return const Color(0xFF1DB8E9);
+}
+
+Color _statusPillBg(String status) {
+  final normalized = status.trim().toLowerCase();
+  if (normalized.contains('closed') ||
+      normalized.contains('done') ||
+      normalized.contains('resolved') ||
+      normalized.contains('complete')) {
+    return const Color(0xFFE8F8EE);
+  }
+  if (normalized.contains('progress') || normalized.contains('review')) {
+    return const Color(0xFFE3F8FE);
+  }
+  return const Color(0xFFFFEEF1);
+}
+
+Color _statusPillFg(String status) {
+  final normalized = status.trim().toLowerCase();
+  if (normalized.contains('closed') ||
+      normalized.contains('done') ||
+      normalized.contains('resolved') ||
+      normalized.contains('complete')) {
+    return const Color(0xFF16A34A);
+  }
+  if (normalized.contains('progress') || normalized.contains('review')) {
+    return const Color(0xFF1D4ED8);
+  }
+  return const Color(0xFFFF4D6D);
 }
 
 class _CalendarAppointmentsSection extends StatelessWidget {

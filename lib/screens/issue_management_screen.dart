@@ -183,12 +183,8 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
     try {
       await _apiService.deleteClientIssue(issueId);
       if (!mounted) return;
-      setState(() {
-        _allIssues = _allIssues
-            .where((entry) => entry.id.trim() != issueId)
-            .toList(growable: false);
-        if (_page > _pageCount) _page = _pageCount;
-      });
+      await _loadIssues(forceRefresh: true);
+      if (!mounted) return;
       _showSnack('Issue deleted', 'Issue deleted successfully.');
     } catch (error) {
       if (!mounted) return;
@@ -492,8 +488,8 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                             : _visible.isEmpty
                                             ? [
                                                 _IssueStateCard(
-                                                  message: _searchController
-                                                          .text
+                                                  message:
+                                                      _searchController.text
                                                           .trim()
                                                           .isEmpty
                                                       ? 'No issues available.'
@@ -671,11 +667,7 @@ class _AddIssueButton extends StatelessWidget {
             SizedBox(width: compact ? 8 : 10),
             Text(
               isLoading ? 'Saving Issue...' : 'Add New Issue',
-              style: _ts(
-                Colors.white,
-                compact ? 14 : 15,
-                FontWeight.w700,
-              ),
+              style: _ts(Colors.white, compact ? 14 : 15, FontWeight.w700),
             ),
           ],
         ),
@@ -906,27 +898,40 @@ class _IssueCard extends StatelessWidget {
             SizedBox(height: compact ? 14 : 16),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
             SizedBox(height: compact ? 12 : 14),
-            Wrap(
-              spacing: compact ? 8 : 10,
-              runSpacing: compact ? 8 : 10,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _Pill(
-                  issue.priority,
-                  _priorityBg(issue.priority),
-                  _priorityFg(issue.priority),
-                  compact: compact,
+                Expanded(
+                  child: Wrap(
+                    spacing: compact ? 8 : 10,
+                    runSpacing: compact ? 8 : 10,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _Pill(
+                        issue.priority,
+                        _priorityBg(issue.priority),
+                        _priorityFg(issue.priority),
+                        compact: compact,
+                      ),
+                      _Pill(
+                        issue.displayStatus,
+                        _statusBg(issue.status),
+                        _statusFg(issue.status),
+                        compact: compact,
+                      ),
+                    ],
+                  ),
                 ),
-                _Pill(
-                  issue.displayStatus,
-                  _statusBg(issue.status),
-                  _statusFg(issue.status),
-                  compact: compact,
-                ),
+                SizedBox(width: compact ? 8 : 10),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(
+                        minWidth: compact ? 32 : 36,
+                        minHeight: compact ? 32 : 36,
+                      ),
                       icon: Icon(
                         Icons.remove_red_eye_outlined,
                         color: const Color(0xFF94A3B8),
@@ -934,13 +939,7 @@ class _IssueCard extends StatelessWidget {
                       ),
                       onPressed: onView,
                     ),
-                    SizedBox(width: compact ? 12 : 14),
-                    Icon(
-                      Icons.edit_outlined,
-                      color: const Color(0xFF94A3B8),
-                      size: compact ? 18 : 20,
-                    ),
-                    SizedBox(width: compact ? 12 : 14),
+                    SizedBox(width: compact ? 4 : 6),
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(
@@ -1234,11 +1233,10 @@ class _CreateIssueDialogState extends State<_CreateIssueDialog> {
                                   isExpanded: true,
                                   items: widget.projects
                                       .map(
-                                        (project) =>
-                                            DropdownMenuItem<String>(
-                                              value: project.id,
-                                              child: Text(project.displayName),
-                                            ),
+                                        (project) => DropdownMenuItem<String>(
+                                          value: project.id,
+                                          child: Text(project.displayName),
+                                        ),
                                       )
                                       .toList(growable: false),
                                   onChanged: (value) {
@@ -1263,11 +1261,10 @@ class _CreateIssueDialogState extends State<_CreateIssueDialog> {
                                   isExpanded: true,
                                   items: widget.customers
                                       .map(
-                                        (customer) =>
-                                            DropdownMenuItem<String>(
-                                              value: customer.id,
-                                              child: Text(customer.displayName),
-                                            ),
+                                        (customer) => DropdownMenuItem<String>(
+                                          value: customer.id,
+                                          child: Text(customer.displayName),
+                                        ),
                                       )
                                       .toList(growable: false),
                                   onChanged: (value) {
@@ -1323,11 +1320,10 @@ class _CreateIssueDialogState extends State<_CreateIssueDialog> {
                                   isExpanded: true,
                                   items: _priorities
                                       .map(
-                                        (priority) =>
-                                            DropdownMenuItem<String>(
-                                              value: priority,
-                                              child: Text(_titleCase(priority)),
-                                            ),
+                                        (priority) => DropdownMenuItem<String>(
+                                          value: priority,
+                                          child: Text(_titleCase(priority)),
+                                        ),
                                       )
                                       .toList(growable: false),
                                   onChanged: (value) {
@@ -1490,11 +1486,7 @@ class _DialogField extends StatelessWidget {
                 ? [
                     TextSpan(
                       text: ' *',
-                      style: _ts(
-                        const Color(0xFFDC2626),
-                        18,
-                        FontWeight.w400,
-                      ),
+                      style: _ts(const Color(0xFFDC2626), 18, FontWeight.w400),
                     ),
                   ]
                 : const [],

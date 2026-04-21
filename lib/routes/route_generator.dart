@@ -33,6 +33,7 @@ import '../screens/add_staff_screen.dart';
 import '../screens/add_client_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
+import '../screens/settings_screen.dart';
 import '../models/client_issue_model.dart';
 import '../models/renewal_model.dart';
 
@@ -228,15 +229,7 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.settings:
-        return MaterialPageRoute(
-          builder: (_) => const ProfileSectionScreen(
-            title: 'Settings',
-            description:
-                'Configure preferences, app behavior, and notification options for your account.',
-            icon: Icons.settings_outlined,
-            accentColor: Color(0xFF0891B2),
-          ),
-        );
+        return MaterialPageRoute(builder: (_) => const SettingsScreen());
       default:
         return _errorRoute();
     }

@@ -23,6 +23,7 @@ import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import '../models/calendar_event_model.dart';
 import '../models/client_issue_model.dart';
+import '../models/client_issue_task_model.dart';
 import '../models/renewal_model.dart';
 import '../models/vendor_model.dart';
 import '../core/services/secure_storage_service.dart';
@@ -512,6 +513,40 @@ class ApiService {
     );
   }
 
+  /// Loads team options for client issue assignment.
+  Future<List<ClientIssueTeamOption>> getClientIssueTeams() async {
+    final response = await get(ApiConstants.clientissueformdata);
+    final records = _extractClientIssueNamedList(response.data, const [
+      'teams',
+    ]);
+    return records
+        .map(ClientIssueTeamOption.fromJson)
+        .where((entry) => entry.displayName.trim().isNotEmpty)
+        .toList(growable: false);
+  }
+
+  /// Assigns a team to a client issue.
+  Future<void> assignClientIssueTeam({
+    required String issueId,
+    required String teamName,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    final normalizedTeamName = teamName.trim();
+    if (normalizedIssueId.isEmpty) {
+      throw Exception('Invalid client issue id.');
+    }
+    if (normalizedTeamName.isEmpty) {
+      throw Exception('Team name is required.');
+    }
+
+    final path = ApiConstants.assignClientIssueTeam.replaceFirst(
+      '{id}',
+      normalizedIssueId,
+    );
+
+    await post(path, data: <String, dynamic>{'team_name': normalizedTeamName});
+  }
+
   /// Loads a single client issue by id.
   Future<ClientIssueModel> getClientIssueDetail(String id) async {
     final normalizedId = id.trim();
@@ -564,6 +599,207 @@ class ApiService {
       return ClientIssueModel.fromJson(_normalizeMap(source));
     }
     return null;
+  }
+
+  /// Creates a new task under a client issue.
+  Future<ClientIssueTaskModel?> createClientIssueTask({
+    required String issueId,
+    required CreateClientIssueTaskRequest request,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    if (normalizedIssueId.isEmpty) {
+      throw Exception('Invalid client issue id.');
+    }
+
+    final normalizedTitle = request.title.trim();
+    if (normalizedTitle.isEmpty) {
+      throw Exception('Task title is required.');
+    }
+
+    final path = ApiConstants.createClientIssueTask.replaceFirst(
+      '{id}',
+      normalizedIssueId,
+    );
+
+    final formData = FormData();
+    formData.fields.add(MapEntry('title', normalizedTitle));
+
+    final normalizedDescription = request.description?.trim() ?? '';
+    if (normalizedDescription.isNotEmpty) {
+      formData.fields.add(MapEntry('description', normalizedDescription));
+    }
+
+    final normalizedStatus = _normalizeClientIssueTaskStatus(request.status);
+    if (normalizedStatus.isNotEmpty) {
+      formData.fields.add(MapEntry('status', normalizedStatus));
+    }
+
+    final normalizedPriority = _normalizeClientIssueTaskPriority(
+      request.priority,
+    );
+    if (normalizedPriority.isNotEmpty) {
+      formData.fields.add(MapEntry('priority', normalizedPriority));
+    }
+
+    final normalizedAssignedTo = request.assignedTo?.trim() ?? '';
+    if (normalizedAssignedTo.isNotEmpty) {
+      formData.fields.add(MapEntry('assigned_to', normalizedAssignedTo));
+    }
+
+    if (request.startDate != null) {
+      formData.fields.add(
+        MapEntry('start_date', _formatApiDate(request.startDate!)),
+      );
+    }
+
+    if (request.dueDate != null) {
+      formData.fields.add(
+        MapEntry('due_date', _formatApiDate(request.dueDate!)),
+      );
+    }
+
+    for (final rawPath in request.attachmentPaths) {
+      final filePath = rawPath.trim();
+      if (filePath.isEmpty) continue;
+      final fileName = filePath.split(RegExp(r'[\\/]')).last;
+      formData.files.add(
+        MapEntry(
+          'attachments[]',
+          await MultipartFile.fromFile(filePath, filename: fileName),
+        ),
+      );
+    }
+
+    final response = await postForm(path, data: formData);
+    final source = _extractClientIssueTaskSource(response.data);
+    if (source is Map) {
+      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
+    }
+    return null;
+  }
+
+  /// Loads a task detail under a specific client issue.
+  Future<ClientIssueTaskModel> getClientIssueTaskDetail({
+    required String issueId,
+    required String taskId,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    final normalizedTaskId = taskId.trim();
+    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
+      throw Exception('Invalid issue/task id.');
+    }
+
+    final path = ApiConstants.clientIssueTaskDetail
+        .replaceFirst('{issueId}', normalizedIssueId)
+        .replaceFirst('{taskId}', normalizedTaskId);
+    final response = await get(path);
+    final source = _extractClientIssueTaskSource(response.data);
+    if (source is Map) {
+      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
+    }
+    throw Exception('Unexpected task detail response format.');
+  }
+
+  /// Updates a task under a specific client issue.
+  Future<ClientIssueTaskModel> updateClientIssueTask({
+    required String issueId,
+    required String taskId,
+    required String title,
+    String? description,
+    String? status,
+    String? priority,
+    String? assignedTo,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    final normalizedTaskId = taskId.trim();
+    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
+      throw Exception('Invalid issue/task id.');
+    }
+
+    final normalizedTitle = title.trim();
+    if (normalizedTitle.isEmpty) {
+      throw Exception('Task title is required.');
+    }
+
+    final path = ApiConstants.clientIssueTaskDetail
+        .replaceFirst('{issueId}', normalizedIssueId)
+        .replaceFirst('{taskId}', normalizedTaskId);
+
+    final payload = <String, dynamic>{
+      'title': normalizedTitle,
+      'description': (description ?? '').trim(),
+      'status': _normalizeClientIssueTaskStatus(status),
+      'priority': _normalizeClientIssueTaskPriority(priority),
+      'assigned_to': (assignedTo ?? '').trim(),
+    };
+
+    final response = await put(path, data: payload);
+    final source = _extractClientIssueTaskSource(response.data);
+    if (source is Map) {
+      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
+    }
+    throw Exception('Unexpected task update response format.');
+  }
+
+  /// Deletes a task under a specific client issue.
+  Future<void> deleteClientIssueTask({
+    required String issueId,
+    required String taskId,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    final normalizedTaskId = taskId.trim();
+    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
+      throw Exception('Invalid issue/task id.');
+    }
+
+    final path = ApiConstants.clientIssueTaskDetail
+        .replaceFirst('{issueId}', normalizedIssueId)
+        .replaceFirst('{taskId}', normalizedTaskId);
+    await delete(path);
+  }
+
+  /// Updates status of a task under a specific client issue.
+  Future<void> updateClientIssueTaskStatus({
+    required String issueId,
+    required String taskId,
+    required String status,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    final normalizedTaskId = taskId.trim();
+    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
+      throw Exception('Invalid issue/task id.');
+    }
+
+    final path = ApiConstants.clientIssueTaskStatus
+        .replaceFirst('{issueId}', normalizedIssueId)
+        .replaceFirst('{taskId}', normalizedTaskId);
+
+    await patch(
+      path,
+      data: <String, dynamic>{
+        'status': _normalizeClientIssueTaskStatus(status),
+      },
+    );
+  }
+
+  /// Updates status of a client issue.
+  Future<void> updateClientIssueStatus({
+    required String issueId,
+    required String status,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    if (normalizedIssueId.isEmpty) {
+      throw Exception('Invalid client issue id.');
+    }
+
+    final path = ApiConstants.clientIssueStatus.replaceFirst(
+      '{id}',
+      normalizedIssueId,
+    );
+    await patch(
+      path,
+      data: <String, dynamic>{'status': status.trim().toLowerCase()},
+    );
   }
 
   /// Loads a single vendor renewal by id.
@@ -2165,6 +2401,48 @@ class ApiService {
     return data;
   }
 
+  dynamic _extractClientIssueTaskSource(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final directTask = data['task'];
+      if (directTask is Map<String, dynamic>) {
+        return directTask;
+      }
+      if (directTask is Map) {
+        return directTask.map((key, value) => MapEntry(key.toString(), value));
+      }
+
+      final nestedData = data['data'];
+      if (nestedData is Map<String, dynamic>) {
+        final nestedTask = nestedData['task'];
+        if (nestedTask is Map<String, dynamic>) {
+          return nestedTask;
+        }
+        if (nestedTask is Map) {
+          return nestedTask.map(
+            (key, value) => MapEntry(key.toString(), value),
+          );
+        }
+      }
+      if (nestedData is Map) {
+        return _extractClientIssueTaskSource(
+          nestedData.map((key, value) => MapEntry(key.toString(), value)),
+        );
+      }
+
+      if (data.containsKey('id') && data.containsKey('title')) {
+        return data;
+      }
+    }
+
+    if (data is Map) {
+      return _extractClientIssueTaskSource(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+
+    return data;
+  }
+
   dynamic _extractProjectDetailSource(dynamic data) {
     if (data is Map<String, dynamic>) {
       for (final key in ['data', 'item', 'result']) {
@@ -2628,6 +2906,47 @@ class ApiService {
         return 'completed';
       default:
         return normalizedStatus.toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  String _normalizeClientIssueTaskStatus(String? status) {
+    final value = (status ?? '').trim().toLowerCase();
+    if (value.isEmpty) {
+      return 'todo';
+    }
+
+    switch (value) {
+      case 'to do':
+      case 'todo':
+        return 'todo';
+      case 'in progress':
+      case 'in_progress':
+        return 'in_progress';
+      case 'review':
+        return 'review';
+      case 'done':
+      case 'completed':
+      case 'complete':
+        return 'done';
+      default:
+        return value.replaceAll(' ', '_');
+    }
+  }
+
+  String _normalizeClientIssueTaskPriority(String? priority) {
+    final value = (priority ?? '').trim().toLowerCase();
+    if (value.isEmpty) {
+      return 'medium';
+    }
+
+    switch (value) {
+      case 'low':
+      case 'medium':
+      case 'high':
+      case 'critical':
+        return value;
+      default:
+        return value.replaceAll(' ', '_');
     }
   }
 
