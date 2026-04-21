@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import '../models/client_issue_model.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class IssueManagementScreen extends StatefulWidget {
   const IssueManagementScreen({super.key});
@@ -197,15 +198,10 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   }
 
   void _showSnack(String title, String message, {bool isError = false}) {
-    Get.snackbar(
+    AppSnackbar.show(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError
-          ? const Color(0xFFB3261E)
-          : const Color(0xFF153A63),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+
     );
   }
 
@@ -1573,3 +1569,4 @@ TextStyle _ts(
     letterSpacing: letterSpacing,
   );
 }
+

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 class DocumentPreviewScreen extends StatefulWidget {
@@ -188,9 +189,7 @@ class DocumentPreviewScreen extends StatefulWidget {
 
   static void _showSnackBar(BuildContext context, String message) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AppSnackbar.show('Notice', message);
   }
 
   @override

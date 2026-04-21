@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class EditTaskScreen extends StatefulWidget {
   const EditTaskScreen({super.key});
@@ -237,12 +238,10 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                       ElevatedButton(
                         onPressed: () {
                           Get.back();
-                          Get.snackbar(
+                          AppSnackbar.show(
                             'Success',
                             'Task updated successfully',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.green,
-                            colorText: Colors.white,
+
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -461,3 +460,4 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     );
   }
 }
+

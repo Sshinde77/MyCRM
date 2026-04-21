@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../core/constants/app_text_styles.dart';
 import '../models/renewal_model.dart';
 import '../models/vendor_model.dart';
 import '../services/api_service.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class VendorRenewalFormScreen extends StatelessWidget {
   const VendorRenewalFormScreen({super.key, this.initialRenewal});
@@ -396,13 +396,10 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
     required String message,
     required Color backgroundColor,
   }) {
-    Get.snackbar(
+    AppSnackbar.show(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: backgroundColor,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+
     );
   }
 
@@ -853,3 +850,4 @@ class _DateInputField extends StatelessWidget {
     );
   }
 }
+

@@ -1,12 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class CreateTaskScreen extends StatefulWidget {
   const CreateTaskScreen({
@@ -826,13 +826,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     if (_startDate != null &&
         _dueDate != null &&
         _dueDate!.isBefore(_startDate!)) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Invalid date range',
         'Due date cannot be earlier than start date.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB42318),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -876,41 +873,32 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       }
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Task updated' : 'Task created',
         _isEditMode
             ? 'The task has been updated successfully.'
             : 'The task has been created successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF166534),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       Navigator.of(context).pop(true);
     } on DioException catch (error) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Update task failed' : 'Create task failed',
         _errorText(
           error,
           _isEditMode ? 'Failed to update task.' : 'Failed to create task.',
         ),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB42318),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (error) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Update task failed' : 'Create task failed',
         error.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB42318),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
   }
@@ -1126,3 +1114,4 @@ String _initials(String value) {
   if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
   return (parts.first[0] + parts.last[0]).toUpperCase();
 }
+

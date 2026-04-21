@@ -8,6 +8,7 @@ import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/screens/document_preview_screen.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 /// Mobile-first tasks screen inspired by the provided mockup.
 class ToDoListScreen extends StatefulWidget {
@@ -214,13 +215,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       });
 
       if (showErrorSnackbar) {
-        Get.snackbar(
+        AppSnackbar.show(
           'Refresh failed',
           message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFB45309),
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
+
         );
       }
     } catch (error) {
@@ -242,13 +240,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       });
 
       if (showErrorSnackbar) {
-        Get.snackbar(
+        AppSnackbar.show(
           'Refresh failed',
           message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFB45309),
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
+
         );
       }
     }
@@ -256,13 +251,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
 
   Future<void> _handleEditTask(_TodoTask task) async {
     if (task.id == null || task.id!.isEmpty) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Edit task failed',
         'This task is missing an id from the API response.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -272,13 +264,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
 
   Future<void> _handleDeleteTask(_TodoTask task) async {
     if (task.id == null || task.id!.isEmpty) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete task failed',
         'This task is missing an id from the API response.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -329,13 +318,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         _removeTaskFromLists(task);
       });
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Task deleted',
         task.title,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } on DioException catch (error) {
       if (!mounted) {
@@ -350,26 +336,20 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete task failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
   }
 
   Future<void> _handleToggleTaskStatus(_TodoTask task) async {
     if (task.id == null || task.id!.isEmpty) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Status update failed',
         'This task is missing an id from the API response.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -396,15 +376,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         task.isCompleted ? 'Task marked incomplete' : 'Task marked complete',
         task.title,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: task.isCompleted
-            ? const Color(0xFFB45309)
-            : const Color(0xFF166534),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } on DioException catch (error) {
       if (!mounted) {
@@ -429,13 +404,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Status update failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
   }
@@ -1930,13 +1902,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       final details = oversizedFiles.length == 1
           ? oversizedFiles.first
           : '${oversizedFiles.length} files';
-      Get.snackbar(
+      AppSnackbar.show(
         'File too large',
         '$details exceed 10240 KB limit.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
 
@@ -2058,15 +2027,12 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Task updated' : 'Task created',
         _isEditMode
             ? 'The task has been updated successfully.'
             : 'The task has been added successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
 
       Navigator.of(context).pop(task);
@@ -2094,13 +2060,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Update task failed' : 'Create task failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -2411,13 +2374,10 @@ class _TaskAttachmentPreview extends StatelessWidget {
       return;
     }
 
-    Get.snackbar(
+    AppSnackbar.show(
       'Preview unavailable',
       'This file cannot be opened from here.',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFF7C2D12),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+
     );
   }
 
@@ -2957,3 +2917,4 @@ class _CardTitle extends StatelessWidget {
     );
   }
 }
+

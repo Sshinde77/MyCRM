@@ -1,13 +1,13 @@
 import 'package:country_state_city_selector/country_state_city_selector.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../core/constants/app_text_styles.dart';
 import '../models/lead_form_options_model.dart';
 import '../models/lead_model.dart';
 import '../services/api_service.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class AddLeadScreen extends StatefulWidget {
   const AddLeadScreen({super.key, this.leadId});
@@ -131,13 +131,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       _applyLeadValues(lead);
     } catch (_) {
       if (!mounted) return;
-      Get.snackbar(
+      AppSnackbar.show(
         'Lead details unavailable',
         'Unable to load the lead for editing.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -320,15 +317,12 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Lead updated' : 'Lead created',
         _isEditMode
             ? 'The lead has been updated successfully.'
             : 'The lead has been created successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF166534),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       Navigator.of(context).pop(true);
     } on DioException catch (error) {
@@ -336,28 +330,22 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Update lead failed' : 'Create lead failed',
         _resolveSubmitError(error),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (_) {
       if (!mounted) {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Update lead failed' : 'Create lead failed',
         _isEditMode
             ? 'Unable to update the lead. Please try again.'
             : 'Unable to create the lead. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -942,3 +930,4 @@ class _LocationPickerCard extends StatelessWidget {
     );
   }
 }
+

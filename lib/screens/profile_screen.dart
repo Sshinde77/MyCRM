@@ -7,6 +7,7 @@ import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
 import '../controllers/auth_controller.dart';
 import '../widgets/app_bottom_navigation.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -34,13 +35,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
       Get.offAllNamed(AppRoutes.login);
-      Get.snackbar(
+      AppSnackbar.show(
         'Logged out',
         'You have been signed out successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } on DioException catch (error) {
       if (!mounted) {
@@ -57,26 +55,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Logout failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (_) {
       if (!mounted) {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Logout failed',
         'Something went wrong while signing out.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -748,3 +740,4 @@ class _ProfileAction {
   final String routeName;
   final Color accentColor;
 }
+

@@ -8,6 +8,7 @@ import '../core/services/biometric_service.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../utils/validators.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 /// Login page styled to match the provided reference design.
 class LoginScreen extends StatefulWidget {
@@ -76,15 +77,12 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       Get.offNamed(AppRoutes.dashboard);
-      Get.snackbar(
+      AppSnackbar.show(
         'Login successful',
         response.message?.trim().isNotEmpty == true
             ? response.message!
             : 'Welcome back ${response.user.name.isNotEmpty ? response.user.name : 'to MyCRM'}.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } on DioException catch (error) {
       if (!mounted) {
@@ -101,26 +99,20 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Login failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (_) {
       if (!mounted) {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Login failed',
         'Something went wrong while signing in.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -142,15 +134,12 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _enableBiometricAfterLogin() async {
     final availability = await _biometricService.checkAvailability();
     if (!availability.isUsable) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Biometric not available',
         availability.status == BiometricAvailabilityStatus.notEnrolled
             ? 'Please enable fingerprint/face in device settings'
             : 'Biometric not available',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -159,13 +148,10 @@ class _LoginScreenState extends State<LoginScreen> {
       reason: 'Authenticate to enable biometric login',
     );
     if (!result.isSuccess) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Authentication failed',
         'Authentication failed',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -234,13 +220,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showBiometricError(String message) {
-    Get.snackbar(
+    AppSnackbar.show(
       'Authentication failed',
       message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFFB3261E),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+
     );
   }
 
@@ -640,3 +623,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+

@@ -8,6 +8,7 @@ import 'package:mycrm/services/api_service.dart';
 import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
 import '../widgets/app_bottom_navigation.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 /// Projects overview screen inspired by the provided mockup.
 class ProjectsScreen extends StatefulWidget {
@@ -77,13 +78,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Future<void> _deleteProject(ProjectModel project) async {
     final projectId = project.id.trim();
     if (projectId.isEmpty) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         'Project id is missing.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -153,36 +151,27 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       await ApiService.instance.deleteProject(projectId);
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Project deleted',
         '${project.title.isNotEmpty ? project.title : 'The project'} was deleted successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       _reload();
     } on DioException catch (error) {
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         _resolveDeleteError(error),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (error) {
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         error.toString().replaceFirst('Exception: ', ''),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -1793,3 +1782,4 @@ Color _memberAccentColor(String seed) {
   final hash = seed.codeUnits.fold<int>(0, (value, unit) => value + unit);
   return colors[hash % colors.length];
 }
+

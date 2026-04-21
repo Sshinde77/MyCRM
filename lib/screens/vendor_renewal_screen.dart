@@ -10,6 +10,7 @@ import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../screens/vendor_renewal_form_screen.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class VendorRenewalScreen extends StatelessWidget {
   const VendorRenewalScreen({super.key});
@@ -84,13 +85,10 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     debugPrint('Vendor renewal delete tapped: id=$renewalId');
     if (renewalId.isEmpty) {
       debugPrint('Vendor renewal delete blocked: missing id');
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         'Invalid vendor service id.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -137,13 +135,10 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       if (!mounted) {
         return;
       }
-      Get.snackbar(
+      AppSnackbar.show(
         'Deleted',
         'Vendor service deleted successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (error) {
       if (!mounted) {
@@ -172,13 +167,10 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       debugPrint('Vendor renewal delete error: $error');
       debugPrint('Vendor renewal delete message: $message');
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
   }
@@ -953,3 +945,4 @@ class _ServiceItem {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
+

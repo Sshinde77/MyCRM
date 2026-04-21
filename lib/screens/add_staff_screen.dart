@@ -9,6 +9,7 @@ import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class AddStaffScreen extends StatefulWidget {
   const AddStaffScreen({super.key});
@@ -899,13 +900,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
 
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Staff created',
         'The staff account has been created successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       Get.offNamed(AppRoutes.staff);
     } on DioException catch (error) {
@@ -920,13 +918,10 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Create staff failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -1223,28 +1218,18 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         'Permission is permanently denied. Enable it from app settings to $actionLabel.';
 
     if (status.isPermanentlyDenied || status.isRestricted) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Permission required',
         blockedMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB45309),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        mainButton: TextButton(
-          onPressed: openAppSettings,
-          child: const Text('Settings', style: TextStyle(color: Colors.white)),
-        ),
+
       );
       return false;
     }
 
-    Get.snackbar(
+    AppSnackbar.show(
       'Permission required',
       deniedMessage,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: const Color(0xFFB45309),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+
     );
     return false;
   }
@@ -1269,3 +1254,4 @@ class _FullWidthField extends StatelessWidget {
   @override
   Widget build(BuildContext context) => child;
 }
+

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 import '../models/calendar_event_model.dart';
 import '../models/client_issue_model.dart';
@@ -845,12 +846,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final id = draft.id;
     if (id == null || id.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Cannot edit: event id missing.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Notice', 'Cannot edit: event id missing.');
       return;
     }
 
@@ -910,44 +906,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _loadCalendarEvents();
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Appointment created.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Success', 'Appointment created.');
     } on DioException catch (error) {
       if (!mounted) return;
       final slotError = _extractThirtyMinuteSlotError(error);
       if (slotError != null) {
         setState(() => _calendarLoadError = slotError);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(slotError),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackbar.show('Notice', slotError);
         return;
       }
       setState(() {
         _calendarLoadError =
             'Failed to create appointment (${error.response?.statusCode ?? 'network'}).';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to create appointment.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Error', 'Failed to create appointment.');
     } catch (_) {
       if (!mounted) return;
       setState(() => _calendarLoadError = 'Failed to create appointment.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to create appointment.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Error', 'Failed to create appointment.');
     } finally {
       if (mounted) {
         setState(() => _isSavingCalendar = false);
@@ -981,44 +957,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _loadCalendarEvents();
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Appointment updated.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Success', 'Appointment updated.');
     } on DioException catch (error) {
       if (!mounted) return;
       final slotError = _extractThirtyMinuteSlotError(error);
       if (slotError != null) {
         setState(() => _calendarLoadError = slotError);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(slotError),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        AppSnackbar.show('Notice', slotError);
         return;
       }
       setState(() {
         _calendarLoadError =
             'Failed to update appointment (${error.response?.statusCode ?? 'network'}).';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to update appointment.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Error', 'Failed to update appointment.');
     } catch (_) {
       if (!mounted) return;
       setState(() => _calendarLoadError = 'Failed to update appointment.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to update appointment.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Error', 'Failed to update appointment.');
     } finally {
       if (mounted) {
         setState(() => _isSavingCalendar = false);
@@ -1038,33 +994,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       await _loadCalendarEvents();
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Appointment deleted.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Success', 'Appointment deleted.');
     } on DioException catch (error) {
       if (!mounted) return;
       setState(() {
         _calendarLoadError =
             'Failed to delete appointment (${error.response?.statusCode ?? 'network'}).';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to delete appointment.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Error', 'Failed to delete appointment.');
     } catch (_) {
       if (!mounted) return;
       setState(() => _calendarLoadError = 'Failed to delete appointment.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to delete appointment.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AppSnackbar.show('Error', 'Failed to delete appointment.');
     } finally {
       if (mounted) {
         setState(() => _isSavingCalendar = false);

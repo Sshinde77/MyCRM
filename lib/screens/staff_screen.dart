@@ -6,6 +6,7 @@ import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 import '../routes/app_routes.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -103,25 +104,19 @@ class _StaffScreenState extends State<StaffScreen> {
       await ApiService.instance.deleteStaff(member.id);
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Staff deleted',
         '${member.name.isNotEmpty ? member.name : 'The staff member'} was deleted successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       _reload();
     } on Exception catch (error) {
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         error.toString().replaceFirst('Exception: ', ''),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -823,3 +818,4 @@ Color _accentColorFor(StaffMemberModel member) {
   );
   return palette[seed % palette.length];
 }
+

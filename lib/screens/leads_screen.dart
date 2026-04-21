@@ -7,6 +7,7 @@ import '../models/lead_model.dart';
 import '../providers/lead_provider.dart';
 import '../routes/app_routes.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class LeadsScreen extends StatefulWidget {
   const LeadsScreen({super.key});
@@ -269,13 +270,10 @@ class _LeadsScreenState extends State<LeadsScreen> {
   ) async {
     final id = lead.id.trim();
     if (id.isEmpty) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         'Lead id is missing.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -318,25 +316,19 @@ class _LeadsScreenState extends State<LeadsScreen> {
       if (!mounted) {
         return;
       }
-      Get.snackbar(
+      AppSnackbar.show(
         'Lead deleted',
         '${lead.displayName.isEmpty ? 'Lead' : lead.displayName} was deleted successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         leadProvider.errorMessage ?? error.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB3261E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
   }
@@ -1008,3 +1000,4 @@ String _formatDate(DateTime? date) {
 
   return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }
+

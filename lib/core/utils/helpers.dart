@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 /// Small UI helpers used across screens.
 class Helpers {
@@ -9,13 +9,10 @@ class Helpers {
     String message, {
     bool isError = false,
   }) {
-    Get.snackbar(
+    AppSnackbar.show(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError ? Colors.red : Colors.green,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(10),
+      isError: isError,
     );
   }
 
@@ -24,3 +21,4 @@ class Helpers {
     FocusScope.of(context).unfocus();
   }
 }
+

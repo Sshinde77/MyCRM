@@ -13,7 +13,7 @@ void main() {
   testWidgets('Login screen renders with dummy credentials', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(const MyApp(initialDarkModeEnabled: false));
 
     expect(find.text('Welcome Back'), findsOneWidget);
     expect(find.text('Login'), findsOneWidget);

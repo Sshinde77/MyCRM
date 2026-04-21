@@ -8,6 +8,7 @@ import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 import '../routes/app_routes.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class StaffDetailScreen extends StatefulWidget {
   const StaffDetailScreen({super.key, this.staffId});
@@ -320,13 +321,10 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Staff updated',
         'Profile changes were saved successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       _reload();
     } on DioException catch (error) {
@@ -340,13 +338,10 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Save failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -1138,3 +1133,4 @@ class _DetailErrorState extends StatelessWidget {
     );
   }
 }
+

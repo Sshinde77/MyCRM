@@ -8,6 +8,7 @@ import 'package:mycrm/screens/to_do_list.dart' as to_do;
 import 'package:mycrm/services/api_service.dart';
 
 import '../widgets/app_bottom_navigation.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key, this.staffId, this.staffName});
@@ -474,13 +475,10 @@ class _TasksScreenState extends State<TasksScreen> {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Task deleted',
         task.title,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF166534),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       await _loadTasks();
     } on DioException catch (error) {
@@ -488,26 +486,20 @@ class _TasksScreenState extends State<TasksScreen> {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete task failed',
         _extractErrorMessage(error, fallback: 'Failed to delete task.'),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB42318),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete task failed',
         error.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB42318),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
   }
@@ -1328,3 +1320,4 @@ class _AssigneeAvatarStack extends StatelessWidget {
     );
   }
 }
+

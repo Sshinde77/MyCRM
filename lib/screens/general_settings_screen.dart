@@ -5,6 +5,7 @@ import '../controllers/auth_controller.dart';
 import '../core/services/app_settings_service.dart';
 import '../core/services/biometric_service.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class GeneralSettingsScreen extends StatefulWidget {
   const GeneralSettingsScreen({super.key});
@@ -75,13 +76,10 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       final availability = await _biometricService.checkAvailability();
       if (!availability.isUsable || !availability.hasFace) {
         if (mounted) {
-          Get.snackbar(
+          AppSnackbar.show(
             'Face lock unavailable',
             'Face authentication is not available on this device.',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFB3261E),
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(16),
+
           );
         }
         if (!mounted) return;
@@ -97,13 +95,10 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
 
       if (!authResult.isSuccess) {
         if (mounted) {
-          Get.snackbar(
+          AppSnackbar.show(
             'Face lock not enabled',
             authResult.message ?? 'Authentication failed',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: const Color(0xFFB3261E),
-            colorText: Colors.white,
-            margin: const EdgeInsets.all(16),
+
           );
         }
         if (!mounted) return;
@@ -141,11 +136,10 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
   }
 
   void _showComingSoon(String feature) {
-    Get.snackbar(
+    AppSnackbar.show(
       feature,
       'This option is added in UI and will be wired later.',
-      snackPosition: SnackPosition.BOTTOM,
-      margin: const EdgeInsets.all(16),
+
     );
   }
 
@@ -191,30 +185,30 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                _ToggleSettingTile(
-                  icon: Icons.face_retouching_natural,
-                  title: 'Face Lock',
-                  subtitle: 'Require face authentication where available',
-                  value: _faceLockEnabled,
-                  isBusy: _isUpdatingFaceLock,
-                  onChanged: _toggleFaceLock,
-                ),
+                // _ToggleSettingTile(
+                //   icon: Icons.face_retouching_natural,
+                //   title: 'Face Lock',
+                //   subtitle: 'Require face authentication where available',
+                //   value: _faceLockEnabled,
+                //   isBusy: _isUpdatingFaceLock,
+                //   onChanged: _toggleFaceLock,
+                // ),
                 const SizedBox(height: 10),
-                _ToggleSettingTile(
-                  icon: Icons.dark_mode_outlined,
-                  title: 'Dark Mode',
-                  subtitle: 'Switch app appearance to dark theme',
-                  value: _darkModeEnabled,
-                  isBusy: _isUpdatingDarkMode,
-                  onChanged: _toggleDarkMode,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Only biometric lock, face lock, and dark mode are active. Other options are placeholders.',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.65),
-                  ),
-                ),
+                // _ToggleSettingTile(
+                //   icon: Icons.dark_mode_outlined,
+                //   title: 'Dark Mode',
+                //   subtitle: 'Switch app appearance to dark theme',
+                //   value: _darkModeEnabled,
+                //   isBusy: _isUpdatingDarkMode,
+                //   onChanged: _toggleDarkMode,
+                // ),
+                // const SizedBox(height: 16),
+                // Text(
+                //   'Only biometric lock, face lock, and dark mode are active. Other options are placeholders.',
+                //   style: theme.textTheme.bodyMedium?.copyWith(
+                //     color: theme.colorScheme.onSurface.withOpacity(0.65),
+                //   ),
+                // ),
               ],
             ),
     );
@@ -377,3 +371,4 @@ class _DisabledToggleTile extends StatelessWidget {
     );
   }
 }
+

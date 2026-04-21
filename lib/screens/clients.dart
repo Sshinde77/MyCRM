@@ -6,6 +6,7 @@ import '../models/client_model.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key});
@@ -240,13 +241,10 @@ class _ClientsList extends StatelessWidget {
 
       try {
         await ApiService.instance.deleteClient(id);
-        Get.snackbar(
+        AppSnackbar.show(
           'Client deleted',
           'The client has been deleted successfully.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF153A63),
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
+
         );
         onRefresh();
       } on DioException catch (error) {
@@ -259,13 +257,10 @@ class _ClientsList extends StatelessWidget {
           message = error.message!.trim();
         }
 
-        Get.snackbar(
+        AppSnackbar.show(
           'Delete failed',
           message,
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFFB91C1C),
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
+
         );
       }
     }
@@ -509,3 +504,4 @@ class _ClientCard extends StatelessWidget {
     );
   }
 }
+

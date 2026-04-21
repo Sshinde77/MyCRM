@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/project_detail_model.dart';
 import 'package:mycrm/models/project_form_options_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class AddProjectScreen extends StatefulWidget {
   const AddProjectScreen({super.key, this.projectId});
@@ -146,23 +146,17 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
       _applyProjectValues(project);
     } on DioException catch (error) {
       if (!mounted) return;
-      Get.snackbar(
+      AppSnackbar.show(
         'Project details unavailable',
         _resolveFormOptionsError(error),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (_) {
       if (!mounted) return;
-      Get.snackbar(
+      AppSnackbar.show(
         'Project details unavailable',
         'Unable to load the project for editing.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -468,40 +462,31 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
 
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Project updated' : 'Project created',
         _isEditMode
             ? 'The project has been updated successfully.'
             : 'The project has been created successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF166534),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       Navigator.of(context).pop(true);
     } on DioException catch (error) {
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Update project failed' : 'Create project failed',
         _resolveSubmitError(error),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } catch (_) {
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         _isEditMode ? 'Update project failed' : 'Create project failed',
         _isEditMode
             ? 'Unable to update the project. Please try again.'
             : 'Unable to create the project. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF991B1B),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -1503,3 +1488,4 @@ InputDecoration _inputDecoration(String hint) {
     ),
   );
 }
+

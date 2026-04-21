@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/vendor_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class VendorFormScreen extends StatefulWidget {
   const VendorFormScreen({super.key, this.vendorId, this.vendor});
@@ -190,13 +190,10 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
     required String message,
     required Color backgroundColor,
   }) {
-    Get.snackbar(
+    AppSnackbar.show(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: backgroundColor,
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+
     );
   }
 
@@ -504,3 +501,4 @@ String _readVendorFormError(DioException error, {required String fallback}) {
 
   return fallback;
 }
+

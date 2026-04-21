@@ -6,6 +6,7 @@ import '../models/renewal_model.dart';
 import '../services/api_service.dart';
 import 'vendor_renewal_form_screen.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class VendorRenewalDetailScreen extends StatefulWidget {
   const VendorRenewalDetailScreen({super.key, this.renewal});
@@ -65,10 +66,10 @@ class _VendorRenewalDetailScreenState extends State<VendorRenewalDetailScreen> {
 
   Future<void> _openEditForm(RenewalModel? renewal) async {
     if (renewal == null) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Edit unavailable',
         'Vendor service details are not available yet.',
-        snackPosition: SnackPosition.BOTTOM,
+
       );
       return;
     }
@@ -417,3 +418,4 @@ class _DetailRowData {
   final bool asStatus;
   final bool isLast;
 }
+

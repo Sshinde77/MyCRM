@@ -5,6 +5,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/project_milestone_model.dart';
 import 'package:mycrm/models/project_issue_model.dart';
 import 'package:mycrm/models/project_detail_model.dart';
@@ -1115,9 +1116,7 @@ class _MilestonesSectionState extends State<_MilestonesSection> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+    AppSnackbar.show('Notice', message);
   }
 }
 
@@ -1816,9 +1815,7 @@ class _IssuesSectionState extends State<_IssuesSection> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+    AppSnackbar.show('Notice', message);
   }
 }
 
@@ -2760,9 +2757,7 @@ class _FilesSectionState extends State<_FilesSection> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
-    );
+    AppSnackbar.show('Notice', message);
   }
 }
 

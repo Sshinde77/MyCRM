@@ -9,6 +9,7 @@ import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../models/client_detail_model.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class AddClientScreen extends StatefulWidget {
   const AddClientScreen({super.key, this.clientId, this.isEdit = false});
@@ -97,13 +98,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
       _applyDetail(detail);
     } on DioException catch (_) {
       if (!mounted) return;
-      Get.snackbar(
+      AppSnackbar.show(
         'Unable to load client',
         'Please try again later.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB45309),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
       );
     } finally {
       if (mounted) {
@@ -522,13 +519,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
   Future<void> _submitClient() async {
     final validationError = _validateForm();
     if (validationError != null) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Missing details',
         validationError,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB45309),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
       );
       return;
     }
@@ -567,13 +560,10 @@ class _AddClientScreenState extends State<AddClientScreen> {
       await ApiService.instance.createClient(request);
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Client created',
         'The client has been added successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       Get.offNamed(AppRoutes.clients);
     } on DioException catch (error) {
@@ -588,13 +578,10 @@ class _AddClientScreenState extends State<AddClientScreen> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Create client failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -605,26 +592,20 @@ class _AddClientScreenState extends State<AddClientScreen> {
 
   Future<void> _submitUpdateClient() async {
     if (_clientId == null) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Unable to update',
         'Client id is missing.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
 
     final validationError = _validateForm();
     if (validationError != null) {
-      Get.snackbar(
+      AppSnackbar.show(
         'Missing details',
         validationError,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB45309),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       return;
     }
@@ -663,13 +644,10 @@ class _AddClientScreenState extends State<AddClientScreen> {
       await ApiService.instance.updateClient(id: _clientId!, request: request);
       if (!mounted) return;
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Client updated',
         'The client has been updated successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       Get.offNamed(AppRoutes.clients);
     } on DioException catch (error) {
@@ -684,13 +662,10 @@ class _AddClientScreenState extends State<AddClientScreen> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Update failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     } finally {
       if (mounted) {
@@ -967,3 +942,4 @@ class _DropdownFieldTile extends StatelessWidget {
     );
   }
 }
+

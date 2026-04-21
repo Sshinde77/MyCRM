@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/client_issue_model.dart';
 import 'package:mycrm/models/client_issue_task_model.dart';
 import 'package:mycrm/services/api_service.dart';
@@ -143,9 +144,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
     if (assigned == true && mounted) {
       await _refresh();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Team assigned successfully.')),
-      );
+      AppSnackbar.show('Success', 'Team assigned successfully.');
     }
   }
 
@@ -153,9 +152,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
     final issueId = issue.id.trim();
     if (issueId.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Issue id is missing.')));
+      AppSnackbar.show('Notice', 'Issue id is missing.');
       return;
     }
 
@@ -195,14 +192,10 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
       if (!mounted) return;
       await _refresh();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Issue closed successfully.')),
-      );
+      AppSnackbar.show('Success', 'Issue closed successfully.');
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(_messageFromError(error))));
+      AppSnackbar.show('Error', _messageFromError(error));
     } finally {
       if (mounted) {
         setState(() => _isClosingIssue = false);
@@ -559,9 +552,7 @@ class _AssignTeamsDialogState extends State<_AssignTeamsDialog> {
       Navigator.of(context).pop(true);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to assign team right now.')),
-      );
+      AppSnackbar.show('Error', 'Unable to assign team right now.');
     } finally {
       if (mounted) {
         setState(() => _assigningTeamName = null);
@@ -706,9 +697,7 @@ class _TaskBoardCard extends StatelessWidget {
                   await onTaskCreated!();
                 }
                 if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Task saved successfully.')),
-                );
+                AppSnackbar.show('Success', 'Task saved successfully.');
               },
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Add Task'),
@@ -866,14 +855,9 @@ class _TaskBoardCard extends StatelessWidget {
                                         await onTaskCreated!();
                                       }
                                       if (!context.mounted) return;
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Task updated successfully.',
-                                          ),
-                                        ),
+                                      AppSnackbar.show(
+                                        'Success',
+                                        'Task updated successfully.',
                                       );
                                     },
                                     icon: Icon(
@@ -932,14 +916,9 @@ class _TaskBoardCard extends StatelessWidget {
                                         deleted = true;
                                       } catch (_) {
                                         if (!context.mounted) return;
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Unable to delete task right now.',
-                                            ),
-                                          ),
+                                        AppSnackbar.show(
+                                          'Error',
+                                          'Unable to delete task right now.',
                                         );
                                         return;
                                       }
@@ -955,14 +934,9 @@ class _TaskBoardCard extends StatelessWidget {
                                       }
 
                                       if (!context.mounted) return;
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Task deleted successfully.',
-                                          ),
-                                        ),
+                                      AppSnackbar.show(
+                                        'Success',
+                                        'Task deleted successfully.',
                                       );
                                     },
                                     icon: Icon(

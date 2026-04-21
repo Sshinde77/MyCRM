@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../core/services/biometric_service.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 enum StartupDestination { login, biometricGate, dashboard }
 
@@ -125,15 +125,11 @@ class AuthController extends GetxController {
     required String message,
     bool isError = false,
   }) {
-    Get.snackbar(
+    AppSnackbar.show(
       title,
       message,
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: isError
-          ? const Color(0xFFB3261E)
-          : const Color(0xFF153A63),
-      colorText: Colors.white,
-      margin: const EdgeInsets.all(16),
+      isError: isError,
     );
+    }
   }
-}
+

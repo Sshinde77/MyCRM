@@ -8,6 +8,7 @@ import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 import 'vendor_detail_screen.dart';
 import 'vendor_form_screen.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class VendorDirectoryScreen extends StatefulWidget {
   const VendorDirectoryScreen({super.key});
@@ -103,13 +104,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
 
     try {
       await ApiService.instance.deleteVendor(vendor.id);
-      Get.snackbar(
+      AppSnackbar.show(
         'Vendor deleted',
         'The vendor has been deleted successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF153A63),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
       _reload();
     } on DioException catch (error) {
@@ -122,13 +120,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
         message = error.message!.trim();
       }
 
-      Get.snackbar(
+      AppSnackbar.show(
         'Delete failed',
         message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFFB91C1C),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+
       );
     }
   }
@@ -1349,3 +1344,4 @@ String _readVendorError(Object? error) {
   final fallback = error?.toString().trim() ?? '';
   return fallback.isEmpty ? 'Failed to load vendors.' : fallback;
 }
+
