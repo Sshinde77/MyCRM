@@ -104,7 +104,7 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
     if (widget.isError) {
       return const Color(0xFFEF4444).withOpacity(0.35);
     } else if (widget.isSuccess) {
-      return  Color(0xFF22C55E).withOpacity(0.35);
+      return Color(0xFF22C55E).withOpacity(0.35);
     } else {
       return Color(0xFF122B52).withOpacity(0.25);
     }
@@ -159,8 +159,8 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
                             widget.isError
                                 ? Icons.error_outline
                                 : widget.isSuccess
-                                    ? Icons.check_circle_outline
-                                    : Icons.info_outline,
+                                ? Icons.check_circle_outline
+                                : Icons.info_outline,
                             color: _getIconColor(),
                           ),
                           const SizedBox(width: 12),
@@ -182,7 +182,12 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
                                   widget.message,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.85),
+                                    color: const Color.fromARGB(
+                                      255,
+                                      0,
+                                      0,
+                                      0,
+                                    ).withOpacity(0.85),
                                   ),
                                 ),
                               ],

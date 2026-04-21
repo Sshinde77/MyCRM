@@ -241,7 +241,6 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           AppSnackbar.show(
                             'Success',
                             'Task updated successfully',
-
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -460,4 +459,3 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
     );
   }
 }
-

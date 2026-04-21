@@ -105,11 +105,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   Future<void> _deleteRenewal(RenewalModel renewal) async {
     final renewalId = renewal.id.trim();
     if (renewalId.isEmpty) {
-      AppSnackbar.show(
-        'Delete failed',
-        'Invalid service id.',
-
-      );
+      AppSnackbar.show('Delete failed', 'Invalid service id.');
       return;
     }
 
@@ -152,11 +148,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       if (!mounted) {
         return;
       }
-      AppSnackbar.show(
-        'Deleted',
-        'Service deleted successfully.',
-
-      );
+      AppSnackbar.show('Deleted', 'Service deleted successfully.');
     } catch (error) {
       if (!mounted) {
         return;
@@ -181,11 +173,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
         }
       }
 
-      AppSnackbar.show(
-        'Delete failed',
-        message,
-
-      );
+      AppSnackbar.show('Delete failed', message);
     }
   }
 
@@ -1376,11 +1364,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     required String message,
     required Color backgroundColor,
   }) {
-    AppSnackbar.show(
-      title,
-      message,
-
-    );
+    AppSnackbar.show(title, message);
   }
 
   @override
@@ -1967,4 +1951,3 @@ class _ServiceItem {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
-

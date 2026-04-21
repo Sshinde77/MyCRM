@@ -396,11 +396,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
     required String message,
     required Color backgroundColor,
   }) {
-    AppSnackbar.show(
-      title,
-      message,
-
-    );
+    AppSnackbar.show(title, message);
   }
 
   @override
@@ -850,4 +846,3 @@ class _DateInputField extends StatelessWidget {
     );
   }
 }
-

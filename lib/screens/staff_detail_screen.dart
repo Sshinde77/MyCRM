@@ -324,7 +324,6 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       AppSnackbar.show(
         'Staff updated',
         'Profile changes were saved successfully.',
-
       );
       _reload();
     } on DioException catch (error) {
@@ -338,11 +337,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         message = error.message!.trim();
       }
 
-      AppSnackbar.show(
-        'Save failed',
-        message,
-
-      );
+      AppSnackbar.show('Save failed', message);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);
@@ -1133,4 +1128,3 @@ class _DetailErrorState extends StatelessWidget {
     );
   }
 }
-

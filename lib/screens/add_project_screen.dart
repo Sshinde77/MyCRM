@@ -149,14 +149,12 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
       AppSnackbar.show(
         'Project details unavailable',
         _resolveFormOptionsError(error),
-
       );
     } catch (_) {
       if (!mounted) return;
       AppSnackbar.show(
         'Project details unavailable',
         'Unable to load the project for editing.',
-
       );
     } finally {
       if (mounted) {
@@ -467,7 +465,6 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
         _isEditMode
             ? 'The project has been updated successfully.'
             : 'The project has been created successfully.',
-
       );
       Navigator.of(context).pop(true);
     } on DioException catch (error) {
@@ -476,7 +473,6 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
       AppSnackbar.show(
         _isEditMode ? 'Update project failed' : 'Create project failed',
         _resolveSubmitError(error),
-
       );
     } catch (_) {
       if (!mounted) return;
@@ -486,7 +482,6 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
         _isEditMode
             ? 'Unable to update the project. Please try again.'
             : 'Unable to create the project. Please try again.',
-
       );
     } finally {
       if (mounted) {
@@ -1488,4 +1483,3 @@ InputDecoration _inputDecoration(String hint) {
     ),
   );
 }
-

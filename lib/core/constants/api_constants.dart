@@ -129,4 +129,11 @@ class ApiConstants {
       '$baseUrl/client-issues/{issueId}/tasks/{taskId}';
   static const String clientIssueTaskStatus =
       '$baseUrl/client-issues/{issueId}/tasks/{taskId}/status';
+
+  //settings
+  static const String companyInformation = '$baseUrl/settings/company';
+  static const String emailSettings = '$baseUrl/settings/email';
+  static const String renewalSettings = '$baseUrl/settings/renewal';
+  static const String teamSettings = '$baseUrl/settings/teams';
+  static const String departmentSettings = '$baseUrl/settings/departments';
 }

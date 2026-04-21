@@ -829,7 +829,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       AppSnackbar.show(
         'Invalid date range',
         'Due date cannot be earlier than start date.',
-
       );
       return;
     }
@@ -878,7 +877,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         _isEditMode
             ? 'The task has been updated successfully.'
             : 'The task has been created successfully.',
-
       );
       Navigator.of(context).pop(true);
     } on DioException catch (error) {
@@ -890,7 +888,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           error,
           _isEditMode ? 'Failed to update task.' : 'Failed to create task.',
         ),
-
       );
     } catch (error) {
       if (!mounted) return;
@@ -898,7 +895,6 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       AppSnackbar.show(
         _isEditMode ? 'Update task failed' : 'Create task failed',
         error.toString(),
-
       );
     }
   }
@@ -1114,4 +1110,3 @@ String _initials(String value) {
   if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
   return (parts.first[0] + parts.last[0]).toUpperCase();
 }
-

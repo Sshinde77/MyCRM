@@ -270,11 +270,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
   ) async {
     final id = lead.id.trim();
     if (id.isEmpty) {
-      AppSnackbar.show(
-        'Delete failed',
-        'Lead id is missing.',
-
-      );
+      AppSnackbar.show('Delete failed', 'Lead id is missing.');
       return;
     }
 
@@ -319,7 +315,6 @@ class _LeadsScreenState extends State<LeadsScreen> {
       AppSnackbar.show(
         'Lead deleted',
         '${lead.displayName.isEmpty ? 'Lead' : lead.displayName} was deleted successfully.',
-
       );
     } catch (error) {
       if (!mounted) {
@@ -328,7 +323,6 @@ class _LeadsScreenState extends State<LeadsScreen> {
       AppSnackbar.show(
         'Delete failed',
         leadProvider.errorMessage ?? error.toString(),
-
       );
     }
   }
@@ -1000,4 +994,3 @@ String _formatDate(DateTime? date) {
 
   return '${months[date.month - 1]} ${date.day}, ${date.year}';
 }
-

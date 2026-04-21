@@ -107,7 +107,6 @@ class _StaffScreenState extends State<StaffScreen> {
       AppSnackbar.show(
         'Staff deleted',
         '${member.name.isNotEmpty ? member.name : 'The staff member'} was deleted successfully.',
-
       );
       _reload();
     } on Exception catch (error) {
@@ -116,7 +115,6 @@ class _StaffScreenState extends State<StaffScreen> {
       AppSnackbar.show(
         'Delete failed',
         error.toString().replaceFirst('Exception: ', ''),
-
       );
     } finally {
       if (mounted) {
@@ -818,4 +816,3 @@ Color _accentColorFor(StaffMemberModel member) {
   );
   return palette[seed % palette.length];
 }
-

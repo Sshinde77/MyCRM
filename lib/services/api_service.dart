@@ -24,7 +24,12 @@ import '../models/user_model.dart';
 import '../models/calendar_event_model.dart';
 import '../models/client_issue_model.dart';
 import '../models/client_issue_task_model.dart';
+import '../models/company_information_model.dart';
+import '../models/department_setting_model.dart';
+import '../models/email_settings_model.dart';
+import '../models/renewal_settings_model.dart';
 import '../models/renewal_model.dart';
+import '../models/team_setting_model.dart';
 import '../models/vendor_model.dart';
 import '../core/services/secure_storage_service.dart';
 
@@ -410,6 +415,180 @@ class ApiService {
     final user = UserModel.fromJson(body);
     await _persistUser(user);
     return user;
+  }
+
+  /// Loads company information from settings endpoint.
+  Future<CompanyInformationModel> getCompanyInformation() async {
+    final response = await get(ApiConstants.companyInformation);
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    final normalized = _normalizeMap(source);
+    return CompanyInformationModel.fromJson(normalized);
+  }
+
+  /// Updates company information in settings endpoint.
+  Future<CompanyInformationModel> updateCompanyInformation(
+    CompanyInformationModel payload,
+  ) async {
+    final response = await put(
+      ApiConstants.companyInformation,
+      data: payload.toUpdateJson(),
+    );
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    final normalized = _normalizeMap(source);
+    return CompanyInformationModel.fromJson(normalized);
+  }
+
+  /// Loads email settings from settings endpoint.
+  Future<EmailSettingsModel> getEmailSettings() async {
+    final response = await get(ApiConstants.emailSettings);
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    final normalized = _normalizeMap(source);
+    return EmailSettingsModel.fromJson(normalized);
+  }
+
+  /// Updates email settings in settings endpoint.
+  Future<EmailSettingsModel> updateEmailSettings(
+    EmailSettingsModel payload,
+  ) async {
+    final response = await put(
+      ApiConstants.emailSettings,
+      data: payload.toUpdateJson(),
+    );
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    final normalized = _normalizeMap(source);
+    return EmailSettingsModel.fromJson(normalized);
+  }
+
+  /// Loads renewal notification settings from settings endpoint.
+  Future<RenewalSettingsModel> getRenewalSettings() async {
+    final response = await get(ApiConstants.renewalSettings);
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    final normalized = _normalizeMap(source);
+    return RenewalSettingsModel.fromJson(normalized);
+  }
+
+  /// Updates renewal notification settings in settings endpoint.
+  Future<RenewalSettingsModel> updateRenewalSettings(
+    RenewalSettingsModel payload,
+  ) async {
+    final response = await put(
+      ApiConstants.renewalSettings,
+      data: payload.toUpdateJson(),
+    );
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    final normalized = _normalizeMap(source);
+    return RenewalSettingsModel.fromJson(normalized);
+  }
+
+  /// Loads team settings list from settings endpoint.
+  Future<List<TeamSettingModel>> getTeamSettings() async {
+    final response = await get(ApiConstants.teamSettings);
+    final source = _extractTeamSettingsListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected team settings response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    return source
+        .map(_normalizeMap)
+        .map(TeamSettingModel.fromJson)
+        .toList(growable: false);
+  }
+
+  /// Updates team settings list in settings endpoint using multipart payload.
+  Future<List<TeamSettingModel>> updateTeamSettings(
+    List<TeamSettingModel> teams,
+  ) async {
+    final formData = FormData();
+
+    for (var i = 0; i < teams.length; i++) {
+      final team = teams[i];
+      formData.fields.add(MapEntry('teams[$i][name]', team.name.trim()));
+      formData.fields.add(
+        MapEntry('teams[$i][description]', team.description.trim()),
+      );
+
+      final newIconPath = team.newIconPath.trim();
+      final existingIconPath = team.existingIconPath.trim();
+
+      if (newIconPath.isNotEmpty) {
+        final fileName = newIconPath.split(RegExp(r'[\\/]')).last;
+        formData.files.add(
+          MapEntry(
+            'teams[$i][icon]',
+            await MultipartFile.fromFile(newIconPath, filename: fileName),
+          ),
+        );
+      } else if (existingIconPath.isNotEmpty) {
+        formData.fields.add(
+          MapEntry('teams[$i][existing_icon_path]', existingIconPath),
+        );
+      }
+    }
+
+    final response = await putForm(ApiConstants.teamSettings, data: formData);
+    final source = _extractTeamSettingsListSource(response.data);
+
+    if (source is List) {
+      return source
+          .map(_normalizeMap)
+          .map(TeamSettingModel.fromJson)
+          .toList(growable: false);
+    }
+
+    return teams
+        .map(
+          (entry) => entry.copyWith(newIconPath: ''),
+        )
+        .toList(growable: false);
+  }
+
+  /// Loads department settings list from settings endpoint.
+  Future<List<DepartmentSettingModel>> getDepartmentSettings() async {
+    final response = await get(ApiConstants.departmentSettings);
+    final source = _extractDepartmentSettingsListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected department settings response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    return source
+        .map(_normalizeMap)
+        .map(DepartmentSettingModel.fromJson)
+        .toList(growable: false);
+  }
+
+  /// Updates department settings list in settings endpoint.
+  Future<List<DepartmentSettingModel>> updateDepartmentSettings(
+    List<DepartmentSettingModel> departments,
+  ) async {
+    final payload = <String, dynamic>{
+      'departments': departments.map((item) => item.toJson()).toList(),
+    };
+
+    final response = await put(ApiConstants.departmentSettings, data: payload);
+    final source = _extractDepartmentSettingsListSource(response.data);
+
+    if (source is List) {
+      return source
+          .map(_normalizeMap)
+          .map(DepartmentSettingModel.fromJson)
+          .toList(growable: false);
+    }
+
+    return departments;
   }
 
   /// Loads the staff list for the authenticated user.
@@ -2260,6 +2439,90 @@ class ApiService {
     }
 
     return data;
+  }
+
+  dynamic _extractTeamSettingsListSource(dynamic data) {
+    if (data is List) {
+      return data;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final directTeams =
+          data['teams'] ?? data['team_settings'] ?? data['teamSettings'];
+      if (directTeams is List) {
+        return directTeams;
+      }
+
+      final nested = data['data'];
+      if (nested is List) {
+        return nested;
+      }
+      if (nested is Map<String, dynamic>) {
+        final nestedTeams =
+            nested['teams'] ??
+            nested['team_settings'] ??
+            nested['teamSettings'];
+        if (nestedTeams is List) {
+          return nestedTeams;
+        }
+      }
+      if (nested is Map) {
+        return _extractTeamSettingsListSource(
+          nested.map((key, value) => MapEntry(key.toString(), value)),
+        );
+      }
+    }
+
+    if (data is Map) {
+      return _extractTeamSettingsListSource(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+
+    return _extractListSource(data);
+  }
+
+  dynamic _extractDepartmentSettingsListSource(dynamic data) {
+    if (data is List) {
+      return data;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final directDepartments =
+          data['departments'] ??
+          data['department_settings'] ??
+          data['departmentSettings'];
+      if (directDepartments is List) {
+        return directDepartments;
+      }
+
+      final nested = data['data'];
+      if (nested is List) {
+        return nested;
+      }
+      if (nested is Map<String, dynamic>) {
+        final nestedDepartments =
+            nested['departments'] ??
+            nested['department_settings'] ??
+            nested['departmentSettings'];
+        if (nestedDepartments is List) {
+          return nestedDepartments;
+        }
+      }
+      if (nested is Map) {
+        return _extractDepartmentSettingsListSource(
+          nested.map((key, value) => MapEntry(key.toString(), value)),
+        );
+      }
+    }
+
+    if (data is Map) {
+      return _extractDepartmentSettingsListSource(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+
+    return _extractListSource(data);
   }
 
   dynamic _extractClientIssueListSource(dynamic data) {

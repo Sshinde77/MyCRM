@@ -190,11 +190,7 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
     required String message,
     required Color backgroundColor,
   }) {
-    AppSnackbar.show(
-      title,
-      message,
-
-    );
+    AppSnackbar.show(title, message);
   }
 
   @override
@@ -501,4 +497,3 @@ String _readVendorFormError(DioException error, {required String fallback}) {
 
   return fallback;
 }
-

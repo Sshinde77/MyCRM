@@ -125,11 +125,6 @@ class AuthController extends GetxController {
     required String message,
     bool isError = false,
   }) {
-    AppSnackbar.show(
-      title,
-      message,
-      isError: isError,
-    );
-    }
+    AppSnackbar.show(title, message, isError: isError);
   }
-
+}

@@ -475,11 +475,7 @@ class _TasksScreenState extends State<TasksScreen> {
         return;
       }
 
-      AppSnackbar.show(
-        'Task deleted',
-        task.title,
-
-      );
+      AppSnackbar.show('Task deleted', task.title);
       await _loadTasks();
     } on DioException catch (error) {
       if (!mounted) {
@@ -489,18 +485,13 @@ class _TasksScreenState extends State<TasksScreen> {
       AppSnackbar.show(
         'Delete task failed',
         _extractErrorMessage(error, fallback: 'Failed to delete task.'),
-
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
 
-      AppSnackbar.show(
-        'Delete task failed',
-        error.toString(),
-
-      );
+      AppSnackbar.show('Delete task failed', error.toString());
     }
   }
 
@@ -1320,4 +1311,3 @@ class _AssigneeAvatarStack extends StatelessWidget {
     );
   }
 }
-

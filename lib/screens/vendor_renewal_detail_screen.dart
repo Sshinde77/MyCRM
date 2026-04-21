@@ -69,7 +69,6 @@ class _VendorRenewalDetailScreenState extends State<VendorRenewalDetailScreen> {
       AppSnackbar.show(
         'Edit unavailable',
         'Vendor service details are not available yet.',
-
       );
       return;
     }
@@ -418,4 +417,3 @@ class _DetailRowData {
   final bool asStatus;
   final bool isLast;
 }
-

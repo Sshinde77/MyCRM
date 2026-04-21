@@ -85,11 +85,7 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     debugPrint('Vendor renewal delete tapped: id=$renewalId');
     if (renewalId.isEmpty) {
       debugPrint('Vendor renewal delete blocked: missing id');
-      AppSnackbar.show(
-        'Delete failed',
-        'Invalid vendor service id.',
-
-      );
+      AppSnackbar.show('Delete failed', 'Invalid vendor service id.');
       return;
     }
 
@@ -135,11 +131,7 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       if (!mounted) {
         return;
       }
-      AppSnackbar.show(
-        'Deleted',
-        'Vendor service deleted successfully.',
-
-      );
+      AppSnackbar.show('Deleted', 'Vendor service deleted successfully.');
     } catch (error) {
       if (!mounted) {
         return;
@@ -167,11 +159,7 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       debugPrint('Vendor renewal delete error: $error');
       debugPrint('Vendor renewal delete message: $message');
 
-      AppSnackbar.show(
-        'Delete failed',
-        message,
-
-      );
+      AppSnackbar.show('Delete failed', message);
     }
   }
 
@@ -945,4 +933,3 @@ class _ServiceItem {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
-

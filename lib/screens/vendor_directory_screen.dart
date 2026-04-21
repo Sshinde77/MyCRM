@@ -107,7 +107,6 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
       AppSnackbar.show(
         'Vendor deleted',
         'The vendor has been deleted successfully.',
-
       );
       _reload();
     } on DioException catch (error) {
@@ -120,11 +119,7 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
         message = error.message!.trim();
       }
 
-      AppSnackbar.show(
-        'Delete failed',
-        message,
-
-      );
+      AppSnackbar.show('Delete failed', message);
     }
   }
 
@@ -1344,4 +1339,3 @@ String _readVendorError(Object? error) {
   final fallback = error?.toString().trim() ?? '';
   return fallback.isEmpty ? 'Failed to load vendors.' : fallback;
 }
-

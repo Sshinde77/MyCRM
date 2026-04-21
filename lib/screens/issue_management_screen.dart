@@ -198,11 +198,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   }
 
   void _showSnack(String title, String message, {bool isError = false}) {
-    AppSnackbar.show(
-      title,
-      message,
-
-    );
+    AppSnackbar.show(title, message);
   }
 
   String _messageFromError(Object error) {
@@ -1569,4 +1565,3 @@ TextStyle _ts(
     letterSpacing: letterSpacing,
   );
 }
-

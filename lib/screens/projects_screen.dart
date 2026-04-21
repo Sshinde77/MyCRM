@@ -78,11 +78,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   Future<void> _deleteProject(ProjectModel project) async {
     final projectId = project.id.trim();
     if (projectId.isEmpty) {
-      AppSnackbar.show(
-        'Delete failed',
-        'Project id is missing.',
-
-      );
+      AppSnackbar.show('Delete failed', 'Project id is missing.');
       return;
     }
 
@@ -154,24 +150,18 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       AppSnackbar.show(
         'Project deleted',
         '${project.title.isNotEmpty ? project.title : 'The project'} was deleted successfully.',
-
       );
       _reload();
     } on DioException catch (error) {
       if (!mounted) return;
 
-      AppSnackbar.show(
-        'Delete failed',
-        _resolveDeleteError(error),
-
-      );
+      AppSnackbar.show('Delete failed', _resolveDeleteError(error));
     } catch (error) {
       if (!mounted) return;
 
       AppSnackbar.show(
         'Delete failed',
         error.toString().replaceFirst('Exception: ', ''),
-
       );
     } finally {
       if (mounted) {
@@ -438,32 +428,6 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 340) {
-          return Column(
-            children: [
-              _MetricCard(
-                icon: Icons.bar_chart_rounded,
-                iconColor: const Color(0xFF4F5D74),
-                value: '$totalProjects',
-                label: 'Total Projects',
-                percent: 'API',
-                accent: const Color(0xFF4F5D74),
-                isCompact: isCompact,
-              ),
-              const SizedBox(height: 14),
-              _MetricCard(
-                icon: Icons.groups_rounded,
-                iconColor: const Color(0xFF8B5CF6),
-                value: '$planningProjects',
-                label: 'Planning',
-                percent: 'API',
-                accent: const Color(0xFF8B5CF6),
-                isCompact: isCompact,
-              ),
-            ],
-          );
-        }
-
         return Row(
           children: [
             Expanded(
@@ -1782,4 +1746,3 @@ Color _memberAccentColor(String seed) {
   final hash = seed.codeUnits.fold<int>(0, (value, unit) => value + unit);
   return colors[hash % colors.length];
 }
-

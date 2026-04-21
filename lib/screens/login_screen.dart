@@ -82,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
         response.message?.trim().isNotEmpty == true
             ? response.message!
             : 'Welcome back ${response.user.name.isNotEmpty ? response.user.name : 'to MyCRM'}.',
-
       );
     } on DioException catch (error) {
       if (!mounted) {
@@ -99,11 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
 
-      AppSnackbar.show(
-        'Login failed',
-        message,
-
-      );
+      AppSnackbar.show('Login failed', message);
     } catch (_) {
       if (!mounted) {
         return;
@@ -112,7 +107,6 @@ class _LoginScreenState extends State<LoginScreen> {
       AppSnackbar.show(
         'Login failed',
         'Something went wrong while signing in.',
-
       );
     } finally {
       if (mounted) {
@@ -139,7 +133,6 @@ class _LoginScreenState extends State<LoginScreen> {
         availability.status == BiometricAvailabilityStatus.notEnrolled
             ? 'Please enable fingerprint/face in device settings'
             : 'Biometric not available',
-
       );
       return;
     }
@@ -148,11 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
       reason: 'Authenticate to enable biometric login',
     );
     if (!result.isSuccess) {
-      AppSnackbar.show(
-        'Authentication failed',
-        'Authentication failed',
-
-      );
+      AppSnackbar.show('Authentication failed', 'Authentication failed');
       return;
     }
 
@@ -220,11 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showBiometricError(String message) {
-    AppSnackbar.show(
-      'Authentication failed',
-      message,
-
-    );
+    AppSnackbar.show('Authentication failed', message);
   }
 
   Future<bool?> _askEnableBiometric() async {
@@ -623,4 +608,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

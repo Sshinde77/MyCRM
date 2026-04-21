@@ -9,11 +9,7 @@ class Helpers {
     String message, {
     bool isError = false,
   }) {
-    AppSnackbar.show(
-      title,
-      message,
-      isError: isError,
-    );
+    AppSnackbar.show(title, message, isError: isError);
   }
 
   /// Removes focus from the current text field to hide the keyboard.
@@ -21,4 +17,3 @@ class Helpers {
     FocusScope.of(context).unfocus();
   }
 }
-

@@ -134,7 +134,6 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       AppSnackbar.show(
         'Lead details unavailable',
         'Unable to load the lead for editing.',
-
       );
     } finally {
       if (mounted) {
@@ -322,7 +321,6 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         _isEditMode
             ? 'The lead has been updated successfully.'
             : 'The lead has been created successfully.',
-
       );
       Navigator.of(context).pop(true);
     } on DioException catch (error) {
@@ -333,7 +331,6 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       AppSnackbar.show(
         _isEditMode ? 'Update lead failed' : 'Create lead failed',
         _resolveSubmitError(error),
-
       );
     } catch (_) {
       if (!mounted) {
@@ -345,7 +342,6 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
         _isEditMode
             ? 'Unable to update the lead. Please try again.'
             : 'Unable to create the lead. Please try again.',
-
       );
     } finally {
       if (mounted) {
@@ -930,4 +926,3 @@ class _LocationPickerCard extends StatelessWidget {
     );
   }
 }
-

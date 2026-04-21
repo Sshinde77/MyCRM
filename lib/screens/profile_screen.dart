@@ -35,11 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
       Get.offAllNamed(AppRoutes.login);
-      AppSnackbar.show(
-        'Logged out',
-        'You have been signed out successfully.',
-
-      );
+      AppSnackbar.show('Logged out', 'You have been signed out successfully.');
     } on DioException catch (error) {
       if (!mounted) {
         return;
@@ -55,11 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
 
-      AppSnackbar.show(
-        'Logout failed',
-        message,
-
-      );
+      AppSnackbar.show('Logout failed', message);
     } catch (_) {
       if (!mounted) {
         return;
@@ -68,7 +60,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       AppSnackbar.show(
         'Logout failed',
         'Something went wrong while signing out.',
-
       );
     } finally {
       if (mounted) {
@@ -740,4 +731,3 @@ class _ProfileAction {
   final String routeName;
   final Color accentColor;
 }
-

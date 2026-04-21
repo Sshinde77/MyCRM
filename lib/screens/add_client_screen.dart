@@ -98,10 +98,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
       _applyDetail(detail);
     } on DioException catch (_) {
       if (!mounted) return;
-      AppSnackbar.show(
-        'Unable to load client',
-        'Please try again later.',
-      );
+      AppSnackbar.show('Unable to load client', 'Please try again later.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -519,10 +516,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
   Future<void> _submitClient() async {
     final validationError = _validateForm();
     if (validationError != null) {
-      AppSnackbar.show(
-        'Missing details',
-        validationError,
-      );
+      AppSnackbar.show('Missing details', validationError);
       return;
     }
 
@@ -563,7 +557,6 @@ class _AddClientScreenState extends State<AddClientScreen> {
       AppSnackbar.show(
         'Client created',
         'The client has been added successfully.',
-
       );
       Get.offNamed(AppRoutes.clients);
     } on DioException catch (error) {
@@ -578,11 +571,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
         message = error.message!.trim();
       }
 
-      AppSnackbar.show(
-        'Create client failed',
-        message,
-
-      );
+      AppSnackbar.show('Create client failed', message);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -592,21 +581,13 @@ class _AddClientScreenState extends State<AddClientScreen> {
 
   Future<void> _submitUpdateClient() async {
     if (_clientId == null) {
-      AppSnackbar.show(
-        'Unable to update',
-        'Client id is missing.',
-
-      );
+      AppSnackbar.show('Unable to update', 'Client id is missing.');
       return;
     }
 
     final validationError = _validateForm();
     if (validationError != null) {
-      AppSnackbar.show(
-        'Missing details',
-        validationError,
-
-      );
+      AppSnackbar.show('Missing details', validationError);
       return;
     }
 
@@ -647,7 +628,6 @@ class _AddClientScreenState extends State<AddClientScreen> {
       AppSnackbar.show(
         'Client updated',
         'The client has been updated successfully.',
-
       );
       Get.offNamed(AppRoutes.clients);
     } on DioException catch (error) {
@@ -662,11 +642,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
         message = error.message!.trim();
       }
 
-      AppSnackbar.show(
-        'Update failed',
-        message,
-
-      );
+      AppSnackbar.show('Update failed', message);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -942,4 +918,3 @@ class _DropdownFieldTile extends StatelessWidget {
     );
   }
 }
-

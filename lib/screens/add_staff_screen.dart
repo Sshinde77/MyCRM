@@ -903,7 +903,6 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       AppSnackbar.show(
         'Staff created',
         'The staff account has been created successfully.',
-
       );
       Get.offNamed(AppRoutes.staff);
     } on DioException catch (error) {
@@ -918,11 +917,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         message = error.message!.trim();
       }
 
-      AppSnackbar.show(
-        'Create staff failed',
-        message,
-
-      );
+      AppSnackbar.show('Create staff failed', message);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -1218,19 +1213,11 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         'Permission is permanently denied. Enable it from app settings to $actionLabel.';
 
     if (status.isPermanentlyDenied || status.isRestricted) {
-      AppSnackbar.show(
-        'Permission required',
-        blockedMessage,
-
-      );
+      AppSnackbar.show('Permission required', blockedMessage);
       return false;
     }
 
-    AppSnackbar.show(
-      'Permission required',
-      deniedMessage,
-
-    );
+    AppSnackbar.show('Permission required', deniedMessage);
     return false;
   }
 
@@ -1254,4 +1241,3 @@ class _FullWidthField extends StatelessWidget {
   @override
   Widget build(BuildContext context) => child;
 }
-

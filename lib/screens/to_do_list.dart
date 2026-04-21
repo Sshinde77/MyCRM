@@ -215,11 +215,7 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       });
 
       if (showErrorSnackbar) {
-        AppSnackbar.show(
-          'Refresh failed',
-          message,
-
-        );
+        AppSnackbar.show('Refresh failed', message);
       }
     } catch (error) {
       if (!mounted) {
@@ -240,11 +236,7 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       });
 
       if (showErrorSnackbar) {
-        AppSnackbar.show(
-          'Refresh failed',
-          message,
-
-        );
+        AppSnackbar.show('Refresh failed', message);
       }
     }
   }
@@ -254,7 +246,6 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       AppSnackbar.show(
         'Edit task failed',
         'This task is missing an id from the API response.',
-
       );
       return;
     }
@@ -267,7 +258,6 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       AppSnackbar.show(
         'Delete task failed',
         'This task is missing an id from the API response.',
-
       );
       return;
     }
@@ -318,11 +308,7 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         _removeTaskFromLists(task);
       });
 
-      AppSnackbar.show(
-        'Task deleted',
-        task.title,
-
-      );
+      AppSnackbar.show('Task deleted', task.title);
     } on DioException catch (error) {
       if (!mounted) {
         return;
@@ -336,11 +322,7 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         message = error.message!.trim();
       }
 
-      AppSnackbar.show(
-        'Delete task failed',
-        message,
-
-      );
+      AppSnackbar.show('Delete task failed', message);
     }
   }
 
@@ -349,7 +331,6 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       AppSnackbar.show(
         'Status update failed',
         'This task is missing an id from the API response.',
-
       );
       return;
     }
@@ -379,7 +360,6 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
       AppSnackbar.show(
         task.isCompleted ? 'Task marked incomplete' : 'Task marked complete',
         task.title,
-
       );
     } on DioException catch (error) {
       if (!mounted) {
@@ -404,11 +384,7 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         message = error.message!.trim();
       }
 
-      AppSnackbar.show(
-        'Status update failed',
-        message,
-
-      );
+      AppSnackbar.show('Status update failed', message);
     }
   }
 
@@ -1902,11 +1878,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       final details = oversizedFiles.length == 1
           ? oversizedFiles.first
           : '${oversizedFiles.length} files';
-      AppSnackbar.show(
-        'File too large',
-        '$details exceed 10240 KB limit.',
-
-      );
+      AppSnackbar.show('File too large', '$details exceed 10240 KB limit.');
     }
 
     if (pickedAttachments.isEmpty) {
@@ -2032,7 +2004,6 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         _isEditMode
             ? 'The task has been updated successfully.'
             : 'The task has been added successfully.',
-
       );
 
       Navigator.of(context).pop(task);
@@ -2063,7 +2034,6 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       AppSnackbar.show(
         _isEditMode ? 'Update task failed' : 'Create task failed',
         message,
-
       );
     } finally {
       if (mounted) {
@@ -2377,7 +2347,6 @@ class _TaskAttachmentPreview extends StatelessWidget {
     AppSnackbar.show(
       'Preview unavailable',
       'This file cannot be opened from here.',
-
     );
   }
 
@@ -2917,4 +2886,3 @@ class _CardTitle extends StatelessWidget {
     );
   }
 }
-

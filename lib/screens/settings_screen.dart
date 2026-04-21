@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_text_styles.dart';
+import 'company_information_screen.dart';
+import 'email_settings_screen.dart';
 import 'general_settings_screen.dart';
+import 'department_settings_screen.dart';
+import 'renewal_settings_screen.dart';
+import 'team_settings_screen.dart';
 import '../widgets/common_screen_app_bar.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -38,6 +43,46 @@ class SettingsScreen extends StatelessWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const GeneralSettingsScreen(),
+                        ),
+                      );
+                    }
+                  : index == 1
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CompanyInformationScreen(),
+                        ),
+                      );
+                    }
+                  : index == 2
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const EmailSettingsScreen(),
+                        ),
+                      );
+                    }
+                  : index == 3
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const RenewalSettingsScreen(),
+                        ),
+                      );
+                    }
+                  : index == 4
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const TeamSettingsScreen(),
+                        ),
+                      );
+                    }
+                  : index == 5
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DepartmentSettingsScreen(),
                         ),
                       );
                     }

@@ -244,7 +244,6 @@ class _ClientsList extends StatelessWidget {
         AppSnackbar.show(
           'Client deleted',
           'The client has been deleted successfully.',
-
         );
         onRefresh();
       } on DioException catch (error) {
@@ -257,11 +256,7 @@ class _ClientsList extends StatelessWidget {
           message = error.message!.trim();
         }
 
-        AppSnackbar.show(
-          'Delete failed',
-          message,
-
-        );
+        AppSnackbar.show('Delete failed', message);
       }
     }
 
@@ -504,4 +499,3 @@ class _ClientCard extends StatelessWidget {
     );
   }
 }
-

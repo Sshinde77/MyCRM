@@ -79,7 +79,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
           AppSnackbar.show(
             'Face lock unavailable',
             'Face authentication is not available on this device.',
-
           );
         }
         if (!mounted) return;
@@ -98,7 +97,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
           AppSnackbar.show(
             'Face lock not enabled',
             authResult.message ?? 'Authentication failed',
-
           );
         }
         if (!mounted) return;
@@ -139,7 +137,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
     AppSnackbar.show(
       feature,
       'This option is added in UI and will be wired later.',
-
     );
   }
 
@@ -371,4 +368,3 @@ class _DisabledToggleTile extends StatelessWidget {
     );
   }
 }
-
