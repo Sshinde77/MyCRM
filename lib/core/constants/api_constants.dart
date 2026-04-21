@@ -111,4 +111,14 @@ class ApiConstants {
   static const String clientRenewalsDetail = '$baseUrl/client-renewals/{id}';
   static const String updateClientRenewal = '$baseUrl/client-renewals/{id}';
   static const String deleteClientRenewal = '$baseUrl/client-renewals/{id}';
+
+  //client issues
+  static const String clientIssues = '$baseUrl/client-issues';
+  static const String createClientIssues = '$baseUrl/client-issues';
+  static const String clientIssuesDetail = '$baseUrl/client-issues/{id}';
+  static const String updateClientIssue = '$baseUrl/client-issues/{id}';
+  static const String deleteClientIssue = '$baseUrl/client-issues/{id}';
+  static const String clientissueformdata = '$baseUrl/client-issues/form-options';
+
+
 }

@@ -22,6 +22,7 @@ import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import '../models/calendar_event_model.dart';
+import '../models/client_issue_model.dart';
 import '../models/renewal_model.dart';
 import '../models/vendor_model.dart';
 import '../core/services/secure_storage_service.dart';
@@ -450,6 +451,119 @@ class ApiService {
     final response = await get(ApiConstants.clientRenewals);
     final records = _normalizeList(response.data);
     return records.map(RenewalModel.fromJson).toList();
+  }
+
+  /// Loads client issues for the authenticated user.
+  Future<List<ClientIssueModel>> getClientIssuesList() async {
+    final data = await getClientIssuesIndexData();
+    return data.issues;
+  }
+
+  /// Loads client issues and form option data from the index endpoint.
+  Future<ClientIssueIndexData> getClientIssuesIndexData() async {
+    final response = await get(ApiConstants.clientIssues);
+    final source = _extractClientIssueListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected client issues response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    final records = source.map(_normalizeMap).toList();
+    var projects = _extractClientIssueNamedList(response.data, const [
+      'projects',
+    ]);
+    var customers = _extractClientIssueNamedList(response.data, const [
+      'customers',
+      'clients',
+    ]);
+
+    if (projects.isEmpty || customers.isEmpty) {
+      try {
+        final optionsResponse = await get(ApiConstants.clientissueformdata);
+        if (projects.isEmpty) {
+          projects = _extractClientIssueNamedList(optionsResponse.data, const [
+            'projects',
+          ]);
+        }
+        if (customers.isEmpty) {
+          customers = _extractClientIssueNamedList(optionsResponse.data, const [
+            'customers',
+            'clients',
+          ]);
+        }
+      } catch (_) {
+        // The index endpoint already provides enough data for the list.
+      }
+    }
+
+    return ClientIssueIndexData(
+      issues: records.map(ClientIssueModel.fromJson).toList(),
+      projects: projects
+          .map(ClientIssueSelectOption.projectFromJson)
+          .where((entry) => entry.id.trim().isNotEmpty)
+          .toList(),
+      customers: customers
+          .map(ClientIssueSelectOption.customerFromJson)
+          .where((entry) => entry.id.trim().isNotEmpty)
+          .toList(),
+    );
+  }
+
+  /// Loads a single client issue by id.
+  Future<ClientIssueModel> getClientIssueDetail(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid client issue id.');
+    }
+
+    final path = ApiConstants.clientIssuesDetail.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final response = await get(path);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return ClientIssueModel.fromJson(body);
+  }
+
+  /// Deletes an existing client issue.
+  Future<void> deleteClientIssue(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid client issue id.');
+    }
+
+    final path = ApiConstants.deleteClientIssue.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    await delete(path);
+  }
+
+  /// Creates a new client issue.
+  Future<ClientIssueModel?> createClientIssue({
+    required String projectId,
+    required String customerId,
+    required String issueDescription,
+    required String priority,
+    required String status,
+  }) async {
+    final payload = <String, dynamic>{
+      'project_id': int.tryParse(projectId.trim()) ?? projectId.trim(),
+      'customer_id': int.tryParse(customerId.trim()) ?? customerId.trim(),
+      'issue_description': issueDescription.trim(),
+      'priority': priority.trim().toLowerCase(),
+      'status': status.trim().toLowerCase(),
+    };
+
+    final response = await post(ApiConstants.createClientIssues, data: payload);
+    final source = _extractDetailSource(response.data);
+    if (source is Map) {
+      return ClientIssueModel.fromJson(_normalizeMap(source));
+    }
+    return null;
   }
 
   /// Loads a single vendor renewal by id.
@@ -1828,6 +1942,9 @@ class ApiService {
         'vendorRenewals',
         'client_renewals',
         'clientRenewals',
+        'client_issues',
+        'clientIssues',
+        'clientissues',
         'projects',
         'milestones',
         'project_milestones',
@@ -1869,6 +1986,9 @@ class ApiService {
             'vendorRenewals',
             'client_renewals',
             'clientRenewals',
+            'client_issues',
+            'clientIssues',
+            'clientissues',
             'projects',
             'milestones',
             'project_milestones',
@@ -1906,6 +2026,90 @@ class ApiService {
     return data;
   }
 
+  dynamic _extractClientIssueListSource(dynamic data) {
+    if (data is List) {
+      return data;
+    }
+
+    if (data is Map<String, dynamic>) {
+      final directIssues =
+          data['issues'] ?? data['client_issues'] ?? data['clientIssues'];
+      if (directIssues is List) {
+        return directIssues;
+      }
+
+      final nested = data['data'];
+      if (nested is Map<String, dynamic>) {
+        final nestedIssues =
+            nested['issues'] ??
+            nested['client_issues'] ??
+            nested['clientIssues'];
+        if (nestedIssues is List) {
+          return nestedIssues;
+        }
+      }
+      if (nested is Map) {
+        return _extractClientIssueListSource(
+          nested.map((key, value) => MapEntry(key.toString(), value)),
+        );
+      }
+    }
+
+    if (data is Map) {
+      return _extractClientIssueListSource(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+
+    return data;
+  }
+
+  List<Map<String, dynamic>> _extractClientIssueNamedList(
+    dynamic data,
+    List<String> keys,
+  ) {
+    dynamic source;
+
+    if (data is Map<String, dynamic>) {
+      for (final key in keys) {
+        final value = data[key];
+        if (value is List) {
+          source = value;
+          break;
+        }
+      }
+
+      if (source == null) {
+        final nested = data['data'];
+        if (nested is Map<String, dynamic>) {
+          for (final key in keys) {
+            final value = nested[key];
+            if (value is List) {
+              source = value;
+              break;
+            }
+          }
+        } else if (nested is Map) {
+          return _extractClientIssueNamedList(
+            nested.map((key, value) => MapEntry(key.toString(), value)),
+            keys,
+          );
+        }
+      }
+    } else if (data is Map) {
+      return _extractClientIssueNamedList(
+        data.map((key, value) => MapEntry(key.toString(), value)),
+        keys,
+      );
+    }
+
+    if (source is! List) {
+      return const <Map<String, dynamic>>[];
+    }
+
+    return source.map(_normalizeMap).toList();
+  }
+
   dynamic _extractDetailSource(dynamic data) {
     if (data is Map<String, dynamic>) {
       for (final key in [
@@ -1923,6 +2127,8 @@ class ApiService {
         'project_milestone',
         'projectMilestone',
         'issue',
+        'client_issue',
+        'clientIssue',
         'project_issue',
         'projectIssue',
         'client',

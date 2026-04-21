@@ -33,6 +33,7 @@ import '../screens/add_staff_screen.dart';
 import '../screens/add_client_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
+import '../models/client_issue_model.dart';
 import '../models/renewal_model.dart';
 
 /// Builds screens for every named route in the app.
@@ -189,7 +190,12 @@ class RouteGenerator {
       case AppRoutes.raiseIssue:
         return MaterialPageRoute(builder: (_) => const IssueManagementScreen());
       case AppRoutes.issueDetail:
-        return MaterialPageRoute(builder: (_) => const IssueDetailScreen());
+        return MaterialPageRoute(
+          builder: (_) => IssueDetailScreen(
+            initialIssue: _extractClientIssue(settings.arguments),
+            issueId: _extractIssueId(settings.arguments),
+          ),
+        );
       case AppRoutes.staff:
         return MaterialPageRoute(builder: (_) => const StaffScreen());
       case AppRoutes.addStaff:
@@ -381,6 +387,48 @@ class RouteGenerator {
           .toList();
     }
     return const [];
+  }
+
+  static ClientIssueModel? _extractClientIssue(dynamic args) {
+    if (args is ClientIssueModel) return args;
+    if (args is Map && args['issue'] is ClientIssueModel) {
+      return args['issue'] as ClientIssueModel;
+    }
+    if (args is Map && args['issue'] is Map<String, dynamic>) {
+      return ClientIssueModel.fromJson(args['issue'] as Map<String, dynamic>);
+    }
+    if (args is Map && args['issue'] is Map) {
+      final issue = args['issue'] as Map;
+      return ClientIssueModel.fromJson(
+        issue.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+    if (args is Map<String, dynamic>) return ClientIssueModel.fromJson(args);
+    if (args is Map) {
+      return ClientIssueModel.fromJson(
+        args.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+    return null;
+  }
+
+  static String? _extractIssueId(dynamic args) {
+    if (args is ClientIssueModel) return args.id;
+    if (args is String || args is num) {
+      final normalized = args.toString().trim();
+      return normalized.isEmpty ? null : normalized;
+    }
+    if (args is Map) {
+      for (final key in const ['issue_id', 'issueId', 'id', '_id']) {
+        final value = args[key];
+        if (value == null) continue;
+        final normalized = value.toString().trim();
+        if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+          return normalized;
+        }
+      }
+    }
+    return null;
   }
 
   /// Generic fallback page for unknown routes.
