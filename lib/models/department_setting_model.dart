@@ -5,7 +5,11 @@ class DepartmentSettingModel {
 
   factory DepartmentSettingModel.fromJson(Map<String, dynamic> json) {
     return DepartmentSettingModel(
-      name: _readString(json, const ['name', 'department_name', 'departmentName']),
+      name: _readString(json, const [
+        'name',
+        'department_name',
+        'departmentName',
+      ]),
     );
   }
 

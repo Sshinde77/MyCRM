@@ -162,50 +162,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _ProfileHeader(actionsCount: _actions.length),
                         const SizedBox(height: 20),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final isWide = constraints.maxWidth >= 760;
-                            if (isWide) {
-                              return IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: _ProfileHeroCard(
-                                        isLoggingOut: _isLoggingOut,
-                                        onLogout: _logout,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      flex: 2,
-                                      child: _BiometricLoginCard(
-                                        controller: _authController,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            return Column(
-                              children: [
-                                _ProfileHeroCard(
-                                  isLoggingOut: _isLoggingOut,
-                                  onLogout: _logout,
-                                ),
-                                const SizedBox(height: 14),
-                                _BiometricLoginCard(
-                                  controller: _authController,
-                                ),
-                              ],
-                            );
-                          },
-                        ),
+                        // _BiometricLoginCard(controller: _authController),
                         const SizedBox(height: 20),
                         _ProfileActionsGrid(actions: _actions),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoggingOut ? null : _logout,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFDC2626),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            icon: Icon(
+                              _isLoggingOut
+                                  ? Icons.hourglass_top_rounded
+                                  : Icons.logout_rounded,
+                              size: 18,
+                            ),
+                            label: Text(
+                              _isLoggingOut ? 'Logging out...' : 'Logout',
+                              style: AppTextStyles.style(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -496,88 +485,6 @@ class _ProfileHeader extends StatelessWidget {
         const SizedBox(width: 10),
         const _CircleIconButton(icon: Icons.notifications_none_rounded),
       ],
-    );
-  }
-}
-
-class _ProfileHeroCard extends StatelessWidget {
-  const _ProfileHeroCard({required this.isLoggingOut, required this.onLogout});
-
-  final bool isLoggingOut;
-  final VoidCallback onLogout;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF224F93), Color(0xFF2B6FDE)],
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x201D6FEA),
-            blurRadius: 28,
-            offset: Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Workspace Control Center',
-            style: AppTextStyles.style(
-              color: Colors.white,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Open client tools, issue reporting, renewal tracking, and account settings from one place.',
-            style: AppTextStyles.style(
-              color: const Color(0xFFD9E7FF),
-              fontSize: 12.5,
-              height: 1.55,
-            ),
-          ),
-          const SizedBox(height: 18),
-          SizedBox(
-            height: 44,
-            child: ElevatedButton.icon(
-              onPressed: isLoggingOut ? null : onLogout,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF1F4E96),
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              icon: Icon(
-                isLoggingOut
-                    ? Icons.hourglass_top_rounded
-                    : Icons.logout_rounded,
-                size: 18,
-              ),
-              label: Text(
-                isLoggingOut ? 'Logging out...' : 'Logout',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF1F4E96),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

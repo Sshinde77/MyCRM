@@ -534,13 +534,7 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     required Widget right,
   }) {
     if (!isWide) {
-      return Column(
-        children: [
-          left,
-          const SizedBox(height: 12),
-          right,
-        ],
-      );
+      return Column(children: [left, const SizedBox(height: 12), right]);
     }
 
     return Row(

@@ -70,7 +70,8 @@ class _RenewalSettingsScreenState extends State<RenewalSettingsScreen> {
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
-      initialTime: _renewalNotificationTime ?? const TimeOfDay(hour: 9, minute: 0),
+      initialTime:
+          _renewalNotificationTime ?? const TimeOfDay(hour: 9, minute: 0),
     );
     if (picked == null || !mounted) return;
     setState(() => _renewalNotificationTime = picked);
@@ -151,9 +152,9 @@ class _RenewalSettingsScreenState extends State<RenewalSettingsScreen> {
   }
 
   TimeOfDay? _tryParseTime(String value) {
-    final match = RegExp(r'^(\d{1,2}):(\d{2})(?::\d{2})?$').firstMatch(
-      value.trim(),
-    );
+    final match = RegExp(
+      r'^(\d{1,2}):(\d{2})(?::\d{2})?$',
+    ).firstMatch(value.trim());
     if (match == null) return null;
     final hour = int.tryParse(match.group(1) ?? '');
     final minute = int.tryParse(match.group(2) ?? '');
@@ -353,13 +354,7 @@ class _RenewalSettingsScreenState extends State<RenewalSettingsScreen> {
     required Widget right,
   }) {
     if (!isWide) {
-      return Column(
-        children: [
-          left,
-          const SizedBox(height: 12),
-          right,
-        ],
-      );
+      return Column(children: [left, const SizedBox(height: 12), right]);
     }
 
     return Row(

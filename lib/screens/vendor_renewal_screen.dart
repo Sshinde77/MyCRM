@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -82,9 +83,13 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
 
   Future<void> _deleteRenewal(RenewalModel renewal) async {
     final renewalId = renewal.id.trim();
-    debugPrint('Vendor renewal delete tapped: id=$renewalId');
+    if (kDebugMode) {
+      debugPrint('Vendor renewal delete tapped: id=$renewalId');
+    }
     if (renewalId.isEmpty) {
-      debugPrint('Vendor renewal delete blocked: missing id');
+      if (kDebugMode) {
+        debugPrint('Vendor renewal delete blocked: missing id');
+      }
       AppSnackbar.show('Delete failed', 'Invalid vendor service id.');
       return;
     }
@@ -116,14 +121,20 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     );
 
     if (confirmed != true || !mounted) {
-      debugPrint('Vendor renewal delete cancelled: id=$renewalId');
+      if (kDebugMode) {
+        debugPrint('Vendor renewal delete cancelled: id=$renewalId');
+      }
       return;
     }
 
     try {
-      debugPrint('Vendor renewal delete API start: id=$renewalId');
+      if (kDebugMode) {
+        debugPrint('Vendor renewal delete API start: id=$renewalId');
+      }
       await ApiService.instance.deleteVendorRenewal(renewalId);
-      debugPrint('Vendor renewal delete API success: id=$renewalId');
+      if (kDebugMode) {
+        debugPrint('Vendor renewal delete API success: id=$renewalId');
+      }
       if (!mounted) {
         return;
       }
@@ -155,9 +166,11 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
           message = raw;
         }
       }
-      debugPrint('Vendor renewal delete API failed: id=$renewalId');
-      debugPrint('Vendor renewal delete error: $error');
-      debugPrint('Vendor renewal delete message: $message');
+      if (kDebugMode) {
+        debugPrint('Vendor renewal delete API failed: id=$renewalId');
+        debugPrint('Vendor renewal delete error: $error');
+        debugPrint('Vendor renewal delete message: $message');
+      }
 
       AppSnackbar.show('Delete failed', message);
     }

@@ -100,164 +100,165 @@ class _TasksScreenState extends State<TasksScreen> {
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
-          child: Column(
-            children: [
-              SizedBox(height: compact ? 8 : 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Tasks',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF111827),
-                      fontSize: compact ? 22 : 24,
-                      fontWeight: FontWeight.w700,
+          child: RefreshIndicator(
+            onRefresh: _loadTasks,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                SizedBox(height: compact ? 8 : 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Tasks',
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF111827),
+                        fontSize: compact ? 22 : 24,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      _circleIcon(
-                        Icons.checklist_rounded,
+                    Row(
+                      children: [
+                        _circleIcon(
+                          Icons.checklist_rounded,
+                          compact: compact,
+                          onTap: () =>
+                              Get.to(() => const to_do.ToDoListScreen()),
+                        ),
+                        SizedBox(width: compact ? 8 : 10),
+                        _circleIcon(
+                          Icons.notifications_none_rounded,
+                          compact: compact,
+                          onTap: () {},
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: compact ? 14 : 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Running Tasks',
+                        value: '$_runningCount',
+                        percent: '${_tasks.length} total',
+                        color: const Color(0xFF3B82F6),
+                        bgColor: const Color(0xFFE7F0FF),
                         compact: compact,
-                        onTap: () => Get.to(() => const to_do.ToDoListScreen()),
                       ),
-                      SizedBox(width: compact ? 8 : 10),
-                      _circleIcon(
-                        Icons.notifications_none_rounded,
+                    ),
+                    SizedBox(width: compact ? 8 : 10),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Completed',
+                        value: '$_completedCount',
+                        percent: _tasks.isEmpty
+                            ? '0%'
+                            : '${((_completedCount / _tasks.length) * 100).round()}%',
+                        color: const Color(0xFF22C55E),
+                        bgColor: const Color(0xFFE8F8EE),
                         compact: compact,
-                        onTap: () {},
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: compact ? 14 : 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Running Tasks',
-                      value: '$_runningCount',
-                      percent: '${_tasks.length} total',
-                      color: const Color(0xFF3B82F6),
-                      bgColor: const Color(0xFFE7F0FF),
-                      compact: compact,
                     ),
-                  ),
-                  SizedBox(width: compact ? 8 : 10),
-                  Expanded(
-                    child: _StatCard(
-                      title: 'Completed',
-                      value: '$_completedCount',
-                      percent: _tasks.isEmpty
-                          ? '0%'
-                          : '${((_completedCount / _tasks.length) * 100).round()}%',
-                      color: const Color(0xFF22C55E),
-                      bgColor: const Color(0xFFE8F8EE),
-                      compact: compact,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: compact ? 14 : 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      height: compact ? 42 : 44,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.search,
-                            color: Colors.grey,
-                            size: 18,
-                          ),
-                          SizedBox(width: compact ? 8 : 10),
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              decoration: const InputDecoration(
-                                hintText: 'Search tasks...',
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                focusedErrorBorder: InputBorder.none,
-                                isCollapsed: true,
-                              ),
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF111827),
-                                fontSize: compact ? 12 : 13,
-                                fontWeight: FontWeight.w500,
+                  ],
+                ),
+                SizedBox(height: compact ? 14 : 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        height: compact ? 42 : 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.search,
+                              color: Colors.grey,
+                              size: 18,
+                            ),
+                            SizedBox(width: compact ? 8 : 10),
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Search tasks...',
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
+                                  isCollapsed: true,
+                                ),
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF111827),
+                                  fontSize: compact ? 12 : 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: compact ? 8 : 10),
-                  Container(
-                    height: compact ? 42 : 44,
-                    width: compact ? 42 : 44,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF2563EB),
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      onPressed: _isLoading ? null : _openCreateTaskScreen,
-                      icon: Icon(
-                        Icons.add,
-                        color: Colors.white,
-                        size: compact ? 20 : 22,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (_isLoading) ...[
-                SizedBox(height: compact ? 10 : 12),
-                const LinearProgressIndicator(
-                  minHeight: 3,
-                  color: Color(0xFF2563EB),
-                  backgroundColor: Color(0xFFD8E7FB),
-                ),
-              ],
-              if (_loadError != null) ...[
-                SizedBox(height: compact ? 10 : 12),
-                _ErrorCard(message: _loadError!, onRetry: _loadTasks),
-              ],
-              SizedBox(height: compact ? 14 : 16),
-              Expanded(
-                child: _filteredTasks.isEmpty
-                    ? _EmptyState(
-                        compact: compact,
-                        hasQuery: _searchController.text.trim().isNotEmpty,
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadTasks,
-                        child: ListView.builder(
-                          itemCount: _filteredTasks.length,
-                          itemBuilder: (context, index) {
-                            final task = _filteredTasks[index];
-                            return _TaskCard(
-                              task: task,
-                              compact: compact,
-                              onTap: () => _openTaskDetail(task),
-                              onEdit: () => _openEditTaskScreen(task),
-                              onDelete: () => _deleteTask(task),
-                            );
-                          },
+                          ],
                         ),
                       ),
-              ),
-            ],
+                    ),
+                    SizedBox(width: compact ? 8 : 10),
+                    Container(
+                      height: compact ? 42 : 44,
+                      width: compact ? 42 : 44,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2563EB),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        onPressed: _isLoading ? null : _openCreateTaskScreen,
+                        icon: Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: compact ? 20 : 22,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (_isLoading) ...[
+                  SizedBox(height: compact ? 10 : 12),
+                  const LinearProgressIndicator(
+                    minHeight: 3,
+                    color: Color(0xFF2563EB),
+                    backgroundColor: Color(0xFFD8E7FB),
+                  ),
+                ],
+                if (_loadError != null) ...[
+                  SizedBox(height: compact ? 10 : 12),
+                  _ErrorCard(message: _loadError!, onRetry: _loadTasks),
+                ],
+                SizedBox(height: compact ? 14 : 16),
+                if (_filteredTasks.isEmpty)
+                  SizedBox(
+                    height: compact ? 260 : 320,
+                    child: _EmptyState(
+                      compact: compact,
+                      hasQuery: _searchController.text.trim().isNotEmpty,
+                    ),
+                  )
+                else
+                  ..._filteredTasks.map(
+                    (task) => _TaskCard(
+                      task: task,
+                      compact: compact,
+                      onTap: () => _openTaskDetail(task),
+                      onEdit: () => _openEditTaskScreen(task),
+                      onDelete: () => _deleteTask(task),
+                    ),
+                  ),
+                SizedBox(height: compact ? 8 : 12),
+              ],
+            ),
           ),
         ),
       ),

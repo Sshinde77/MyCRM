@@ -240,7 +240,12 @@ class RouteGenerator {
     if (args is String) return args;
     if (args is int) return args.toString();
     if (args is Map) {
-      final raw = args['id'] ?? args['clientId'] ?? args['client_id'];
+      final raw =
+          args['id'] ??
+          args['clientId'] ??
+          args['client_id'] ??
+          args['customerId'] ??
+          args['customer_id'];
       if (raw != null && raw.toString().trim().isNotEmpty) {
         return raw.toString();
       }

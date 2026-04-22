@@ -32,24 +32,39 @@ class ClientModel {
 
   factory ClientModel.fromJson(Map<String, dynamic> json) {
     final source = _extractSource(json);
+    final resolvedName = _readString(source, [
+      'name',
+      'cname',
+      'coname',
+      'client_name',
+      'company',
+      'companyName',
+      'company_name',
+      'title',
+    ]);
+    final fallbackPersonName = _readFullName(source);
+
+    final resolvedContactName = _readString(source, [
+      'contact_name',
+      'contactName',
+      'primary_contact',
+      'contact_person',
+      'owner',
+      'contactPerson',
+      'contact',
+    ]);
+
     return ClientModel(
       id: _readString(source, [
+        'customer_id',
+        'customerId',
         'id',
         '_id',
         'clientId',
         'client_id',
         'clientID',
       ]),
-      name: _readString(source, [
-        'name',
-        'cname',
-        'coname',
-        'client_name',
-        'company',
-        'companyName',
-        'company_name',
-        'title',
-      ]),
+      name: resolvedName.isNotEmpty ? resolvedName : fallbackPersonName,
       email: _readString(source, [
         'email',
         'email_address',
@@ -63,15 +78,9 @@ class ClientModel {
         'category',
       ]),
       website: _readString(source, ['website', 'website_url', 'site', 'url']),
-      contactName: _readString(source, [
-        'contact_name',
-        'contactName',
-        'primary_contact',
-        'contact_person',
-        'owner',
-        'contactPerson',
-        'contact',
-      ]),
+      contactName: resolvedContactName.isNotEmpty
+          ? resolvedContactName
+          : fallbackPersonName,
       contactRole: _readString(source, [
         'contact_role',
         'designation',
@@ -124,5 +133,15 @@ class ClientModel {
       }
     }
     return false;
+  }
+
+  static String _readFullName(Map<String, dynamic> json) {
+    final firstName = _readString(json, const ['first_name', 'firstName']);
+    final lastName = _readString(json, const ['last_name', 'lastName']);
+    final fullName = [firstName, lastName]
+        .where((entry) => entry.trim().isNotEmpty)
+        .join(' ')
+        .trim();
+    return fullName;
   }
 }

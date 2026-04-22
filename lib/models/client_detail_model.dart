@@ -62,9 +62,27 @@ class ClientDetailModel {
   }
 
   factory ClientDetailModel.fromJson(Map<String, dynamic> json) {
+    final fallbackPersonName = _readFullName(json);
+    final resolvedName = _readString(json, [
+      'name',
+      'full_name',
+      'fullName',
+      'company',
+      'company_name',
+      'companyName',
+      'title',
+    ]);
+
     return ClientDetailModel(
-      id: _readString(json, ['id', '_id', 'clientId', 'client_id']),
-      name: _readString(json, ['name', 'full_name', 'fullName']),
+      id: _readString(json, [
+        'customer_id',
+        'customerId',
+        'id',
+        '_id',
+        'clientId',
+        'client_id',
+      ]),
+      name: resolvedName.isNotEmpty ? resolvedName : fallbackPersonName,
       companyName: _readString(json, [
         'company',
         'companyName',
@@ -130,5 +148,14 @@ class ClientDetailModel {
       }
     }
     return '';
+  }
+
+  static String _readFullName(Map<String, dynamic> json) {
+    final firstName = _readString(json, const ['first_name', 'firstName']);
+    final lastName = _readString(json, const ['last_name', 'lastName']);
+    return [firstName, lastName]
+        .where((entry) => entry.trim().isNotEmpty)
+        .join(' ')
+        .trim();
   }
 }

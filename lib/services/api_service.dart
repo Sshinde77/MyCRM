@@ -331,6 +331,56 @@ class ApiService {
     return loginResponse;
   }
 
+  /// Syncs the current device FCM token to backend for the authenticated user.
+  Future<dynamic> syncFcmToken({
+    required String token,
+    required String userId,
+    required Map<String, dynamic> deviceInfo,
+    String event = 'login',
+  }) async {
+    final normalizedToken = token.trim();
+    if (normalizedToken.isEmpty) return;
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return;
+
+    final response = await post(
+      ApiConstants.testFcm,
+      data: <String, dynamic>{
+        'token': normalizedToken,
+        'user_id': normalizedUserId,
+        'event': event,
+        'device': deviceInfo,
+        'title': 'FCM Token Sync',
+        'body': 'Device token sync event: $event',
+      },
+    );
+    return response.data;
+  }
+
+  /// Notifies backend to detach FCM token when user logs out from this device.
+  Future<dynamic> unlinkFcmToken({
+    required String token,
+    required String userId,
+    required Map<String, dynamic> deviceInfo,
+  }) async {
+    final normalizedToken = token.trim();
+    final normalizedUserId = userId.trim();
+    if (normalizedToken.isEmpty || normalizedUserId.isEmpty) return;
+
+    final response = await post(
+      ApiConstants.testFcm,
+      data: <String, dynamic>{
+        'token': normalizedToken,
+        'user_id': normalizedUserId,
+        'event': 'logout',
+        'device': deviceInfo,
+        'title': 'FCM Token Unlink',
+        'body': 'Device token unlink on logout',
+      },
+    );
+    return response.data;
+  }
+
   Future<void> _persistAuth(LoginResponseModel response) async {
     await _storage.migrateLegacyPrefsIfNeeded();
 
@@ -546,9 +596,7 @@ class ApiService {
     }
 
     return teams
-        .map(
-          (entry) => entry.copyWith(newIconPath: ''),
-        )
+        .map((entry) => entry.copyWith(newIconPath: ''))
         .toList(growable: false);
   }
 
@@ -1089,7 +1137,9 @@ class ApiService {
     }
 
     final path = '${ApiConstants.vendorRenewals}/$normalizedId';
-    debugPrint('deleteVendorRenewal path: $path');
+    if (kDebugMode) {
+      debugPrint('deleteVendorRenewal path: $path');
+    }
     await delete(path);
   }
 
@@ -3033,6 +3083,8 @@ class ApiService {
   }
 
   void _debugLogFormData({required String path, required FormData data}) {
+    if (!kDebugMode) return;
+
     final fields = data.fields
         .map((entry) => '${entry.key}=${entry.value}')
         .join(', ');

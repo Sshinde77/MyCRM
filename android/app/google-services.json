@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "633846456010",
+    "firebase_url": "https://winter-brand-405107-default-rtdb.firebaseio.com",
+    "project_id": "winter-brand-405107",
+    "storage_bucket": "winter-brand-405107.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633846456010:android:63535f5c5aa7447c461e33",
+        "android_client_info": {
+          "package_name": "com.example.mycrm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "633846456010-6lcsm9o58iof0bqkj8j6vta4oq2rlep3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJRa_5lnLx9LIXdQEqIjWcRowdUcr7nyM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "633846456010-6lcsm9o58iof0bqkj8j6vta4oq2rlep3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

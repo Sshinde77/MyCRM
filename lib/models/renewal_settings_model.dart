@@ -13,24 +13,24 @@ class RenewalSettingsModel {
 
   factory RenewalSettingsModel.fromJson(Map<String, dynamic> json) {
     return RenewalSettingsModel(
-      renewalAdminEmail: _readString(
-        json,
-        const ['renewal_admin_email', 'renewalAdminEmail'],
-      ),
+      renewalAdminEmail: _readString(json, const [
+        'renewal_admin_email',
+        'renewalAdminEmail',
+      ]),
       renewalNotificationTime: _normalizeTime(
-        _readString(
-          json,
-          const ['renewal_notification_time', 'renewalNotificationTime'],
-        ),
+        _readString(json, const [
+          'renewal_notification_time',
+          'renewalNotificationTime',
+        ]),
       ),
-      renewalNoticeDays: _readInt(
-        json,
-        const ['renewal_notice_days', 'renewalNoticeDays'],
-      ),
-      renewalNotificationsEnabled: _readBool(
-        json,
-        const ['renewal_notifications_enabled', 'renewalNotificationsEnabled'],
-      ),
+      renewalNoticeDays: _readInt(json, const [
+        'renewal_notice_days',
+        'renewalNoticeDays',
+      ]),
+      renewalNotificationsEnabled: _readBool(json, const [
+        'renewal_notifications_enabled',
+        'renewalNotificationsEnabled',
+      ]),
     );
   }
 

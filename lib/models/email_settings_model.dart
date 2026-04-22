@@ -34,37 +34,39 @@ class EmailSettingsModel {
   factory EmailSettingsModel.fromJson(Map<String, dynamic> json) {
     return EmailSettingsModel(
       mailEngine: _readString(json, const ['mail_engine', 'mailEngine']),
-      emailProtocol: _readString(
-        json,
-        const ['email_protocol', 'emailProtocol'],
-      ),
-      emailEncryption: _readString(
-        json,
-        const ['email_encryption', 'emailEncryption'],
-      ),
+      emailProtocol: _readString(json, const [
+        'email_protocol',
+        'emailProtocol',
+      ]),
+      emailEncryption: _readString(json, const [
+        'email_encryption',
+        'emailEncryption',
+      ]),
       smtpHost: _readString(json, const ['smtp_host', 'smtpHost']),
       smtpPort: _readInt(json, const ['smtp_port', 'smtpPort']),
       email: _readString(json, const ['email']),
       smtpUsername: _readString(json, const ['smtp_username', 'smtpUsername']),
       smtpPassword: _readString(json, const ['smtp_password', 'smtpPassword']),
-      mailFromName: _readString(
-        json,
-        const ['mail_from_name', 'mailFromName', 'from_name', 'fromName'],
-      ),
+      mailFromName: _readString(json, const [
+        'mail_from_name',
+        'mailFromName',
+        'from_name',
+        'fromName',
+      ]),
       emailCharset: _readString(json, const ['email_charset', 'emailCharset']),
       bccAll: _readString(json, const ['bcc_all', 'bccAll']),
-      emailSignature: _readString(
-        json,
-        const ['email_signature', 'emailSignature'],
-      ),
-      predefinedHeader: _readString(
-        json,
-        const ['predefined_header', 'predefinedHeader'],
-      ),
-      predefinedFooter: _readString(
-        json,
-        const ['predefined_footer', 'predefinedFooter'],
-      ),
+      emailSignature: _readString(json, const [
+        'email_signature',
+        'emailSignature',
+      ]),
+      predefinedHeader: _readString(json, const [
+        'predefined_header',
+        'predefinedHeader',
+      ]),
+      predefinedFooter: _readString(json, const [
+        'predefined_footer',
+        'predefinedFooter',
+      ]),
     );
   }
 

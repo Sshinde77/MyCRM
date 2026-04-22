@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../core/constants/app_strings.dart';
 import '../core/constants/app_text_styles.dart';
 import 'company_information_screen.dart';
 import 'email_settings_screen.dart';
@@ -22,6 +24,7 @@ class SettingsScreen extends StatelessWidget {
     ),
     _SettingItem(title: 'Teams', icon: Icons.group_outlined),
     _SettingItem(title: 'Departments', icon: Icons.work_outline_rounded),
+    _SettingItem(title: 'Privacy Policy', icon: Icons.privacy_tip_outlined),
   ];
 
   @override
@@ -33,7 +36,7 @@ class SettingsScreen extends StatelessWidget {
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           itemCount: _items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),  
           itemBuilder: (context, index) {
             final item = _items[index];
             return _SettingTile(
@@ -86,12 +89,31 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       );
                     }
+                  : index == 6
+                  ? () => _openPrivacyPolicy(context)
                   : null,
             );
           },
         ),
       ),
     );
+  }
+
+  Future<void> _openPrivacyPolicy(BuildContext context) async {
+    final uri = Uri.tryParse(AppStrings.privacyPolicyUrl);
+    if (uri == null) {
+      _showMessage(context, 'Privacy policy URL is not configured.');
+      return;
+    }
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      _showMessage(context, 'Unable to open privacy policy.');
+    }
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

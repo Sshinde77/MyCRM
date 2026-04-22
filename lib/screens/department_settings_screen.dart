@@ -209,14 +209,21 @@ class _DepartmentSettingsScreenState extends State<DepartmentSettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        for (var i = 0; i < _departmentControllers.length; i++) ...[
+                        for (
+                          var i = 0;
+                          i < _departmentControllers.length;
+                          i++
+                        ) ...[
                           _buildDepartmentRow(i),
                           const SizedBox(height: 10),
                         ],
                         const SizedBox(height: 4),
                         const Text(
                           'Add department names that should be available in the system.',
-                          style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                         const SizedBox(height: 14),
                         Wrap(
@@ -324,11 +331,7 @@ class _DepartmentSettingsScreenState extends State<DepartmentSettingsScreen> {
           if (isNarrow) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                field,
-                const SizedBox(height: 10),
-                deleteButton,
-              ],
+              children: [field, const SizedBox(height: 10), deleteButton],
             );
           }
 

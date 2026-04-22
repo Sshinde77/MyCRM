@@ -306,7 +306,10 @@ class _TeamSettingsScreenState extends State<TeamSettingsScreen> {
                         const SizedBox(height: 4),
                         const Text(
                           'These teams will appear in staff forms and client issue assignment popup.',
-                          style: TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                         const SizedBox(height: 14),
                         Row(

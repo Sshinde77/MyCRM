@@ -18,10 +18,12 @@ class TeamSettingModel {
       name: _readString(json, const ['name', 'team_name', 'teamName']),
       description: _readString(json, const ['description', 'details']),
       iconUrl: _readString(json, const ['icon_url', 'iconUrl', 'icon']),
-      existingIconPath: _readString(
-        json,
-        const ['existing_icon_path', 'existingIconPath', 'icon_path', 'iconPath'],
-      ),
+      existingIconPath: _readString(json, const [
+        'existing_icon_path',
+        'existingIconPath',
+        'icon_path',
+        'iconPath',
+      ]),
       newIconPath: '',
     );
   }

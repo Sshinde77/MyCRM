@@ -32,6 +32,9 @@ dependencies:
   syncfusion_flutter_pdfviewer: ^27.2.5
   open_file: ^3.5.10
   path_provider: ^2.1.5
+  firebase_core: ^4.7.0
+  firebase_messaging: ^16.2.0
+  device_info_plus: ^10.1.2
 
 # Packages used only during development and testing.
 dev_dependencies:

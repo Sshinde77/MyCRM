@@ -17,6 +17,8 @@ class SecureStorageService {
   static const String refreshTokenKey = 'refresh_token';
   static const String currentUserKey = 'current_user';
   static const String biometricEnabledKey = 'biometric_enabled';
+  static const String fcmTokenKey = 'fcm_token';
+  static const String fcmTokenSyncedUserIdKey = 'fcm_token_synced_user_id';
 
   static const String _legacyAuthTokenKey = 'auth_token';
 

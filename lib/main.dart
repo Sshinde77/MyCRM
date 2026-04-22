@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'controllers/auth_controller.dart';
 import 'core/constants/app_strings.dart';
 import 'core/services/app_settings_service.dart';
+import 'core/services/push_notification_service.dart';
+import 'firebase_options.dart';
 import 'routes/app_routes.dart';
 import 'routes/route_generator.dart';
 import 'theme/app_theme.dart';
@@ -10,9 +13,39 @@ import 'theme/app_theme.dart';
 /// Application entry point.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await _initializeFirebase();
   Get.put(AuthController(), permanent: true);
   final darkModeEnabled = await AppSettingsService.instance.isDarkModeEnabled();
   runApp(MyApp(initialDarkModeEnabled: darkModeEnabled));
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    PushNotificationService.initialize();
+  });
+}
+
+Future<void> _initializeFirebase() async {
+  if (Firebase.apps.isNotEmpty) return;
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    return;
+  } catch (error, stackTrace) {
+    _printStartupLog('Firebase options initialization failed: $error');
+    debugPrint('$stackTrace');
+  }
+
+  try {
+    await Firebase.initializeApp();
+  } catch (error, stackTrace) {
+    _printStartupLog('Firebase native initialization failed: $error');
+    debugPrint('$stackTrace');
+  }
+}
+
+void _printStartupLog(String message) {
+  print(message);
+  debugPrint(message);
 }
 
 /// Root widget that configures app-wide theme and navigation.

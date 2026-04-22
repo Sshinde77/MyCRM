@@ -1,5 +1,10 @@
-import 'package:dio/dio.dart';
+import 'dart:async';
+import 'dart:developer';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
+import '../core/services/push_notification_service.dart';
 import '../core/services/secure_storage_service.dart';
 import '../models/login_response_model.dart';
 import 'api_service.dart';
@@ -17,7 +22,14 @@ class AuthService {
     required String email,
     required String password,
   }) async {
-    return await _apiService.login(email: email, password: password);
+    final response = await _apiService.login(email: email, password: password);
+    _emitAuthDebugLog(
+      'Login API response: message=${response.message ?? 'null'}, '
+      'user_id=${response.user.id}, user_name=${response.user.name}',
+    );
+    _emitAuthDebugLog('Access token (login): ${response.accessToken ?? 'null'}');
+    unawaited(PushNotificationService.onUserLogin(userId: response.user.id));
+    return response;
   }
 
   Future<bool> hasAccessToken() async {
@@ -74,9 +86,17 @@ class AuthService {
 
   Future<void> logout() async {
     try {
+      await PushNotificationService.onUserLogout();
       await _apiService.logout();
     } finally {
       await setBiometricEnabled(false);
     }
+  }
+
+  void _emitAuthDebugLog(String message) {
+    if (!kDebugMode) return;
+    print(message);
+    debugPrint(message);
+    log(message, name: 'AuthService');
   }
 }

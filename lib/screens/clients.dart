@@ -74,113 +74,116 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                children: [
-                  const SizedBox(height: 10),
-                  const CommonTopBar(title: 'Clients'),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatCard(
-                          title: 'Total Clients',
-                          value: totalClients.toString(),
-                          percent: 'API',
-                          icon: Icons.people,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _StatCard(
-                          title: 'Active',
-                          value: activeClients.toString(),
-                          percent: 'API',
-                          icon: Icons.check_circle,
-                          color: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 50,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(30),
+              child: RefreshIndicator(
+                onRefresh: () async => _reload(),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    const SizedBox(height: 10),
+                    const CommonTopBar(title: 'Clients'),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _StatCard(
+                            title: 'Total Clients',
+                            value: totalClients.toString(),
+                            percent: 'API',
+                            icon: Icons.people,
+                            color: Colors.black,
                           ),
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (_) => setState(() {}),
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              focusedErrorBorder: InputBorder.none,
-                              icon: Icon(Icons.search, color: Colors.grey),
-                              hintText: 'Search clients...',
-                              hintStyle: TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _StatCard(
+                            title: 'Active',
+                            value: activeClients.toString(),
+                            percent: 'API',
+                            icon: Icons.check_circle,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 50,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (_) => setState(() {}),
+                              decoration: const InputDecoration(
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                disabledBorder: InputBorder.none,
+                                errorBorder: InputBorder.none,
+                                focusedErrorBorder: InputBorder.none,
+                                icon: Icon(Icons.search, color: Colors.grey),
+                                hintText: 'Search clients...',
+                                hintStyle: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        _circleIcon(Icons.tune),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () => Get.toNamed(AppRoutes.addClient),
+                      borderRadius: BorderRadius.circular(30),
+                      child: Ink(
+                        height: 55,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2563EB),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            '+ Add New Client',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      _circleIcon(Icons.tune),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  InkWell(
-                    onTap: () => Get.toNamed(AppRoutes.addClient),
-                    borderRadius: BorderRadius.circular(30),
-                    child: Ink(
-                      height: 55,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2563EB),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '+ Add New Client',
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'RECENTLY UPDATED',
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                            color: Colors.grey,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
+                        Text('View All', style: TextStyle(color: Colors.blue)),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        'RECENTLY UPDATED',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text('View All', style: TextStyle(color: Colors.blue)),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: _ClientsList(
+                    const SizedBox(height: 10),
+                    _ClientsList(
                       snapshot: snapshot,
                       clients: filteredClients,
                       hasSearch: _searchController.text.trim().isNotEmpty,
                       onRefresh: _reload,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
             );
           },
@@ -288,13 +291,10 @@ class _ClientsList extends StatelessWidget {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
-      child: ListView.builder(
-        itemCount: clients.length,
-        itemBuilder: (context, index) {
-          final client = clients[index];
-          return _ClientCard(
+    return Column(
+      children: [
+        for (final client in clients)
+          _ClientCard(
             id: client.id,
             name: client.name.isNotEmpty ? client.name : 'Client',
             role: client.contactLine,
@@ -311,9 +311,8 @@ class _ClientsList extends StatelessWidget {
               );
             },
             onDelete: () => handleDelete(client.id),
-          );
-        },
-      ),
+          ),
+      ],
     );
   }
 }

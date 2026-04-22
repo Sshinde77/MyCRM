@@ -34,21 +34,58 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       throw Exception('Client id missing');
     }
 
+    final client = await ApiService.instance.getClientDetail(clientId);
+    final resolvedClientId = client.id.trim().isNotEmpty ? client.id : clientId;
+
     final responses = await Future.wait<dynamic>([
-      ApiService.instance.getClientDetail(clientId),
-      ApiService.instance.getClientProjectsList(clientId),
-      ApiService.instance.getClientTasksList(clientId),
+      _loadClientProjectsSafely(resolvedClientId, fallbackId: clientId),
+      _loadClientTasksSafely(resolvedClientId, fallbackId: clientId),
     ]);
 
-    final client = responses[0] as ClientDetailModel;
-    final projects = responses[1] as List<ProjectModel>;
-    final rawTasks = responses[2] as List<Map<String, dynamic>>;
+    final projects = responses[0] as List<ProjectModel>;
+    final rawTasks = responses[1] as List<Map<String, dynamic>>;
 
     return _ClientDetailBundle(
       client: client,
       projects: projects,
       tasks: rawTasks.map(_ClientTaskSummary.fromJson).toList(),
     );
+  }
+
+  Future<List<ProjectModel>> _loadClientProjectsSafely(
+    String primaryId, {
+    required String fallbackId,
+  }) async {
+    try {
+      return await ApiService.instance.getClientProjectsList(primaryId);
+    } on DioException {
+      if (primaryId != fallbackId) {
+        try {
+          return await ApiService.instance.getClientProjectsList(fallbackId);
+        } on DioException {
+          return const <ProjectModel>[];
+        }
+      }
+      return const <ProjectModel>[];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _loadClientTasksSafely(
+    String primaryId, {
+    required String fallbackId,
+  }) async {
+    try {
+      return await ApiService.instance.getClientTasksList(primaryId);
+    } on DioException {
+      if (primaryId != fallbackId) {
+        try {
+          return await ApiService.instance.getClientTasksList(fallbackId);
+        } on DioException {
+          return const <Map<String, dynamic>>[];
+        }
+      }
+      return const <Map<String, dynamic>>[];
+    }
   }
 
   void _reload() {
@@ -62,7 +99,12 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
     if (args is String) return args;
     if (args is int) return args.toString();
     if (args is Map) {
-      final raw = args['id'] ?? args['clientId'] ?? args['client_id'];
+      final raw =
+          args['id'] ??
+          args['clientId'] ??
+          args['client_id'] ??
+          args['customerId'] ??
+          args['customer_id'];
       if (raw != null && raw.toString().trim().isNotEmpty) {
         return raw.toString();
       }

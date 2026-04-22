@@ -1,6 +1,7 @@
 /// User-facing strings that are reused in multiple places.
 class AppStrings {
   static const String appName = 'MyCRM';
+  static const String privacyPolicyUrl = 'https://example.com/privacy-policy';
 
   // Route Names (for display/logging if needed)
   static const String dashboard = 'Dashboard';
