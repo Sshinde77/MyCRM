@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 
 import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
@@ -81,42 +82,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Renewal Master',
       icon: Icons.autorenew_rounded,
       routeName: AppRoutes.renewalMaster,
+      permission: AppPermission.viewRenewals,
       accentColor: Color(0xFF0F766E),
     ),
     _ProfileAction(
       title: 'Leads',
       icon: Icons.person_outline_rounded,
       routeName: AppRoutes.leads,
+      permission: AppPermission.viewLeads,
       accentColor: Color(0xFF7C3AED),
     ),
     _ProfileAction(
       title: 'Raise Issue',
       icon: Icons.report_gmailerrorred_rounded,
       routeName: AppRoutes.raiseIssue,
+      permission: AppPermission.viewRaiseIssue,
       accentColor: Color(0xFFDC2626),
     ),
     _ProfileAction(
       title: 'Staff',
       icon: Icons.groups_rounded,
       routeName: AppRoutes.staff,
+      permission: AppPermission.viewStaff,
       accentColor: Color(0xFFEA580C),
     ),
     _ProfileAction(
       title: 'Clients',
       icon: Icons.apartment_rounded,
       routeName: AppRoutes.clients,
+      permission: AppPermission.viewClients,
       accentColor: Color(0xFF2563EB),
     ),
     _ProfileAction(
       title: 'Access Control',
       icon: Icons.lock_outline_rounded,
       routeName: AppRoutes.accessControl,
+      permission: AppPermission.viewRoles,
       accentColor: Color(0xFF475569),
     ),
     _ProfileAction(
       title: 'Settings',
       icon: Icons.settings_outlined,
       routeName: AppRoutes.settings,
+      permission: AppPermission.manageSettings,
       accentColor: Color(0xFF0891B2),
     ),
   ];
@@ -147,64 +155,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : 32.0;
               final contentWidth = width >= 900 ? 920.0 : 520.0;
 
-              return SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  horizontalPadding,
-                  16,
-                  horizontalPadding,
-                  24,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: contentWidth),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _ProfileHeader(actionsCount: _actions.length),
-                        const SizedBox(height: 20),
-                        // _BiometricLoginCard(controller: _authController),
-                        const SizedBox(height: 20),
-                        _ProfileActionsGrid(actions: _actions),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton.icon(
-                            onPressed: _isLoggingOut ? null : _logout,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFDC2626),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: Icon(
-                              _isLoggingOut
-                                  ? Icons.hourglass_top_rounded
-                                  : Icons.logout_rounded,
-                              size: 18,
-                            ),
-                            label: Text(
-                              _isLoggingOut ? 'Logging out...' : 'Logout',
-                              style: AppTextStyles.style(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+              return FutureBuilder<List<_ProfileAction>>(
+                future: _visibleActions(),
+                builder: (context, snapshot) {
+                  final actions = snapshot.data ?? const <_ProfileAction>[];
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      16,
+                      horizontalPadding,
+                      24,
                     ),
-                  ),
-                ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: contentWidth),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _ProfileHeader(actionsCount: actions.length),
+                            const SizedBox(height: 20),
+                            // _BiometricLoginCard(controller: _authController),
+                            const SizedBox(height: 20),
+                            _ProfileActionsGrid(actions: actions),
+                            const SizedBox(height: 20),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: _isLoggingOut ? null : _logout,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFDC2626),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                icon: Icon(
+                                  _isLoggingOut
+                                      ? Icons.hourglass_top_rounded
+                                      : Icons.logout_rounded,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  _isLoggingOut ? 'Logging out...' : 'Logout',
+                                  style: AppTextStyles.style(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
         ),
       ),
     );
+  }
+
+  Future<List<_ProfileAction>> _visibleActions() async {
+    final visible = <_ProfileAction>[];
+    for (final action in _actions) {
+      final permission = action.permission;
+      if (permission == null || await PermissionService.has(permission)) {
+        visible.add(action);
+      }
+    }
+    return visible;
   }
 }
 
@@ -631,10 +657,12 @@ class _ProfileAction {
     required this.icon,
     required this.routeName,
     required this.accentColor,
+    this.permission,
   });
 
   final String title;
   final IconData icon;
   final String routeName;
   final Color accentColor;
+  final String? permission;
 }

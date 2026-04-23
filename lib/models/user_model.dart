@@ -9,6 +9,7 @@ class UserModel {
   final String? role;
   final String? roleId;
   final String? profilePicture;
+  final List<String> permissions;
 
   UserModel({
     required this.id,
@@ -18,6 +19,7 @@ class UserModel {
     this.role,
     this.roleId,
     this.profilePicture,
+    this.permissions = const [],
   });
 
   /// Creates a user object from API JSON.
@@ -27,7 +29,7 @@ class UserModel {
 
     return UserModel(
       id: _readString(source, ['id', '_id', 'user_id']),
-      name: _readString(source, ['name', 'full_name', 'username']),
+      name: _readDisplayName(source),
       email: _readString(source, ['email', 'email_address']),
       phone: _readNullableString(source, ['phone', 'mobile', 'phone_number']),
       role:
@@ -39,9 +41,11 @@ class UserModel {
       profilePicture: _readNullableString(source, [
         'profile_picture',
         'profilePicture',
+        'profile_image',
         'avatar',
         'image',
       ]),
+      permissions: _extractPermissionNames(json),
     );
   }
 
@@ -55,6 +59,7 @@ class UserModel {
       'role': role,
       'role_id': roleId,
       'profile_picture': profilePicture,
+      'permissions': permissions,
     };
   }
 
@@ -94,6 +99,108 @@ class UserModel {
       }
     }
     return const {};
+  }
+
+  static String _readDisplayName(Map<String, dynamic> json) {
+    final directName = _readString(json, ['name', 'full_name', 'username']);
+    if (directName.isNotEmpty) {
+      return directName;
+    }
+
+    final firstName = _readString(json, ['first_name', 'firstName']);
+    final lastName = _readString(json, ['last_name', 'lastName']);
+    final combined = [
+      firstName,
+      lastName,
+    ].where((part) => part.trim().isNotEmpty).join(' ').trim();
+    if (combined.isNotEmpty) {
+      return combined;
+    }
+
+    return _readString(json, ['email', 'email_address']);
+  }
+
+  static List<String> _extractPermissionNames(Map<String, dynamic> json) {
+    final permissions = <String>{};
+
+    void addPermission(dynamic value) {
+      if (value is String) {
+        final normalized = value.trim();
+        if (normalized.isNotEmpty) {
+          permissions.add(normalized);
+        }
+        return;
+      }
+
+      if (value is Map<String, dynamic>) {
+        final name = _readString(value, ['name', 'permission', 'key']);
+        if (name.isNotEmpty) {
+          permissions.add(name);
+        }
+        return;
+      }
+
+      if (value is Map) {
+        addPermission(value.map((key, item) => MapEntry(key.toString(), item)));
+      }
+    }
+
+    void addPermissionList(dynamic value) {
+      if (value is! List) {
+        return;
+      }
+      for (final entry in value) {
+        addPermission(entry);
+      }
+    }
+
+    void addRolePermissions(dynamic roles) {
+      if (roles is! List) {
+        return;
+      }
+
+      for (final role in roles) {
+        final roleMap = role is Map<String, dynamic>
+            ? role
+            : role is Map
+            ? role.map((key, item) => MapEntry(key.toString(), item))
+            : const <String, dynamic>{};
+        addPermissionList(roleMap['permissions']);
+      }
+    }
+
+    addPermissionList(json['permissions']);
+    addRolePermissions(json['roles']);
+
+    final nestedData = json['data'];
+    if (nestedData is Map<String, dynamic>) {
+      addPermissionList(nestedData['permissions']);
+      addRolePermissions(nestedData['roles']);
+      final nestedUser = nestedData['user'];
+      if (nestedUser is Map<String, dynamic>) {
+        addPermissionList(nestedUser['permissions']);
+        addRolePermissions(nestedUser['roles']);
+      }
+    } else if (nestedData is Map) {
+      final normalized = nestedData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      addPermissionList(normalized['permissions']);
+      addRolePermissions(normalized['roles']);
+      final nestedUser = normalized['user'];
+      if (nestedUser is Map<String, dynamic>) {
+        addPermissionList(nestedUser['permissions']);
+        addRolePermissions(nestedUser['roles']);
+      } else if (nestedUser is Map) {
+        final normalizedUser = nestedUser.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        addPermissionList(normalizedUser['permissions']);
+        addRolePermissions(normalizedUser['roles']);
+      }
+    }
+
+    return permissions.toList(growable: false)..sort();
   }
 
   static String _readString(Map<String, dynamic> json, List<String> keys) {

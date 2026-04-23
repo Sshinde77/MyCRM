@@ -5,7 +5,7 @@ import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/constants/app_colors.dart';
 
 import '../core/services/biometric_service.dart';
-import '../routes/app_routes.dart';
+import '../core/services/permission_service.dart';
 import '../services/auth_service.dart';
 import '../utils/validators.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
@@ -76,7 +76,12 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
 
-      Get.offNamed(AppRoutes.dashboard);
+      final landingRoute = await PermissionService.firstAllowedRoute();
+      if (!mounted) {
+        return;
+      }
+
+      Get.offNamed(landingRoute);
       AppSnackbar.show(
         'Login successful',
         response.message?.trim().isNotEmpty == true
@@ -196,7 +201,12 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      Get.offNamed(AppRoutes.dashboard);
+      final landingRoute = await PermissionService.firstAllowedRoute();
+      if (!mounted) {
+        return;
+      }
+
+      Get.offNamed(landingRoute);
     } catch (_) {
       _showBiometricError('Authentication failed');
     } finally {

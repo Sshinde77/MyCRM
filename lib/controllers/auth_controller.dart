@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../core/services/biometric_service.dart';
+import '../core/services/permission_service.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
@@ -112,8 +113,8 @@ class AuthController extends GetxController {
     Get.offAllNamed(AppRoutes.login);
   }
 
-  void goToDashboard() {
-    Get.offAllNamed(AppRoutes.dashboard);
+  Future<void> goToDashboard() async {
+    Get.offAllNamed(await PermissionService.firstAllowedRoute());
   }
 
   void goToBiometricGate() {

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/app_text_styles.dart';
+import '../core/services/permission_service.dart';
 import '../models/lead_model.dart';
 import '../providers/lead_provider.dart';
 import '../routes/app_routes.dart';
@@ -166,27 +167,30 @@ class _LeadsScreenState extends State<LeadsScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             flex: 2,
-                            child: ElevatedButton.icon(
-                              onPressed: () => Get.toNamed(AppRoutes.addLead),
-                              icon: const Icon(
-                                Icons.add_rounded,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                              label: const FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text('Add New Lead'),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2CB1FF),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
+                            child: PermissionGate(
+                              permission: AppPermission.createLeads,
+                              child: ElevatedButton.icon(
+                                onPressed: () => Get.toNamed(AppRoutes.addLead),
+                                icon: const Icon(
+                                  Icons.add_rounded,
+                                  color: Colors.white,
+                                  size: 18,
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                                label: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Add New Lead'),
                                 ),
-                                elevation: 0,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF2CB1FF),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  elevation: 0,
+                                ),
                               ),
                             ),
                           ),
@@ -665,24 +669,35 @@ class _LeadCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const _ActionIcon(icon: Icons.edit_outlined),
-                      const SizedBox(width: 16),
-                      isDeleting
-                          ? SizedBox(
-                              width: 32,
-                              height: 32,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.red.shade400,
+                      const PermissionGate(
+                        permission: AppPermission.editLeads,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ActionIcon(icon: Icons.edit_outlined),
+                            SizedBox(width: 16),
+                          ],
+                        ),
+                      ),
+                      PermissionGate(
+                        permission: AppPermission.deleteLeads,
+                        child: isDeleting
+                            ? SizedBox(
+                                width: 32,
+                                height: 32,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.red.shade400,
+                                  ),
                                 ),
+                              )
+                            : _ActionIcon(
+                                icon: Icons.delete_outline_rounded,
+                                color: Colors.red.shade400,
+                                onTap: onDelete,
                               ),
-                            )
-                          : _ActionIcon(
-                              icon: Icons.delete_outline_rounded,
-                              color: Colors.red.shade400,
-                              onTap: onDelete,
-                            ),
+                      ),
                     ],
                   ),
                 ],

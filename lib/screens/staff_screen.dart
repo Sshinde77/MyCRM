@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -170,8 +171,15 @@ class _StaffScreenState extends State<StaffScreen> {
                             onChanged: (_) => setState(() {}),
                           ),
                           SizedBox(height: compact ? 14 : 16),
-                          _AddStaffButton(compact: compact),
-                          SizedBox(height: compact ? 16 : 18),
+                          PermissionGate(
+                            permission: AppPermission.createStaff,
+                            child: Column(
+                              children: [
+                                _AddStaffButton(compact: compact),
+                                SizedBox(height: compact ? 16 : 18),
+                              ],
+                            ),
+                          ),
                           _SectionHeader(
                             compact: compact,
                             count: filteredMembers.length,
@@ -526,15 +534,24 @@ class _StaffCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(width: compact ? 10 : 12),
                 Expanded(
-                  child: _CardAction(
-                    icon: isDeleting
-                        ? Icons.hourglass_top_rounded
-                        : Icons.delete_outline_rounded,
-                    label: isDeleting ? 'Deleting' : 'Delete',
-                    isDestructive: true,
-                    onTap: isDeleting ? null : onDelete,
+                  child: PermissionGate(
+                    permission: AppPermission.deleteStaff,
+                    child: Row(
+                      children: [
+                        SizedBox(width: compact ? 10 : 12),
+                        Expanded(
+                          child: _CardAction(
+                            icon: isDeleting
+                                ? Icons.hourglass_top_rounded
+                                : Icons.delete_outline_rounded,
+                            label: isDeleting ? 'Deleting' : 'Delete',
+                            isDestructive: true,
+                            onTap: isDeleting ? null : onDelete,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

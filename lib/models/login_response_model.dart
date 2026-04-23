@@ -15,11 +15,10 @@ class LoginResponseModel {
   final String? message;
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
-    final normalizedUser = _extractUserSource(json);
     final normalizedTokenSource = _extractTokenSource(json);
 
     return LoginResponseModel(
-      user: UserModel.fromJson(normalizedUser),
+      user: UserModel.fromJson(json),
       accessToken: _readNullableString(normalizedTokenSource, const [
         'access_token',
         'accessToken',
@@ -32,23 +31,6 @@ class LoginResponseModel {
       ]),
       message: _readNullableString(json, ['message', 'detail']),
     );
-  }
-
-  static Map<String, dynamic> _extractUserSource(Map<String, dynamic> json) {
-    final nestedData = json['data'];
-    if (nestedData is Map<String, dynamic>) {
-      final nestedUser = nestedData['user'];
-      if (nestedUser is Map<String, dynamic>) {
-        return nestedUser;
-      }
-    }
-
-    final nestedUser = json['user'];
-    if (nestedUser is Map<String, dynamic>) {
-      return nestedUser;
-    }
-
-    return json;
   }
 
   static Map<String, dynamic> _extractTokenSource(Map<String, dynamic> json) {

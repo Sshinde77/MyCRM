@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/screens/create_task_screen.dart';
 import 'package:mycrm/screens/task_detail_screen.dart';
 import 'package:mycrm/screens/to_do_list.dart' as to_do;
@@ -207,19 +208,22 @@ class _TasksScreenState extends State<TasksScreen> {
                       ),
                     ),
                     SizedBox(width: compact ? 8 : 10),
-                    Container(
-                      height: compact ? 42 : 44,
-                      width: compact ? 42 : 44,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2563EB),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(
-                        onPressed: _isLoading ? null : _openCreateTaskScreen,
-                        icon: Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: compact ? 20 : 22,
+                    PermissionGate(
+                      permission: AppPermission.createTasks,
+                      child: Container(
+                        height: compact ? 42 : 44,
+                        width: compact ? 42 : 44,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2563EB),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          onPressed: _isLoading ? null : _openCreateTaskScreen,
+                          icon: Icon(
+                            Icons.add,
+                            color: Colors.white,
+                            size: compact ? 20 : 22,
+                          ),
                         ),
                       ),
                     ),
@@ -771,20 +775,31 @@ class _TaskCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  _TaskActionButton(
-                    icon: Icons.edit_outlined,
-                    label: 'Edit',
-                    color: const Color(0xFF2563EB),
-                    compact: compact,
-                    onTap: onEdit,
+                  PermissionGate(
+                    permission: AppPermission.editTasks,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _TaskActionButton(
+                          icon: Icons.edit_outlined,
+                          label: 'Edit',
+                          color: const Color(0xFF2563EB),
+                          compact: compact,
+                          onTap: onEdit,
+                        ),
+                        SizedBox(width: compact ? 8 : 10),
+                      ],
+                    ),
                   ),
-                  SizedBox(width: compact ? 8 : 10),
-                  _TaskActionButton(
-                    icon: Icons.delete_outline_rounded,
-                    label: 'Delete',
-                    color: const Color(0xFFDC2626),
-                    compact: compact,
-                    onTap: onDelete,
+                  PermissionGate(
+                    permission: AppPermission.deleteTasks,
+                    child: _TaskActionButton(
+                      icon: Icons.delete_outline_rounded,
+                      label: 'Delete',
+                      color: const Color(0xFFDC2626),
+                      compact: compact,
+                      onTap: onDelete,
+                    ),
                   ),
                 ],
               ),

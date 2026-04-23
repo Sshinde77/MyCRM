@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 
 import '../models/calendar_event_model.dart';
@@ -58,10 +59,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _displayedMonth = DateTime(now.year, now.month);
     _appointments = _seedAppointments();
     _loadCurrentUser();
-    _loadCalendarEvents();
-    _loadDashboardSummary();
-    _loadUpcomingRenewals();
-    _loadRecentIssues();
+    _loadAllowedDashboardData();
+  }
+
+  Future<void> _loadAllowedDashboardData() async {
+    if (await PermissionService.has(AppPermission.viewCalendar)) {
+      _loadCalendarEvents();
+    }
+    if (await PermissionService.has(AppPermission.viewProjects) ||
+        await PermissionService.has(AppPermission.viewTasks)) {
+      _loadDashboardSummary();
+    }
+    if (await PermissionService.has(AppPermission.viewRenewals)) {
+      _loadUpcomingRenewals();
+    }
+    if (await PermissionService.has(AppPermission.viewRaiseIssue)) {
+      _loadRecentIssues();
+    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -112,63 +126,94 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _HeaderSection(user: _currentUser),
                   const SizedBox(height: 18),
-                  _SectionCard(
-                    padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
-                    child: _RenewalSection(
-                      items: _upcomingRenewals,
-                      isLoading: _isLoadingRenewals,
-                      errorMessage: _renewalLoadError,
+                  PermissionGate(
+                    permission: AppPermission.viewRenewals,
+                    child: Column(
+                      children: [
+                        _SectionCard(
+                          padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
+                          child: _RenewalSection(
+                            items: _upcomingRenewals,
+                            isLoading: _isLoadingRenewals,
+                            errorMessage: _renewalLoadError,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
-                    child: _ProjectSummarySection(
-                      projectCount: _projectCount,
-                      taskCount: _taskCount,
-                      projectMonthlySeries: _projectMonthlySeries,
-                      taskMonthlySeries: _taskMonthlySeries,
-                      monthLabels: _last6MonthLabels(),
+                  PermissionGate(
+                    permission: AppPermission.viewProjects,
+                    child: Column(
+                      children: [
+                        _SectionCard(
+                          padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+                          child: _ProjectSummarySection(
+                            projectCount: _projectCount,
+                            taskCount: _taskCount,
+                            projectMonthlySeries: _projectMonthlySeries,
+                            taskMonthlySeries: _taskMonthlySeries,
+                            monthLabels: _last6MonthLabels(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    padding: EdgeInsets.fromLTRB(18, 18, 18, 20),
-                    child: _TaskSummarySection(
-                      taskStatusCounts: _taskStatusCounts,
+                  PermissionGate(
+                    permission: AppPermission.viewTasks,
+                    child: Column(
+                      children: [
+                        _SectionCard(
+                          padding: EdgeInsets.fromLTRB(18, 18, 18, 20),
+                          child: _TaskSummarySection(
+                            taskStatusCounts: _taskStatusCounts,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _SectionCard(
-                    padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
-                    child: _SupportTicketsSection(
-                      issues: _recentIssues,
-                      isLoading: _isLoadingTickets,
-                      errorMessage: _ticketsLoadError,
+                  PermissionGate(
+                    permission: AppPermission.viewRaiseIssue,
+                    child: Column(
+                      children: [
+                        _SectionCard(
+                          padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+                          child: _SupportTicketsSection(
+                            issues: _recentIssues,
+                            isLoading: _isLoadingTickets,
+                            errorMessage: _ticketsLoadError,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _CalendarAppointmentsSection(
-                    appointments: _appointments,
-                    displayedMonth: _displayedMonth,
-                    onAddAppointment: _handleCreateAppointment,
-                    onDateTap: _showAppointmentsForDate,
-                    onPreviousMonth: () {
-                      setState(() {
-                        _displayedMonth = DateTime(
-                          _displayedMonth.year,
-                          _displayedMonth.month - 1,
-                        );
-                      });
-                    },
-                    onNextMonth: () {
-                      setState(() {
-                        _displayedMonth = DateTime(
-                          _displayedMonth.year,
-                          _displayedMonth.month + 1,
-                        );
-                      });
-                    },
+                  PermissionGate(
+                    permission: AppPermission.viewCalendar,
+                    child: _CalendarAppointmentsSection(
+                      appointments: _appointments,
+                      displayedMonth: _displayedMonth,
+                      onAddAppointment: _handleCreateAppointment,
+                      onDateTap: _showAppointmentsForDate,
+                      onPreviousMonth: () {
+                        setState(() {
+                          _displayedMonth = DateTime(
+                            _displayedMonth.year,
+                            _displayedMonth.month - 1,
+                          );
+                        });
+                      },
+                      onNextMonth: () {
+                        setState(() {
+                          _displayedMonth = DateTime(
+                            _displayedMonth.year,
+                            _displayedMonth.month + 1,
+                          );
+                        });
+                      },
+                    ),
                   ),
                   if (_isLoadingCalendar || _isSavingCalendar) ...[
                     const SizedBox(height: 12),
@@ -2725,27 +2770,30 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                             ),
                           ],
                         ),
-                        ElevatedButton.icon(
-                          onPressed: onAddAppointment,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B84FF),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
+                        PermissionGate(
+                          permission: AppPermission.manageCalendar,
+                          child: ElevatedButton.icon(
+                            onPressed: onAddAppointment,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1B84FF),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          icon: const Icon(Icons.add_rounded, size: 18),
-                          label: Text(
-                            'Add Appointments',
-                            style: AppTextStyles.style(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: Text(
+                              'Add Appointments',
+                              style: AppTextStyles.style(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),

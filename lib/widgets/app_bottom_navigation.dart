@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../core/services/permission_service.dart';
 import '../routes/app_routes.dart';
 
 class MagicNavItem {
@@ -54,16 +55,12 @@ class PrimaryBottomNavigation extends StatelessWidget {
 
   final AppBottomNavTab currentTab;
 
-  static final List<MagicNavItem> _items = AppBottomNavTab.values
-      .map((tab) => MagicNavItem(label: tab.label, icon: tab.icon))
-      .toList(growable: false);
-
-  void _handleTabChange(int index) {
-    if (index < 0 || index >= AppBottomNavTab.values.length) {
+  void _handleTabChange(List<AppBottomNavTab> tabs, int index) {
+    if (index < 0 || index >= tabs.length) {
       return;
     }
 
-    final selectedTab = AppBottomNavTab.values[index];
+    final selectedTab = tabs[index];
     if (selectedTab == currentTab) {
       return;
     }
@@ -73,11 +70,40 @@ class PrimaryBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MagicBottomNavigation(
-      items: _items,
-      initialIndex: currentTab.index,
-      onChanged: _handleTabChange,
+    return FutureBuilder<List<AppBottomNavTab>>(
+      future: _visibleTabs(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final tabs = snapshot.data!;
+        if (tabs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final currentIndex = tabs.indexOf(currentTab);
+        final items = tabs
+            .map((tab) => MagicNavItem(label: tab.label, icon: tab.icon))
+            .toList(growable: false);
+
+        return MagicBottomNavigation(
+          items: items,
+          initialIndex: currentIndex < 0 ? 0 : currentIndex,
+          onChanged: (index) => _handleTabChange(tabs, index),
+        );
+      },
     );
+  }
+
+  Future<List<AppBottomNavTab>> _visibleTabs() async {
+    final tabs = <AppBottomNavTab>[];
+    for (final tab in AppBottomNavTab.values) {
+      if (await PermissionService.canOpenRoute(tab.routeName)) {
+        tabs.add(tab);
+      }
+    }
+    return tabs.isEmpty ? AppBottomNavTab.values.toList() : tabs;
   }
 }
 

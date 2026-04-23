@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../models/client_model.dart';
+import '../core/services/permission_service.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../widgets/common_screen_app_bar.dart';
@@ -138,23 +139,26 @@ class _ClientsScreenState extends State<ClientsScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    InkWell(
-                      onTap: () => Get.toNamed(AppRoutes.addClient),
-                      borderRadius: BorderRadius.circular(30),
-                      child: Ink(
-                        height: 55,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2563EB),
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '+ Add New Client',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                    PermissionGate(
+                      permission: AppPermission.createClients,
+                      child: InkWell(
+                        onTap: () => Get.toNamed(AppRoutes.addClient),
+                        borderRadius: BorderRadius.circular(30),
+                        child: Ink(
+                          height: 55,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB),
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              '+ Add New Client',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -463,14 +467,25 @@ class _ClientCard extends StatelessWidget {
               children: [
                 const Icon(Icons.remove_red_eye, color: Colors.grey),
                 const SizedBox(width: 16),
-                InkWell(
-                  onTap: onEdit,
-                  child: const Icon(Icons.edit, color: Colors.grey),
+                PermissionGate(
+                  permission: AppPermission.editClients,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: onEdit,
+                        child: const Icon(Icons.edit, color: Colors.grey),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 16),
-                InkWell(
-                  onTap: onDelete,
-                  child: const Icon(Icons.delete, color: Colors.grey),
+                PermissionGate(
+                  permission: AppPermission.deleteClients,
+                  child: InkWell(
+                    onTap: onDelete,
+                    child: const Icon(Icons.delete, color: Colors.grey),
+                  ),
                 ),
               ],
             ),

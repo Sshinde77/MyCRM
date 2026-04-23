@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
@@ -868,29 +869,32 @@ class _CreateProjectButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFF1D6FEA),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () => Get.toNamed(AppRoutes.addProject),
+    return PermissionGate(
+      permission: AppPermission.createProjects,
+      child: Material(
+        color: const Color(0xFF1D6FEA),
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.add_rounded, color: Colors.white, size: 18),
-              const SizedBox(width: 8),
-              Text(
-                'Create Project',
-                style: AppTextStyles.style(
-                  color: Colors.white,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
+        child: InkWell(
+          onTap: () => Get.toNamed(AppRoutes.addProject),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Create Project',
+                  style: AppTextStyles.style(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1485,15 +1489,26 @@ class _ProjectQuickActions extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ProjectCardAction(
-          icon: Icons.edit_outlined,
-          onTap: isDeleting ? null : onEdit,
+        PermissionGate(
+          permission: AppPermission.editProjects,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ProjectCardAction(
+                icon: Icons.edit_outlined,
+                onTap: isDeleting ? null : onEdit,
+              ),
+              const SizedBox(width: 6),
+            ],
+          ),
         ),
-        const SizedBox(width: 6),
-        _ProjectCardAction(
-          icon: Icons.delete_outline_rounded,
-          isDestructive: true,
-          onTap: isDeleting ? null : onDelete,
+        PermissionGate(
+          permission: AppPermission.deleteProjects,
+          child: _ProjectCardAction(
+            icon: Icons.delete_outline_rounded,
+            isDestructive: true,
+            onTap: isDeleting ? null : onDelete,
+          ),
         ),
       ],
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../core/services/permission_service.dart';
 import 'app_routes.dart';
 import '../providers/lead_detail_provider.dart';
 import '../providers/lead_provider.dart';
@@ -49,17 +50,19 @@ class RouteGenerator {
       case AppRoutes.biometricGate:
         return MaterialPageRoute(builder: (_) => const BiometricGateScreen());
       case AppRoutes.dashboard:
-        return MaterialPageRoute(builder: (_) => const DashboardScreen());
+        return _protectedRoute(AppRoutes.dashboard, const DashboardScreen());
       case AppRoutes.tasks:
-        return MaterialPageRoute(
-          builder: (_) => TasksScreen(
+        return _protectedRoute(
+          AppRoutes.tasks,
+          TasksScreen(
             staffId: _extractStaffId(settings.arguments),
             staffName: _extractStaffName(settings.arguments),
           ),
         );
       case AppRoutes.editTask:
-        return MaterialPageRoute(
-          builder: (_) => CreateTaskScreen(
+        return _protectedRoute(
+          AppRoutes.editTask,
+          CreateTaskScreen(
             taskId: _extractTaskId(settings.arguments),
             initialTitle: _extractTaskString(settings.arguments, const [
               'title',
@@ -107,40 +110,41 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.leads:
-        return MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider(
+        return _protectedRoute(
+          AppRoutes.leads,
+          ChangeNotifierProvider(
             create: (_) => LeadProvider()..loadLeads(),
             child: const LeadsScreen(),
           ),
         );
       case AppRoutes.addLead:
-        return MaterialPageRoute(builder: (_) => const AddLeadScreen());
+        return _protectedRoute(AppRoutes.addLead, const AddLeadScreen());
       case AppRoutes.leadDetail:
         final leadId = _extractLeadId(settings.arguments);
-        return MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider(
+        return _protectedRoute(
+          AppRoutes.leadDetail,
+          ChangeNotifierProvider(
             create: (_) => LeadDetailProvider(leadId: leadId)..loadLead(),
             child: const LeadDetailScreen(),
           ),
         );
       case AppRoutes.projects:
-        return MaterialPageRoute(
-          builder: (_) => ProjectsScreen(
+        return _protectedRoute(
+          AppRoutes.projects,
+          ProjectsScreen(
             staffId: _extractStaffId(settings.arguments),
             staffName: _extractStaffName(settings.arguments),
           ),
         );
       case AppRoutes.addProject:
-        return MaterialPageRoute(
-          builder: (_) => AddProjectScreen(
-            projectId: _extractProjectId(settings.arguments),
-          ),
+        return _protectedRoute(
+          AppRoutes.addProject,
+          AddProjectScreen(projectId: _extractProjectId(settings.arguments)),
         );
       case AppRoutes.projectDetail:
-        return MaterialPageRoute(
-          builder: (_) => ProjectDetailScreen(
-            projectId: _extractProjectId(settings.arguments),
-          ),
+        return _protectedRoute(
+          AppRoutes.projectDetail,
+          ProjectDetailScreen(projectId: _extractProjectId(settings.arguments)),
         );
       case AppRoutes.profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
@@ -155,26 +159,38 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.renewalMaster:
-        return MaterialPageRoute(builder: (_) => const RenewalMasterScreen());
+        return _protectedRoute(
+          AppRoutes.renewalMaster,
+          const RenewalMasterScreen(),
+        );
       case AppRoutes.clientRenewal:
-        return MaterialPageRoute(builder: (_) => const ClientRenewalScreen());
+        return _protectedRoute(
+          AppRoutes.clientRenewal,
+          const ClientRenewalScreen(),
+        );
       case AppRoutes.vendorRenewal:
-        return MaterialPageRoute(builder: (_) => const VendorRenewalScreen());
+        return _protectedRoute(
+          AppRoutes.vendorRenewal,
+          const VendorRenewalScreen(),
+        );
       case AppRoutes.clientRenewalDetail:
-        return MaterialPageRoute(
-          builder: (_) => ClientRenewalDetailScreen(
+        return _protectedRoute(
+          AppRoutes.clientRenewalDetail,
+          ClientRenewalDetailScreen(
             renewal: _extractRenewal(settings.arguments),
           ),
         );
       case AppRoutes.vendorRenewalDetail:
-        return MaterialPageRoute(
-          builder: (_) => VendorRenewalDetailScreen(
+        return _protectedRoute(
+          AppRoutes.vendorRenewalDetail,
+          VendorRenewalDetailScreen(
             renewal: _extractRenewal(settings.arguments),
           ),
         );
       case AppRoutes.renewalClient:
-        return MaterialPageRoute(
-          builder: (_) => const RenewalDetailScreen(
+        return _protectedRoute(
+          AppRoutes.renewalClient,
+          const RenewalDetailScreen(
             title: 'Client',
             description:
                 'Open client renewal records and review account-linked renewal information.',
@@ -183,56 +199,71 @@ class RouteGenerator {
           ),
         );
       case AppRoutes.renewalVendor:
-        return MaterialPageRoute(builder: (_) => const VendorDirectoryScreen());
+        return _protectedRoute(
+          AppRoutes.renewalVendor,
+          const VendorDirectoryScreen(),
+        );
       case AppRoutes.dashboardRenewals:
-        return MaterialPageRoute(
-          builder: (_) => const DashboardRenewalsScreen(),
+        return _protectedRoute(
+          AppRoutes.dashboardRenewals,
+          const DashboardRenewalsScreen(),
         );
       case AppRoutes.raiseIssue:
-        return MaterialPageRoute(builder: (_) => const IssueManagementScreen());
+        return _protectedRoute(
+          AppRoutes.raiseIssue,
+          const IssueManagementScreen(),
+        );
       case AppRoutes.issueDetail:
-        return MaterialPageRoute(
-          builder: (_) => IssueDetailScreen(
+        return _protectedRoute(
+          AppRoutes.issueDetail,
+          IssueDetailScreen(
             initialIssue: _extractClientIssue(settings.arguments),
             issueId: _extractIssueId(settings.arguments),
           ),
         );
       case AppRoutes.staff:
-        return MaterialPageRoute(builder: (_) => const StaffScreen());
+        return _protectedRoute(AppRoutes.staff, const StaffScreen());
       case AppRoutes.addStaff:
-        return MaterialPageRoute(builder: (_) => const AddStaffScreen());
+        return _protectedRoute(AppRoutes.addStaff, const AddStaffScreen());
       case AppRoutes.staffDetail:
-        return MaterialPageRoute(
-          builder: (_) =>
-              StaffDetailScreen(staffId: settings.arguments?.toString()),
+        return _protectedRoute(
+          AppRoutes.staffDetail,
+          StaffDetailScreen(staffId: settings.arguments?.toString()),
         );
       case AppRoutes.clients:
-        return MaterialPageRoute(builder: (_) => const ClientsScreen());
+        return _protectedRoute(AppRoutes.clients, const ClientsScreen());
       case AppRoutes.addClient:
-        return MaterialPageRoute(
-          builder: (_) => AddClientScreen(
+        return _protectedRoute(
+          AppRoutes.addClient,
+          AddClientScreen(
             clientId: _extractClientId(settings.arguments),
             isEdit: _extractEditFlag(settings.arguments),
           ),
         );
       case AppRoutes.clientDetail:
-        return MaterialPageRoute(
-          builder: (_) => ClientDetailScreen(
-            clientId: _extractClientId(settings.arguments),
-          ),
+        return _protectedRoute(
+          AppRoutes.clientDetail,
+          ClientDetailScreen(clientId: _extractClientId(settings.arguments)),
         );
       case AppRoutes.accessControl:
-        return MaterialPageRoute(
-          builder: (_) => ChangeNotifierProvider(
+        return _protectedRoute(
+          AppRoutes.accessControl,
+          ChangeNotifierProvider(
             create: (_) => RoleProvider(),
             child: const RolesScreen(),
           ),
         );
       case AppRoutes.settings:
-        return MaterialPageRoute(builder: (_) => const SettingsScreen());
+        return _protectedRoute(AppRoutes.settings, const SettingsScreen());
       default:
         return _errorRoute();
     }
+  }
+
+  static Route<dynamic> _protectedRoute(String routeName, Widget child) {
+    return MaterialPageRoute(
+      builder: (_) => RoutePermissionGate(routeName: routeName, child: child),
+    );
   }
 
   static String? _extractClientId(dynamic args) {

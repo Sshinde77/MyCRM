@@ -58,7 +58,7 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
       return;
     }
 
-    _authController.goToDashboard();
+    await _authController.goToDashboard();
   }
 
   String _mapMessage(BiometricAuthResult result) {
