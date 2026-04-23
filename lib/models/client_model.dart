@@ -138,10 +138,10 @@ class ClientModel {
   static String _readFullName(Map<String, dynamic> json) {
     final firstName = _readString(json, const ['first_name', 'firstName']);
     final lastName = _readString(json, const ['last_name', 'lastName']);
-    final fullName = [firstName, lastName]
-        .where((entry) => entry.trim().isNotEmpty)
-        .join(' ')
-        .trim();
+    final fullName = [
+      firstName,
+      lastName,
+    ].where((entry) => entry.trim().isNotEmpty).join(' ').trim();
     return fullName;
   }
 }

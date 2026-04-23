@@ -16,11 +16,13 @@ class ApiConstants {
   static const String roles = '$baseUrl/roles';
 
   //Staff Api
-  static const String createstaff = '$baseUrl/staff';
-  static const String liststaff = '$baseUrl/staff';
-  static const String staffdetail = '$baseUrl/staff/{id}';
-  static const String deletestaff = '$baseUrl/staff/{id}';
-  static const String editstaff = '$baseUrl/staff/{id}';
+  static const String createstaff = '$baseUrl/staff-v2';
+  static const String liststaff = '$baseUrl/staff-v2';
+  static const String staffdetail = '$baseUrl/staff-v2/{id}';
+  static const String deletestaff = '$baseUrl/staff-v2/{id}';
+  static const String editstaff = '$baseUrl/staff-v2/{id}';
+  static const String staffDepartments = '$baseUrl/staff-v2/departments';
+  static const String staffTeams = '$baseUrl/staff-v2/teams';
   static const String staffprojects = '$baseUrl/staff/{id}/projects';
   static const String stafftasks = '$baseUrl/staff/{id}/tasks';
 

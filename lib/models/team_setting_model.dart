@@ -1,5 +1,6 @@
 class TeamSettingModel {
   const TeamSettingModel({
+    this.id,
     required this.name,
     required this.description,
     this.iconUrl = '',
@@ -7,6 +8,7 @@ class TeamSettingModel {
     this.newIconPath = '',
   });
 
+  final String? id;
   final String name;
   final String description;
   final String iconUrl;
@@ -15,6 +17,7 @@ class TeamSettingModel {
 
   factory TeamSettingModel.fromJson(Map<String, dynamic> json) {
     return TeamSettingModel(
+      id: _readNullableString(json, const ['id', 'team_id']),
       name: _readString(json, const ['name', 'team_name', 'teamName']),
       description: _readString(json, const ['description', 'details']),
       iconUrl: _readString(json, const ['icon_url', 'iconUrl', 'icon']),
@@ -29,6 +32,7 @@ class TeamSettingModel {
   }
 
   TeamSettingModel copyWith({
+    String? id,
     String? name,
     String? description,
     String? iconUrl,
@@ -36,6 +40,7 @@ class TeamSettingModel {
     String? newIconPath,
   }) {
     return TeamSettingModel(
+      id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
       iconUrl: iconUrl ?? this.iconUrl,
@@ -52,5 +57,13 @@ class TeamSettingModel {
       }
     }
     return '';
+  }
+
+  static String? _readNullableString(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    final value = _readString(json, keys);
+    return value.isEmpty ? null : value;
   }
 }

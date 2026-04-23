@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/department_setting_model.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
+import 'package:mycrm/models/team_setting_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
@@ -28,11 +30,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   late final String _staffId;
   late Future<StaffMemberModel> _staffFuture;
   late Future<_StaffActivitySummary> _activityFuture;
-  String? _selectedRole;
-  String? _selectedStatus;
+  List<TeamSettingModel> _teamOptions = const <TeamSettingModel>[];
+  List<DepartmentSettingModel> _departmentOptions =
+      const <DepartmentSettingModel>[];
+  bool _loadingFormOptions = false;
   String _teamValue = '';
   List<String> _departments = const [];
   bool _didInitializeForm = false;
+  bool _isActive = true;
   bool _isSaving = false;
 
   @override
@@ -41,6 +46,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     _staffId = (widget.staffId ?? Get.arguments ?? '').toString();
     _staffFuture = ApiService.instance.getStaffDetail(_staffId);
     _activityFuture = _loadStaffActivitySummary();
+    _loadFormOptions();
   }
 
   void _reload() {
@@ -49,6 +55,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       _activityFuture = _loadStaffActivitySummary();
       _didInitializeForm = false;
     });
+    _loadFormOptions();
   }
 
   @override
@@ -149,21 +156,38 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                             lastNameController: _lastNameController,
                             emailController: _emailController,
                             phoneController: _phoneController,
-                            selectedRole: _selectedRole ?? 'Staff',
-                            selectedStatus: _selectedStatus ?? 'Active',
-                            onRoleChanged: (value) =>
-                                setState(() => _selectedRole = value),
+                            teamOptions: _teamOptions,
+                            departmentOptions: _departmentOptions,
+                            selectedTeam: _teamValue,
+                            selectedDepartments: _departments,
+                            isActive: _isActive,
+                            isLoadingOptions: _loadingFormOptions,
+                            onTeamChanged: (value) =>
+                                setState(() => _teamValue = value),
+                            onDepartmentToggle: (value, selected) {
+                              setState(() {
+                                final updated = List<String>.from(_departments);
+                                if (selected) {
+                                  if (!updated.contains(value)) {
+                                    updated.add(value);
+                                  }
+                                } else {
+                                  updated.remove(value);
+                                }
+                                _departments = updated;
+                              });
+                            },
                             onStatusChanged: (value) =>
-                                setState(() => _selectedStatus = value),
+                                setState(() => _isActive = value),
                             isSaving: _isSaving,
                             onSave: _saveChanges,
                           ),
-                          const SizedBox(height: 24),
-                          const _ChartPlaceholder(
-                            title: 'MONTHLY PERFORMANCE TREND',
-                          ),
-                          const SizedBox(height: 24),
-                          _PriorityBreakdownCard(summary: summary),
+                          // const SizedBox(height: 24),
+                          // const _ChartPlaceholder(
+                          //   title: 'MONTHLY PERFORMANCE TREND',
+                          // ),
+                          // const SizedBox(height: 24),
+                          // _PriorityBreakdownCard(summary: summary),
                           const SizedBox(height: 40),
                         ],
                       ),
@@ -278,6 +302,75 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     return value;
   }
 
+  Future<void> _loadFormOptions() async {
+    setState(() => _loadingFormOptions = true);
+    try {
+      final responses = await Future.wait<dynamic>([
+        ApiService.instance.getStaffTeams(),
+        ApiService.instance.getStaffDepartments(),
+      ]);
+
+      final teams = (responses[0] as List<TeamSettingModel>)
+          .where((team) => team.name.trim().isNotEmpty)
+          .toList(growable: false);
+      final departments = (responses[1] as List<DepartmentSettingModel>)
+          .where((item) => item.name.trim().isNotEmpty)
+          .toList(growable: false);
+
+      if (!mounted) return;
+      setState(() {
+        _teamOptions = teams;
+        _departmentOptions = departments;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.show('Warning', 'Unable to load team/department options.');
+    } finally {
+      if (mounted) {
+        setState(() => _loadingFormOptions = false);
+      }
+    }
+  }
+
+  dynamic _teamPayloadValue() {
+    final selected = _teamValue.trim();
+    if (selected.isEmpty) return null;
+
+    for (final team in _teamOptions) {
+      if (team.name.trim() == selected) {
+        final id = (team.id ?? '').trim();
+        return id.isNotEmpty ? id : null;
+      }
+      final id = (team.id ?? '').trim();
+      if (id.isNotEmpty && id == selected) {
+        return id;
+      }
+    }
+    return null;
+  }
+
+  List<dynamic> _departmentPayloadValues() {
+    final payload = <dynamic>[];
+    for (final selected in _departments) {
+      var matched = false;
+      for (final department in _departmentOptions) {
+        final name = department.name.trim();
+        final id = (department.id ?? '').trim();
+        if (name == selected || (id.isNotEmpty && id == selected)) {
+          if (id.isNotEmpty) {
+            payload.add(id);
+          }
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        return const <dynamic>[];
+      }
+    }
+    return payload;
+  }
+
   void _initializeForm(StaffMemberModel member) {
     if (_didInitializeForm) return;
 
@@ -292,17 +385,39 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         : '';
     _emailController.text = member.email;
     _phoneController.text = member.phone ?? '';
-    _selectedRole = member.role?.trim().isNotEmpty == true
-        ? member.role!.trim()
-        : 'Staff';
-    _selectedStatus = member.isActive ? 'Active' : 'Inactive';
     _teamValue = member.team ?? '';
     _departments = List<String>.from(member.departments);
+    _isActive = member.isActive;
     _didInitializeForm = true;
   }
 
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_teamValue.trim().isEmpty) {
+      AppSnackbar.show('Validation', 'Please select a team.');
+      return;
+    }
+    if (_departments.isEmpty) {
+      AppSnackbar.show('Validation', 'Please select at least one department.');
+      return;
+    }
+
+    final teamPayload = _teamPayloadValue();
+    if (teamPayload == null) {
+      AppSnackbar.show(
+        'Validation',
+        'Please reselect team from the latest team options.',
+      );
+      return;
+    }
+    final departmentPayload = _departmentPayloadValues();
+    if (departmentPayload.isEmpty) {
+      AppSnackbar.show(
+        'Validation',
+        'Please reselect departments from the latest department options.',
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
 
@@ -313,10 +428,9 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         lastName: _lastNameController.text.trim(),
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
-        role: (_selectedRole ?? 'Staff').trim(),
-        status: (_selectedStatus ?? 'Active').toLowerCase(),
-        team: _teamValue.trim(),
-        departments: _departments,
+        status: _isActive ? 'active' : 'inactive',
+        team: teamPayload,
+        departments: departmentPayload,
       );
 
       if (!mounted) return;
@@ -358,13 +472,16 @@ class _ProfileHeaderCard extends StatelessWidget {
         : member.departments.isNotEmpty
         ? member.departments.join(', ')
         : 'N/A';
-    final initials = member.name
-        .split(' ')
+    final nameParts = member.name
+        .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty)
-        .take(2)
-        .map((part) => part[0])
-        .join()
-        .toUpperCase();
+        .toList(growable: false);
+    final firstInitial = nameParts.isNotEmpty ? nameParts.first[0] : '';
+    final lastInitial = nameParts.length > 1 ? nameParts.last[0] : '';
+    final initials = '$firstInitial$lastInitial'.toUpperCase();
+    final departmentLabel = member.departments.isNotEmpty
+        ? member.departments.join(', ')
+        : 'N/A';
 
     return Container(
       width: double.infinity,
@@ -387,7 +504,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                 child: member.profileImage?.trim().isNotEmpty == true
                     ? null
                     : Text(
-                        initials.isEmpty ? 'ST' : initials,
+                        initials.isEmpty ? 'S' : initials,
                         style: AppTextStyles.style(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
@@ -395,21 +512,20 @@ class _ProfileHeaderCard extends StatelessWidget {
                         ),
                       ),
               ),
-              Positioned(
-                bottom: 0,
-                right: 5,
-                child: Container(
-                  height: 18,
-                  width: 18,
-                  decoration: BoxDecoration(
-                    color: member.isActive
-                        ? const Color(0xFF22C55E)
-                        : const Color(0xFF94A3B8),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+              if (member.isActive)
+                Positioned(
+                  bottom: 0,
+                  right: 5,
+                  child: Container(
+                    height: 18,
+                    width: 18,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF22C55E),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -440,7 +556,10 @@ class _ProfileHeaderCard extends StatelessWidget {
                 : 'Phone not available',
           ),
           const SizedBox(height: 8),
-          _InfoRow(icon: Icons.groups_outlined, text: 'Team: $teamLabel'),
+          _InfoRow(
+            icon: Icons.apartment_outlined,
+            text: 'Department: $departmentLabel',
+          ),
         ],
       ),
     );
@@ -567,9 +686,14 @@ class _EditProfileForm extends StatelessWidget {
     required this.lastNameController,
     required this.emailController,
     required this.phoneController,
-    required this.selectedRole,
-    required this.selectedStatus,
-    required this.onRoleChanged,
+    required this.teamOptions,
+    required this.departmentOptions,
+    required this.selectedTeam,
+    required this.selectedDepartments,
+    required this.isActive,
+    required this.isLoadingOptions,
+    required this.onTeamChanged,
+    required this.onDepartmentToggle,
     required this.onStatusChanged,
     required this.onSave,
     required this.isSaving,
@@ -580,10 +704,15 @@ class _EditProfileForm extends StatelessWidget {
   final TextEditingController lastNameController;
   final TextEditingController emailController;
   final TextEditingController phoneController;
-  final String selectedRole;
-  final String selectedStatus;
-  final ValueChanged<String> onRoleChanged;
-  final ValueChanged<String> onStatusChanged;
+  final List<TeamSettingModel> teamOptions;
+  final List<DepartmentSettingModel> departmentOptions;
+  final String selectedTeam;
+  final List<String> selectedDepartments;
+  final bool isActive;
+  final bool isLoadingOptions;
+  final ValueChanged<String> onTeamChanged;
+  final void Function(String value, bool selected) onDepartmentToggle;
+  final ValueChanged<bool> onStatusChanged;
   final VoidCallback onSave;
   final bool isSaving;
 
@@ -639,27 +768,51 @@ class _EditProfileForm extends StatelessWidget {
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _DropdownField(
-                    label: 'Role',
-                    value: selectedRole,
-                    items: const ['Admin', 'Manager', 'Staff', 'Viewer'],
-                    onChanged: onRoleChanged,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _DropdownField(
-                    label: 'Status',
-                    value: selectedStatus,
-                    items: const ['Active', 'Inactive'],
-                    onChanged: onStatusChanged,
-                  ),
-                ),
-              ],
+            _DropdownField(
+              label: 'Team',
+              value: selectedTeam,
+              items: teamOptions
+                  .map((item) => item.name.trim())
+                  .where((name) => name.isNotEmpty)
+                  .toList(growable: false),
+              onChanged: onTeamChanged,
             ),
+            const SizedBox(height: 16),
+            _DepartmentCheckboxGroup(
+              label: 'Departments',
+              options: departmentOptions
+                  .map((item) => item.name.trim())
+                  .where((name) => name.isNotEmpty)
+                  .toList(growable: false),
+              selectedValues: selectedDepartments,
+              onToggle: onDepartmentToggle,
+            ),
+            const SizedBox(height: 16),
+            _StatusToggle(
+              isActive: isActive,
+              onChanged: onStatusChanged,
+            ),
+            if (isLoadingOptions) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const SizedBox(
+                    height: 14,
+                    width: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Refreshing team/department options...',
+                    style: AppTextStyles.style(
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -729,7 +882,9 @@ class _InputField extends StatelessWidget {
           controller: controller,
           keyboardType: keyboardType,
           validator: (value) {
-            if ((label == 'First Name' || label == 'Email Address') &&
+            if ((label == 'First Name' ||
+                    label == 'Last Name' ||
+                    label == 'Email Address') &&
                 (value == null || value.trim().isEmpty)) {
               return 'Required';
             }
@@ -775,6 +930,11 @@ class _DropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedItems = items.where((item) => item.trim().isNotEmpty).toList();
+    final dropdownValue = normalizedItems.contains(value)
+        ? value
+        : (normalizedItems.isNotEmpty ? normalizedItems.first : null);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -788,7 +948,7 @@ class _DropdownField extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: items.contains(value) ? value : items.first,
+          value: dropdownValue,
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
@@ -805,7 +965,7 @@ class _DropdownField extends StatelessWidget {
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
           ),
-          items: items
+          items: normalizedItems
               .map(
                 (item) => DropdownMenuItem<String>(
                   value: item,
@@ -820,6 +980,15 @@ class _DropdownField extends StatelessWidget {
                 ),
               )
               .toList(),
+          validator: (_) {
+            if (normalizedItems.isEmpty) {
+              return 'No options available';
+            }
+            if ((dropdownValue ?? '').trim().isEmpty) {
+              return 'Required';
+            }
+            return null;
+          },
           onChanged: (value) {
             if (value != null) onChanged(value);
           },
@@ -830,6 +999,115 @@ class _DropdownField extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _DepartmentCheckboxGroup extends StatelessWidget {
+  const _DepartmentCheckboxGroup({
+    required this.label,
+    required this.options,
+    required this.selectedValues,
+    required this.onToggle,
+  });
+
+  final String label;
+  final List<String> options;
+  final List<String> selectedValues;
+  final void Function(String value, bool selected) onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.style(
+            fontSize: 12,
+            color: const Color(0xFF64748B),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: options.isEmpty
+              ? Text(
+                  'No departments available',
+                  style: AppTextStyles.style(
+                    fontSize: 13,
+                    color: const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                )
+              : Column(
+                  children: options.map((option) {
+                    final checked = selectedValues.contains(option);
+                    return CheckboxListTile(
+                      value: checked,
+                      title: Text(
+                        option,
+                        style: AppTextStyles.style(
+                          fontSize: 13,
+                          color: const Color(0xFF1E293B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      dense: true,
+                      visualDensity: const VisualDensity(horizontal: -4),
+                      onChanged: (value) => onToggle(option, value ?? false),
+                    );
+                  }).toList(growable: false),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusToggle extends StatelessWidget {
+  const _StatusToggle({required this.isActive, required this.onChanged});
+
+  final bool isActive;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              isActive ? 'Status: Active' : 'Status: Inactive',
+              style: AppTextStyles.style(
+                fontSize: 13,
+                color: const Color(0xFF1E293B),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Switch(
+            value: isActive,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 }

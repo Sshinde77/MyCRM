@@ -4,6 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/models/department_setting_model.dart';
+import 'package:mycrm/models/team_setting_model.dart';
 import 'package:mycrm/routes/app_routes.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -21,13 +23,18 @@ class AddStaffScreen extends StatefulWidget {
 class _AddStaffScreenState extends State<AddStaffScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _roleController = TextEditingController();
-  final _departmentController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  List<TeamSettingModel> _teamOptions = const <TeamSettingModel>[];
+  List<DepartmentSettingModel> _departmentOptions =
+      const <DepartmentSettingModel>[];
+  String? _selectedTeamValue;
+  Set<String> _selectedDepartmentValues = <String>{};
+  bool _loadingFormOptions = false;
   bool _isActive = true;
   bool _sendInvite = true;
   bool _obscurePassword = true;
@@ -35,12 +42,17 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   XFile? _selectedProfileImage;
 
   @override
+  void initState() {
+    super.initState();
+    _loadFormOptions();
+  }
+
+  @override
   void dispose() {
-    _nameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _roleController.dispose();
-    _departmentController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -108,14 +120,24 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
           child: _fieldGrid([
             _field('Profile Image', _profileImagePicker(), fullWidth: true),
             _field(
-              'Full Name',
+              'First Name',
               _textField(
-                _nameController,
-                'Philip Hartman',
+                _firstNameController,
+                'Amit',
                 Icons.person_outline_rounded,
                 onChanged: true,
+                requiredField: true,
               ),
-              requiredField: true,
+            ),
+            _field(
+              'Last Name',
+              _textField(
+                _lastNameController,
+                'Kumar',
+                Icons.badge_outlined,
+                onChanged: true,
+                requiredField: true,
+              ),
             ),
             _field(
               'Work Email',
@@ -125,8 +147,8 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 Icons.mail_outline_rounded,
                 keyboardType: TextInputType.emailAddress,
                 onChanged: true,
+                requiredField: true,
               ),
-              requiredField: true,
             ),
             _field(
               'Phone Number',
@@ -135,35 +157,25 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                 '+91 98765 43210',
                 Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
+                onChanged: true,
               ),
             ),
           ]),
         ),
         const SizedBox(height: 18),
         _card(
-          title: 'Role and Access',
-          subtitle: 'Configure role, department, and account status.',
+          title: 'Team, Departments and Access',
+          subtitle:
+              'Select team, departments, status, and welcome mail setting.',
           child: Column(
             children: [
               _fieldGrid([
+                _field('Team', _teamDropdown(), requiredField: true),
                 _field(
-                  'Role',
-                  _textField(
-                    _roleController,
-                    'Client Manager',
-                    Icons.work_outline_rounded,
-                    onChanged: true,
-                  ),
+                  'Departments',
+                  _departmentSelector(),
                   requiredField: true,
-                ),
-                _field(
-                  'Department / Team',
-                  _textField(
-                    _departmentController,
-                    'Sales Operations',
-                    Icons.groups_2_outlined,
-                    onChanged: true,
-                  ),
+                  fullWidth: true,
                 ),
                 _field(
                   'Account Status',
@@ -198,12 +210,14 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                         ),
                         Switch(
                           value: _isActive,
-                          onChanged: (value) =>
-                              setState(() => _isActive = value),
+                          onChanged: (value) => setState(() {
+                            _isActive = value;
+                          }),
                         ),
                       ],
                     ),
                   ),
+                  fullWidth: true,
                 ),
               ]),
               const SizedBox(height: 16),
@@ -477,19 +491,24 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   }
 
   Widget _previewPane({bool isDialog = false}) {
-    final name = _nameController.text.trim().isEmpty
-        ? 'New Staff Member'
-        : _nameController.text.trim();
-    final role = _roleController.text.trim().isEmpty
-        ? 'Role not set'
-        : _roleController.text.trim();
+    final firstName = _firstNameController.text.trim();
+    final lastName = _lastNameController.text.trim();
+    final name = [
+      firstName,
+      lastName,
+    ].where((part) => part.isNotEmpty).join(' ').trim();
+    final displayName = name.isEmpty ? 'New Staff Member' : name;
     final email = _emailController.text.trim().isEmpty
         ? 'email@company.com'
         : _emailController.text.trim();
-    final department = _departmentController.text.trim().isEmpty
+    final teamLabel =
+        _teamLabelFromValue(_selectedTeamValue) ?? 'Team not selected';
+    final department = _selectedDepartmentValues.isEmpty
         ? 'Department not assigned'
-        : _departmentController.text.trim();
-    final initials = name
+        : _selectedDepartmentValues
+              .map((value) => _departmentLabelFromValue(value) ?? value)
+              .join(', ');
+    final initials = displayName
         .split(' ')
         .where((e) => e.isNotEmpty)
         .take(2)
@@ -570,7 +589,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            name,
+                            displayName,
                             style: AppTextStyles.style(
                               color: const Color(0xFF162033),
                               fontSize: 18,
@@ -583,7 +602,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                             runSpacing: 8,
                             children: [
                               _chip(
-                                role,
+                                teamLabel,
                                 const Color(0xFFE8F0FE),
                                 const Color(0xFF1D4ED8),
                               ),
@@ -701,6 +720,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     IconData icon, {
     TextInputType? keyboardType,
     bool onChanged = false,
+    bool requiredField = false,
   }) {
     return TextFormField(
       controller: controller,
@@ -708,10 +728,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       onChanged: onChanged ? (_) => setState(() {}) : null,
       decoration: _decoration(hint, icon),
       validator: (value) {
-        if ((controller == _nameController ||
-                controller == _emailController ||
-                controller == _roleController) &&
-            (value == null || value.trim().isEmpty)) {
+        if (requiredField && (value == null || value.trim().isEmpty)) {
           return 'This field is required';
         }
         if (controller == _emailController &&
@@ -722,6 +739,92 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         }
         return null;
       },
+    );
+  }
+
+  Widget _teamDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _selectedTeamValue,
+      decoration: _decoration('Select team', Icons.groups_2_outlined),
+      items: _teamOptions
+          .map(
+            (team) => DropdownMenuItem<String>(
+              value: _teamValueForPayload(team),
+              child: Text(
+                team.name.isEmpty ? 'Unnamed team' : team.name,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          )
+          .toList(growable: false),
+      onChanged: (_isSubmitting || _loadingFormOptions)
+          ? null
+          : (value) => setState(() => _selectedTeamValue = value),
+      validator: (value) {
+        if ((value ?? '').trim().isEmpty) {
+          return 'Please select a team';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _departmentSelector() {
+    final disabled = _isSubmitting || _loadingFormOptions;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD7E2EF)),
+      ),
+      child: _departmentOptions.isEmpty
+          ? Text(
+              _loadingFormOptions
+                  ? 'Loading departments...'
+                  : 'No departments available',
+              style: AppTextStyles.style(
+                color: const Color(0xFF64748B),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            )
+          : Column(
+              children: _departmentOptions
+                  .map((department) {
+                    final value = _departmentValueForPayload(department);
+                    final selected = _selectedDepartmentValues.contains(value);
+                    return CheckboxListTile(
+                      value: selected,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      visualDensity: const VisualDensity(horizontal: -4),
+                      title: Text(
+                        department.name.isEmpty
+                            ? 'Unnamed department'
+                            : department.name,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF162033),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onChanged: disabled
+                          ? null
+                          : (checked) {
+                              setState(() {
+                                if (checked == true) {
+                                  _selectedDepartmentValues.add(value);
+                                } else {
+                                  _selectedDepartmentValues.remove(value);
+                                }
+                              });
+                            },
+                    );
+                  })
+                  .toList(growable: false),
+            ),
     );
   }
 
@@ -869,8 +972,83 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     );
   }
 
+  Future<void> _loadFormOptions() async {
+    setState(() => _loadingFormOptions = true);
+    try {
+      final results = await Future.wait<dynamic>([
+        ApiService.instance.getStaffTeams(),
+        ApiService.instance.getStaffDepartments(),
+      ]);
+
+      final teams = (results[0] as List<TeamSettingModel>)
+          .where((item) => item.name.trim().isNotEmpty)
+          .toList(growable: false);
+      final departments = (results[1] as List<DepartmentSettingModel>)
+          .where((item) => item.name.trim().isNotEmpty)
+          .toList(growable: false);
+
+      setState(() {
+        _teamOptions = teams;
+        _departmentOptions = departments;
+        if (_selectedTeamValue == null && teams.isNotEmpty) {
+          _selectedTeamValue = _teamValueForPayload(teams.first);
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+      final message =
+          error is DioException &&
+              error.response?.data is Map &&
+              (error.response!.data as Map)['message'] != null
+          ? (error.response!.data as Map)['message'].toString()
+          : 'Unable to load team and department options.';
+      AppSnackbar.show('Load options failed', message);
+    } finally {
+      if (mounted) {
+        setState(() => _loadingFormOptions = false);
+      }
+    }
+  }
+
+  String _teamValueForPayload(TeamSettingModel team) {
+    return (team.id ?? '').trim().isNotEmpty ? team.id!.trim() : team.name;
+  }
+
+  String _departmentValueForPayload(DepartmentSettingModel department) {
+    return (department.id ?? '').trim().isNotEmpty
+        ? department.id!.trim()
+        : department.name;
+  }
+
+  String? _teamLabelFromValue(String? value) {
+    if ((value ?? '').trim().isEmpty) return null;
+    for (final team in _teamOptions) {
+      if (_teamValueForPayload(team) == value) {
+        return team.name;
+      }
+    }
+    return value;
+  }
+
+  String? _departmentLabelFromValue(String value) {
+    for (final department in _departmentOptions) {
+      if (_departmentValueForPayload(department) == value) {
+        return department.name;
+      }
+    }
+    return value;
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if ((_selectedTeamValue ?? '').trim().isEmpty) {
+      AppSnackbar.show('Validation', 'Please select a team.');
+      return;
+    }
+    if (_selectedDepartmentValues.isEmpty) {
+      AppSnackbar.show('Validation', 'Please select at least one department.');
+      return;
+    }
     FocusScope.of(context).unfocus();
 
     if (_selectedProfileImage != null) {
@@ -880,21 +1058,19 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       if (!hasPermission) return;
     }
 
-    final (firstName, lastName) = _splitName(_nameController.text.trim());
-
     setState(() => _isSubmitting = true);
 
     try {
       await ApiService.instance.createStaff(
-        firstName: firstName,
-        lastName: lastName,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
-        role: _roleController.text.trim().toLowerCase(),
         status: _isActive ? 'active' : 'inactive',
-        team: _departmentController.text.trim(),
-        departments: _buildDepartments(_departmentController.text.trim()),
+        team: _selectedTeamValue!.trim(),
+        departments: _selectedDepartmentValues.toList(growable: false),
         password: _passwordController.text.trim(),
+        sendWelcomeEmail: _sendInvite,
         profileImagePath: _selectedProfileImage?.path,
       );
 
@@ -1038,32 +1214,6 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
         );
       },
     );
-  }
-
-  (String, String) _splitName(String fullName) {
-    final parts = fullName
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .toList();
-
-    if (parts.isEmpty) {
-      return ('', '');
-    }
-
-    if (parts.length == 1) {
-      return (parts.first, parts.first);
-    }
-
-    return (parts.first, parts.sublist(1).join(' '));
-  }
-
-  List<String> _buildDepartments(String team) {
-    final normalized = team.trim();
-    if (normalized.isEmpty) {
-      return const ['General'];
-    }
-
-    return [normalized];
   }
 
   Future<ImageSource?> _showImageSourcePicker() async {

@@ -1,10 +1,12 @@
 class DepartmentSettingModel {
-  const DepartmentSettingModel({required this.name});
+  const DepartmentSettingModel({this.id, required this.name});
 
+  final String? id;
   final String name;
 
   factory DepartmentSettingModel.fromJson(Map<String, dynamic> json) {
     return DepartmentSettingModel(
+      id: _readNullableString(json, const ['id', 'department_id']),
       name: _readString(json, const [
         'name',
         'department_name',
@@ -25,5 +27,13 @@ class DepartmentSettingModel {
       }
     }
     return '';
+  }
+
+  static String? _readNullableString(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    final value = _readString(json, keys);
+    return value.isEmpty ? null : value;
   }
 }

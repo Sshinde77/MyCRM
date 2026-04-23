@@ -35,6 +35,8 @@ class StaffMemberModel {
         .where((value) => value.isNotEmpty)
         .join(' ');
 
+    final teamNames = _readTeams(json['teams']);
+
     return StaffMemberModel(
       id: _readString(json, ['id', '_id', 'staffId', 'staff_id']),
       name: combinedName.isNotEmpty
@@ -43,7 +45,9 @@ class StaffMemberModel {
       email: _readString(json, ['email', 'emailAddress', 'email_address']),
       phone: _readNullableString(json, ['phone', 'mobile', 'phone_number']),
       role: _readNullableString(json, ['role', 'designation']),
-      team: _readNullableString(json, ['team', 'department', 'departmentName']),
+      team: teamNames.isNotEmpty
+          ? teamNames.join(', ')
+          : _readNullableString(json, ['team', 'department', 'departmentName']),
       status: _readNullableString(json, ['status', 'accountStatus']),
       lastLogin: _readNullableString(json, [
         'lastLogin',
@@ -93,6 +97,29 @@ class StaffMemberModel {
                 (key, value) => MapEntry(key.toString(), value),
               );
               return _readString(normalized, ['name', 'title', 'department']);
+            }
+            return item.toString().trim();
+          })
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+
+    return const [];
+  }
+
+  static List<String> _readTeams(dynamic rawTeams) {
+    if (rawTeams is List) {
+      return rawTeams
+          .map((item) {
+            if (item is String) return item.trim();
+            if (item is Map<String, dynamic>) {
+              return _readString(item, ['name', 'team_name', 'teamName']);
+            }
+            if (item is Map) {
+              final normalized = item.map(
+                (key, value) => MapEntry(key.toString(), value),
+              );
+              return _readString(normalized, ['name', 'team_name', 'teamName']);
             }
             return item.toString().trim();
           })

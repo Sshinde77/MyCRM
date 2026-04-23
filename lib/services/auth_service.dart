@@ -27,7 +27,9 @@ class AuthService {
       'Login API response: message=${response.message ?? 'null'}, '
       'user_id=${response.user.id}, user_name=${response.user.name}',
     );
-    _emitAuthDebugLog('Access token (login): ${response.accessToken ?? 'null'}');
+    _emitAuthDebugLog(
+      'Access token (login): ${response.accessToken ?? 'null'}',
+    );
     unawaited(PushNotificationService.onUserLogin(userId: response.user.id));
     return response;
   }

@@ -36,7 +36,7 @@ class SettingsScreen extends StatelessWidget {
         child: ListView.separated(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
           itemCount: _items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),  
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
             final item = _items[index];
             return _SettingTile(
@@ -113,7 +113,9 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

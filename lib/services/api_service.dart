@@ -646,6 +646,42 @@ class ApiService {
     return records.map(StaffMemberModel.fromJson).toList();
   }
 
+  /// Loads available department options for staff-v2 forms.
+  Future<List<DepartmentSettingModel>> getStaffDepartments() async {
+    final response = await get(ApiConstants.staffDepartments);
+    final source = _extractDepartmentSettingsListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected staff departments response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    return source
+        .map(_normalizeMap)
+        .map(DepartmentSettingModel.fromJson)
+        .toList(growable: false);
+  }
+
+  /// Loads available team options for staff-v2 forms.
+  Future<List<TeamSettingModel>> getStaffTeams() async {
+    final response = await get(ApiConstants.staffTeams);
+    final source = _extractTeamSettingsListSource(response.data);
+    if (source is! List) {
+      throw DioException(
+        requestOptions: response.requestOptions,
+        error: 'Unexpected staff teams response format',
+        type: DioExceptionType.unknown,
+      );
+    }
+
+    return source
+        .map(_normalizeMap)
+        .map(TeamSettingModel.fromJson)
+        .toList(growable: false);
+  }
+
   /// Loads the client list for the authenticated user.
   Future<List<ClientModel>> getClientsList() async {
     final response = await get(ApiConstants.clients);
@@ -2232,25 +2268,39 @@ class ApiService {
     required String lastName,
     required String email,
     required String phone,
-    required String role,
     required String status,
-    required String team,
-    required List<String> departments,
+    required dynamic team,
+    required List<dynamic> departments,
+    String? role,
     String? password,
-    bool sendWelcomeEmail = true,
   }) async {
+    dynamic normalizeIdOrValue(dynamic value) {
+      if (value is num) return value;
+      final text = value?.toString().trim() ?? '';
+      final parsed = int.tryParse(text);
+      return parsed ?? text;
+    }
+
+    final normalizedTeam = normalizeIdOrValue(team);
+    final normalizedDepartments = departments
+        .map<dynamic>(normalizeIdOrValue)
+        .where((value) => value.toString().trim().isNotEmpty)
+        .toList(growable: false);
+
     final path = ApiConstants.editstaff.replaceFirst('{id}', id);
     final payload = <String, dynamic>{
       'first_name': firstName,
       'last_name': lastName,
       'email': email,
       'phone': phone,
-      'role': role,
       'status': status,
-      'team': team,
-      'departments': departments,
-      'send_welcome_email': sendWelcomeEmail,
+      'team': normalizedTeam,
+      'departments': normalizedDepartments,
     };
+
+    if (role != null && role.trim().isNotEmpty) {
+      payload['role'] = role.trim();
+    }
 
     if (password != null && password.trim().isNotEmpty) {
       payload['password'] = password.trim();
@@ -2265,34 +2315,57 @@ class ApiService {
     required String lastName,
     required String email,
     required String phone,
-    required String role,
     required String status,
-    required String team,
-    required List<String> departments,
+    required dynamic team,
+    required List<dynamic> departments,
     required String password,
+    bool sendWelcomeEmail = true,
+    String? role,
     String? profileImagePath,
   }) async {
+    dynamic normalizeIdOrValue(dynamic value) {
+      if (value is num) return value;
+      final text = value?.toString().trim() ?? '';
+      final parsed = int.tryParse(text);
+      return parsed ?? text;
+    }
+
+    final normalizedTeam = normalizeIdOrValue(team);
+    final normalizedDepartments = departments
+        .map<dynamic>(normalizeIdOrValue)
+        .where((value) => value.toString().trim().isNotEmpty)
+        .toList(growable: false);
+
     final payload = <String, dynamic>{
-      'firstName': firstName,
-      'lastName': lastName,
+      'first_name': firstName,
+      'last_name': lastName,
       'email': email,
       'phone': phone,
-      'role': role,
       'status': status,
-      'team': team,
-      'departments[]': departments,
+      'team': normalizedTeam,
+      'departments': normalizedDepartments,
       'password': password,
+      'sendWelcomeEmail': sendWelcomeEmail,
     };
+
+    if (role != null && role.trim().isNotEmpty) {
+      payload['role'] = role.trim();
+    }
 
     if (profileImagePath != null && profileImagePath.isNotEmpty) {
       final fileName = profileImagePath.split(RegExp(r'[\\/]')).last;
-      payload['profileImage'] = await MultipartFile.fromFile(
+      payload['profile_image'] = await MultipartFile.fromFile(
         profileImagePath,
         filename: fileName,
       );
     }
 
-    await postForm(ApiConstants.createstaff, data: FormData.fromMap(payload));
+    if (profileImagePath != null && profileImagePath.isNotEmpty) {
+      await postForm(ApiConstants.createstaff, data: FormData.fromMap(payload));
+      return;
+    }
+
+    await post(ApiConstants.createstaff, data: payload);
   }
 
   /// Creates a new client.
@@ -2399,6 +2472,7 @@ class ApiService {
         'calendarEvents',
         'roles',
         'staff',
+        'staffs',
         'clients',
         'customers',
         'vendors',
@@ -2435,6 +2509,11 @@ class ApiService {
         }
 
         if (candidate is Map<String, dynamic>) {
+          final nestedSource = _extractListSource(candidate);
+          if (nestedSource is List) {
+            return nestedSource;
+          }
+
           for (final nestedKey in [
             'data',
             'items',
@@ -2443,6 +2522,7 @@ class ApiService {
             'calendarEvents',
             'roles',
             'staff',
+            'staffs',
             'clients',
             'customers',
             'vendors',
@@ -2476,6 +2556,12 @@ class ApiService {
             final nestedCandidate = candidate[nestedKey];
             if (nestedCandidate is List) {
               return nestedCandidate;
+            }
+            if (nestedCandidate is Map<String, dynamic>) {
+              final deeperSource = _extractListSource(nestedCandidate);
+              if (deeperSource is List) {
+                return deeperSource;
+              }
             }
           }
         }

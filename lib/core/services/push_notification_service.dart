@@ -198,7 +198,9 @@ class PushNotificationService {
     }
   }
 
-  static Future<String?> _requestTokenWithRetry({required String reason}) async {
+  static Future<String?> _requestTokenWithRetry({
+    required String reason,
+  }) async {
     for (var attempt = 1; attempt <= 3; attempt++) {
       try {
         _emitDiagnosticLog(
@@ -248,10 +250,7 @@ class PushNotificationService {
   static Future<void> _persistToken(String? token) async {
     final normalized = token?.trim() ?? '';
     _latestToken = normalized.isEmpty ? null : normalized;
-    await _storage.write(
-      SecureStorageService.fcmTokenKey,
-      _latestToken ?? '',
-    );
+    await _storage.write(SecureStorageService.fcmTokenKey, _latestToken ?? '');
     _emitFcmToken(_latestToken);
   }
 
@@ -270,10 +269,7 @@ class PushNotificationService {
       return;
     }
 
-    await _syncTokenWithBackend(
-      event: 'login',
-      forcedUserId: normalizedUserId,
-    );
+    await _syncTokenWithBackend(event: 'login', forcedUserId: normalizedUserId);
   }
 
   static Future<void> onUserLogout() async {
@@ -360,11 +356,12 @@ class PushNotificationService {
         event: event,
       );
       _emitDiagnosticLog('FCM sync backend response: $response');
-      await _storage.write(SecureStorageService.fcmTokenSyncedUserIdKey, userId);
-    } on DioException catch (error) {
-      _emitDiagnosticLog(
-        'FCM sync failed (network/backend): ${error.message}',
+      await _storage.write(
+        SecureStorageService.fcmTokenSyncedUserIdKey,
+        userId,
       );
+    } on DioException catch (error) {
+      _emitDiagnosticLog('FCM sync failed (network/backend): ${error.message}');
     } catch (error) {
       _emitDiagnosticLog('FCM sync failed: $error');
     }
