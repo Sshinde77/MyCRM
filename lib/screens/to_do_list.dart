@@ -2584,10 +2584,10 @@ class _TodoTask {
       startsOn: startsOn,
       endType: endType,
       endsOn: _tryParseApiDate(_readString(source, const ['ends_on'])),
-      endsAfterCount: _readInt(
-        source,
-        const ['ends_after_occurrences', 'ends_after'],
-      ),
+      endsAfterCount: _readInt(source, const [
+        'ends_after_occurrences',
+        'ends_after',
+      ]),
       attachments: _readAttachments(source),
       isCompleted: _readCompletionState(source),
     );

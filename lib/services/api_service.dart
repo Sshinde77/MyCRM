@@ -209,7 +209,11 @@ class ApiService {
       return {
         'fields': {
           for (final field in value.fields)
-            field.key: _sanitizeForLogField(field.key, field.value, depth: depth),
+            field.key: _sanitizeForLogField(
+              field.key,
+              field.value,
+              depth: depth,
+            ),
         },
         'files': [
           for (final file in value.files)
@@ -220,27 +224,27 @@ class ApiService {
 
     if (value is Map) {
       var count = 0;
-      return value.map(
-        (key, entryValue) {
-          count += 1;
-          if (count > 30) {
-            return MapEntry(key.toString(), '...truncated');
-          }
-          return MapEntry(
-            key.toString(),
-            _sanitizeForLogField(key.toString(), entryValue, depth: depth + 1),
-          );
-        },
-      );
+      return value.map((key, entryValue) {
+        count += 1;
+        if (count > 30) {
+          return MapEntry(key.toString(), '...truncated');
+        }
+        return MapEntry(
+          key.toString(),
+          _sanitizeForLogField(key.toString(), entryValue, depth: depth + 1),
+        );
+      });
     }
 
     if (value is Iterable) {
       var count = 0;
-      return value.map((entry) {
-        count += 1;
-        if (count > 20) return '...truncated';
-        return _sanitizeForLog(entry, depth: depth + 1);
-      }).toList(growable: false);
+      return value
+          .map((entry) {
+            count += 1;
+            if (count > 20) return '...truncated';
+            return _sanitizeForLog(entry, depth: depth + 1);
+          })
+          .toList(growable: false);
     }
 
     return value;
@@ -610,7 +614,14 @@ class ApiService {
   Future<UserModel> getCurrentUser() async {
     final response = await get(ApiConstants.user);
     final body = _normalizeMap(response.data);
-    final user = UserModel.fromJson(body);
+    var user = UserModel.fromJson(body);
+    final storedUser = await getStoredUser();
+    if (user.permissions.isEmpty &&
+        storedUser != null &&
+        storedUser.id == user.id &&
+        storedUser.permissions.isNotEmpty) {
+      user = user.copyWith(permissions: storedUser.permissions);
+    }
     await _persistUser(user);
     return user;
   }
@@ -788,7 +799,9 @@ class ApiService {
   }
 
   /// Loads the staff list for the authenticated user.
-  Future<List<StaffMemberModel>> getStaffList({bool forceRefresh = false}) async {
+  Future<List<StaffMemberModel>> getStaffList({
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh &&
         _staffListCache != null &&
         _isCacheFresh(_staffListCacheAt, _staffListCacheTtl)) {
@@ -797,7 +810,9 @@ class ApiService {
 
     final response = await get(ApiConstants.liststaff);
     final records = _normalizeList(response.data);
-    final parsed = records.map(StaffMemberModel.fromJson).toList(growable: false);
+    final parsed = records
+        .map(StaffMemberModel.fromJson)
+        .toList(growable: false);
     _staffListCache = parsed;
     _staffListCacheAt = DateTime.now();
     return List<StaffMemberModel>.from(parsed);
@@ -819,7 +834,9 @@ class ApiService {
       if (staffs is Map<String, dynamic>) {
         pagePayload = staffs;
       } else if (staffs is Map) {
-        pagePayload = staffs.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = staffs.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = rootData;
       }
@@ -831,7 +848,9 @@ class ApiService {
       if (staffs is Map<String, dynamic>) {
         pagePayload = staffs;
       } else if (staffs is Map) {
-        pagePayload = staffs.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = staffs.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = normalizedData;
       }
@@ -843,8 +862,11 @@ class ApiService {
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(response.data);
-    final items = records.map(StaffMemberModel.fromJson).toList(growable: false);
-    final currentPage = _readInt(pagePayload?['current_page']) ?? normalizedPage;
+    final items = records
+        .map(StaffMemberModel.fromJson)
+        .toList(growable: false);
+    final currentPage =
+        _readInt(pagePayload?['current_page']) ?? normalizedPage;
     final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
     final total = _readInt(pagePayload?['total']) ?? items.length;
     final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
@@ -891,7 +913,9 @@ class ApiService {
   }
 
   /// Loads available team options for staff-v2 forms.
-  Future<List<TeamSettingModel>> getStaffTeams({bool forceRefresh = false}) async {
+  Future<List<TeamSettingModel>> getStaffTeams({
+    bool forceRefresh = false,
+  }) async {
     if (!forceRefresh &&
         _staffTeamsCache != null &&
         _isCacheFresh(_staffTeamsCacheAt, _staffOptionsCacheTtl)) {
@@ -939,7 +963,9 @@ class ApiService {
       if (clients is Map<String, dynamic>) {
         pagePayload = clients;
       } else if (clients is Map) {
-        pagePayload = clients.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = clients.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = rootData;
       }
@@ -951,7 +977,9 @@ class ApiService {
       if (clients is Map<String, dynamic>) {
         pagePayload = clients;
       } else if (clients is Map) {
-        pagePayload = clients.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = clients.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = normalizedData;
       }
@@ -964,7 +992,8 @@ class ApiService {
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(response.data);
     final items = records.map(ClientModel.fromJson).toList(growable: false);
-    final currentPage = _readInt(pagePayload?['current_page']) ?? normalizedPage;
+    final currentPage =
+        _readInt(pagePayload?['current_page']) ?? normalizedPage;
     final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
     final total = _readInt(pagePayload?['total']) ?? items.length;
     final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
@@ -3529,7 +3558,9 @@ class ApiService {
     debugPrint(
       'fields: ${fields.isEmpty ? '(none)' : _truncateForLogText(fields)}',
     );
-    debugPrint('files: ${files.isEmpty ? '(none)' : _truncateForLogText(files)}');
+    debugPrint(
+      'files: ${files.isEmpty ? '(none)' : _truncateForLogText(files)}',
+    );
   }
 
   Map<String, dynamic> _buildTaskListPayload({
@@ -3722,4 +3753,3 @@ class ApiService {
         .toList();
   }
 }
-

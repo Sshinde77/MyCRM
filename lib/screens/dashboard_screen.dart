@@ -275,7 +275,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                   const SizedBox(height: 10),
-
                 ],
               ),
             ),
@@ -283,7 +282,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
-
   }
 
   Future<void> _loadCalendarEvents() async {

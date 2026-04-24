@@ -22,6 +22,28 @@ class UserModel {
     this.permissions = const [],
   });
 
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? phone,
+    String? role,
+    String? roleId,
+    String? profilePicture,
+    List<String>? permissions,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      roleId: roleId ?? this.roleId,
+      profilePicture: profilePicture ?? this.profilePicture,
+      permissions: permissions ?? this.permissions,
+    );
+  }
+
   /// Creates a user object from API JSON.
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final source = _extractUserSource(json);
@@ -96,6 +118,17 @@ class UserModel {
       }
       if (value is Map) {
         return value.map((key, value) => MapEntry(key.toString(), value));
+      }
+    }
+
+    final roles = json['roles'];
+    if (roles is List && roles.isNotEmpty) {
+      final firstRole = roles.first;
+      if (firstRole is Map<String, dynamic>) {
+        return firstRole;
+      }
+      if (firstRole is Map) {
+        return firstRole.map((key, value) => MapEntry(key.toString(), value));
       }
     }
     return const {};

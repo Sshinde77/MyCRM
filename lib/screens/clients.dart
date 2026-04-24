@@ -57,7 +57,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
     });
 
     try {
-      final page = await ApiService.instance.getClientsListPage(page: pageNumber);
+      final page = await ApiService.instance.getClientsListPage(
+        page: pageNumber,
+      );
       if (!mounted) return;
 
       setState(() {
@@ -120,10 +122,14 @@ class _ClientsScreenState extends State<ClientsScreen> {
       if (!mounted || generation != _searchFetchGeneration) return;
 
       final allClients = <ClientModel>[...firstPage.items];
-      final normalizedLastPage = firstPage.lastPage < 1 ? 1 : firstPage.lastPage;
+      final normalizedLastPage = firstPage.lastPage < 1
+          ? 1
+          : firstPage.lastPage;
 
       for (var page = 2; page <= normalizedLastPage; page++) {
-        final nextPage = await ApiService.instance.getClientsListPage(page: page);
+        final nextPage = await ApiService.instance.getClientsListPage(
+          page: page,
+        );
         if (!mounted || generation != _searchFetchGeneration) return;
         allClients.addAll(nextPage.items);
       }
@@ -170,7 +176,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
     final clients = hasSearch
         ? (_searchClients.isNotEmpty ? _searchClients : _clients)
         : _clients;
-    final activeClientsSource = _searchClients.isNotEmpty ? _searchClients : _clients;
+    final activeClientsSource = _searchClients.isNotEmpty
+        ? _searchClients
+        : _clients;
     final filteredClients = _filterClients(clients);
     final totalClients = _totalCount > 0 ? _totalCount : clients.length;
     final activeClients = activeClientsSource
@@ -282,7 +290,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -298,7 +305,10 @@ class _ClientsScreenState extends State<ClientsScreen> {
                         const SizedBox(height: 8),
                         Text(_errorMessage!),
                         const SizedBox(height: 8),
-                        TextButton(onPressed: _reload, child: const Text('Retry')),
+                        TextButton(
+                          onPressed: _reload,
+                          child: const Text('Retry'),
+                        ),
                       ],
                     ),
                   )

@@ -749,9 +749,7 @@ class _FilePickerFieldTile extends StatelessWidget {
                   ),
                   decoration: const BoxDecoration(
                     color: Color(0xFFF1F5F9),
-                    border: Border(
-                      right: BorderSide(color: Color(0xFFE2E8F0)),
-                    ),
+                    border: Border(right: BorderSide(color: Color(0xFFE2E8F0))),
                   ),
                   child: Text(
                     buttonText,

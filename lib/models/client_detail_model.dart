@@ -116,7 +116,12 @@ class ClientDetailModel {
     ]);
     final resolvedPostalCode = _firstNonEmpty([
       _readString(json, const ['postal_code', 'zip', 'zipcode', 'pincode']),
-      _readString(addressObject, const ['postal_code', 'zip', 'zipcode', 'pincode']),
+      _readString(addressObject, const [
+        'postal_code',
+        'zip',
+        'zipcode',
+        'pincode',
+      ]),
     ]);
     final resolvedCountry = _firstNonEmpty([
       _readString(json, const ['country', 'nation']),

@@ -497,4 +497,3 @@ String _readVendorFormError(DioException error, {required String fallback}) {
 
   return fallback;
 }
-

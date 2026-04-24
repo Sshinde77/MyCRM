@@ -200,7 +200,9 @@ class _StaffScreenState extends State<StaffScreen> {
               final hasSearch = _searchController.text.trim().isNotEmpty;
               final headerCount = hasSearch
                   ? filteredMembers.length
-                  : (_totalRecords > 0 ? _totalRecords : filteredMembers.length);
+                  : (_totalRecords > 0
+                        ? _totalRecords
+                        : filteredMembers.length);
 
               return RefreshIndicator(
                 onRefresh: _reload,
@@ -235,15 +237,15 @@ class _StaffScreenState extends State<StaffScreen> {
                               ],
                             ),
                           ),
-                          _SectionHeader(
-                            compact: compact,
-                            count: headerCount,
-                          ),
+                          _SectionHeader(compact: compact, count: headerCount),
                           SizedBox(height: compact ? 14 : 16),
                           if (_isInitialLoading)
                             _LoadingState(compact: compact)
                           else if (_loadError != null && _staffMembers.isEmpty)
-                            _ErrorState(compact: compact, onRetry: () => _reload())
+                            _ErrorState(
+                              compact: compact,
+                              onRetry: () => _reload(),
+                            )
                           else if (filteredMembers.isEmpty)
                             _EmptyState(compact: compact, hasSearch: hasSearch)
                           else ...[
@@ -274,14 +276,12 @@ class _StaffScreenState extends State<StaffScreen> {
                                     isLoading: _isLoadingMore,
                                     hasNextPage: _hasNextPage,
                                     onPrevious: _currentPage > 1
-                                        ? () => _loadPage(
-                                            page: _currentPage - 1,
-                                          )
+                                        ? () =>
+                                              _loadPage(page: _currentPage - 1)
                                         : null,
                                     onNext: _hasNextPage
-                                        ? () => _loadPage(
-                                            page: _currentPage + 1,
-                                          )
+                                        ? () =>
+                                              _loadPage(page: _currentPage + 1)
                                         : null,
                                   ),
                                 ),
@@ -299,14 +299,10 @@ class _StaffScreenState extends State<StaffScreen> {
                                   isLoading: _isLoadingMore,
                                   hasNextPage: _hasNextPage,
                                   onPrevious: _currentPage > 1
-                                      ? () => _loadPage(
-                                          page: _currentPage - 1,
-                                        )
+                                      ? () => _loadPage(page: _currentPage - 1)
                                       : null,
                                   onNext: _hasNextPage
-                                      ? () => _loadPage(
-                                          page: _currentPage + 1,
-                                        )
+                                      ? () => _loadPage(page: _currentPage + 1)
                                       : null,
                                 ),
                               ),

@@ -74,6 +74,15 @@ class PermissionService {
   }
 
   static void setCurrentUser(UserModel? user) {
+    if (user != null &&
+        user.permissions.isEmpty &&
+        _cachedUser != null &&
+        _cachedUser!.id == user.id &&
+        _cachedUser!.permissions.isNotEmpty) {
+      _cachedUser = user.copyWith(permissions: _cachedUser!.permissions);
+      _userLoadFuture = null;
+      return;
+    }
     _cachedUser = user;
     _userLoadFuture = null;
   }
@@ -89,11 +98,8 @@ class PermissionService {
   }
 
   static Future<bool> canOpenRoute(String routeName) async {
-    final requiredPermission = routePermission(routeName);
-    if (requiredPermission == null) {
-      return true;
-    }
-    return has(requiredPermission);
+    final user = await getCurrentUser();
+    return canOpenRouteForUser(user, routeName);
   }
 
   static Future<String> firstAllowedRoute() async {
@@ -113,13 +119,36 @@ class PermissionService {
       AppRoutes.renewalMaster,
       AppRoutes.settings,
     ]) {
-      final requiredPermission = routePermission(routeName);
-      if (requiredPermission == null || userHas(user, requiredPermission)) {
+      if (canOpenRouteForUser(user, routeName)) {
         return routeName;
       }
     }
 
     return AppRoutes.profile;
+  }
+
+  static bool canOpenRouteForUser(UserModel? user, String routeName) {
+    if (routeName == AppRoutes.dashboard) {
+      return userHasAny(user, const [
+        AppPermission.viewDashboard,
+        AppPermission.viewDashboardWelcome,
+      ]);
+    }
+
+    final requiredPermission = routePermission(routeName);
+    if (requiredPermission == null) {
+      return true;
+    }
+    return userHas(user, requiredPermission);
+  }
+
+  static bool userHasAny(UserModel? user, List<String> permissions) {
+    for (final permission in permissions) {
+      if (userHas(user, permission)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static bool userHas(UserModel? user, String permission) {
@@ -135,10 +164,15 @@ class PermissionService {
       return true;
     }
 
+    final normalizedPermission = permission.trim().toLowerCase();
+    if (normalizedPermission.isEmpty) {
+      return false;
+    }
+
     return user.permissions
-        .map((entry) => entry.trim())
+        .map((entry) => entry.trim().toLowerCase())
         .where((entry) => entry.isNotEmpty)
-        .contains(permission);
+        .contains(normalizedPermission);
   }
 
   static String? routePermission(String routeName) {
@@ -152,9 +186,13 @@ class PermissionService {
       case AppRoutes.leads:
       case AppRoutes.leadDetail:
         return AppPermission.viewLeads;
+      case AppRoutes.addLead:
+        return AppPermission.createLeads;
       case AppRoutes.projects:
       case AppRoutes.projectDetail:
         return AppPermission.viewProjects;
+      case AppRoutes.addProject:
+        return AppPermission.createProjects;
       case AppRoutes.renewalMaster:
       case AppRoutes.clientRenewal:
       case AppRoutes.vendorRenewal:
@@ -175,6 +213,8 @@ class PermissionService {
       case AppRoutes.clients:
       case AppRoutes.clientDetail:
         return AppPermission.viewClients;
+      case AppRoutes.addClient:
+        return AppPermission.createClients;
       case AppRoutes.accessControl:
         return AppPermission.viewRoles;
       case AppRoutes.settings:

@@ -788,10 +788,7 @@ class _EditProfileForm extends StatelessWidget {
               onToggle: onDepartmentToggle,
             ),
             const SizedBox(height: 16),
-            _StatusToggle(
-              isActive: isActive,
-              onChanged: onStatusChanged,
-            ),
+            _StatusToggle(isActive: isActive, onChanged: onStatusChanged),
             if (isLoadingOptions) ...[
               const SizedBox(height: 12),
               Row(
@@ -930,7 +927,9 @@ class _DropdownField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalizedItems = items.where((item) => item.trim().isNotEmpty).toList();
+    final normalizedItems = items
+        .where((item) => item.trim().isNotEmpty)
+        .toList();
     final dropdownValue = normalizedItems.contains(value)
         ? value
         : (normalizedItems.isNotEmpty ? normalizedItems.first : null);
@@ -1048,25 +1047,28 @@ class _DepartmentCheckboxGroup extends StatelessWidget {
                   ),
                 )
               : Column(
-                  children: options.map((option) {
-                    final checked = selectedValues.contains(option);
-                    return CheckboxListTile(
-                      value: checked,
-                      title: Text(
-                        option,
-                        style: AppTextStyles.style(
-                          fontSize: 13,
-                          color: const Color(0xFF1E293B),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      contentPadding: EdgeInsets.zero,
-                      controlAffinity: ListTileControlAffinity.leading,
-                      dense: true,
-                      visualDensity: const VisualDensity(horizontal: -4),
-                      onChanged: (value) => onToggle(option, value ?? false),
-                    );
-                  }).toList(growable: false),
+                  children: options
+                      .map((option) {
+                        final checked = selectedValues.contains(option);
+                        return CheckboxListTile(
+                          value: checked,
+                          title: Text(
+                            option,
+                            style: AppTextStyles.style(
+                              fontSize: 13,
+                              color: const Color(0xFF1E293B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          dense: true,
+                          visualDensity: const VisualDensity(horizontal: -4),
+                          onChanged: (value) =>
+                              onToggle(option, value ?? false),
+                        );
+                      })
+                      .toList(growable: false),
                 ),
         ),
       ],
@@ -1102,10 +1104,7 @@ class _StatusToggle extends StatelessWidget {
               ),
             ),
           ),
-          Switch(
-            value: isActive,
-            onChanged: onChanged,
-          ),
+          Switch(value: isActive, onChanged: onChanged),
         ],
       ),
     );
