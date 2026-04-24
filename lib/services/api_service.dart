@@ -34,6 +34,42 @@ import '../models/vendor_model.dart';
 import '../core/services/secure_storage_service.dart';
 
 /// Thin wrapper around Dio so API calls share one base configuration.
+class StaffListPageResult {
+  const StaffListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<StaffMemberModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
+class ClientListPageResult {
+  const ClientListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<ClientModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
 class ApiService {
   ApiService._internal() {
     if (kDebugMode) {
@@ -99,11 +135,24 @@ class ApiService {
       headers: const {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       },
     ),
   );
 
   final SecureStorageService _storage = SecureStorageService.instance;
+  final Map<String, Future<Response>> _inFlightGetRequests =
+      <String, Future<Response>>{};
+  String? _cachedAccessToken;
+  bool _authTokenLoaded = false;
+  final Duration _staffListCacheTtl = const Duration(seconds: 30);
+  final Duration _staffOptionsCacheTtl = const Duration(minutes: 5);
+  List<StaffMemberModel>? _staffListCache;
+  DateTime? _staffListCacheAt;
+  List<DepartmentSettingModel>? _staffDepartmentsCache;
+  DateTime? _staffDepartmentsCacheAt;
+  List<TeamSettingModel>? _staffTeamsCache;
+  DateTime? _staffTeamsCacheAt;
 
   Interceptor _buildDebugLoggingInterceptor() {
     return InterceptorsWrapper(
@@ -111,10 +160,10 @@ class ApiService {
         debugPrint('*** API Calling ***');
         debugPrint('${options.method} ${options.uri}');
         if (options.queryParameters.isNotEmpty) {
-          debugPrint('query: ${_sanitizeForLog(options.queryParameters)}');
+          debugPrint('query: ${_summarizeForLog(options.queryParameters)}');
         }
         if (options.data != null) {
-          debugPrint('request: ${_sanitizeForLog(options.data)}');
+          debugPrint('request: ${_summarizeForLog(options.data)}');
         }
         handler.next(options);
       },
@@ -124,7 +173,7 @@ class ApiService {
           '${response.requestOptions.method} ${response.requestOptions.uri}',
         );
         debugPrint('status: ${response.statusCode}');
-        debugPrint('response: ${_sanitizeForLog(response.data)}');
+        debugPrint('response: ${_summarizeForLog(response.data)}');
         handler.next(response);
       },
       onError: (error, handler) {
@@ -135,19 +184,32 @@ class ApiService {
         debugPrint('status: ${error.response?.statusCode ?? 'N/A'}');
         debugPrint('message: ${error.message ?? error.error}');
         if (error.response?.data != null) {
-          debugPrint('response: ${_sanitizeForLog(error.response?.data)}');
+          debugPrint('response: ${_summarizeForLog(error.response?.data)}');
         }
         handler.next(error);
       },
     );
   }
 
-  dynamic _sanitizeForLog(dynamic value) {
+  String _summarizeForLog(dynamic value, {int maxChars = 1200}) {
+    final text = _sanitizeForLog(value).toString();
+    return _truncateForLogText(text, maxChars: maxChars);
+  }
+
+  String _truncateForLogText(String text, {int maxChars = 1200}) {
+    if (text.length <= maxChars) return text;
+    final omitted = text.length - maxChars;
+    return '${text.substring(0, maxChars)}... (truncated +$omitted chars)';
+  }
+
+  dynamic _sanitizeForLog(dynamic value, {int depth = 0}) {
+    if (depth > 4) return '...';
+
     if (value is FormData) {
       return {
         'fields': {
           for (final field in value.fields)
-            field.key: _sanitizeForLogField(field.key, field.value),
+            field.key: _sanitizeForLogField(field.key, field.value, depth: depth),
         },
         'files': [
           for (final file in value.files)
@@ -157,29 +219,55 @@ class ApiService {
     }
 
     if (value is Map) {
+      var count = 0;
       return value.map(
-        (key, entryValue) => MapEntry(
-          key.toString(),
-          _sanitizeForLogField(key.toString(), entryValue),
-        ),
+        (key, entryValue) {
+          count += 1;
+          if (count > 30) {
+            return MapEntry(key.toString(), '...truncated');
+          }
+          return MapEntry(
+            key.toString(),
+            _sanitizeForLogField(key.toString(), entryValue, depth: depth + 1),
+          );
+        },
       );
     }
 
     if (value is Iterable) {
-      return value.map(_sanitizeForLog).toList(growable: false);
+      var count = 0;
+      return value.map((entry) {
+        count += 1;
+        if (count > 20) return '...truncated';
+        return _sanitizeForLog(entry, depth: depth + 1);
+      }).toList(growable: false);
     }
 
     return value;
   }
 
-  dynamic _sanitizeForLogField(String key, dynamic value) {
+  dynamic _sanitizeForLogField(String key, dynamic value, {int depth = 0}) {
     final normalizedKey = key.toLowerCase();
     if (normalizedKey.contains('password') ||
         normalizedKey.contains('token') ||
         normalizedKey == 'authorization') {
       return '***';
     }
-    return _sanitizeForLog(value);
+    return _sanitizeForLog(value, depth: depth + 1);
+  }
+
+  bool _isCacheFresh(DateTime? at, Duration ttl) {
+    if (at == null) return false;
+    return DateTime.now().difference(at) < ttl;
+  }
+
+  void _invalidateStaffCaches() {
+    _staffListCache = null;
+    _staffListCacheAt = null;
+    _staffDepartmentsCache = null;
+    _staffDepartmentsCacheAt = null;
+    _staffTeamsCache = null;
+    _staffTeamsCacheAt = null;
   }
 
   bool _isAuthEndpoint(String path) {
@@ -232,6 +320,8 @@ class ApiService {
       }
 
       _dio.options.headers['Authorization'] = 'Bearer $accessToken';
+      _cachedAccessToken = accessToken;
+      _authTokenLoaded = true;
       return true;
     } on DioException {
       await _clearAuthData();
@@ -269,7 +359,21 @@ class ApiService {
     Map<String, dynamic>? queryParameters,
   }) async {
     await _restoreAuthToken();
-    return await _dio.get(path, queryParameters: queryParameters);
+    final requestKey = _buildGetRequestKey(path, queryParameters);
+    final inFlight = _inFlightGetRequests[requestKey];
+    if (inFlight != null) {
+      return await inFlight;
+    }
+
+    final future = _dio.get(path, queryParameters: queryParameters);
+    _inFlightGetRequests[requestKey] = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_inFlightGetRequests[requestKey], future)) {
+        _inFlightGetRequests.remove(requestKey);
+      }
+    }
   }
 
   /// Basic POST helper for endpoints that send a request body.
@@ -303,7 +407,7 @@ class ApiService {
     return await _dio.post(
       path,
       data: data,
-      options: Options(headers: const {'Content-Type': 'multipart/form-data'}),
+      options: Options(contentType: Headers.multipartFormDataContentType),
     );
   }
 
@@ -313,7 +417,7 @@ class ApiService {
     return await _dio.put(
       path,
       data: data,
-      options: Options(headers: const {'Content-Type': 'multipart/form-data'}),
+      options: Options(contentType: Headers.multipartFormDataContentType),
     );
   }
 
@@ -386,11 +490,14 @@ class ApiService {
 
     final accessToken = response.accessToken;
     if (accessToken != null && accessToken.trim().isNotEmpty) {
+      final normalizedAccessToken = accessToken.trim();
       await _storage.write(
         SecureStorageService.accessTokenKey,
-        accessToken.trim(),
+        normalizedAccessToken,
       );
-      _dio.options.headers['Authorization'] = 'Bearer ${accessToken.trim()}';
+      _dio.options.headers['Authorization'] = 'Bearer $normalizedAccessToken';
+      _cachedAccessToken = normalizedAccessToken;
+      _authTokenLoaded = true;
     }
 
     final refreshToken = response.refreshToken;
@@ -412,8 +519,24 @@ class ApiService {
   }
 
   Future<void> _restoreAuthToken() async {
+    final headerToken = (_dio.options.headers['Authorization'] ?? '')
+        .toString()
+        .trim();
+    if (headerToken.isNotEmpty) {
+      return;
+    }
+
+    if (_authTokenLoaded) {
+      if (_cachedAccessToken != null && _cachedAccessToken!.isNotEmpty) {
+        _dio.options.headers['Authorization'] = 'Bearer $_cachedAccessToken';
+      }
+      return;
+    }
+
     await _storage.migrateLegacyPrefsIfNeeded();
     final token = await _storage.read(SecureStorageService.accessTokenKey);
+    _authTokenLoaded = true;
+    _cachedAccessToken = token?.trim();
     if (token != null && token.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Bearer $token';
     }
@@ -424,6 +547,31 @@ class ApiService {
     await _storage.delete(SecureStorageService.refreshTokenKey);
     await _storage.delete(SecureStorageService.currentUserKey);
     _dio.options.headers.remove('Authorization');
+    _cachedAccessToken = null;
+    _authTokenLoaded = true;
+  }
+
+  String _buildGetRequestKey(
+    String path,
+    Map<String, dynamic>? queryParameters,
+  ) {
+    if (queryParameters == null || queryParameters.isEmpty) {
+      return 'GET::$path';
+    }
+
+    final sortedEntries = queryParameters.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final query = sortedEntries
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join('&');
+    return 'GET::$path?$query';
+  }
+
+  int? _readInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value == null) return null;
+    return int.tryParse(value.toString().trim());
   }
 
   /// Clears locally persisted auth data without calling the backend.
@@ -640,14 +788,89 @@ class ApiService {
   }
 
   /// Loads the staff list for the authenticated user.
-  Future<List<StaffMemberModel>> getStaffList() async {
+  Future<List<StaffMemberModel>> getStaffList({bool forceRefresh = false}) async {
+    if (!forceRefresh &&
+        _staffListCache != null &&
+        _isCacheFresh(_staffListCacheAt, _staffListCacheTtl)) {
+      return List<StaffMemberModel>.from(_staffListCache!);
+    }
+
     final response = await get(ApiConstants.liststaff);
     final records = _normalizeList(response.data);
-    return records.map(StaffMemberModel.fromJson).toList();
+    final parsed = records.map(StaffMemberModel.fromJson).toList(growable: false);
+    _staffListCache = parsed;
+    _staffListCacheAt = DateTime.now();
+    return List<StaffMemberModel>.from(parsed);
+  }
+
+  /// Loads a single paginated staff page from staff-v2 index endpoint.
+  Future<StaffListPageResult> getStaffListPage({int page = 1}) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final response = await get(
+      ApiConstants.liststaff,
+      queryParameters: <String, dynamic>{'page': normalizedPage},
+    );
+    final root = _normalizeMap(response.data);
+
+    Map<String, dynamic>? pagePayload;
+    final rootData = root['data'];
+    if (rootData is Map<String, dynamic>) {
+      final staffs = rootData['staffs'];
+      if (staffs is Map<String, dynamic>) {
+        pagePayload = staffs;
+      } else if (staffs is Map) {
+        pagePayload = staffs.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = rootData;
+      }
+    } else if (rootData is Map) {
+      final normalizedData = rootData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      final staffs = normalizedData['staffs'];
+      if (staffs is Map<String, dynamic>) {
+        pagePayload = staffs;
+      } else if (staffs is Map) {
+        pagePayload = staffs.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = normalizedData;
+      }
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(response.data);
+    final items = records.map(StaffMemberModel.fromJson).toList(growable: false);
+    final currentPage = _readInt(pagePayload?['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? items.length;
+    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return StaffListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: perPage,
+      hasNextPage: hasNextPage,
+    );
   }
 
   /// Loads available department options for staff-v2 forms.
-  Future<List<DepartmentSettingModel>> getStaffDepartments() async {
+  Future<List<DepartmentSettingModel>> getStaffDepartments({
+    bool forceRefresh = false,
+  }) async {
+    if (!forceRefresh &&
+        _staffDepartmentsCache != null &&
+        _isCacheFresh(_staffDepartmentsCacheAt, _staffOptionsCacheTtl)) {
+      return List<DepartmentSettingModel>.from(_staffDepartmentsCache!);
+    }
+
     final response = await get(ApiConstants.staffDepartments);
     final source = _extractDepartmentSettingsListSource(response.data);
     if (source is! List) {
@@ -658,14 +881,23 @@ class ApiService {
       );
     }
 
-    return source
+    final parsed = source
         .map(_normalizeMap)
         .map(DepartmentSettingModel.fromJson)
         .toList(growable: false);
+    _staffDepartmentsCache = parsed;
+    _staffDepartmentsCacheAt = DateTime.now();
+    return List<DepartmentSettingModel>.from(parsed);
   }
 
   /// Loads available team options for staff-v2 forms.
-  Future<List<TeamSettingModel>> getStaffTeams() async {
+  Future<List<TeamSettingModel>> getStaffTeams({bool forceRefresh = false}) async {
+    if (!forceRefresh &&
+        _staffTeamsCache != null &&
+        _isCacheFresh(_staffTeamsCacheAt, _staffOptionsCacheTtl)) {
+      return List<TeamSettingModel>.from(_staffTeamsCache!);
+    }
+
     final response = await get(ApiConstants.staffTeams);
     final source = _extractTeamSettingsListSource(response.data);
     if (source is! List) {
@@ -676,17 +908,77 @@ class ApiService {
       );
     }
 
-    return source
+    final parsed = source
         .map(_normalizeMap)
         .map(TeamSettingModel.fromJson)
         .toList(growable: false);
+    _staffTeamsCache = parsed;
+    _staffTeamsCacheAt = DateTime.now();
+    return List<TeamSettingModel>.from(parsed);
   }
 
   /// Loads the client list for the authenticated user.
   Future<List<ClientModel>> getClientsList() async {
-    final response = await get(ApiConstants.clients);
-    final records = _normalizeList(response.data);
-    return records.map(ClientModel.fromJson).toList();
+    final page = await getClientsListPage(page: 1);
+    return page.items;
+  }
+
+  /// Loads a single paginated clients page from clients index endpoint.
+  Future<ClientListPageResult> getClientsListPage({int page = 1}) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final response = await get(
+      ApiConstants.clients,
+      queryParameters: <String, dynamic>{'page': normalizedPage},
+    );
+    final root = _normalizeMap(response.data);
+
+    Map<String, dynamic>? pagePayload;
+    final rootData = root['data'];
+    if (rootData is Map<String, dynamic>) {
+      final clients = rootData['clients'];
+      if (clients is Map<String, dynamic>) {
+        pagePayload = clients;
+      } else if (clients is Map) {
+        pagePayload = clients.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = rootData;
+      }
+    } else if (rootData is Map) {
+      final normalizedData = rootData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      final clients = normalizedData['clients'];
+      if (clients is Map<String, dynamic>) {
+        pagePayload = clients;
+      } else if (clients is Map) {
+        pagePayload = clients.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = normalizedData;
+      }
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(response.data);
+    final items = records.map(ClientModel.fromJson).toList(growable: false);
+    final currentPage = _readInt(pagePayload?['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? items.length;
+    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return ClientListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: perPage,
+      hasNextPage: hasNextPage,
+    );
   }
 
   /// Loads the roles list for the authenticated user.
@@ -2259,6 +2551,7 @@ class ApiService {
   Future<void> deleteStaff(String id) async {
     final path = ApiConstants.deletestaff.replaceFirst('{id}', id);
     await delete(path);
+    _invalidateStaffCaches();
   }
 
   /// Updates a single staff member by id.
@@ -2307,6 +2600,7 @@ class ApiService {
     }
 
     await put(path, data: payload);
+    _invalidateStaffCaches();
   }
 
   /// Creates a new staff member.
@@ -2362,24 +2656,57 @@ class ApiService {
 
     if (profileImagePath != null && profileImagePath.isNotEmpty) {
       await postForm(ApiConstants.createstaff, data: FormData.fromMap(payload));
+      _invalidateStaffCaches();
       return;
     }
 
     await post(ApiConstants.createstaff, data: payload);
+    _invalidateStaffCaches();
   }
 
   /// Creates a new client.
   Future<void> createClient(CreateClientRequestModel request) async {
-    await post(ApiConstants.clients, data: request.toJson());
+    final payload = request.toPayload();
+    final profileImagePath = request.normalizedProfileImagePath;
+    if (profileImagePath != null) {
+      final fileName = profileImagePath.split(RegExp(r'[\\/]')).last;
+      payload['profile_image'] = await MultipartFile.fromFile(
+        profileImagePath,
+        filename: fileName,
+      );
+    }
+
+    await postForm(ApiConstants.clients, data: FormData.fromMap(payload));
   }
 
   /// Updates an existing client.
   Future<void> updateClient({
     required String id,
     required UpdateClientRequestModel request,
+    bool usePatch = false,
   }) async {
     final path = ApiConstants.updateClient.replaceFirst('{id}', id);
-    await put(path, data: request.toJson());
+    final payload = request.toPayload();
+    final profileImagePath = request.normalizedProfileImagePath;
+    if (profileImagePath != null) {
+      final fileName = profileImagePath.split(RegExp(r'[\\/]')).last;
+      payload['profile_image'] = await MultipartFile.fromFile(
+        profileImagePath,
+        filename: fileName,
+      );
+    }
+
+    if (usePatch) {
+      await patch(path, data: payload);
+      return;
+    }
+
+    if (profileImagePath != null) {
+      await putForm(path, data: FormData.fromMap(payload));
+      return;
+    }
+
+    await put(path, data: payload);
   }
 
   /// Creates a new vendor.
@@ -2397,7 +2724,7 @@ class ApiService {
         'email': email,
         'phone': phone,
         'address': address,
-        'status': status,
+        'status': _normalizeVendorStatus(status),
       },
     );
   }
@@ -2419,9 +2746,26 @@ class ApiService {
         'email': email,
         'phone': phone,
         'address': address,
-        'status': status,
+        'status': _normalizeVendorStatus(status),
       },
     );
+  }
+
+  String _normalizeVendorStatus(String status) {
+    final normalized = status.trim().toLowerCase();
+    if (normalized == '1' ||
+        normalized == 'true' ||
+        normalized == 'active' ||
+        normalized == 'enabled') {
+      return 'active';
+    }
+    if (normalized == '0' ||
+        normalized == 'false' ||
+        normalized == 'inactive' ||
+        normalized == 'disabled') {
+      return 'inactive';
+    }
+    return normalized;
   }
 
   /// Deletes an existing vendor.
@@ -3082,13 +3426,14 @@ class ApiService {
     DateTime? endsOn,
     int? endsAfter,
   }) {
+    final normalizedEndsType = endsType.trim().toLowerCase();
     final payload = <String, dynamic>{
       'title': title.trim(),
       'task_date': _formatApiDate(taskDate),
       'repeat_interval': repeatInterval,
       'repeat_unit': repeatUnit.trim().toLowerCase(),
       'starts_on': _formatApiDate(startsOn),
-      'ends_type': endsType.trim().toLowerCase(),
+      'ends_type': normalizedEndsType,
     };
 
     final normalizedDescription = description?.trim() ?? '';
@@ -3108,8 +3453,9 @@ class ApiService {
       payload['ends_on'] = _formatApiDate(endsOn);
     }
 
-    if (endsAfter != null && endsAfter > 0) {
+    if (normalizedEndsType == 'after' && endsAfter != null && endsAfter > 0) {
       payload['ends_after'] = endsAfter;
+      payload['ends_after_occurrences'] = endsAfter;
     }
 
     return payload;
@@ -3180,8 +3526,10 @@ class ApiService {
 
     debugPrint('*** Multipart Debug ***');
     debugPrint('path: $path');
-    debugPrint('fields: ${fields.isEmpty ? '(none)' : fields}');
-    debugPrint('files: ${files.isEmpty ? '(none)' : files}');
+    debugPrint(
+      'fields: ${fields.isEmpty ? '(none)' : _truncateForLogText(fields)}',
+    );
+    debugPrint('files: ${files.isEmpty ? '(none)' : _truncateForLogText(files)}');
   }
 
   Map<String, dynamic> _buildTaskListPayload({
@@ -3374,3 +3722,4 @@ class ApiService {
         .toList();
   }
 }
+

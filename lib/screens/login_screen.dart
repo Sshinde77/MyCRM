@@ -63,20 +63,15 @@ class _LoginScreenState extends State<LoginScreen> {
         email: email,
         password: password,
       );
+      PermissionService.setCurrentUser(response.user);
 
       if (!mounted) {
         return;
       }
 
-      final isBiometricEnabled = await _authService.isBiometricEnabled();
-      if (!isBiometricEnabled) {
-        final enableBiometric = await _askEnableBiometric();
-        if (enableBiometric == true) {
-          await _enableBiometricAfterLogin();
-        }
-      }
-
-      final landingRoute = await PermissionService.firstAllowedRoute();
+      final landingRoute = PermissionService.firstAllowedRouteForUser(
+        response.user,
+      );
       if (!mounted) {
         return;
       }

@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../core/services/permission_service.dart';
 import '../core/services/push_notification_service.dart';
 import '../core/services/secure_storage_service.dart';
 import '../models/login_response_model.dart';
@@ -81,6 +81,7 @@ class AuthService {
 
   Future<void> clearSession({bool clearBiometricFlag = true}) async {
     await _apiService.clearStoredAuth();
+    PermissionService.clearCachedUser();
     if (clearBiometricFlag) {
       await setBiometricEnabled(false);
     }
@@ -90,6 +91,7 @@ class AuthService {
     try {
       await PushNotificationService.onUserLogout();
       await _apiService.logout();
+      PermissionService.clearCachedUser();
     } finally {
       await setBiometricEnabled(false);
     }
@@ -97,8 +99,6 @@ class AuthService {
 
   void _emitAuthDebugLog(String message) {
     if (!kDebugMode) return;
-    print(message);
     debugPrint(message);
-    log(message, name: 'AuthService');
   }
 }

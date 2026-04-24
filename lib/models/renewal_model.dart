@@ -130,19 +130,19 @@ class RenewalModel {
     ]);
 
     final vendor = _firstNonEmpty([
-      _readString(source, const [
-        'vendor_name',
-        'vendorName',
-        'vendor',
-        'provider_name',
-        'providerName',
-      ]),
       _readString(vendorMap, const [
         'name',
         'vendor_name',
         'vendorName',
         'company_name',
         'companyName',
+      ]),
+      _readString(source, const [
+        'vendor_name',
+        'vendorName',
+        'vendor',
+        'provider_name',
+        'providerName',
       ]),
     ]);
 
@@ -279,6 +279,10 @@ class RenewalModel {
     for (final key in keys) {
       final value = json[key];
       if (value == null) {
+        continue;
+      }
+
+      if (value is Map || value is Iterable) {
         continue;
       }
 

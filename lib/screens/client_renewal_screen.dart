@@ -964,7 +964,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   final TextEditingController _serviceNameController = TextEditingController();
   final TextEditingController _serviceDetailsController =
       TextEditingController();
-  final TextEditingController _remarkTextController = TextEditingController();
 
   List<ClientModel> _clients = const <ClientModel>[];
   List<VendorModel> _vendors = const <VendorModel>[];
@@ -974,7 +973,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   String? _selectedVendorId;
   String _seedClientName = '';
   String _seedVendorName = '';
-  String? _selectedRemarkColor;
   String _selectedStatus = 'active';
   DateTime? _startDate;
   DateTime? _endDate;
@@ -985,14 +983,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   bool _isSubmitting = false;
 
   bool get _isEditMode => (_renewalId ?? '').isNotEmpty;
-
-  static const List<String> _remarkColors = <String>[
-    'yellow',
-    'green',
-    'blue',
-    'orange',
-    'red',
-  ];
 
   static const List<String> _statusValues = <String>['active', 'inactive'];
 
@@ -1007,7 +997,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   void dispose() {
     _serviceNameController.dispose();
     _serviceDetailsController.dispose();
-    _remarkTextController.dispose();
     super.dispose();
   }
 
@@ -1028,12 +1017,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
     _serviceNameController.text = renewal.title.trim();
     _serviceDetailsController.text = renewal.serviceDetails.trim();
-    _remarkTextController.text = renewal.remarkText.trim().isNotEmpty
-        ? renewal.remarkText.trim()
-        : renewal.remark.trim();
-    _selectedRemarkColor = renewal.remarkColor.trim().isNotEmpty
-        ? renewal.remarkColor.trim().toLowerCase()
-        : null;
     _selectedStatus = _normalizeStatusForForm(renewal.status);
     _startDate = renewal.startDateValue;
     _endDate = renewal.endDateValue;
@@ -1164,8 +1147,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
           vendorId: _selectedVendorId!,
           serviceName: _serviceNameController.text.trim(),
           serviceDetails: _serviceDetailsController.text.trim(),
-          remarkText: _remarkTextController.text.trim(),
-          remarkColor: (_selectedRemarkColor ?? '').trim(),
+          remarkText: '',
+          remarkColor: '',
           startDate: _startDate!,
           endDate: _endDate!,
           billingDate: _billingDate!,
@@ -1177,8 +1160,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
           vendorId: _selectedVendorId!,
           serviceName: _serviceNameController.text.trim(),
           serviceDetails: _serviceDetailsController.text.trim(),
-          remarkText: _remarkTextController.text.trim(),
-          remarkColor: (_selectedRemarkColor ?? '').trim(),
+          remarkText: '',
+          remarkColor: '',
           startDate: _startDate!,
           endDate: _endDate!,
           billingDate: _billingDate!,
@@ -1223,8 +1206,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       _selectedVendorId = null;
       _serviceNameController.clear();
       _serviceDetailsController.clear();
-      _remarkTextController.clear();
-      _selectedRemarkColor = null;
       _startDate = null;
       _endDate = null;
       _billingDate = null;
@@ -1558,69 +1539,6 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                 'Enter detailed description of the service...',
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 10),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final isWide = constraints.maxWidth >= 760;
-                              final itemWidth = isWide
-                                  ? (constraints.maxWidth - 12) / 2
-                                  : constraints.maxWidth;
-
-                              return Wrap(
-                                spacing: 12,
-                                runSpacing: 10,
-                                children: [
-                                  SizedBox(
-                                    width: itemWidth,
-                                    child: _LabeledField(
-                                      label: 'Remark Text',
-                                      child: TextField(
-                                        controller: _remarkTextController,
-                                        decoration: _inputDecoration(
-                                          'Example: IMP',
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: itemWidth,
-                                    child: _LabeledField(
-                                      label: 'Remark Color',
-                                      child: DropdownButtonFormField<String>(
-                                        value:
-                                            _remarkColors.contains(
-                                              _selectedRemarkColor,
-                                            )
-                                            ? _selectedRemarkColor
-                                            : null,
-                                        items: _remarkColors
-                                            .map(
-                                              (entry) =>
-                                                  DropdownMenuItem<String>(
-                                                    value: entry,
-                                                    child: Text(
-                                                      entry[0].toUpperCase() +
-                                                          entry.substring(1),
-                                                    ),
-                                                  ),
-                                            )
-                                            .toList(growable: false),
-                                        onChanged: _isSubmitting
-                                            ? null
-                                            : (value) => setState(
-                                                () => _selectedRemarkColor =
-                                                    value,
-                                              ),
-                                        decoration: _inputDecoration(
-                                          'Choose a color...',
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
                           ),
                           const SizedBox(height: 10),
                           LayoutBuilder(

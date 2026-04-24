@@ -1270,29 +1270,20 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           ],
         ),
         SizedBox(height: isCompact ? 10 : 12),
-        useTwoColumns
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _buildTitleField()),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildDateField()),
-                ],
-              )
-            : Column(
-                children: [
-                  _buildTitleField(),
-                  const SizedBox(height: 12),
-                  _buildDateField(),
-                ],
-              ),
+        _buildTitleField(),
         SizedBox(height: isCompact ? 10 : 12),
-        _FormFieldLabel(label: 'Description'),
+        _FormFieldLabel(label: 'Description', required: true),
         const SizedBox(height: 8),
         TextFormField(
           controller: _descriptionController,
           minLines: descriptionLines,
           maxLines: descriptionLines,
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please enter a description';
+            }
+            return null;
+          },
           decoration: _taskInputDecoration(
             hintText: 'Add extra details for this task',
           ),
@@ -1301,27 +1292,57 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         _buildAttachmentsField(),
         SizedBox(height: isCompact ? 10 : 12),
         useTwoColumns
-            ? Column(
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildTimeField()),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildReminderField()),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _buildRepeatField(),
+                  Expanded(child: _buildDateField()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildTimeField()),
                 ],
               )
             : Column(
                 children: [
+                  _buildDateField(),
+                  const SizedBox(height: 10),
                   _buildTimeField(),
+                ],
+              ),
+        SizedBox(height: isCompact ? 12 : 14),
+        const Divider(height: 1, color: Color(0xFFD6E2EF)),
+        SizedBox(height: isCompact ? 12 : 14),
+        Text(
+          'TASK REMINDER',
+          style: AppTextStyles.style(
+            color: const Color(0xFF556273),
+            fontSize: isCompact ? 10 : 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'To Do Reminder',
+          style: AppTextStyles.style(
+            color: const Color(0xFF2D3846),
+            fontSize: isCompact ? 16 : 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: isCompact ? 10 : 12),
+        useTwoColumns
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: _buildRepeatField()),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildReminderField()),
+                ],
+              )
+            : Column(
+                children: [
+                  _buildRepeatField(),
                   const SizedBox(height: 10),
                   _buildReminderField(),
-                  const SizedBox(height: 10),
-                  _buildRepeatField(),
                 ],
               ),
         SizedBox(height: isCompact ? 10 : 12),
@@ -1500,7 +1521,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Title'),
+        const _FormFieldLabel(label: 'Title', required: true),
         const SizedBox(height: 8),
         TextFormField(
           controller: _titleController,
@@ -1510,7 +1531,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             }
             return null;
           },
-          decoration: _taskInputDecoration(),
+          decoration: _taskInputDecoration(hintText: 'Enter Title'),
         ),
       ],
     );
@@ -1520,7 +1541,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Select Date'),
+        const _FormFieldLabel(label: 'Select Date', required: true),
         const SizedBox(height: 8),
         TextFormField(
           readOnly: true,
@@ -1541,13 +1562,19 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Select Time'),
+        const _FormFieldLabel(label: 'Select Time', required: true),
         const SizedBox(height: 8),
         TextFormField(
           readOnly: true,
           controller: TextEditingController(
             text: _selectedTime == null ? '--:--' : _formatTime(_selectedTime!),
           ),
+          validator: (_) {
+            if (_selectedTime == null) {
+              return 'Please select a time';
+            }
+            return null;
+          },
           onTap: () => _pickTime(
             initialTime: _selectedTime,
             onSelected: (time) => setState(() => _selectedTime = time),
@@ -1564,7 +1591,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Repeats Every'),
+        const _FormFieldLabel(label: 'Repeats Every', required: true),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1720,13 +1747,19 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Set Time'),
+        const _FormFieldLabel(label: 'Set Time', required: true),
         const SizedBox(height: 8),
         TextFormField(
           readOnly: true,
           controller: TextEditingController(
             text: _reminderTime == null ? '--:--' : _formatTime(_reminderTime!),
           ),
+          validator: (_) {
+            if (_reminderTime == null) {
+              return 'Please set reminder time';
+            }
+            return null;
+          },
           onTap: () => _pickTime(
             initialTime: _reminderTime,
             onSelected: (time) => setState(() => _reminderTime = time),
@@ -1743,7 +1776,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Starts'),
+        const _FormFieldLabel(label: 'Starts', required: true),
         const SizedBox(height: 8),
         TextFormField(
           readOnly: true,
@@ -1810,6 +1843,16 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             child: TextFormField(
               controller: _afterCountController,
               keyboardType: TextInputType.number,
+              validator: (value) {
+                if (_endType != _TaskEndType.after) {
+                  return null;
+                }
+                final count = int.tryParse((value ?? '').trim());
+                if (count == null || count <= 0) {
+                  return 'Enter valid count';
+                }
+                return null;
+              },
               decoration: _taskInputDecoration(hintText: 'Count'),
             ),
           ),
@@ -2182,18 +2225,29 @@ class _EndOptionChip extends StatelessWidget {
 }
 
 class _FormFieldLabel extends StatelessWidget {
-  const _FormFieldLabel({required this.label});
+  const _FormFieldLabel({required this.label, this.required = false});
 
   final String label;
+  final bool required;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AppTextStyles.style(
-        color: const Color(0xFF55606E),
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
+    return RichText(
+      text: TextSpan(
+        text: label,
+        style: AppTextStyles.style(
+          color: const Color(0xFF55606E),
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+        ),
+        children: required
+            ? const [
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Color(0xFFD93025)),
+                ),
+              ]
+            : const [],
       ),
     );
   }
@@ -2530,7 +2584,10 @@ class _TodoTask {
       startsOn: startsOn,
       endType: endType,
       endsOn: _tryParseApiDate(_readString(source, const ['ends_on'])),
-      endsAfterCount: _readInt(source, const ['ends_after']),
+      endsAfterCount: _readInt(
+        source,
+        const ['ends_after_occurrences', 'ends_after'],
+      ),
       attachments: _readAttachments(source),
       isCompleted: _readCompletionState(source),
     );

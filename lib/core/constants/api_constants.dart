@@ -43,12 +43,12 @@ class ApiConstants {
   static const String editleads = '$baseUrl/leads/{id}';
 
   //Todo Api
-  static const String createtodo = '$baseUrl/todos/create-todo';
+  static const String createtodo = '$baseUrl/todos';
   static const String listtodo = '$baseUrl/todos';
   static const String tododetail = '$baseUrl/todos/{id}';
-  static const String deletetodo = '$baseUrl/todos/delete-todo/{id}';
-  static const String edittodo = '$baseUrl/todos/update-todo/{id}';
-  static const String statustodo = '$baseUrl/todos/toggle-todo-status/{id}';
+  static const String deletetodo = '$baseUrl/todos/{id}';
+  static const String edittodo = '$baseUrl/todos/{id}';
+  static const String statustodo = '$baseUrl/todos/{id}/status';
 
   //projects
   static const String projects = '$baseUrl/projects';

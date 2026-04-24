@@ -63,17 +63,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadAllowedDashboardData() async {
-    if (await PermissionService.has(AppPermission.viewCalendar)) {
+    final user = await PermissionService.getCurrentUser();
+    if (!mounted || user == null) {
+      return;
+    }
+
+    if (PermissionService.userHas(user, AppPermission.viewCalendar)) {
       _loadCalendarEvents();
     }
-    if (await PermissionService.has(AppPermission.viewProjects) ||
-        await PermissionService.has(AppPermission.viewTasks)) {
+    if (PermissionService.userHas(user, AppPermission.viewProjects) ||
+        PermissionService.userHas(user, AppPermission.viewTasks)) {
       _loadDashboardSummary();
     }
-    if (await PermissionService.has(AppPermission.viewRenewals)) {
+    if (PermissionService.userHas(user, AppPermission.viewRenewals)) {
       _loadUpcomingRenewals();
     }
-    if (await PermissionService.has(AppPermission.viewRaiseIssue)) {
+    if (PermissionService.userHas(user, AppPermission.viewRaiseIssue)) {
       _loadRecentIssues();
     }
   }
@@ -85,6 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     if (storedUser != null) {
+      PermissionService.setCurrentUser(storedUser);
       setState(() {
         _currentUser = storedUser;
       });
@@ -95,6 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (!mounted) {
         return;
       }
+      PermissionService.setCurrentUser(user);
       setState(() {
         _currentUser = user;
       });
@@ -268,14 +275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                   const SizedBox(height: 10),
-                  Text(
-                    'Calendar appointments are loaded from the API when available.',
-                    style: AppTextStyles.style(
-                      color: textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+
                 ],
               ),
             ),
@@ -283,6 +283,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ),
     );
+
   }
 
   Future<void> _loadCalendarEvents() async {

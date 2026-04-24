@@ -48,8 +48,40 @@ class AppPermission {
 class PermissionService {
   PermissionService._();
 
-  static Future<UserModel?> getCurrentUser() =>
-      ApiService.instance.getStoredUser();
+  static UserModel? _cachedUser;
+  static Future<UserModel?>? _userLoadFuture;
+
+  static Future<UserModel?> getCurrentUser() async {
+    if (_cachedUser != null) {
+      return _cachedUser;
+    }
+    final inFlight = _userLoadFuture;
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    final loader = ApiService.instance.getStoredUser();
+    _userLoadFuture = loader;
+    try {
+      final user = await loader;
+      _cachedUser = user;
+      return user;
+    } finally {
+      if (identical(_userLoadFuture, loader)) {
+        _userLoadFuture = null;
+      }
+    }
+  }
+
+  static void setCurrentUser(UserModel? user) {
+    _cachedUser = user;
+    _userLoadFuture = null;
+  }
+
+  static void clearCachedUser() {
+    _cachedUser = null;
+    _userLoadFuture = null;
+  }
 
   static Future<bool> has(String permission) async {
     final user = await getCurrentUser();
@@ -65,6 +97,11 @@ class PermissionService {
   }
 
   static Future<String> firstAllowedRoute() async {
+    final user = await getCurrentUser();
+    return firstAllowedRouteForUser(user);
+  }
+
+  static String firstAllowedRouteForUser(UserModel? user) {
     for (final routeName in const [
       AppRoutes.dashboard,
       AppRoutes.projects,
@@ -76,7 +113,8 @@ class PermissionService {
       AppRoutes.renewalMaster,
       AppRoutes.settings,
     ]) {
-      if (await canOpenRoute(routeName)) {
+      final requiredPermission = routePermission(routeName);
+      if (requiredPermission == null || userHas(user, requiredPermission)) {
         return routeName;
       }
     }

@@ -18,13 +18,21 @@ class StaffScreen extends StatefulWidget {
 
 class _StaffScreenState extends State<StaffScreen> {
   final TextEditingController _searchController = TextEditingController();
-  late Future<List<StaffMemberModel>> _staffFuture;
+  final List<StaffMemberModel> _staffMembers = <StaffMemberModel>[];
+  bool _isInitialLoading = true;
+  bool _isLoadingMore = false;
+  String? _loadError;
+  int _currentPage = 0;
+  int _lastPage = 1;
+  int _totalRecords = 0;
+  bool _hasNextFromApi = false;
   String? _deletingStaffId;
+  bool get _hasNextPage => _hasNextFromApi || _currentPage < _lastPage;
 
   @override
   void initState() {
     super.initState();
-    _staffFuture = ApiService.instance.getStaffList();
+    _loadPage(page: 1, showInitialLoader: true);
   }
 
   @override
@@ -33,10 +41,55 @@ class _StaffScreenState extends State<StaffScreen> {
     super.dispose();
   }
 
-  void _reload() {
-    setState(() {
-      _staffFuture = ApiService.instance.getStaffList();
-    });
+  Future<void> _reload() async {
+    await _loadPage(page: 1, showInitialLoader: true);
+  }
+
+  Future<void> _loadPage({
+    required int page,
+    bool showInitialLoader = false,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+
+    if (showInitialLoader) {
+      setState(() {
+        _isInitialLoading = true;
+        _loadError = null;
+      });
+    } else {
+      if (_isInitialLoading || _isLoadingMore) return;
+      setState(() => _isLoadingMore = true);
+    }
+
+    try {
+      final pageResult = await ApiService.instance.getStaffListPage(
+        page: normalizedPage,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _staffMembers
+          ..clear()
+          ..addAll(pageResult.items);
+        _currentPage = pageResult.currentPage;
+        _lastPage = pageResult.lastPage;
+        _totalRecords = pageResult.total;
+        _hasNextFromApi = pageResult.hasNextPage;
+        _loadError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _loadError = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isInitialLoading = false;
+          _isLoadingMore = false;
+        });
+      }
+    }
   }
 
   Future<void> _confirmDelete(StaffMemberModel member) async {
@@ -109,7 +162,7 @@ class _StaffScreenState extends State<StaffScreen> {
         'Staff deleted',
         '${member.name.isNotEmpty ? member.name : 'The staff member'} was deleted successfully.',
       );
-      _reload();
+      await _reload();
     } on Exception catch (error) {
       if (!mounted) return;
 
@@ -141,14 +194,16 @@ class _StaffScreenState extends State<StaffScreen> {
           ),
         ),
         child: SafeArea(
-          child: FutureBuilder<List<StaffMemberModel>>(
-            future: _staffFuture,
-            builder: (context, snapshot) {
-              final staffMembers = snapshot.data ?? const <StaffMemberModel>[];
-              final filteredMembers = _filterMembers(staffMembers);
+          child: Builder(
+            builder: (context) {
+              final filteredMembers = _filterMembers(_staffMembers);
+              final hasSearch = _searchController.text.trim().isNotEmpty;
+              final headerCount = hasSearch
+                  ? filteredMembers.length
+                  : (_totalRecords > 0 ? _totalRecords : filteredMembers.length);
 
               return RefreshIndicator(
-                onRefresh: () async => _reload(),
+                onRefresh: _reload,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(
@@ -182,22 +237,16 @@ class _StaffScreenState extends State<StaffScreen> {
                           ),
                           _SectionHeader(
                             compact: compact,
-                            count: filteredMembers.length,
+                            count: headerCount,
                           ),
                           SizedBox(height: compact ? 14 : 16),
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting)
+                          if (_isInitialLoading)
                             _LoadingState(compact: compact)
-                          else if (snapshot.hasError)
-                            _ErrorState(compact: compact, onRetry: _reload)
+                          else if (_loadError != null && _staffMembers.isEmpty)
+                            _ErrorState(compact: compact, onRetry: () => _reload())
                           else if (filteredMembers.isEmpty)
-                            _EmptyState(
-                              compact: compact,
-                              hasSearch: _searchController.text
-                                  .trim()
-                                  .isNotEmpty,
-                            )
-                          else
+                            _EmptyState(compact: compact, hasSearch: hasSearch)
+                          else ...[
                             ...filteredMembers.map(
                               (member) => Padding(
                                 padding: EdgeInsets.only(
@@ -211,6 +260,57 @@ class _StaffScreenState extends State<StaffScreen> {
                                 ),
                               ),
                             ),
+                            if (_isLoadingMore)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: compact ? 6 : 8,
+                                  bottom: compact ? 8 : 10,
+                                ),
+                                child: Center(
+                                  child: _PaginationControls(
+                                    compact: compact,
+                                    currentPage: _currentPage,
+                                    lastPage: _lastPage,
+                                    isLoading: _isLoadingMore,
+                                    hasNextPage: _hasNextPage,
+                                    onPrevious: _currentPage > 1
+                                        ? () => _loadPage(
+                                            page: _currentPage - 1,
+                                          )
+                                        : null,
+                                    onNext: _hasNextPage
+                                        ? () => _loadPage(
+                                            page: _currentPage + 1,
+                                          )
+                                        : null,
+                                  ),
+                                ),
+                              )
+                            else if (_lastPage > 1)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: compact ? 6 : 8,
+                                  bottom: compact ? 8 : 10,
+                                ),
+                                child: _PaginationControls(
+                                  compact: compact,
+                                  currentPage: _currentPage,
+                                  lastPage: _lastPage,
+                                  isLoading: _isLoadingMore,
+                                  hasNextPage: _hasNextPage,
+                                  onPrevious: _currentPage > 1
+                                      ? () => _loadPage(
+                                          page: _currentPage - 1,
+                                        )
+                                      : null,
+                                  onNext: _hasNextPage
+                                      ? () => _loadPage(
+                                          page: _currentPage + 1,
+                                        )
+                                      : null,
+                                ),
+                              ),
+                          ],
                         ],
                       ),
                     ),
@@ -811,6 +911,74 @@ class _EmptyState extends StatelessWidget {
               fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w500,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaginationControls extends StatelessWidget {
+  const _PaginationControls({
+    required this.compact,
+    required this.currentPage,
+    required this.lastPage,
+    required this.isLoading,
+    required this.hasNextPage,
+    this.onPrevious,
+    this.onNext,
+  });
+
+  final bool compact;
+  final int currentPage;
+  final int lastPage;
+  final bool isLoading;
+  final bool hasNextPage;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 8 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onPrevious,
+            icon: const Icon(Icons.chevron_left_rounded),
+            label: const Text('Previous'),
+          ),
+          Expanded(
+            child: Center(
+              child: isLoading
+                  ? SizedBox(
+                      height: compact ? 18 : 20,
+                      width: compact ? 18 : 20,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      'Page $currentPage of $lastPage',
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF475569),
+                        fontSize: compact ? 12 : 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+          OutlinedButton.icon(
+            onPressed: (isLoading || !hasNextPage) ? null : onNext,
+            icon: const Icon(Icons.chevron_right_rounded),
+            label: const Text('Next page'),
           ),
         ],
       ),

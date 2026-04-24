@@ -18,12 +18,21 @@ class ClientsScreen extends StatefulWidget {
 
 class _ClientsScreenState extends State<ClientsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  late Future<List<ClientModel>> _clientsFuture;
+  final List<ClientModel> _clients = <ClientModel>[];
+  final List<ClientModel> _searchClients = <ClientModel>[];
+  bool _isLoading = false;
+  bool _isSearchLoading = false;
+  String? _errorMessage;
+  int _currentPage = 1;
+  int _lastPage = 1;
+  int _totalCount = 0;
+  int _searchFetchGeneration = 0;
 
   @override
   void initState() {
     super.initState();
-    _clientsFuture = ApiService.instance.getClientsList();
+    _loadClientsPage(1);
+    _ensureSearchClientsLoaded();
   }
 
   @override
@@ -33,9 +42,106 @@ class _ClientsScreenState extends State<ClientsScreen> {
   }
 
   void _reload() {
+    _invalidateSearchCache();
+    _loadClientsPage(_currentPage);
+    _ensureSearchClientsLoaded();
+  }
+
+  Future<void> _loadClientsPage(int pageNumber) async {
+    if (_isLoading) return;
+    if (pageNumber < 1) return;
+
     setState(() {
-      _clientsFuture = ApiService.instance.getClientsList();
+      _errorMessage = null;
+      _isLoading = true;
     });
+
+    try {
+      final page = await ApiService.instance.getClientsListPage(page: pageNumber);
+      if (!mounted) return;
+
+      setState(() {
+        _clients
+          ..clear()
+          ..addAll(page.items);
+        _currentPage = page.currentPage;
+        _lastPage = page.lastPage;
+        _totalCount = page.total;
+      });
+    } on DioException catch (error) {
+      if (!mounted) return;
+
+      final responseData = error.response?.data;
+      var message = 'Unable to load clients';
+      if (responseData is Map && responseData['message'] != null) {
+        message = responseData['message'].toString();
+      } else if (error.message != null && error.message!.trim().isNotEmpty) {
+        message = error.message!.trim();
+      }
+      setState(() => _errorMessage = message);
+    } finally {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _invalidateSearchCache() {
+    _searchClients.clear();
+    _searchFetchGeneration += 1;
+    _isSearchLoading = false;
+  }
+
+  Future<void> _handleSearchChanged(String _) async {
+    setState(() {});
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() {
+        _searchClients.clear();
+        _isSearchLoading = false;
+      });
+      return;
+    }
+    await _ensureSearchClientsLoaded();
+  }
+
+  Future<void> _ensureSearchClientsLoaded() async {
+    if (_isSearchLoading || _searchClients.isNotEmpty) {
+      return;
+    }
+
+    final generation = _searchFetchGeneration + 1;
+    setState(() {
+      _searchFetchGeneration = generation;
+      _isSearchLoading = true;
+    });
+
+    try {
+      final firstPage = await ApiService.instance.getClientsListPage(page: 1);
+      if (!mounted || generation != _searchFetchGeneration) return;
+
+      final allClients = <ClientModel>[...firstPage.items];
+      final normalizedLastPage = firstPage.lastPage < 1 ? 1 : firstPage.lastPage;
+
+      for (var page = 2; page <= normalizedLastPage; page++) {
+        final nextPage = await ApiService.instance.getClientsListPage(page: page);
+        if (!mounted || generation != _searchFetchGeneration) return;
+        allClients.addAll(nextPage.items);
+      }
+
+      final dedupedById = <String, ClientModel>{};
+      for (final client in allClients) {
+        dedupedById[client.id] = client;
+      }
+
+      setState(() {
+        _searchClients
+          ..clear()
+          ..addAll(dedupedById.values);
+      });
+    } finally {
+      if (!mounted || generation != _searchFetchGeneration) return;
+      setState(() => _isSearchLoading = false);
+    }
   }
 
   List<ClientModel> _filterClients(List<ClientModel> clients) {
@@ -60,137 +166,168 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasSearch = _searchController.text.trim().isNotEmpty;
+    final clients = hasSearch
+        ? (_searchClients.isNotEmpty ? _searchClients : _clients)
+        : _clients;
+    final activeClientsSource = _searchClients.isNotEmpty ? _searchClients : _clients;
+    final filteredClients = _filterClients(clients);
+    final totalClients = _totalCount > 0 ? _totalCount : clients.length;
+    final activeClients = activeClientsSource
+        .where((client) => client.isActive)
+        .length;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       body: SafeArea(
-        child: FutureBuilder<List<ClientModel>>(
-          future: _clientsFuture,
-          builder: (context, snapshot) {
-            final clients = snapshot.data ?? const <ClientModel>[];
-            final filteredClients = _filterClients(clients);
-            final totalClients = clients.length;
-            final activeClients = clients
-                .where((client) => client.isActive)
-                .length;
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: RefreshIndicator(
-                onRefresh: () async => _reload(),
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: RefreshIndicator(
+            onRefresh: () async => _reload(),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 10),
+                const CommonTopBar(title: 'Clients'),
+                const SizedBox(height: 20),
+                Row(
                   children: [
-                    const SizedBox(height: 10),
-                    const CommonTopBar(title: 'Clients'),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            title: 'Total Clients',
-                            value: totalClients.toString(),
-                            percent: 'API',
-                            icon: Icons.people,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _StatCard(
-                            title: 'Active',
-                            value: activeClients.toString(),
-                            percent: 'API',
-                            icon: Icons.check_circle,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Total Clients',
+                        value: totalClients.toString(),
+                        percent: 'API',
+                        icon: Icons.people,
+                        color: Colors.black,
+                      ),
                     ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Container(
-                            height: 50,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            child: TextField(
-                              controller: _searchController,
-                              onChanged: (_) => setState(() {}),
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                focusedErrorBorder: InputBorder.none,
-                                icon: Icon(Icons.search, color: Colors.grey),
-                                hintText: 'Search clients...',
-                                hintStyle: TextStyle(color: Colors.grey),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        _circleIcon(Icons.tune),
-                      ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _StatCard(
+                        title: 'Active',
+                        value: activeClients.toString(),
+                        percent: 'Loaded',
+                        icon: Icons.check_circle,
+                        color: Colors.green,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    PermissionGate(
-                      permission: AppPermission.createClients,
-                      child: InkWell(
-                        onTap: () => Get.toNamed(AppRoutes.addClient),
-                        borderRadius: BorderRadius.circular(30),
-                        child: Ink(
-                          height: 55,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '+ Add New Client',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: _handleSearchChanged,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                            icon: Icon(Icons.search, color: Colors.grey),
+                            hintText: 'Search clients...',
+                            hintStyle: TextStyle(color: Colors.grey),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
-                        Text(
-                          'RECENTLY UPDATED',
+                    const SizedBox(width: 10),
+                    _circleIcon(Icons.tune),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                PermissionGate(
+                  permission: AppPermission.createClients,
+                  child: InkWell(
+                    onTap: () => Get.toNamed(AppRoutes.addClient),
+                    borderRadius: BorderRadius.circular(30),
+                    child: Ink(
+                      height: 55,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB),
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '+ Add New Client',
                           style: TextStyle(
-                            color: Colors.grey,
+                            color: Colors.white,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        Text('View All', style: TextStyle(color: Colors.blue)),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    _ClientsList(
-                      snapshot: snapshot,
-                      clients: filteredClients,
-                      hasSearch: _searchController.text.trim().isNotEmpty,
-                      onRefresh: _reload,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text(
+                      'RECENTLY UPDATED',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    const SizedBox(height: 12),
+
                   ],
                 ),
-              ),
-            );
-          },
+                const SizedBox(height: 10),
+                if ((_isLoading && clients.isEmpty) ||
+                    (hasSearch && _isSearchLoading && filteredClients.isEmpty))
+                  const Center(child: CircularProgressIndicator())
+                else if (_errorMessage != null && clients.isEmpty)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.cloud_off, color: Colors.grey),
+                        const SizedBox(height: 8),
+                        Text(_errorMessage!),
+                        const SizedBox(height: 8),
+                        TextButton(onPressed: _reload, child: const Text('Retry')),
+                      ],
+                    ),
+                  )
+                else
+                  _ClientsList(
+                    clients: filteredClients,
+                    hasSearch: hasSearch,
+                    onRefresh: _reload,
+                  ),
+                if (!hasSearch && clients.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      'Showing ${clients.length} of $totalClients (Page $_currentPage/$_lastPage)',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _PaginationBar(
+                    currentPage: _currentPage,
+                    lastPage: _lastPage,
+                    isLoading: _isLoading,
+                    onPageTap: _loadClientsPage,
+                  ),
+                ],
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -209,15 +346,113 @@ class _ClientsScreenState extends State<ClientsScreen> {
   }
 }
 
+class _PaginationBar extends StatelessWidget {
+  const _PaginationBar({
+    required this.currentPage,
+    required this.lastPage,
+    required this.isLoading,
+    required this.onPageTap,
+  });
+
+  final int currentPage;
+  final int lastPage;
+  final bool isLoading;
+  final Future<void> Function(int page) onPageTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (lastPage <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            OutlinedButton(
+              onPressed: isLoading || currentPage <= 1
+                  ? null
+                  : () => onPageTap(currentPage - 1),
+              child: const Text('Prev'),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: isLoading || currentPage >= lastPage
+                  ? null
+                  : () => onPageTap(currentPage + 1),
+              child: const Text('Next'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (var page = 1; page <= lastPage; page++)
+              _PageChip(
+                page: page,
+                isActive: page == currentPage,
+                isLoading: isLoading,
+                onTap: onPageTap,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PageChip extends StatelessWidget {
+  const _PageChip({
+    required this.page,
+    required this.isActive,
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  final int page;
+  final bool isActive;
+  final bool isLoading;
+  final Future<void> Function(int page) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: isLoading || isActive ? null : () => onTap(page),
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        width: 34,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF2563EB) : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: isActive ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Text(
+          '$page',
+          style: TextStyle(
+            color: isActive ? Colors.white : const Color(0xFF334155),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ClientsList extends StatelessWidget {
   const _ClientsList({
-    required this.snapshot,
     required this.clients,
     required this.hasSearch,
     required this.onRefresh,
   });
 
-  final AsyncSnapshot<List<ClientModel>> snapshot;
   final List<ClientModel> clients;
   final bool hasSearch;
   final VoidCallback onRefresh;
@@ -267,25 +502,6 @@ class _ClientsList extends StatelessWidget {
       }
     }
 
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (snapshot.hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.cloud_off, color: Colors.grey),
-            const SizedBox(height: 8),
-            const Text('Unable to load clients'),
-            const SizedBox(height: 8),
-            TextButton(onPressed: onRefresh, child: const Text('Retry')),
-          ],
-        ),
-      );
-    }
-
     if (clients.isEmpty) {
       return Center(
         child: Text(
@@ -303,10 +519,7 @@ class _ClientsList extends StatelessWidget {
             name: client.name.isNotEmpty ? client.name : 'Client',
             role: client.contactLine,
             email: client.email.isNotEmpty ? client.email : 'No email',
-            industry: client.industry.isNotEmpty
-                ? client.industry
-                : 'No industry',
-            website: client.website.isNotEmpty ? client.website : 'No website',
+            phone: client.phone.isNotEmpty ? client.phone : 'No phone',
             active: client.isActive,
             onEdit: () {
               Get.toNamed(
@@ -386,8 +599,7 @@ class _ClientCard extends StatelessWidget {
   final String name;
   final String role;
   final String email;
-  final String industry;
-  final String website;
+  final String phone;
   final bool active;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -397,8 +609,7 @@ class _ClientCard extends StatelessWidget {
     required this.name,
     required this.role,
     required this.email,
-    required this.industry,
-    required this.website,
+    required this.phone,
     required this.active,
     required this.onEdit,
     required this.onDelete,
@@ -459,8 +670,7 @@ class _ClientCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _infoRow(Icons.email, email),
-            _infoRow(Icons.business, industry),
-            _infoRow(Icons.link, website, isLink: true),
+            _infoRow(Icons.phone, phone),
             const Divider(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,

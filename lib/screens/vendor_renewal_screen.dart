@@ -502,7 +502,7 @@ class _AddServiceButton extends StatelessWidget {
             ),
             SizedBox(width: compact ? 10 : 12),
             Text(
-              'Add New Vendor',
+              'Add New Vendor Service',
               style: AppTextStyles.style(
                 color: Colors.white,
                 fontSize: compact ? 15 : 16,
@@ -611,12 +611,6 @@ class _ServiceCard extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.storefront_outlined,
                   text: 'Vendor: ${service.vendor}',
-                  compact: compact,
-                ),
-                SizedBox(height: compact ? 10 : 12),
-                _InfoRow(
-                  icon: Icons.person_outline_rounded,
-                  text: 'Client: ${service.client}',
                   compact: compact,
                 ),
                 SizedBox(height: compact ? 16 : 18),
@@ -905,7 +899,6 @@ class _ServiceItem {
   const _ServiceItem({
     required this.renewal,
     required this.title,
-    required this.client,
     required this.vendor,
     required this.startDate,
     required this.endDate,
@@ -917,7 +910,6 @@ class _ServiceItem {
 
   final RenewalModel renewal;
   final String title;
-  final String client;
   final String vendor;
   final String startDate;
   final String endDate;
@@ -930,7 +922,6 @@ class _ServiceItem {
     return _ServiceItem(
       renewal: renewal,
       title: renewal.title,
-      client: renewal.client,
       vendor: renewal.vendor,
       startDate: _orFallback(renewal.startDate, 'N/A'),
       endDate: _orFallback(renewal.endDate, 'N/A'),

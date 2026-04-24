@@ -128,7 +128,7 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
       address: _addressController.text.trim(),
-      status: _isActive ? '1' : '0',
+      status: _isActive ? 'active' : 'inactive',
     );
 
     try {
@@ -497,3 +497,4 @@ String _readVendorFormError(DioException error, {required String fallback}) {
 
   return fallback;
 }
+

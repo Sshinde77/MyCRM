@@ -5,6 +5,7 @@ class ClientModel {
     required this.email,
     required this.industry,
     required this.website,
+    this.phone = '',
     required this.contactName,
     required this.contactRole,
     required this.isActive,
@@ -15,6 +16,7 @@ class ClientModel {
   final String email;
   final String industry;
   final String website;
+  final String phone;
   final String contactName;
   final String contactRole;
   final bool isActive;
@@ -70,6 +72,14 @@ class ClientModel {
         'email_address',
         'contact_email',
         'primary_email',
+      ]),
+      phone: _readString(source, [
+        'phone',
+        'mobile',
+        'phone_number',
+        'contact_phone',
+        'primary_phone',
+        'telephone',
       ]),
       industry: _readString(source, [
         'industry',

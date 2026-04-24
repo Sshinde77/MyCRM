@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:country_state_city_selector/country_state_city_selector.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -22,9 +22,9 @@ class AddClientScreen extends StatefulWidget {
 }
 
 class _AddClientScreenState extends State<AddClientScreen> {
-  final TextEditingController _clientNameController = TextEditingController();
-  final TextEditingController _contactPersonController =
-      TextEditingController();
+  final TextEditingController _companyNameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _websiteController = TextEditingController();
@@ -35,23 +35,15 @@ class _AddClientScreenState extends State<AddClientScreen> {
   final TextEditingController _postalCodeController = TextEditingController();
   final TextEditingController _countryController = TextEditingController();
   final TextEditingController _industryController = TextEditingController();
-  final TextEditingController _defaultDueDaysController =
-      TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  String? _profileImagePath;
 
   String? _clientType;
   String? _status;
-  String? _priorityLevel;
-  String? _billingType;
-  String? _role;
-  bool _sendWelcomeEmail = true;
   bool _isSubmitting = false;
   bool _isEditMode = false;
   bool _isLoading = false;
   String? _clientId;
-  String _selectedCountry = 'India';
-  String _selectedState = 'Maharashtra';
-  String _selectedCity = 'Mumbai Suburban';
 
   @override
   void initState() {
@@ -60,10 +52,6 @@ class _AddClientScreenState extends State<AddClientScreen> {
   }
 
   void _hydrateFromArgs() {
-    _countryController.text = _selectedCountry;
-    _stateController.text = _selectedState;
-    _cityController.text = _selectedCity;
-
     final args = Get.arguments;
     String? resolvedId = widget.clientId;
     bool editFlag = widget.isEdit;
@@ -107,10 +95,11 @@ class _AddClientScreenState extends State<AddClientScreen> {
   }
 
   void _applyDetail(ClientDetailModel detail) {
-    _clientNameController.text = detail.companyName.isNotEmpty
-        ? detail.companyName
+    _companyNameController.text = detail.companyName;
+    final contactName = detail.contactPerson.trim().isNotEmpty
+        ? detail.contactPerson
         : detail.name;
-    _contactPersonController.text = detail.contactPerson;
+    _applyContactName(contactName);
     _emailController.text = detail.email;
     _phoneController.text = detail.phone;
     _websiteController.text = detail.website;
@@ -120,17 +109,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
     _stateController.text = detail.state;
     _postalCodeController.text = detail.postalCode;
     _countryController.text = detail.country;
-    _selectedCity = detail.city.trim().isNotEmpty
-        ? detail.city
-        : 'Mumbai Suburban';
-    _selectedState = detail.state.trim().isNotEmpty
-        ? detail.state
-        : 'Maharashtra';
-    _selectedCountry = detail.country.trim().isNotEmpty
-        ? detail.country
-        : 'India';
     _industryController.text = detail.industry;
-    _defaultDueDaysController.text = detail.dueDays;
 
     _clientType = _matchValue(detail.clientType, const [
       'Individual',
@@ -138,16 +117,6 @@ class _AddClientScreenState extends State<AddClientScreen> {
       'Enterprise',
     ]);
     _status = _matchValue(detail.status, const ['Active', 'Inactive']);
-    _priorityLevel = _matchValue(detail.priorityLevel, const [
-      'Low',
-      'Medium',
-      'High',
-    ]);
-    _billingType = detail.billingType.trim().isNotEmpty
-        ? detail.billingType
-        : null;
-    _role = detail.role.trim().isNotEmpty ? detail.role : 'client';
-
     setState(() {});
   }
 
@@ -162,10 +131,26 @@ class _AddClientScreenState extends State<AddClientScreen> {
     return null;
   }
 
+  void _applyContactName(String rawValue) {
+    final normalized = rawValue.trim();
+    if (normalized.isEmpty) {
+      _firstNameController.text = '';
+      _lastNameController.text = '';
+      return;
+    }
+
+    final parts = normalized.split(RegExp(r'\s+'));
+    _firstNameController.text = parts.first.trim();
+    _lastNameController.text = parts.length > 1
+        ? parts.sublist(1).join(' ').trim()
+        : '';
+  }
+
   @override
   void dispose() {
-    _clientNameController.dispose();
-    _contactPersonController.dispose();
+    _companyNameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _websiteController.dispose();
@@ -176,9 +161,21 @@ class _AddClientScreenState extends State<AddClientScreen> {
     _postalCodeController.dispose();
     _countryController.dispose();
     _industryController.dispose();
-    _defaultDueDaysController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickProfileImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: false,
+      type: FileType.image,
+    );
+
+    if (result == null || result.files.isEmpty) return;
+    final filePath = result.files.first.path;
+    if (filePath == null || filePath.trim().isEmpty) return;
+    if (!mounted) return;
+    setState(() => _profileImagePath = filePath.trim());
   }
 
   @override
@@ -214,38 +211,61 @@ class _AddClientScreenState extends State<AddClientScreen> {
               const SizedBox(height: 16),
               _SectionCard(
                 title: 'Basic Information',
-                child: _ResponsiveFields(
+                child: Column(
                   children: [
-                    _TextFieldTile(
-                      label: 'Client Name',
-                      isRequired: true,
-                      controller: _clientNameController,
-                      hintText: 'Enter client name',
+                    _FilePickerFieldTile(
+                      label: 'Profile Image',
+                      filePath: _profileImagePath,
+                      buttonText: 'Choose File',
+                      emptyText: 'No file chosen',
+                      onTap: _pickProfileImage,
                     ),
-                    _TextFieldTile(
-                      label: 'Contact Person',
-                      isRequired: true,
-                      controller: _contactPersonController,
-                      hintText: 'Enter contact person name',
-                    ),
-                    _TextFieldTile(
-                      label: 'Email',
-                      isRequired: true,
-                      controller: _emailController,
-                      hintText: 'Enter email',
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    _TextFieldTile(
-                      label: 'Phone',
-                      controller: _phoneController,
-                      hintText: 'Enter phone number',
-                      keyboardType: TextInputType.phone,
-                    ),
-                    _TextFieldTile(
-                      label: 'Website',
-                      controller: _websiteController,
-                      hintText: 'https://example.com',
-                      keyboardType: TextInputType.url,
+                    const SizedBox(height: 12),
+                    _ResponsiveFields(
+                      children: [
+                        _TextFieldTile(
+                          label: 'First Name',
+                          isRequired: true,
+                          controller: _firstNameController,
+                          hintText: 'Enter first name',
+                        ),
+                        _TextFieldTile(
+                          label: 'Last Name',
+                          isRequired: true,
+                          controller: _lastNameController,
+                          hintText: 'Enter last name',
+                        ),
+                        _TextFieldTile(
+                          label: 'Email',
+                          isRequired: true,
+                          controller: _emailController,
+                          hintText: 'Enter email',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        _TextFieldTile(
+                          label: 'Phone',
+                          isRequired: true,
+                          controller: _phoneController,
+                          hintText: 'Enter phone number',
+                          keyboardType: TextInputType.phone,
+                        ),
+                        _DropdownFieldTile(
+                          label: 'Status',
+                          value: _status,
+                          hintText: 'Select status',
+                          items: _statusItems(),
+                          onChanged: (value) => setState(() => _status = value),
+                        ),
+                        if (!_isEditMode)
+                          _TextFieldTile(
+                            label: 'Password',
+                            isRequired: true,
+                            labelHelperText: 'Minimum 8 characters',
+                            controller: _passwordController,
+                            hintText: 'Enter password',
+                            obscureText: true,
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -259,7 +279,6 @@ class _AddClientScreenState extends State<AddClientScreen> {
                       children: [
                         _TextFieldTile(
                           label: 'Address Line 1',
-                          isRequired: true,
                           controller: _addressLine1Controller,
                           hintText: 'Enter address line 1',
                         ),
@@ -271,35 +290,28 @@ class _AddClientScreenState extends State<AddClientScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _ClientLocationPickerCard(
-                      initialCountry: _selectedCountry,
-                      initialState: _selectedState,
-                      initialCity: _selectedCity,
-                      onChanged: (country, state, city) {
-                        setState(() {
-                          _selectedCountry = country.isEmpty
-                              ? 'India'
-                              : country;
-                          _selectedState = state.isEmpty
-                              ? 'Maharashtra'
-                              : state;
-                          _selectedCity = city.isEmpty
-                              ? 'Mumbai Suburban'
-                              : city;
-                          _countryController.text = _selectedCountry;
-                          _stateController.text = _selectedState;
-                          _cityController.text = _selectedCity;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 12),
                     _ResponsiveFields(
+                      maxColumns: 4,
                       children: [
                         _TextFieldTile(
-                          label: 'Postal Code',
-                          isRequired: true,
+                          label: 'City',
+                          controller: _cityController,
+                          hintText: 'City',
+                        ),
+                        _TextFieldTile(
+                          label: 'State',
+                          controller: _stateController,
+                          hintText: 'State',
+                        ),
+                        _TextFieldTile(
+                          label: 'Country',
+                          controller: _countryController,
+                          hintText: 'Country',
+                        ),
+                        _TextFieldTile(
+                          label: 'Pincode',
                           controller: _postalCodeController,
-                          hintText: 'Enter postal code',
+                          hintText: 'Pincode',
                         ),
                       ],
                     ),
@@ -313,79 +325,26 @@ class _AddClientScreenState extends State<AddClientScreen> {
                   children: [
                     _DropdownFieldTile(
                       label: 'Client Type',
-                      isRequired: true,
                       value: _clientType,
                       hintText: 'Select type',
                       items: _clientTypeItems(),
                       onChanged: (value) => setState(() => _clientType = value),
                     ),
                     _TextFieldTile(
+                      label: 'Company Name',
+                      controller: _companyNameController,
+                      hintText: 'Enter Company Name',
+                    ),
+                    _TextFieldTile(
                       label: 'Industry',
-                      isRequired: true,
                       controller: _industryController,
                       hintText: 'Enter industry',
                     ),
-                    _DropdownFieldTile(
-                      label: 'Status',
-                      isRequired: true,
-                      value: _status,
-                      hintText: 'Select status',
-                      items: _statusItems(),
-                      onChanged: (value) => setState(() => _status = value),
-                    ),
-                    _DropdownFieldTile(
-                      label: 'Priority Level',
-                      value: _priorityLevel,
-                      hintText: 'Select priority',
-                      items: _priorityItems(),
-                      onChanged: (value) =>
-                          setState(() => _priorityLevel = value),
-                    ),
-                    _DropdownFieldTile(
-                      label: 'Billing Type',
-                      value: _billingType,
-                      hintText: 'Select billing type',
-                      items: _billingTypeItems(),
-                      onChanged: (value) =>
-                          setState(() => _billingType = value),
-                    ),
                     _TextFieldTile(
-                      label: 'Default Due Days',
-                      controller: _defaultDueDaysController,
-                      hintText: 'Due days',
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Login Information',
-                child: Column(
-                  children: [
-                    _DropdownFieldTile(
-                      label: 'Role',
-                      value: _role,
-                      hintText: 'Select role',
-                      items: _roleItems(),
-                      onChanged: (value) => setState(() => _role = value),
-                    ),
-                    const SizedBox(height: 12),
-                    _TextFieldTile(
-                      label: 'Password',
-                      controller: _passwordController,
-                      hintText: 'Enter password (minimum 8 characters)',
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 8),
-                    CheckboxListTile(
-                      value: _sendWelcomeEmail,
-                      onChanged: (value) {
-                        setState(() => _sendWelcomeEmail = value ?? true);
-                      },
-                      title: const Text('Send Welcome Email'),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
+                      label: 'Website',
+                      controller: _websiteController,
+                      hintText: 'https://example.com',
+                      keyboardType: TextInputType.url,
                     ),
                   ],
                 ),
@@ -425,14 +384,6 @@ class _AddClientScreenState extends State<AddClientScreen> {
     );
   }
 
-  List<String> _billingTypeItems() {
-    final items = ['Hourly', 'Fixed', 'Retainer'];
-    if (_isEditMode && _billingType != null && !items.contains(_billingType)) {
-      items.add(_billingType!);
-    }
-    return items;
-  }
-
   List<String> _clientTypeItems() {
     final items = ['Individual', 'Company', 'Enterprise'];
     if (_isEditMode && _clientType != null && !items.contains(_clientType)) {
@@ -449,64 +400,24 @@ class _AddClientScreenState extends State<AddClientScreen> {
     return items;
   }
 
-  List<String> _priorityItems() {
-    final items = ['Low', 'Medium', 'High'];
-    if (_isEditMode &&
-        _priorityLevel != null &&
-        !items.contains(_priorityLevel)) {
-      items.add(_priorityLevel!);
-    }
-    return items;
-  }
-
-  List<String> _roleItems() {
-    final items = ['super-admin', 'staff', 'client'];
-    if (_isEditMode && _role != null && !items.contains(_role)) {
-      items.add(_role!);
-    }
-    return items;
-  }
-
   String? _validateForm() {
-    if (_clientNameController.text.trim().isEmpty) {
-      return 'Client name is required.';
+    if (_firstNameController.text.trim().isEmpty) {
+      return 'First name is required.';
     }
-    if (_contactPersonController.text.trim().isEmpty) {
-      return 'Contact person is required.';
+    if (_lastNameController.text.trim().isEmpty) {
+      return 'Last name is required.';
     }
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       return 'Enter a valid email address.';
     }
-    if (_addressLine1Controller.text.trim().isEmpty) {
-      return 'Address line 1 is required.';
-    }
-    if (_cityController.text.trim().isEmpty) {
-      return 'City is required.';
-    }
-    if (_stateController.text.trim().isEmpty) {
-      return 'State is required.';
-    }
-    if (_postalCodeController.text.trim().isEmpty) {
-      return 'Postal code is required.';
-    }
-    if (_countryController.text.trim().isEmpty) {
-      return 'Country is required.';
-    }
-    if (_clientType == null || _clientType!.trim().isEmpty) {
-      return 'Client type is required.';
-    }
-    if (_industryController.text.trim().isEmpty) {
-      return 'Industry is required.';
-    }
-    if (_status == null || _status!.trim().isEmpty) {
-      return 'Status is required.';
-    }
-    final dueDaysText = _defaultDueDaysController.text.trim();
-    if (dueDaysText.isNotEmpty && int.tryParse(dueDaysText) == null) {
-      return 'Default due days must be a number.';
+    if (_phoneController.text.trim().isEmpty) {
+      return 'Phone number is required.';
     }
     final password = _passwordController.text.trim();
+    if (!_isEditMode && password.isEmpty) {
+      return 'Password is required for new clients.';
+    }
     if (password.isNotEmpty && password.length < 8) {
       return 'Password must be at least 8 characters.';
     }
@@ -524,13 +435,12 @@ class _AddClientScreenState extends State<AddClientScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final dueDays = int.tryParse(_defaultDueDaysController.text.trim());
-
     final request = CreateClientRequestModel(
-      clientName: _clientNameController.text.trim(),
-      contactPerson: _contactPersonController.text.trim(),
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
+      password: _passwordController.text.trim(),
       website: _websiteController.text.trim(),
       addressLine1: _addressLine1Controller.text.trim(),
       addressLine2: _addressLine2Controller.text.trim(),
@@ -538,16 +448,11 @@ class _AddClientScreenState extends State<AddClientScreen> {
       state: _stateController.text.trim(),
       postalCode: _postalCodeController.text.trim(),
       country: _countryController.text.trim(),
-      clientType: _clientType!.trim(),
+      clientType: _clientType?.trim(),
+      companyName: _companyNameController.text.trim(),
       industry: _industryController.text.trim(),
-      status: _status!.trim(),
-      priorityLevel: _priorityLevel,
-      assignedManagerId: null,
-      defaultDueDays: dueDays,
-      billingType: _billingType,
-      role: _role?.trim().toLowerCase() ?? 'client',
-      password: _passwordController.text.trim(),
-      sendWelcomeEmail: _sendWelcomeEmail,
+      status: (_status ?? 'active').trim().toLowerCase(),
+      profileImagePath: _profileImagePath,
     );
 
     try {
@@ -595,11 +500,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
 
     setState(() => _isSubmitting = true);
 
-    final dueDays = int.tryParse(_defaultDueDaysController.text.trim());
-
     final request = UpdateClientRequestModel(
-      clientName: _clientNameController.text.trim(),
-      contactPerson: _contactPersonController.text.trim(),
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
       website: _websiteController.text.trim(),
@@ -609,16 +512,11 @@ class _AddClientScreenState extends State<AddClientScreen> {
       state: _stateController.text.trim(),
       postalCode: _postalCodeController.text.trim(),
       country: _countryController.text.trim(),
-      clientType: _clientType!.trim(),
+      clientType: _clientType?.trim(),
+      companyName: _companyNameController.text.trim(),
       industry: _industryController.text.trim(),
-      status: _status!.trim(),
-      priorityLevel: _priorityLevel,
-      assignedManagerId: null,
-      defaultDueDays: dueDays,
-      billingType: _billingType,
-      role: _role?.trim().toLowerCase() ?? 'client',
-      password: _passwordController.text.trim(),
-      sendWelcomeEmail: _sendWelcomeEmail,
+      status: (_status ?? 'active').trim().toLowerCase(),
+      profileImagePath: _profileImagePath,
     );
 
     try {
@@ -635,9 +533,16 @@ class _AddClientScreenState extends State<AddClientScreen> {
 
       final responseData = error.response?.data;
       String message = 'Failed to update client.';
+      final statusCode = error.response?.statusCode;
 
       if (responseData is Map && responseData['message'] != null) {
         message = responseData['message'].toString();
+      } else if (statusCode == 301 ||
+          statusCode == 302 ||
+          statusCode == 307 ||
+          statusCode == 308) {
+        message =
+            'Server redirected the update request. Please try again. If it still fails, contact backend support to verify update route/method.';
       } else if (error.message != null && error.message!.trim().isNotEmpty) {
         message = error.message!.trim();
       }
@@ -685,91 +590,26 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _ClientLocationPickerCard extends StatelessWidget {
-  const _ClientLocationPickerCard({
-    required this.initialCountry,
-    required this.initialState,
-    required this.initialCity,
-    required this.onChanged,
-  });
-
-  final String initialCountry;
-  final String initialState;
-  final String initialCity;
-  final void Function(String country, String state, String city) onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FBFF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Location',
-            style: TextStyle(
-              color: Color(0xFF475569),
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 10),
-          CountryStateCitySelector(
-            enableLabels: true,
-            initialCountry: initialCountry,
-            initialState: initialState,
-            initialCity: initialCity,
-            defaultCountry: 'India',
-            countryHintText: 'Country',
-            stateHintText: 'State',
-            cityHintText: 'City',
-            fillColor: Colors.white,
-            borderColor: const Color(0xFFD9E2EC),
-            borderWidth: 1,
-            labelColor: const Color(0xFF475569),
-            labelFontSize: 12,
-            labelFontWeight: FontWeight.w600,
-            selectedTextColor: const Color(0xFF0F172A),
-            selectedTextFontSize: 14,
-            selectedTextFontWeight: FontWeight.w500,
-            pickerItemTextColor: const Color(0xFF0F172A),
-            pickerItemFontSize: 14,
-            pickerItemFontWeight: FontWeight.w500,
-            modalBackgroundColor: Colors.white,
-            modalTitleColor: const Color(0xFF0F172A),
-            modalTitleFontSize: 18,
-            modalTitleFontWeight: FontWeight.w700,
-            onSelectionChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ResponsiveFields extends StatelessWidget {
-  const _ResponsiveFields({required this.children});
+  const _ResponsiveFields({required this.children, this.maxColumns = 2});
 
   final List<Widget> children;
+  final int maxColumns;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 640;
-        final itemWidth = isWide
-            ? (constraints.maxWidth - 16) / 2
+        final desiredColumns = maxColumns < 1 ? 1 : maxColumns;
+        final columns = constraints.maxWidth >= 640 ? desiredColumns : 1;
+        final spacing = 16.0;
+        final itemWidth = columns > 1
+            ? (constraints.maxWidth - (spacing * (columns - 1))) / columns
             : constraints.maxWidth;
 
         return Wrap(
           runSpacing: 12,
-          spacing: 16,
+          spacing: spacing,
           children: children
               .map((child) => SizedBox(width: itemWidth, child: child))
               .toList(),
@@ -783,6 +623,7 @@ class _TextFieldTile extends StatelessWidget {
   const _TextFieldTile({
     required this.label,
     this.isRequired = false,
+    this.labelHelperText,
     required this.controller,
     required this.hintText,
     this.keyboardType,
@@ -791,6 +632,7 @@ class _TextFieldTile extends StatelessWidget {
 
   final String label;
   final bool isRequired;
+  final String? labelHelperText;
   final TextEditingController controller;
   final String hintText;
   final TextInputType? keyboardType;
@@ -809,14 +651,22 @@ class _TextFieldTile extends StatelessWidget {
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
-            children: isRequired
-                ? const [
-                    TextSpan(
-                      text: ' *',
-                      style: TextStyle(color: Color(0xFFEF4444)),
-                    ),
-                  ]
-                : const [],
+            children: [
+              if (isRequired)
+                const TextSpan(
+                  text: ' *',
+                  style: TextStyle(color: Color(0xFFEF4444)),
+                ),
+              if (labelHelperText != null && labelHelperText!.trim().isNotEmpty)
+                TextSpan(
+                  text: ' ($labelHelperText)',
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: 6),
@@ -840,6 +690,88 @@ class _TextFieldTile extends StatelessWidget {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: Color(0xFF1D6FEA)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FilePickerFieldTile extends StatelessWidget {
+  const _FilePickerFieldTile({
+    required this.label,
+    required this.filePath,
+    required this.buttonText,
+    required this.emptyText,
+    required this.onTap,
+  });
+
+  final String label;
+  final String? filePath;
+  final String buttonText;
+  final String emptyText;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fileName = (filePath ?? '').trim().isEmpty
+        ? emptyText
+        : (filePath!.split(RegExp(r'[\\/]')).last);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF475569),
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1F5F9),
+                    border: Border(
+                      right: BorderSide(color: Color(0xFFE2E8F0)),
+                    ),
+                  ),
+                  child: Text(
+                    buttonText,
+                    style: const TextStyle(
+                      color: Color(0xFF0F172A),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      fileName,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Color(0xFF0F172A)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

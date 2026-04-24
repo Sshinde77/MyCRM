@@ -151,7 +151,6 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
     }
 
     final status = value(item?.status ?? '');
-    final remark = value(item?.remark ?? item?.expiryNote ?? '');
     final duration = value(item?.durationText ?? '');
     final billing = value(item?.billing ?? '');
 
@@ -168,7 +167,6 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
         value: value(item?.vendorEmail ?? ''),
       ),
       _DetailRowData(label: 'Service Name', value: value(item?.title ?? '')),
-      _DetailRowData(label: 'Remark', value: remark, asBadge: true),
       _DetailRowData(label: 'Start Date', value: value(item?.startDate ?? '')),
       _DetailRowData(label: 'End Date', value: value(item?.endDate ?? '')),
       _DetailRowData(label: 'Duration', value: duration),
@@ -286,8 +284,6 @@ class _DetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final valueWidget = row.asStatus
         ? _StatusBadge(text: row.value)
-        : row.asBadge
-        ? _RemarkBadge(text: row.value)
         : Text(
             row.value,
             textAlign: TextAlign.end,
@@ -406,43 +402,16 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _RemarkBadge extends StatelessWidget {
-  const _RemarkBadge({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5E7EB),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.style(
-          color: const Color(0xFF334155),
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
 class _DetailRowData {
   const _DetailRowData({
     required this.label,
     required this.value,
-    this.asBadge = false,
     this.asStatus = false,
     this.isLast = false,
   });
 
   final String label;
   final String value;
-  final bool asBadge;
   final bool asStatus;
   final bool isLast;
 }

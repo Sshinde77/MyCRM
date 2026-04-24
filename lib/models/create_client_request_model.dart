@@ -1,82 +1,75 @@
 class CreateClientRequestModel {
   const CreateClientRequestModel({
-    required this.clientName,
-    required this.contactPerson,
+    required this.firstName,
+    required this.lastName,
     required this.email,
-    required this.addressLine1,
-    required this.city,
-    required this.state,
-    required this.postalCode,
-    required this.country,
-    required this.clientType,
-    required this.industry,
-    required this.status,
-    this.phone,
+    required this.phone,
+    required this.password,
     this.website,
+    this.status,
+    this.addressLine1,
     this.addressLine2,
-    this.priorityLevel,
-    this.assignedManagerId,
-    this.defaultDueDays,
-    this.billingType,
-    this.role,
-    this.password,
-    this.sendWelcomeEmail = true,
+    this.city,
+    this.state,
+    this.country,
+    this.postalCode,
+    this.clientType,
+    this.companyName,
+    this.industry,
+    this.profileImagePath,
   });
 
-  final String clientName;
-  final String contactPerson;
+  final String firstName;
+  final String lastName;
   final String email;
-  final String addressLine1;
-  final String city;
-  final String state;
-  final String postalCode;
-  final String country;
-  final String clientType;
-  final String industry;
-  final String status;
-  final String? phone;
+  final String phone;
+  final String password;
   final String? website;
+  final String? status;
+  final String? addressLine1;
   final String? addressLine2;
-  final String? priorityLevel;
-  final String? assignedManagerId;
-  final int? defaultDueDays;
-  final String? billingType;
-  final String? role;
-  final String? password;
-  final bool sendWelcomeEmail;
+  final String? city;
+  final String? state;
+  final String? country;
+  final String? postalCode;
+  final String? clientType;
+  final String? companyName;
+  final String? industry;
+  final String? profileImagePath;
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toPayload() {
     final payload = <String, dynamic>{
-      'client_name': clientName,
-      'contact_person': contactPerson,
-      'email': email,
-      'address_line1': addressLine1,
-      'city': city,
-      'state': state,
-      'postal_code': postalCode,
-      'country': country,
-      'client_type': clientType,
-      'industry': industry,
-      'status': status,
-      'send_welcome_email': sendWelcomeEmail,
+      'first_name': firstName.trim(),
+      'last_name': lastName.trim(),
+      'email': email.trim(),
+      'phone': phone.trim(),
+      'password': password.trim(),
     };
 
-    if (_hasValue(phone)) payload['phone'] = phone!.trim();
+    if (_hasValue(status)) payload['status'] = status!.trim().toLowerCase();
     if (_hasValue(website)) payload['website'] = website!.trim();
+    if (_hasValue(addressLine1))
+      payload['address_line_1'] = addressLine1!.trim();
     if (_hasValue(addressLine2))
-      payload['address_line2'] = addressLine2!.trim();
-    if (_hasValue(priorityLevel))
-      payload['priority_level'] = priorityLevel!.trim();
-    if (_hasValue(assignedManagerId)) {
-      payload['assigned_manager_id'] = assignedManagerId!.trim();
+      payload['address_line_2'] = addressLine2!.trim();
+    if (_hasValue(city)) payload['city'] = city!.trim();
+    if (_hasValue(state)) payload['state'] = state!.trim();
+    if (_hasValue(country)) payload['country'] = country!.trim();
+    if (_hasValue(postalCode)) payload['pincode'] = postalCode!.trim();
+    if (_hasValue(clientType)) {
+      payload['client_type'] = clientType!.trim().toLowerCase();
     }
-    if (defaultDueDays != null) payload['default_due_days'] = defaultDueDays;
-    if (_hasValue(billingType)) payload['billing_type'] = billingType!.trim();
-    if (_hasValue(role)) payload['role'] = role!.trim();
-    if (_hasValue(password)) payload['password'] = password!.trim();
+    if (_hasValue(companyName)) payload['company_name'] = companyName!.trim();
+    if (_hasValue(industry)) payload['industry'] = industry!.trim();
 
     return payload;
   }
+
+  bool get hasProfileImage =>
+      profileImagePath != null && profileImagePath!.trim().isNotEmpty;
+
+  String? get normalizedProfileImagePath =>
+      hasProfileImage ? profileImagePath!.trim() : null;
 
   bool _hasValue(String? value) => value != null && value.trim().isNotEmpty;
 }

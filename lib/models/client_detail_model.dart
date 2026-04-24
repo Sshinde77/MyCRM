@@ -62,6 +62,12 @@ class ClientDetailModel {
   }
 
   factory ClientDetailModel.fromJson(Map<String, dynamic> json) {
+    final addressObject = _readMap(json, const [
+      'address',
+      'client_address',
+      'address_detail',
+      'address_line_1',
+    ]);
     final fallbackPersonName = _readFullName(json);
     final resolvedName = _readString(json, [
       'name',
@@ -71,6 +77,50 @@ class ClientDetailModel {
       'company_name',
       'companyName',
       'title',
+    ]);
+    final resolvedContactPerson = _readString(json, [
+      'contact_person',
+      'contactPerson',
+      'contact_name',
+      'primary_contact',
+    ]);
+    final resolvedAddressLine1 = _firstNonEmpty([
+      _readString(json, const [
+        'address_line1',
+        'address_line_1',
+        'address1',
+        'address',
+      ]),
+      _readString(addressObject, const [
+        'address_line_1',
+        'address_line1',
+        'address1',
+        'address',
+      ]),
+    ]);
+    final resolvedAddressLine2 = _firstNonEmpty([
+      _readString(json, const ['address_line2', 'address_line_2', 'address2']),
+      _readString(addressObject, const [
+        'address_line_2',
+        'address_line2',
+        'address2',
+      ]),
+    ]);
+    final resolvedCity = _firstNonEmpty([
+      _readString(json, const ['city', 'town']),
+      _readString(addressObject, const ['city']),
+    ]);
+    final resolvedState = _firstNonEmpty([
+      _readString(json, const ['state', 'province']),
+      _readString(addressObject, const ['state', 'province']),
+    ]);
+    final resolvedPostalCode = _firstNonEmpty([
+      _readString(json, const ['postal_code', 'zip', 'zipcode', 'pincode']),
+      _readString(addressObject, const ['postal_code', 'zip', 'zipcode', 'pincode']),
+    ]);
+    final resolvedCountry = _firstNonEmpty([
+      _readString(json, const ['country', 'nation']),
+      _readString(addressObject, const ['country', 'nation']),
     ]);
 
     return ClientDetailModel(
@@ -106,30 +156,18 @@ class ClientDetailModel {
       ]),
       status: _readString(json, ['status', 'state', 'account_status']),
       role: _readString(json, ['role', 'user_role']),
-      contactPerson: _readString(json, [
-        'contact_person',
-        'contactPerson',
-        'contact_name',
-        'primary_contact',
-      ]),
+      contactPerson: resolvedContactPerson.isNotEmpty
+          ? resolvedContactPerson
+          : fallbackPersonName,
       clientType: _readString(json, ['client_type', 'type']),
       industry: _readString(json, ['industry', 'industry_name', 'sector']),
       priorityLevel: _readString(json, ['priority', 'priority_level']),
-      addressLine1: _readString(json, [
-        'address_line1',
-        'address_line_1',
-        'address1',
-        'address',
-      ]),
-      addressLine2: _readString(json, [
-        'address_line2',
-        'address_line_2',
-        'address2',
-      ]),
-      city: _readString(json, ['city', 'town']),
-      state: _readString(json, ['state', 'province']),
-      postalCode: _readString(json, ['postal_code', 'zip', 'zipcode']),
-      country: _readString(json, ['country', 'nation']),
+      addressLine1: resolvedAddressLine1,
+      addressLine2: resolvedAddressLine2,
+      city: resolvedCity,
+      state: resolvedState,
+      postalCode: resolvedPostalCode,
+      country: resolvedCountry,
       billingType: _readString(json, ['billing_type', 'billingType']),
       dueDays: _readString(json, [
         'default_due_days',
@@ -143,9 +181,38 @@ class ClientDetailModel {
   static String _readString(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+      if ((value is num || value is bool) &&
+          value.toString().trim().isNotEmpty) {
         return value.toString().trim();
       }
+    }
+    return '';
+  }
+
+  static Map<String, dynamic> _readMap(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value is Map<String, dynamic>) {
+        return value;
+      }
+      if (value is Map) {
+        return value.map((entryKey, entryValue) {
+          return MapEntry(entryKey.toString(), entryValue);
+        });
+      }
+    }
+    return const {};
+  }
+
+  static String _firstNonEmpty(List<String> values) {
+    for (final value in values) {
+      if (value.trim().isNotEmpty) return value.trim();
     }
     return '';
   }
