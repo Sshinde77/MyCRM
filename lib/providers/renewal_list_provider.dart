@@ -15,10 +15,14 @@ class RenewalListProvider extends ChangeNotifier {
   List<RenewalModel> _renewals = const <RenewalModel>[];
   bool _isLoading = false;
   String? _errorMessage;
+  int _perPage = 10;
+  int _total = 0;
 
   List<RenewalModel> get renewals => _renewals;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  int get perPage => _perPage;
+  int get total => _total;
 
   Future<void> loadRenewals({bool forceRefresh = false}) async {
     if (_isLoading) return;
@@ -29,9 +33,26 @@ class RenewalListProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _renewals = type == RenewalType.vendor
-          ? await _apiService.getVendorRenewalsList()
-          : await _apiService.getClientRenewalsList();
+      final collected = <RenewalModel>[];
+      var page = 1;
+      var lastPage = 1;
+      var perPage = 10;
+      var total = 0;
+
+      do {
+        final result = type == RenewalType.vendor
+            ? await _apiService.getVendorRenewalsPage(page: page)
+            : await _apiService.getClientRenewalsPage(page: page);
+        collected.addAll(result.items);
+        lastPage = result.lastPage < 1 ? 1 : result.lastPage;
+        perPage = result.perPage > 0 ? result.perPage : perPage;
+        total = result.total > 0 ? result.total : total;
+        page += 1;
+      } while (page <= lastPage);
+
+      _renewals = List<RenewalModel>.from(collected);
+      _perPage = perPage;
+      _total = total > 0 ? total : _renewals.length;
     } catch (error) {
       _errorMessage = _toMessage(error);
     } finally {

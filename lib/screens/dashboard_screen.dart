@@ -143,6 +143,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             items: _upcomingRenewals,
                             isLoading: _isLoadingRenewals,
                             errorMessage: _renewalLoadError,
+                            onItemTap: _openUpcomingRenewalDetail,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -473,6 +474,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _renewalLoadError = 'Renewals failed to load.';
       });
     }
+  }
+
+  void _openUpcomingRenewalDetail(_UpcomingRenewalItem item) {
+    final route = item.source == _RenewalSource.client
+        ? AppRoutes.clientRenewalDetail
+        : AppRoutes.vendorRenewalDetail;
+    Get.toNamed(route, arguments: item.renewal);
   }
 
   Future<void> _loadRecentIssues() async {
@@ -1636,11 +1644,13 @@ class _RenewalSection extends StatelessWidget {
     this.items = const <_UpcomingRenewalItem>[],
     this.isLoading = false,
     this.errorMessage,
+    this.onItemTap,
   });
 
   final List<_UpcomingRenewalItem> items;
   final bool isLoading;
   final String? errorMessage;
+  final ValueChanged<_UpcomingRenewalItem>? onItemTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1651,10 +1661,7 @@ class _RenewalSection extends StatelessWidget {
         _ResponsiveSectionHeader(
           title: 'Upcoming Renewals',
           forceInline: true,
-          trailing: _SectionActionLabel(
-            label: 'View All',
-            onTap: () => Get.toNamed(AppRoutes.dashboardRenewals),
-          ),
+          trailing: const SizedBox.shrink(),
         ),
         if (isLoading) ...[
           const SizedBox(height: 18),
@@ -1679,6 +1686,7 @@ class _RenewalSection extends StatelessWidget {
                 tagLabel: item.tagLabel,
                 tagColor: item.tagColor,
                 logoColor: item.logoColor,
+                onTap: onItemTap == null ? null : () => onItemTap!(item),
               ),
             );
           }),
@@ -1745,6 +1753,8 @@ enum _RenewalSource { client, vendor }
 
 class _UpcomingRenewalItem {
   const _UpcomingRenewalItem({
+    required this.renewal,
+    required this.source,
     required this.initials,
     required this.title,
     required this.subtitle,
@@ -1755,6 +1765,8 @@ class _UpcomingRenewalItem {
     required this.logoColor,
   });
 
+  final RenewalModel renewal;
+  final _RenewalSource source;
   final String initials;
   final String title;
   final String subtitle;
@@ -1778,6 +1790,8 @@ class _UpcomingRenewalItem {
     final tagColor = _buildTagColor(tag);
 
     return _UpcomingRenewalItem(
+      renewal: renewal,
+      source: source,
       initials: initials,
       title: normalizedTitle,
       subtitle: source == _RenewalSource.client
@@ -1884,6 +1898,7 @@ class _RenewalTile extends StatelessWidget {
     required this.tagLabel,
     required this.tagColor,
     required this.logoColor,
+    this.onTap,
   });
 
   final String initials;
@@ -1893,6 +1908,7 @@ class _RenewalTile extends StatelessWidget {
   final String tagLabel;
   final Color tagColor;
   final Color logoColor;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1900,23 +1916,28 @@ class _RenewalTile extends StatelessWidget {
       builder: (context, constraints) {
         final isCompact = constraints.maxWidth < 320;
 
-        return Container(
-          padding: EdgeInsets.all(isCompact ? 12 : 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFE9EEF6)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0F0F172A),
-                blurRadius: 10,
-                offset: Offset(0, 6),
+            child: Container(
+              padding: EdgeInsets.all(isCompact ? 12 : 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFFE9EEF6)),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0F0F172A),
+                    blurRadius: 10,
+                    offset: Offset(0, 6),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+              child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               Container(
                 width: isCompact ? 48 : 52,
                 height: isCompact ? 48 : 52,
@@ -2054,8 +2075,10 @@ class _RenewalTile extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
+              ],
+            ),
           ),
+        )
         );
       },
     );

@@ -70,6 +70,24 @@ class ClientListPageResult {
   final bool hasNextPage;
 }
 
+class RenewalListPageResult {
+  const RenewalListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<RenewalModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
 class ApiService {
   ApiService._internal() {
     if (kDebugMode) {
@@ -1024,18 +1042,97 @@ class ApiService {
     return records.map(VendorModel.fromJson).toList();
   }
 
+  /// Loads a single paginated vendor renewals page.
+  Future<RenewalListPageResult> getVendorRenewalsPage({int page = 1}) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final response = await get(
+      ApiConstants.vendorRenewals,
+      queryParameters: <String, dynamic>{'page': normalizedPage},
+    );
+    return _parseRenewalPageResponse(response.data, normalizedPage);
+  }
+
+  /// Loads a single paginated client renewals page.
+  Future<RenewalListPageResult> getClientRenewalsPage({int page = 1}) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final response = await get(
+      ApiConstants.clientRenewals,
+      queryParameters: <String, dynamic>{'page': normalizedPage},
+    );
+    return _parseRenewalPageResponse(response.data, normalizedPage);
+  }
+
   /// Loads vendor renewals for the authenticated user.
   Future<List<RenewalModel>> getVendorRenewalsList() async {
-    final response = await get(ApiConstants.vendorRenewals);
-    final records = _normalizeList(response.data);
-    return records.map(RenewalModel.fromJson).toList();
+    final collected = <RenewalModel>[];
+    var page = 1;
+    var lastPage = 1;
+    do {
+      final result = await getVendorRenewalsPage(page: page);
+      collected.addAll(result.items);
+      lastPage = result.lastPage < 1 ? 1 : result.lastPage;
+      page += 1;
+    } while (page <= lastPage);
+    return collected;
   }
 
   /// Loads client renewals for the authenticated user.
   Future<List<RenewalModel>> getClientRenewalsList() async {
-    final response = await get(ApiConstants.clientRenewals);
-    final records = _normalizeList(response.data);
-    return records.map(RenewalModel.fromJson).toList();
+    final collected = <RenewalModel>[];
+    var page = 1;
+    var lastPage = 1;
+    do {
+      final result = await getClientRenewalsPage(page: page);
+      collected.addAll(result.items);
+      lastPage = result.lastPage < 1 ? 1 : result.lastPage;
+      page += 1;
+    } while (page <= lastPage);
+    return collected;
+  }
+
+  RenewalListPageResult _parseRenewalPageResponse(
+    dynamic responseData,
+    int fallbackPage,
+  ) {
+    final root = _normalizeMap(responseData);
+    Map<String, dynamic>? pagePayload;
+    final rootData = root['data'];
+
+    if (rootData is Map<String, dynamic>) {
+      final nested = rootData['data'];
+      if (nested is List) {
+        pagePayload = rootData;
+      } else {
+        pagePayload = rootData;
+      }
+    } else if (rootData is Map) {
+      pagePayload = rootData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(responseData);
+    final items = records.map(RenewalModel.fromJson).toList(growable: false);
+    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? items.length;
+    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return RenewalListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: perPage,
+      hasNextPage: hasNextPage,
+    );
   }
 
   /// Loads client issues for the authenticated user.
