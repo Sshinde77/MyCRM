@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
@@ -25,14 +26,27 @@ Future<void> main() async {
 Future<void> _initializeFirebase() async {
   if (Firebase.apps.isNotEmpty) return;
 
+  FirebaseOptions? options;
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    return;
+    options = DefaultFirebaseOptions.currentPlatform;
   } catch (error, stackTrace) {
     _printStartupLog('Firebase options initialization failed: $error');
     debugPrint('$stackTrace');
+  }
+
+  if (options != null) {
+    try {
+      await Firebase.initializeApp(options: options);
+      return;
+    } catch (error, stackTrace) {
+      _printStartupLog('Firebase options initialization failed: $error');
+      debugPrint('$stackTrace');
+    }
+  } else if (kIsWeb) {
+    _printStartupLog(
+      'Firebase Web configuration not found. Skipping Firebase initialization for Web.',
+    );
+    return;
   }
 
   try {

@@ -23,13 +23,13 @@ class RenewalMasterScreen extends StatelessWidget {
       routeName: AppRoutes.vendorRenewal,
       accentColor: Color(0xFF0F766E),
     ),
-    _RenewalOption(
-      title: 'Client',
-      subtitle: 'Open client-specific renewal records and status details.',
-      icon: Icons.apartment_rounded,
-      routeName: AppRoutes.renewalClient,
-      accentColor: Color(0xFF7C3AED),
-    ),
+    // _RenewalOption(
+    //   title: 'Client',
+    //   subtitle: 'Open client-specific renewal records and status details.',
+    //   icon: Icons.apartment_rounded,
+    //   routeName: AppRoutes.renewalClient,
+    //   accentColor: Color(0xFF7C3AED),
+    // ),
     _RenewalOption(
       title: 'Vendor',
       subtitle: 'Manage vendor profiles linked with renewal workflows.',

@@ -1463,80 +1463,71 @@ class _MilestoneFormDialogState extends State<_MilestoneFormDialog> {
                   ),
                 ),
                 const SizedBox(height: 14),
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _DialogLabel(text: 'Due Date'),
-                          const SizedBox(height: 8),
-                          _DialogInput(
-                            child: TextField(
-                              controller: _dueDateController,
-                              readOnly: true,
-                              onTap: _pickDueDate,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                disabledBorder: InputBorder.none,
-                                errorBorder: InputBorder.none,
-                                focusedErrorBorder: InputBorder.none,
-                                hintText: 'dd-mm-yyyy',
-                                suffixIcon: IconButton(
-                                  onPressed: _pickDueDate,
-                                  icon: const Icon(
-                                    Icons.calendar_today_outlined,
-                                    size: 18,
-                                    color: Color(0xFF111827),
-                                  ),
-                                ),
-                              ),
+                    // 🔹 Due Date
+                    _DialogLabel(text: 'Due Date'),
+                    const SizedBox(height: 8),
+                    _DialogInput(
+                      child: TextField(
+                        controller: _dueDateController,
+                        readOnly: true,
+                        onTap: _pickDueDate,
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          hintText: 'dd-mm-yyyy',
+                          suffixIcon: IconButton(
+                            onPressed: _pickDueDate,
+                            icon: const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 18,
+                              color: Color(0xFF111827),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _DialogLabel(text: 'Status'),
-                          const SizedBox(height: 8),
-                          _DialogInput(
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: _selectedStatus,
-                                isExpanded: true,
-                                icon: const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  color: Color(0xFF374151),
+
+                    const SizedBox(height: 16),
+
+                    // 🔹 Status
+                    _DialogLabel(text: 'Status'),
+                    const SizedBox(height: 8),
+                    _DialogInput(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedStatus,
+                          isExpanded: true,
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Color(0xFF374151),
+                          ),
+                          items: _statusOptions
+                              .map(
+                                (status) => DropdownMenuItem(
+                              value: status,
+                              child: Text(
+                                status,
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF374151),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                items: _statusOptions
-                                    .map(
-                                      (status) => DropdownMenuItem(
-                                        value: status,
-                                        child: Text(
-                                          status,
-                                          style: AppTextStyles.style(
-                                            color: const Color(0xFF374151),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    )
-                                    .toList(),
-                                onChanged: (value) {
-                                  if (value == null) return;
-                                  setState(() => _selectedStatus = value);
-                                },
                               ),
                             ),
-                          ),
-                        ],
+                          )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _selectedStatus = value);
+                          },
+                        ),
                       ),
                     ),
                   ],

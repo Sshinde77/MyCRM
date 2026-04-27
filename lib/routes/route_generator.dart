@@ -11,6 +11,7 @@ import '../screens/client_detail_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/biometric_gate_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/personal_information_screen.dart';
 import '../screens/projects_screen.dart';
 import '../screens/add_project_screen.dart';
 import '../screens/project_detail_screen.dart';
@@ -150,13 +151,7 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case AppRoutes.personalInformation:
         return MaterialPageRoute(
-          builder: (_) => const ProfileSectionScreen(
-            title: 'Personal Information',
-            description:
-                'Review your profile details, contact information, and account identity settings.',
-            icon: Icons.badge_outlined,
-            accentColor: Color(0xFF1D6FEA),
-          ),
+          builder: (_) => const PersonalInformationScreen(),
         );
       case AppRoutes.renewalMaster:
         return _protectedRoute(

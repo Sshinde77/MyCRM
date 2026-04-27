@@ -552,7 +552,7 @@ class _TasksHeroSection extends StatelessWidget {
                             size: isCompact ? 18 : 20,
                           ),
                           label: Text(
-                            'Add task',
+                            'Add To DO',
                             style: AppTextStyles.style(
                               fontSize: isCompact ? 13.5 : 14,
                               fontWeight: FontWeight.w700,

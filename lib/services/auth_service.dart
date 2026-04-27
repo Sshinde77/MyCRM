@@ -48,6 +48,15 @@ class AuthService {
     await _storage.setBiometricEnabled(enabled);
   }
 
+  Future<bool> isBiometricPromptShown() async {
+    await _storage.migrateLegacyPrefsIfNeeded();
+    return await _storage.isBiometricPromptShown();
+  }
+
+  Future<void> setBiometricPromptShown(bool shown) async {
+    await _storage.setBiometricPromptShown(shown);
+  }
+
   Future<bool> validateSession() async {
     try {
       await _apiService.getCurrentUser();
@@ -62,17 +71,11 @@ class AuthService {
   Future<bool> shouldShowBiometricLoginButton() async {
     final hasToken = await hasAccessToken();
     if (!hasToken) {
-      await setBiometricEnabled(false);
       return false;
     }
 
     final enabled = await isBiometricEnabled();
     if (!enabled) {
-      return false;
-    }
-
-    final valid = await validateSession();
-    if (!valid) {
       return false;
     }
 

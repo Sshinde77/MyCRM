@@ -114,13 +114,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       accentColor: Color(0xFF2563EB),
     ),
     _ProfileAction(
-      title: 'Access Control',
-      icon: Icons.lock_outline_rounded,
+      title: 'Role',
+      icon: Icons.person,
       routeName: AppRoutes.accessControl,
       permission: AppPermission.viewRoles,
       accentColor: Color(0xFF475569),
     ),
     _ProfileAction(
+
+
+
+
       title: 'Settings',
       icon: Icons.settings_outlined,
       routeName: AppRoutes.settings,

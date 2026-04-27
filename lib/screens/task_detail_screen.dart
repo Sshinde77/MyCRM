@@ -810,6 +810,8 @@ class _TaskHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.of(context).size.width < 420;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
@@ -833,7 +835,7 @@ class _TaskHero extends StatelessWidget {
             detail.title,
             style: AppTextStyles.style(
               color: const Color(0xFF0F172A),
-              fontSize: 24,
+              fontSize: compact ? 21 : 24,
               height: 1.15,
               fontWeight: FontWeight.w700,
             ),
@@ -845,20 +847,49 @@ class _TaskHero extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-              fontSize: 14,
+              fontSize: compact ? 13 : 14,
               height: 1.55,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          Row(
             children: [
-              _HeroStat(label: 'Priority', value: detail.priority),
-              _HeroStat(label: 'Status', value: detail.status),
-              _HeroStat(label: 'start Date', value: detail.startDateText),
-              _HeroStat(label: 'Due Date', value: detail.deadlineText),
+              Expanded(
+                child: _HeroStat(
+                  label: 'Priority',
+                  value: detail.priority,
+                  compact: compact,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _HeroStat(
+                  label: 'Status',
+                  value: detail.status,
+                  compact: compact,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _HeroStat(
+                  label: 'Start Date',
+                  value: detail.startDateText,
+                  compact: compact,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _HeroStat(
+                  label: 'Due Date',
+                  value: detail.deadlineText,
+                  compact: compact,
+                ),
+              ),
             ],
           ),
         ],
@@ -868,15 +899,19 @@ class _TaskHero extends StatelessWidget {
 }
 
 class _HeroStat extends StatelessWidget {
-  const _HeroStat({required this.label, required this.value});
+  const _HeroStat({
+    required this.label,
+    required this.value,
+    required this.compact,
+  });
 
   final String label;
   final String value;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 140,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
@@ -890,16 +925,18 @@ class _HeroStat extends StatelessWidget {
             label,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-              fontSize: 11,
+              fontSize: compact ? 10 : 11,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
               color: const Color(0xFF0F172A),
-              fontSize: 15,
+              fontSize: compact ? 13 : 14,
               fontWeight: FontWeight.w700,
             ),
           ),

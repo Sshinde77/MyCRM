@@ -18,16 +18,16 @@ class StaffScreen extends StatefulWidget {
 
 class _StaffScreenState extends State<StaffScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final List<StaffMemberModel> _staffMembers = <StaffMemberModel>[];
+  final Map<int, List<StaffMemberModel>> _staffMembersByPage =
+      <int, List<StaffMemberModel>>{};
   bool _isInitialLoading = true;
-  bool _isLoadingMore = false;
+  bool _isPageLoading = false;
+  bool _isSearchLoadingAllPages = false;
   String? _loadError;
-  int _currentPage = 0;
+  int _currentPage = 1;
   int _lastPage = 1;
   int _totalRecords = 0;
-  bool _hasNextFromApi = false;
   String? _deletingStaffId;
-  bool get _hasNextPage => _hasNextFromApi || _currentPage < _lastPage;
 
   @override
   void initState() {
@@ -54,11 +54,16 @@ class _StaffScreenState extends State<StaffScreen> {
     if (showInitialLoader) {
       setState(() {
         _isInitialLoading = true;
+        _isPageLoading = false;
         _loadError = null;
+        _staffMembersByPage.clear();
+        _currentPage = 1;
+        _lastPage = 1;
+        _totalRecords = 0;
       });
     } else {
-      if (_isInitialLoading || _isLoadingMore) return;
-      setState(() => _isLoadingMore = true);
+      if (_isInitialLoading || _isPageLoading) return;
+      setState(() => _isPageLoading = true);
     }
 
     try {
@@ -68,13 +73,10 @@ class _StaffScreenState extends State<StaffScreen> {
       if (!mounted) return;
 
       setState(() {
-        _staffMembers
-          ..clear()
-          ..addAll(pageResult.items);
+        _staffMembersByPage[pageResult.currentPage] = pageResult.items;
         _currentPage = pageResult.currentPage;
-        _lastPage = pageResult.lastPage;
+        _lastPage = pageResult.lastPage < 1 ? 1 : pageResult.lastPage;
         _totalRecords = pageResult.total;
-        _hasNextFromApi = pageResult.hasNextPage;
         _loadError = null;
       });
     } catch (error) {
@@ -86,10 +88,83 @@ class _StaffScreenState extends State<StaffScreen> {
       if (mounted) {
         setState(() {
           _isInitialLoading = false;
-          _isLoadingMore = false;
+          _isPageLoading = false;
         });
       }
     }
+  }
+
+  Future<void> _goToPage(int page) async {
+    if (page < 1 || page > _lastPage) return;
+    if (_isPageLoading || _isInitialLoading) return;
+
+    if (_staffMembersByPage.containsKey(page)) {
+      setState(() => _currentPage = page);
+      return;
+    }
+
+    await _loadPage(page: page);
+  }
+
+  Future<void> _ensureAllPagesLoadedForSearch() async {
+    if (_isSearchLoadingAllPages || _isInitialLoading || _lastPage <= 1) {
+      return;
+    }
+
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      return;
+    }
+
+    final missingPages = <int>[];
+    for (var page = 1; page <= _lastPage; page += 1) {
+      if (!_staffMembersByPage.containsKey(page)) {
+        missingPages.add(page);
+      }
+    }
+    if (missingPages.isEmpty) {
+      return;
+    }
+
+    setState(() => _isSearchLoadingAllPages = true);
+
+    try {
+      for (final page in missingPages) {
+        if (!mounted || _searchController.text.trim().isEmpty) {
+          break;
+        }
+        final pageResult = await ApiService.instance.getStaffListPage(page: page);
+        if (!mounted) return;
+
+        setState(() {
+          _staffMembersByPage[pageResult.currentPage] = pageResult.items;
+          _lastPage = pageResult.lastPage < 1 ? 1 : pageResult.lastPage;
+          _totalRecords = pageResult.total;
+          _loadError = null;
+        });
+      }
+    } catch (_) {
+      // Keep current page data visible even if background search-page loading fails.
+    } finally {
+      if (mounted) {
+        setState(() => _isSearchLoadingAllPages = false);
+      }
+    }
+  }
+
+  List<StaffMemberModel> _flattenLoadedMembers() {
+    final pageNumbers = _staffMembersByPage.keys.toList()..sort();
+    final seen = <String>{};
+    final flattened = <StaffMemberModel>[];
+    for (final page in pageNumbers) {
+      final items = _staffMembersByPage[page] ?? const <StaffMemberModel>[];
+      for (final member in items) {
+        if (seen.add(member.id)) {
+          flattened.add(member);
+        }
+      }
+    }
+    return flattened;
   }
 
   Future<void> _confirmDelete(StaffMemberModel member) async {
@@ -196,13 +271,26 @@ class _StaffScreenState extends State<StaffScreen> {
         child: SafeArea(
           child: Builder(
             builder: (context) {
-              final filteredMembers = _filterMembers(_staffMembers);
+              final query = _searchController.text.trim();
               final hasSearch = _searchController.text.trim().isNotEmpty;
+              final currentPageMembers =
+                  _staffMembersByPage[_currentPage] ?? const <StaffMemberModel>[];
+              final searchableMembers = _flattenLoadedMembers();
+              final filteredMembers = hasSearch
+                  ? _filterMembers(searchableMembers)
+                  : currentPageMembers;
               final headerCount = hasSearch
                   ? filteredMembers.length
                   : (_totalRecords > 0
                         ? _totalRecords
                         : filteredMembers.length);
+
+              if (hasSearch) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted || _searchController.text.trim() != query) return;
+                  _ensureAllPagesLoadedForSearch();
+                });
+              }
 
               return RefreshIndicator(
                 onRefresh: _reload,
@@ -241,7 +329,8 @@ class _StaffScreenState extends State<StaffScreen> {
                           SizedBox(height: compact ? 14 : 16),
                           if (_isInitialLoading)
                             _LoadingState(compact: compact)
-                          else if (_loadError != null && _staffMembers.isEmpty)
+                          else if (_loadError != null &&
+                              _staffMembersByPage.isEmpty)
                             _ErrorState(
                               compact: compact,
                               onRetry: () => _reload(),
@@ -262,48 +351,45 @@ class _StaffScreenState extends State<StaffScreen> {
                                 ),
                               ),
                             ),
-                            if (_isLoadingMore)
+                            if (hasSearch && _isSearchLoadingAllPages)
                               Padding(
                                 padding: EdgeInsets.only(
                                   top: compact ? 6 : 8,
                                   bottom: compact ? 8 : 10,
                                 ),
-                                child: Center(
-                                  child: _PaginationControls(
-                                    compact: compact,
-                                    currentPage: _currentPage,
-                                    lastPage: _lastPage,
-                                    isLoading: _isLoadingMore,
-                                    hasNextPage: _hasNextPage,
-                                    onPrevious: _currentPage > 1
-                                        ? () =>
-                                              _loadPage(page: _currentPage - 1)
-                                        : null,
-                                    onNext: _hasNextPage
-                                        ? () =>
-                                              _loadPage(page: _currentPage + 1)
-                                        : null,
-                                  ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      height: compact ? 18 : 20,
+                                      width: compact ? 18 : 20,
+                                      child: const CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Searching all pages...',
+                                      style: AppTextStyles.style(
+                                        color: const Color(0xFF64748B),
+                                        fontSize: compact ? 12 : 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               )
-                            else if (_lastPage > 1)
+                            else if (!hasSearch)
                               Padding(
                                 padding: EdgeInsets.only(
                                   top: compact ? 6 : 8,
                                   bottom: compact ? 8 : 10,
                                 ),
-                                child: _PaginationControls(
+                                child: _PaginationBar(
                                   compact: compact,
                                   currentPage: _currentPage,
-                                  lastPage: _lastPage,
-                                  isLoading: _isLoadingMore,
-                                  hasNextPage: _hasNextPage,
-                                  onPrevious: _currentPage > 1
-                                      ? () => _loadPage(page: _currentPage - 1)
-                                      : null,
-                                  onNext: _hasNextPage
-                                      ? () => _loadPage(page: _currentPage + 1)
-                                      : null,
+                                  totalPages: _lastPage,
+                                  onPageTap: (page) => _goToPage(page),
                                 ),
                               ),
                           ],
@@ -609,11 +695,11 @@ class _StaffCard extends StatelessWidget {
             ),
             if (member.lastLogin?.trim().isNotEmpty == true) ...[
               SizedBox(height: compact ? 10 : 12),
-              _InfoRow(
-                icon: Icons.schedule_rounded,
-                text: 'Last login: ${member.lastLogin!}',
-                compact: compact,
-              ),
+              // _InfoRow(
+              //   icon: Icons.schedule_rounded,
+              //   text: 'Last login: ${member.lastLogin!}',
+              //   compact: compact,
+              // ),
             ],
             SizedBox(height: compact ? 14 : 16),
             const Divider(height: 1, color: Color(0xFFEAF0F6)),
@@ -914,69 +1000,170 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _PaginationControls extends StatelessWidget {
-  const _PaginationControls({
+class _PaginationBar extends StatelessWidget {
+  const _PaginationBar({
     required this.compact,
     required this.currentPage,
-    required this.lastPage,
-    required this.isLoading,
-    required this.hasNextPage,
-    this.onPrevious,
-    this.onNext,
+    required this.totalPages,
+    required this.onPageTap,
   });
 
   final bool compact;
   final int currentPage;
-  final int lastPage;
-  final bool isLoading;
-  final bool hasNextPage;
-  final VoidCallback? onPrevious;
-  final VoidCallback? onNext;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 12,
-        vertical: compact ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
+    if (totalPages <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Padding(
+      padding: EdgeInsets.only(top: compact ? 6 : 8),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          OutlinedButton.icon(
-            onPressed: isLoading ? null : onPrevious,
-            icon: const Icon(Icons.chevron_left_rounded),
-            label: const Text('Previous'),
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_left_rounded,
+            enabled: canGoPrev,
+            onTap: () => onPageTap(currentPage - 1),
           ),
-          Expanded(
-            child: Center(
-              child: isLoading
-                  ? SizedBox(
-                      height: compact ? 18 : 20,
-                      width: compact ? 18 : 20,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      'Page $currentPage of $lastPage',
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF475569),
-                        fontSize: compact ? 12 : 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+          SizedBox(width: compact ? 10 : 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tokens.map((token) {
+              if (token == null) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 2 : 4,
+                    vertical: compact ? 8 : 9,
+                  ),
+                  child: Text(
+                    '...',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF64748B),
+                      fontSize: compact ? 13 : 14,
+                      fontWeight: FontWeight.w700,
                     ),
-            ),
+                  ),
+                );
+              }
+              final selected = token == currentPage;
+              return InkWell(
+                onTap: () => onPageTap(token),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: compact ? 34 : 36,
+                  height: compact ? 34 : 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected ? const Color(0xFF122B52) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$token',
+                    style: AppTextStyles.style(
+                      color: selected ? Colors.white : const Color(0xFF334155),
+                      fontSize: compact ? 13 : 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(growable: false),
           ),
-          OutlinedButton.icon(
-            onPressed: (isLoading || !hasNextPage) ? null : onNext,
-            icon: const Icon(Icons.chevron_right_rounded),
-            label: const Text('Next page'),
+          SizedBox(width: compact ? 10 : 12),
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_right_rounded,
+            enabled: canGoNext,
+            onTap: () => onPageTap(currentPage + 1),
           ),
         ],
+      ),
+    );
+  }
+
+  List<int?> _buildPageTokens(int current, int total) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (index) => index + 1);
+    }
+
+    final tokens = <int?>[1];
+    var start = current - 1;
+    var end = current + 1;
+
+    if (current <= 3) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 2) {
+      start = total - 3;
+      end = total - 1;
+    } else {
+      start = start < 2 ? 2 : start;
+      end = end > total - 1 ? total - 1 : end;
+    }
+
+    if (start > 2) {
+      tokens.add(null);
+    }
+    for (var page = start; page <= end; page += 1) {
+      tokens.add(page);
+    }
+    if (end < total - 1) {
+      tokens.add(null);
+    }
+    tokens.add(total);
+    return tokens;
+  }
+}
+
+class _PaginationArrowButton extends StatelessWidget {
+  const _PaginationArrowButton({
+    required this.compact,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final bool compact;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: compact ? 34 : 40,
+        height: compact ? 34 : 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDCE6F2)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: compact ? 20 : 22,
+          color: enabled ? const Color(0xFF122B52) : const Color(0xFFCBD5E1),
+        ),
       ),
     );
   }

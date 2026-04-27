@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mycrm/core/constants/app_text_styles.dart';
 
 import '../models/client_model.dart';
 import '../core/services/permission_service.dart';
@@ -32,7 +33,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
   void initState() {
     super.initState();
     _loadClientsPage(1);
-    _ensureSearchClientsLoaded();
   }
 
   @override
@@ -44,7 +44,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
   void _reload() {
     _invalidateSearchCache();
     _loadClientsPage(_currentPage);
-    _ensureSearchClientsLoaded();
   }
 
   Future<void> _loadClientsPage(int pageNumber) async {
@@ -107,6 +106,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
   }
 
   Future<void> _ensureSearchClientsLoaded() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      return;
+    }
+
     if (_isSearchLoading || _searchClients.isNotEmpty) {
       return;
     }
@@ -172,6 +176,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final compact = width <= 360;
     final hasSearch = _searchController.text.trim().isNotEmpty;
     final clients = hasSearch
         ? (_searchClients.isNotEmpty ? _searchClients : _clients)
@@ -328,10 +334,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   ),
                   const SizedBox(height: 8),
                   _PaginationBar(
+                    compact: compact,
                     currentPage: _currentPage,
-                    lastPage: _lastPage,
-                    isLoading: _isLoading,
-                    onPageTap: _loadClientsPage,
+                    totalPages: _lastPage,
+                    onPageTap: (page) {
+                      _loadClientsPage(page);
+                    },
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -358,98 +366,167 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
 class _PaginationBar extends StatelessWidget {
   const _PaginationBar({
+    required this.compact,
     required this.currentPage,
-    required this.lastPage,
-    required this.isLoading,
+    required this.totalPages,
     required this.onPageTap,
   });
 
+  final bool compact;
   final int currentPage;
-  final int lastPage;
-  final bool isLoading;
-  final Future<void> Function(int page) onPageTap;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
 
   @override
   Widget build(BuildContext context) {
-    if (lastPage <= 1) {
+    if (totalPages <= 1) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            OutlinedButton(
-              onPressed: isLoading || currentPage <= 1
-                  ? null
-                  : () => onPageTap(currentPage - 1),
-              child: const Text('Prev'),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton(
-              onPressed: isLoading || currentPage >= lastPage
-                  ? null
-                  : () => onPageTap(currentPage + 1),
-              child: const Text('Next'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (var page = 1; page <= lastPage; page++)
-              _PageChip(
-                page: page,
-                isActive: page == currentPage,
-                isLoading: isLoading,
-                onTap: onPageTap,
-              ),
-          ],
-        ),
-      ],
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Padding(
+      padding: EdgeInsets.only(top: compact ? 6 : 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_left_rounded,
+            enabled: canGoPrev,
+            onTap: () => onPageTap(currentPage - 1),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tokens.map((token) {
+              if (token == null) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 2 : 4,
+                    vertical: compact ? 8 : 9,
+                  ),
+                  child: Text(
+                    '...',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF64748B),
+                      fontSize: compact ? 13 : 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                );
+              }
+              final selected = token == currentPage;
+              return InkWell(
+                onTap: () => onPageTap(token),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: compact ? 34 : 36,
+                  height: compact ? 34 : 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected ? const Color(0xFF122B52) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$token',
+                    style: AppTextStyles.style(
+                      color: selected ? Colors.white : const Color(0xFF334155),
+                      fontSize: compact ? 13 : 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(growable: false),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_right_rounded,
+            enabled: canGoNext,
+            onTap: () => onPageTap(currentPage + 1),
+          ),
+        ],
+      ),
     );
+  }
+
+  List<int?> _buildPageTokens(int current, int total) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (index) => index + 1);
+    }
+
+    final tokens = <int?>[1];
+    var start = current - 1;
+    var end = current + 1;
+
+    if (current <= 3) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 2) {
+      start = total - 3;
+      end = total - 1;
+    } else {
+      start = start < 2 ? 2 : start;
+      end = end > total - 1 ? total - 1 : end;
+    }
+
+    if (start > 2) {
+      tokens.add(null);
+    }
+    for (var page = start; page <= end; page += 1) {
+      tokens.add(page);
+    }
+    if (end < total - 1) {
+      tokens.add(null);
+    }
+    tokens.add(total);
+    return tokens;
   }
 }
 
-class _PageChip extends StatelessWidget {
-  const _PageChip({
-    required this.page,
-    required this.isActive,
-    required this.isLoading,
+class _PaginationArrowButton extends StatelessWidget {
+  const _PaginationArrowButton({
+    required this.compact,
+    required this.icon,
+    required this.enabled,
     required this.onTap,
   });
 
-  final int page;
-  final bool isActive;
-  final bool isLoading;
-  final Future<void> Function(int page) onTap;
+  final bool compact;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: isLoading || isActive ? null : () => onTap(page),
-      borderRadius: BorderRadius.circular(999),
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        width: 34,
-        height: 34,
+        width: compact ? 34 : 40,
+        height: compact ? 34 : 40,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF2563EB) : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: isActive ? const Color(0xFF2563EB) : const Color(0xFFE2E8F0),
-          ),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDCE6F2)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
-        child: Text(
-          '$page',
-          style: TextStyle(
-            color: isActive ? Colors.white : const Color(0xFF334155),
-            fontWeight: FontWeight.w600,
-          ),
+        child: Icon(
+          icon,
+          size: compact ? 20 : 22,
+          color: enabled ? const Color(0xFF122B52) : const Color(0xFFCBD5E1),
         ),
       ),
     );

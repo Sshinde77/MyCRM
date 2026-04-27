@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:dio/dio.dart';
 import '../models/client_issue_model.dart';
@@ -27,6 +28,8 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   String? _deletingIssueId;
   int _page = 1;
   static const _pageSize = 10;
+  bool _canCreateIssue = false;
+  bool _canDeleteIssue = false;
 
   List<ClientIssueModel> get _filtered {
     final q = _searchController.text.trim().toLowerCase();
@@ -56,7 +59,20 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   @override
   void initState() {
     super.initState();
+    _loadActionPermissions();
     _loadIssues();
+  }
+
+  Future<void> _loadActionPermissions() async {
+    final canCreate = await PermissionService.has(AppPermission.createRaiseIssue);
+    final canDelete = await PermissionService.has(AppPermission.deleteRaiseIssue);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _canCreateIssue = canCreate;
+      _canDeleteIssue = canDelete;
+    });
   }
 
   @override
@@ -108,6 +124,15 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   }
 
   Future<void> _openCreateIssueDialog() async {
+    if (!_canCreateIssue) {
+      _showSnack(
+        'Permission denied',
+        'You do not have permission to create issues.',
+        isError: true,
+      );
+      return;
+    }
+
     final request = await showDialog<_CreateIssueRequest>(
       context: context,
       barrierDismissible: !_isCreatingIssue,
@@ -145,6 +170,15 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   }
 
   Future<void> _deleteIssue(ClientIssueModel issue) async {
+    if (!_canDeleteIssue) {
+      _showSnack(
+        'Permission denied',
+        'You do not have permission to delete issues.',
+        isError: true,
+      );
+      return;
+    }
+
     final issueId = issue.id.trim();
     if (issueId.isEmpty) {
       _showSnack('Delete failed', 'Issue id is missing.', isError: true);
@@ -198,7 +232,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   }
 
   void _showSnack(String title, String message, {bool isError = false}) {
-    AppSnackbar.show(title, message);
+    AppSnackbar.show(title, message, isError: isError);
   }
 
   String _messageFromError(Object error) {
@@ -282,15 +316,18 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                             SizedBox(height: compact ? 12 : 14),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: side),
-                              child: _AddIssueButton(
-                                compact: compact,
-                                isLoading: _isCreatingIssue,
-                                onTap: _isCreatingIssue
-                                    ? null
-                                    : _openCreateIssueDialog,
-                              ),
+                              child: _canCreateIssue
+                                  ? _AddIssueButton(
+                                      compact: compact,
+                                      isLoading: _isCreatingIssue,
+                                      onTap: _isCreatingIssue
+                                          ? null
+                                          : _openCreateIssueDialog,
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
-                            SizedBox(height: compact ? 12 : 14),
+                            if (_canCreateIssue)
+                              SizedBox(height: compact ? 12 : 14),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: side),
                               child: Container(
@@ -500,6 +537,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                                     isDeleting:
                                                         _deletingIssueId ==
                                                         issue.id.trim(),
+                                                    canDelete: _canDeleteIssue,
                                                     onView: () =>
                                                         _openIssue(issue),
                                                     onDelete: () =>
@@ -793,6 +831,7 @@ class _IssueCard extends StatelessWidget {
     required this.issue,
     required this.compact,
     required this.isDeleting,
+    required this.canDelete,
     required this.onView,
     required this.onDelete,
   });
@@ -800,6 +839,7 @@ class _IssueCard extends StatelessWidget {
   final ClientIssueModel issue;
   final bool compact;
   final bool isDeleting;
+  final bool canDelete;
   final VoidCallback onView;
   final VoidCallback onDelete;
 
@@ -931,28 +971,30 @@ class _IssueCard extends StatelessWidget {
                       ),
                       onPressed: onView,
                     ),
-                    SizedBox(width: compact ? 4 : 6),
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(
-                        minWidth: compact ? 32 : 36,
-                        minHeight: compact ? 32 : 36,
-                      ),
-                      onPressed: isDeleting ? null : onDelete,
-                      icon: isDeleting
-                          ? SizedBox(
-                              width: compact ? 17 : 18,
-                              height: compact ? 17 : 18,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
+                    if (canDelete) ...[
+                      SizedBox(width: compact ? 4 : 6),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(
+                          minWidth: compact ? 32 : 36,
+                          minHeight: compact ? 32 : 36,
+                        ),
+                        onPressed: isDeleting ? null : onDelete,
+                        icon: isDeleting
+                            ? SizedBox(
+                                width: compact ? 17 : 18,
+                                height: compact ? 17 : 18,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Icon(
+                                Icons.delete_outline_rounded,
+                                color: const Color(0xFF94A3B8),
+                                size: compact ? 20 : 22,
                               ),
-                            )
-                          : Icon(
-                              Icons.delete_outline_rounded,
-                              color: const Color(0xFF94A3B8),
-                              size: compact ? 20 : 22,
-                            ),
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ],

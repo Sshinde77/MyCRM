@@ -419,19 +419,27 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   Future<void> _openEditTaskScreen(_TaskRecord task) async {
+    var editTask = task;
+    try {
+      final detail = await ApiService.instance.getTaskDetail(task.id);
+      editTask = _hydrateTaskForEdit(task, detail);
+    } catch (_) {
+      // Fall back to list payload if detail endpoint fails.
+    }
+
     final updated = await Get.to<bool>(
       () => CreateTaskScreen(
-        taskId: task.id,
-        initialTitle: task.title,
-        initialDescription: task.description,
-        initialProjectId: task.projectId,
-        initialPriority: task.priority,
-        initialStatus: task.status,
-        initialStartDate: task.startDate,
-        initialDueDate: task.deadline,
-        initialAssigneeIds: task.assigneeIds,
-        initialFollowerIds: task.followerIds,
-        initialTags: task.tags,
+        taskId: editTask.id,
+        initialTitle: editTask.title,
+        initialDescription: editTask.description,
+        initialProjectId: editTask.projectId,
+        initialPriority: editTask.priority,
+        initialStatus: editTask.status,
+        initialStartDate: editTask.startDate,
+        initialDueDate: editTask.deadline,
+        initialAssigneeIds: editTask.assigneeIds,
+        initialFollowerIds: editTask.followerIds,
+        initialTags: editTask.tags,
       ),
     );
     if (updated != true) {
@@ -439,6 +447,57 @@ class _TasksScreenState extends State<TasksScreen> {
     }
 
     await _loadTasks();
+  }
+
+  _TaskRecord _hydrateTaskForEdit(_TaskRecord base, Map<String, dynamic> detail) {
+    final title =
+        _readString(detail, const ['title', 'name', 'task_title']) ?? base.title;
+    final description =
+        _readString(
+          detail,
+          const ['description', 'details', 'task_description'],
+        ) ??
+        base.description;
+    final projectId = _readProjectId(detail) ?? base.projectId;
+    final projectName = _readProjectName(detail);
+    final status =
+        _readString(detail, const ['status', 'task_status']) ?? base.status;
+    final priority =
+        _readString(detail, const ['priority', 'priority_level']) ??
+        base.priority;
+    final startDate = _tryParseDate(
+      _readString(detail, const ['start_date', 'starts_on', 'created_at']),
+    );
+    final deadline = _tryParseDate(
+      _readString(detail, const ['deadline', 'due_date', 'end_date']),
+    );
+
+    final assigneeIds = _readPersonIds(detail, const [
+      'assignees',
+      'assigned_to',
+      'assigned',
+    ]);
+    final followerIds = _readPersonIds(detail, const ['followers', 'watchers']);
+    final tags = _readTaskTags(detail);
+    final assigneeImageUrls = _readAssigneeImageUrls(detail);
+
+    return _TaskRecord(
+      id: base.id,
+      title: title,
+      projectId: projectId,
+      projectName: projectName,
+      description: description,
+      status: status,
+      priority: priority,
+      startDate: startDate ?? base.startDate,
+      deadline: deadline ?? base.deadline,
+      assigneeIds: assigneeIds.isEmpty ? base.assigneeIds : assigneeIds,
+      followerIds: followerIds.isEmpty ? base.followerIds : followerIds,
+      tags: tags.isEmpty ? base.tags : tags,
+      assigneeImageUrls: assigneeImageUrls.isEmpty
+          ? base.assigneeImageUrls
+          : assigneeImageUrls,
+    );
   }
 
   void _openTaskDetail(_TaskRecord task) {
@@ -1081,14 +1140,50 @@ List<String> _readPersonIds(Map<String, dynamic> source, List<String> keys) {
 }
 
 List<String> _readStringList(dynamic value) {
+  if (value is String) {
+    final text = value.trim();
+    if (text.isEmpty || text.toLowerCase() == 'null') {
+      return const [];
+    }
+    return text
+        .split(',')
+        .map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty && entry.toLowerCase() != 'null')
+        .toList();
+  }
+
   if (value is! List) {
     return const [];
   }
 
   return value
-      .map((entry) => entry.toString().trim())
+      .map((entry) {
+        if (entry is String) {
+          return entry.trim();
+        }
+        if (entry is Map) {
+          final item = _normalizeMap(entry);
+          return _readString(item, const ['name', 'title', 'label']) ?? '';
+        }
+        return entry.toString().trim();
+      })
       .where((entry) => entry.isNotEmpty && entry.toLowerCase() != 'null')
       .toList();
+}
+
+List<String> _readTaskTags(Map<String, dynamic> source) {
+  final candidates = [
+    source['tags'],
+    source['tag'],
+    source['task_tags'],
+  ];
+  for (final value in candidates) {
+    final parsed = _readStringList(value);
+    if (parsed.isNotEmpty) {
+      return parsed;
+    }
+  }
+  return const [];
 }
 
 List<String> _readAssigneeImageUrls(Map<String, dynamic> source) {

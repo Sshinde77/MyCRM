@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/client_issue_model.dart';
 import 'package:mycrm/models/client_issue_task_model.dart';
@@ -23,11 +24,27 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
   final ApiService _apiService = ApiService.instance;
   late Future<ClientIssueModel> _future;
   bool _isClosingIssue = false;
+  bool _canCreateIssueTask = false;
+  bool _canEditIssue = false;
+  bool _canDeleteIssueTask = false;
 
   @override
   void initState() {
     super.initState();
+    _loadPermissions();
     _future = _loadIssue();
+  }
+
+  Future<void> _loadPermissions() async {
+    final canCreate = await PermissionService.has(AppPermission.createRaiseIssue);
+    final canEdit = await PermissionService.has(AppPermission.editRaiseIssue);
+    final canDelete = await PermissionService.has(AppPermission.deleteRaiseIssue);
+    if (!mounted) return;
+    setState(() {
+      _canCreateIssueTask = canCreate;
+      _canEditIssue = canEdit;
+      _canDeleteIssueTask = canDelete;
+    });
   }
 
   Future<ClientIssueModel> _loadIssue() async {
@@ -95,6 +112,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                   children: [
                     _IssueHeaderCard(
                       issue: issue,
+                      canEditIssue: _canEditIssue,
                       onAssign: () {
                         _openAssignTeamsDialog(issue.id);
                       },
@@ -108,7 +126,13 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                     const SizedBox(height: 24),
                     _DetailsCard(issue: issue),
                     const SizedBox(height: 24),
-                    _TaskBoardCard(issue: issue, onTaskCreated: _refresh),
+                    _TaskBoardCard(
+                      issue: issue,
+                      onTaskCreated: _refresh,
+                      canCreateTask: _canCreateIssueTask,
+                      canEditTask: _canEditIssue,
+                      canDeleteTask: _canDeleteIssueTask,
+                    ),
                   ],
                 ),
               ),
@@ -137,6 +161,14 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
   }
 
   Future<void> _openAssignTeamsDialog(String issueId) async {
+    if (!_canEditIssue) {
+      AppSnackbar.show(
+        'Permission denied',
+        'You do not have permission to edit issues.',
+      );
+      return;
+    }
+
     final assigned = await showDialog<bool>(
       context: context,
       builder: (_) => _AssignTeamsDialog(issueId: issueId),
@@ -149,6 +181,15 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
   }
 
   Future<void> _closeIssue(ClientIssueModel issue) async {
+    if (!_canEditIssue) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        'Permission denied',
+        'You do not have permission to edit issues.',
+      );
+      return;
+    }
+
     final issueId = issue.id.trim();
     if (issueId.isEmpty) {
       if (!mounted) return;
@@ -207,12 +248,14 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
 class _IssueHeaderCard extends StatelessWidget {
   const _IssueHeaderCard({
     required this.issue,
+    required this.canEditIssue,
     required this.onAssign,
     required this.onCloseIssue,
     required this.isClosingIssue,
   });
 
   final ClientIssueModel issue;
+  final bool canEditIssue;
   final VoidCallback onAssign;
   final VoidCallback onCloseIssue;
   final bool isClosingIssue;
@@ -303,7 +346,7 @@ class _IssueHeaderCard extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: onAssign,
+                  onPressed: canEditIssue ? onAssign : null,
                   icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
                   label: const Text('Assign'),
                   style: ElevatedButton.styleFrom(
@@ -320,7 +363,8 @@ class _IssueHeaderCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: isClosingIssue ? null : onCloseIssue,
+                  onPressed:
+                      canEditIssue && !isClosingIssue ? onCloseIssue : null,
                   icon: const Icon(Icons.close_rounded, size: 18),
                   label: Text(isClosingIssue ? 'Closing...' : 'Close Issue'),
                   style: ElevatedButton.styleFrom(
@@ -661,10 +705,19 @@ class _DetailsCard extends StatelessWidget {
 }
 
 class _TaskBoardCard extends StatelessWidget {
-  const _TaskBoardCard({required this.issue, this.onTaskCreated});
+  const _TaskBoardCard({
+    required this.issue,
+    this.onTaskCreated,
+    required this.canCreateTask,
+    required this.canEditTask,
+    required this.canDeleteTask,
+  });
 
   final ClientIssueModel issue;
   final Future<void> Function()? onTaskCreated;
+  final bool canCreateTask;
+  final bool canEditTask;
+  final bool canDeleteTask;
 
   @override
   Widget build(BuildContext context) {
@@ -686,22 +739,23 @@ class _TaskBoardCard extends StatelessWidget {
                 ),
               ),
             ),
-            TextButton.icon(
-              onPressed: () async {
-                final created = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => _AddTaskDialog(issueId: issue.id),
-                );
-                if (created != true || !context.mounted) return;
-                if (onTaskCreated != null) {
-                  await onTaskCreated!();
-                }
-                if (!context.mounted) return;
-                AppSnackbar.show('Success', 'Task saved successfully.');
-              },
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Add Task'),
-            ),
+            if (canCreateTask)
+              TextButton.icon(
+                onPressed: () async {
+                  final created = await showDialog<bool>(
+                    context: context,
+                    builder: (_) => _AddTaskDialog(issueId: issue.id),
+                  );
+                  if (created != true || !context.mounted) return;
+                  if (onTaskCreated != null) {
+                    await onTaskCreated!();
+                  }
+                  if (!context.mounted) return;
+                  AppSnackbar.show('Success', 'Task saved successfully.');
+                },
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Add Task'),
+              ),
           ],
         ),
         const SizedBox(height: 12),
@@ -838,113 +892,121 @@ class _TaskBoardCard extends StatelessWidget {
                                       color: textSec.withValues(alpha: 0.75),
                                     ),
                                   ),
-                                  IconButton(
-                                    tooltip: 'Edit',
-                                    onPressed: () async {
-                                      final updated = await showDialog<bool>(
-                                        context: context,
-                                        builder: (_) => _AddTaskDialog(
-                                          issueId: issue.id,
-                                          initialTask: task,
-                                        ),
-                                      );
-                                      if (updated != true || !context.mounted) {
-                                        return;
-                                      }
-                                      if (onTaskCreated != null) {
-                                        await onTaskCreated!();
-                                      }
-                                      if (!context.mounted) return;
-                                      AppSnackbar.show(
-                                        'Success',
-                                        'Task updated successfully.',
-                                      );
-                                    },
-                                    icon: Icon(
-                                      Icons.edit_outlined,
-                                      size: 20,
-                                      color: textSec.withValues(alpha: 0.75),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Delete',
-                                    onPressed: () async {
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (dialogContext) {
-                                          return AlertDialog(
-                                            title: const Text('Delete Task'),
-                                            content: Text(
-                                              'Delete "${task.title.trim().isEmpty ? 'this task' : task.title.trim()}" permanently?',
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.of(
-                                                  dialogContext,
-                                                ).pop(false),
-                                                child: const Text('Cancel'),
-                                              ),
-                                              ElevatedButton(
-                                                onPressed: () => Navigator.of(
-                                                  dialogContext,
-                                                ).pop(true),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(
-                                                    0xFFB3261E,
-                                                  ),
-                                                  foregroundColor: Colors.white,
-                                                ),
-                                                child: const Text('Delete'),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      );
-
-                                      if (confirmed != true ||
-                                          !context.mounted) {
-                                        return;
-                                      }
-
-                                      var deleted = false;
-                                      try {
-                                        await ApiService.instance
-                                            .deleteClientIssueTask(
-                                              issueId: issue.id,
-                                              taskId: task.id,
-                                            );
-                                        deleted = true;
-                                      } catch (_) {
+                                  if (canEditTask)
+                                    IconButton(
+                                      tooltip: 'Edit',
+                                      onPressed: () async {
+                                        final updated = await showDialog<bool>(
+                                          context: context,
+                                          builder: (_) => _AddTaskDialog(
+                                            issueId: issue.id,
+                                            initialTask: task,
+                                          ),
+                                        );
+                                        if (updated != true ||
+                                            !context.mounted) {
+                                          return;
+                                        }
+                                        if (onTaskCreated != null) {
+                                          await onTaskCreated!();
+                                        }
                                         if (!context.mounted) return;
                                         AppSnackbar.show(
-                                          'Error',
-                                          'Unable to delete task right now.',
+                                          'Success',
+                                          'Task updated successfully.',
                                         );
-                                        return;
-                                      }
-
-                                      if (!deleted || !context.mounted) return;
-
-                                      if (onTaskCreated != null) {
-                                        try {
-                                          await onTaskCreated!();
-                                        } catch (_) {
-                                          // Keep success state if delete already succeeded.
-                                        }
-                                      }
-
-                                      if (!context.mounted) return;
-                                      AppSnackbar.show(
-                                        'Success',
-                                        'Task deleted successfully.',
-                                      );
-                                    },
-                                    icon: Icon(
-                                      Icons.delete_outline_rounded,
-                                      size: 20,
-                                      color: textSec.withValues(alpha: 0.75),
+                                      },
+                                      icon: Icon(
+                                        Icons.edit_outlined,
+                                        size: 20,
+                                        color: textSec.withValues(alpha: 0.75),
+                                      ),
                                     ),
-                                  ),
+                                  if (canDeleteTask)
+                                    IconButton(
+                                      tooltip: 'Delete',
+                                      onPressed: () async {
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (dialogContext) {
+                                            return AlertDialog(
+                                              title: const Text('Delete Task'),
+                                              content: Text(
+                                                'Delete "${task.title.trim().isEmpty ? 'this task' : task.title.trim()}" permanently?',
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(
+                                                        dialogContext,
+                                                      ).pop(false),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(
+                                                        dialogContext,
+                                                      ).pop(true),
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            const Color(
+                                                              0xFFB3261E,
+                                                            ),
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                      ),
+                                                  child: const Text('Delete'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+
+                                        if (confirmed != true ||
+                                            !context.mounted) {
+                                          return;
+                                        }
+
+                                        var deleted = false;
+                                        try {
+                                          await ApiService.instance
+                                              .deleteClientIssueTask(
+                                                issueId: issue.id,
+                                                taskId: task.id,
+                                              );
+                                          deleted = true;
+                                        } catch (_) {
+                                          if (!context.mounted) return;
+                                          AppSnackbar.show(
+                                            'Error',
+                                            'Unable to delete task right now.',
+                                          );
+                                          return;
+                                        }
+
+                                        if (!deleted || !context.mounted) return;
+
+                                        if (onTaskCreated != null) {
+                                          try {
+                                            await onTaskCreated!();
+                                          } catch (_) {
+                                            // Keep success state if delete already succeeded.
+                                          }
+                                        }
+
+                                        if (!context.mounted) return;
+                                        AppSnackbar.show(
+                                          'Success',
+                                          'Task deleted successfully.',
+                                        );
+                                      },
+                                      icon: Icon(
+                                        Icons.delete_outline_rounded,
+                                        size: 20,
+                                        color: textSec.withValues(alpha: 0.75),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ],

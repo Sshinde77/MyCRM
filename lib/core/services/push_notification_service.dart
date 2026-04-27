@@ -6,7 +6,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, describeEnum, kDebugMode, kIsWeb;
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../firebase_options.dart';
@@ -51,12 +52,14 @@ class PushNotificationService {
 
   static String? _latestToken;
   static bool _isInitialized = false;
+  static bool _firebaseReady = false;
   static Future<String?>? _tokenFetchInFlight;
 
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
     final initialized = await _initializeFirebase();
+    _firebaseReady = initialized;
     if (!initialized) {
       return;
     }
@@ -103,30 +106,39 @@ class PushNotificationService {
   static Future<bool> _initializeFirebase() async {
     try {
       if (Firebase.apps.isNotEmpty) {
+        _firebaseReady = true;
         return true;
       }
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-      return true;
-    } catch (error, stackTrace) {
-      _emitDiagnosticLog('Firebase options initialize failed: $error');
-      if (kDebugMode) {
-        log(
-          'Firebase options initialize stacktrace: $stackTrace',
-          name: 'PushNotificationService',
-        );
-      }
-    }
 
-    try {
+      FirebaseOptions? options;
+      try {
+        options = DefaultFirebaseOptions.currentPlatform;
+      } on UnsupportedError catch (error) {
+        _emitDiagnosticLog('Firebase options are not configured: $error');
+        return false;
+      }
+
+      if (options != null) {
+        await Firebase.initializeApp(options: options);
+        _firebaseReady = true;
+        return true;
+      }
+
+      if (kIsWeb) {
+        _emitDiagnosticLog(
+          'Firebase Web configuration not found. Skipping push notification initialization for Web.',
+        );
+        return false;
+      }
+
       await Firebase.initializeApp();
+      _firebaseReady = true;
       return true;
     } catch (error, stackTrace) {
-      _emitDiagnosticLog('Firebase native initialize failed: $error');
+      _emitDiagnosticLog('Firebase initialization failed: $error');
       if (kDebugMode) {
         log(
-          'Firebase native initialize stacktrace: $stackTrace',
+          'Firebase initialization stacktrace: $stackTrace',
           name: 'PushNotificationService',
         );
       }
@@ -149,7 +161,7 @@ class PushNotificationService {
       'Notification permission status: ${settings.authorizationStatus}',
     );
 
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       try {
         final androidPermission = await Permission.notification.status;
         if (!androidPermission.isGranted) {
@@ -177,6 +189,13 @@ class PushNotificationService {
   }
 
   static Future<void> _fetchAndPersistToken({required String reason}) async {
+    if (!_isFirebaseMessagingReady()) {
+      _emitDiagnosticLog(
+        'Skipping FCM token fetch (reason: $reason): Firebase is not initialized.',
+      );
+      return;
+    }
+
     try {
       final token = await _requestTokenWithRetry(reason: reason);
       await _persistToken(token);
@@ -255,6 +274,13 @@ class PushNotificationService {
   }
 
   static Future<void> onUserLogin({required String userId}) async {
+    if (!_isFirebaseMessagingReady()) {
+      _emitDiagnosticLog(
+        'Skipping FCM login sync: Firebase is not initialized on this platform.',
+      );
+      return;
+    }
+
     final normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty) return;
 
@@ -273,6 +299,10 @@ class PushNotificationService {
   }
 
   static Future<void> onUserLogout() async {
+    if (!_isFirebaseMessagingReady()) {
+      return;
+    }
+
     final token = await getCurrentToken();
     if (token == null || token.trim().isEmpty) {
       await _storage.delete(SecureStorageService.fcmTokenSyncedUserIdKey);
@@ -373,9 +403,28 @@ class PushNotificationService {
   }
 
   static Future<Map<String, dynamic>> _collectDeviceInfo() async {
+    if (kIsWeb) {
+      try {
+        final info = await _deviceInfo.webBrowserInfo;
+        return <String, dynamic>{
+          'platform': 'web',
+          'platform_version': info.appVersion ?? '',
+          'browser_name': describeEnum(info.browserName),
+          'user_agent': info.userAgent ?? '',
+          'vendor': info.vendor ?? '',
+          'language': info.language ?? '',
+          'hardware_concurrency': info.hardwareConcurrency,
+        };
+      } catch (error) {
+        _emitDiagnosticLog('Web device info collection failed: $error');
+        return <String, dynamic>{'platform': 'web'};
+      }
+    }
+
     final base = <String, dynamic>{
       'platform': Platform.operatingSystem,
       'platform_version': Platform.operatingSystemVersion,
+      'target_platform': describeEnum(defaultTargetPlatform),
     };
 
     try {
@@ -417,13 +466,20 @@ class PushNotificationService {
     print(message);
 
     // Visible in Flutter run terminal output.
-    debugPrint(message);
+    // debugPrint(message);
 
     // Visible in IDE/device logs (e.g., logcat / debug console).
     log(message, name: 'PushNotificationService');
   }
 
   static Future<String?> getCurrentToken() async {
+    if (!_isFirebaseMessagingReady()) {
+      _emitDiagnosticLog(
+        'Skipping FCM token request: Firebase is not initialized on this platform.',
+      );
+      return null;
+    }
+
     final cached = _latestToken?.trim() ?? '';
     if (cached.isNotEmpty) {
       return cached;
@@ -448,7 +504,18 @@ class PushNotificationService {
   static void _emitDiagnosticLog(String message) {
     if (!kDebugMode) return;
     print(message);
-    debugPrint(message);
+    // debugPrint(message);
     log(message, name: 'PushNotificationService');
+  }
+
+  static bool _isFirebaseMessagingReady() { 
+    if (_firebaseReady) {
+      return true;
+    }
+    if (Firebase.apps.isNotEmpty) {
+      _firebaseReady = true;
+      return true;
+    }
+    return false;
   }
 }

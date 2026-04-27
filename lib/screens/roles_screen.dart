@@ -418,7 +418,7 @@ class _RoleCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.lock_outline_rounded,
+                  Icons.person,
                   color: Color(0xFF64748B),
                   size: 16,
                 ),
@@ -438,19 +438,19 @@ class _RoleCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              _ActionButton(
-                icon: Icons.edit_outlined,
-                color: const Color(0xFF3B82F6),
-                backgroundColor: const Color(0xFFEFF6FF),
-                onTap: () {},
-              ),
-              const SizedBox(width: 12),
-              _ActionButton(
-                icon: Icons.delete_outline_rounded,
-                color: const Color(0xFFEF4444),
-                backgroundColor: const Color(0xFFFEF2F2),
-                onTap: () {},
-              ),
+              // _ActionButton(
+              //   icon: Icons.edit_outlined,
+              //   color: const Color(0xFF3B82F6),
+              //   backgroundColor: const Color(0xFFEFF6FF),
+              //   onTap: () {},
+              // ),
+              // const SizedBox(width: 12),
+              // _ActionButton(
+              //   icon: Icons.delete_outline_rounded,
+              //   color: const Color(0xFFEF4444),
+              //   backgroundColor: const Color(0xFFFEF2F2),
+              //   onTap: () {},
+              // ),
             ],
           ),
         ],

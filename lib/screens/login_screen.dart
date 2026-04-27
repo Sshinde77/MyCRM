@@ -65,6 +65,15 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       PermissionService.setCurrentUser(response.user);
 
+      final shouldPromptBiometric = await _shouldPromptBiometricSetup();
+      if (shouldPromptBiometric && mounted) {
+        final enableBiometric = await _askEnableBiometric();
+        await _authService.setBiometricPromptShown(true);
+        if (enableBiometric == true) {
+          await _enableBiometricAfterLogin();
+        }
+      }
+
       if (!mounted) {
         return;
       }
@@ -117,6 +126,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<bool> _shouldPromptBiometricSetup() async {
+    final alreadyEnabled = await _authService.isBiometricEnabled();
+    if (alreadyEnabled) {
+      return false;
+    }
+    final alreadyPrompted = await _authService.isBiometricPromptShown();
+    if (alreadyPrompted) {
+      return false;
+    }
+    // Show consent prompt once on first successful login.
+    // Device availability is validated only when user taps "Enable".
+    return true;
+  }
+
   Future<void> _loadBiometricAvailability() async {
     final canUse = await _authService.shouldShowBiometricLoginButton();
     if (!mounted) return;
@@ -150,6 +173,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _showBiometricButton = true;
     });
+    AppSnackbar.show(
+      'Biometric enabled',
+      'You can now sign in using fingerprint/face.',
+    );
   }
 
   Future<void> _unlockWithBiometrics() async {

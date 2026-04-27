@@ -7,12 +7,9 @@ import 'package:flutter/foundation.dart'
 /// Replace this template by running:
 /// `flutterfire configure`
 class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
+  static FirebaseOptions? get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions are not configured for Web. '
-        'Run flutterfire configure to generate firebase_options.dart.',
-      );
+      return null;
     }
 
     switch (defaultTargetPlatform) {

@@ -1143,7 +1143,23 @@ class ApiService {
 
   /// Loads client issues and form option data from the index endpoint.
   Future<ClientIssueIndexData> getClientIssuesIndexData() async {
-    final response = await get(ApiConstants.clientIssues);
+    final query = await _resolveClientIssueQueryParameters();
+    Response response;
+    try {
+      response = await get(
+        ApiConstants.clientIssues,
+        queryParameters: query.isEmpty ? null : query,
+      );
+    } on DioException catch (error) {
+      // Some backends don't accept/need user scoping query parameters.
+      // Retry once without query params before surfacing the auth error.
+      if (error.response?.statusCode == 403 && query.isNotEmpty) {
+        response = await get(ApiConstants.clientIssues);
+      } else {
+        rethrow;
+      }
+    }
+
     final source = _extractClientIssueListSource(response.data);
     if (source is! List) {
       throw DioException(
@@ -3379,6 +3395,29 @@ class ApiService {
 
     final query = <String, dynamic>{'user_id': resolvedUserId};
 
+    if (resolvedRoleId.isNotEmpty) {
+      query['role_id'] = resolvedRoleId;
+    }
+
+    return query;
+  }
+
+  Future<Map<String, dynamic>> _resolveClientIssueQueryParameters({
+    String? userId,
+    String? roleId,
+  }) async {
+    UserModel? user = await getStoredUser();
+    user ??= await _tryGetCurrentUser();
+
+    final resolvedUserId = (userId ?? user?.id ?? '').trim();
+    final resolvedRoleId = (roleId ?? _extractRoleId(user)).trim();
+
+    // Keep request backwards-compatible if session user is not available.
+    if (resolvedUserId.isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    final query = <String, dynamic>{'user_id': resolvedUserId};
     if (resolvedRoleId.isNotEmpty) {
       query['role_id'] = resolvedRoleId;
     }

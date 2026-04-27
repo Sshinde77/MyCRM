@@ -998,7 +998,7 @@ class _PaginationBar extends StatelessWidget {
                   height: compact ? 34 : 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: selected ? const Color(0xFFEF4444) : Colors.transparent,
+                    color: selected ? const Color(0xFF122B52) : Colors.transparent,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -1096,7 +1096,7 @@ class _PaginationArrowButton extends StatelessWidget {
         child: Icon(
           icon,
           size: compact ? 20 : 22,
-          color: enabled ? const Color(0xFFEF4444) : const Color(0xFFCBD5E1),
+          color: enabled ? const Color(0xFF122B52) : const Color(0xFFCBD5E1),
         ),
       ),
     );

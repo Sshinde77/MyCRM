@@ -19,6 +19,8 @@ class LeadsScreen extends StatefulWidget {
 
 class _LeadsScreenState extends State<LeadsScreen> {
   late final TextEditingController _searchController;
+  static const int _pageSize = 10;
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -46,11 +48,31 @@ class _LeadsScreenState extends State<LeadsScreen> {
         child: Consumer<LeadProvider>(
           builder: (context, leadProvider, _) {
             return RefreshIndicator(
-              onRefresh: () => leadProvider.loadLeads(forceRefresh: true),
+              onRefresh: () async {
+                await leadProvider.loadLeads(forceRefresh: true);
+                if (!mounted) return;
+                setState(() => _currentPage = 1);
+              },
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isCompact = constraints.maxWidth < 380;
                   final horizontalPadding = isCompact ? 16.0 : 20.0;
+                  final leads = leadProvider.leads;
+                  final totalPages = leads.isEmpty
+                      ? 0
+                      : ((leads.length + _pageSize - 1) / _pageSize).floor();
+                  final safeCurrentPage = totalPages == 0
+                      ? 1
+                      : (_currentPage > totalPages ? totalPages : _currentPage);
+                  final startIndex = totalPages == 0
+                      ? 0
+                      : (safeCurrentPage - 1) * _pageSize;
+                  final endIndex = totalPages == 0
+                      ? 0
+                      : (startIndex + _pageSize > leads.length
+                            ? leads.length
+                            : startIndex + _pageSize);
+                  final pagedLeads = leads.sublist(startIndex, endIndex);
 
                   return ListView(
                     padding: EdgeInsets.symmetric(
@@ -106,7 +128,10 @@ class _LeadsScreenState extends State<LeadsScreen> {
                         ),
                         child: TextField(
                           controller: _searchController,
-                          onChanged: leadProvider.updateSearchQuery,
+                          onChanged: (value) {
+                            leadProvider.updateSearchQuery(value);
+                            setState(() => _currentPage = 1);
+                          },
                           decoration: InputDecoration(
                             hintText: 'Search leads by name or ID...',
                             hintStyle: AppTextStyles.style(
@@ -120,6 +145,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
                                     onPressed: () {
                                       _searchController.clear();
                                       leadProvider.updateSearchQuery('');
+                                      setState(() => _currentPage = 1);
                                     },
                                     icon: const Icon(
                                       Icons.close_rounded,
@@ -255,7 +281,21 @@ class _LeadsScreenState extends State<LeadsScreen> {
                           hasQuery: leadProvider.searchQuery.trim().isNotEmpty,
                         )
                       else
-                        ..._buildLeadCards(leadProvider),
+                        ..._buildLeadCards(
+                          leadProvider: leadProvider,
+                          leads: pagedLeads,
+                        ),
+                      if (leadProvider.leads.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _PaginationBar(
+                          compact: isCompact,
+                          currentPage: safeCurrentPage,
+                          totalPages: totalPages,
+                          onPageTap: (page) {
+                            setState(() => _currentPage = page);
+                          },
+                        ),
+                      ],
                     ],
                   );
                 },
@@ -331,8 +371,10 @@ class _LeadsScreenState extends State<LeadsScreen> {
     }
   }
 
-  List<Widget> _buildLeadCards(LeadProvider leadProvider) {
-    final leads = leadProvider.leads;
+  List<Widget> _buildLeadCards({
+    required LeadProvider leadProvider,
+    required List<LeadModel> leads,
+  }) {
     return [
       for (var index = 0; index < leads.length; index++) ...[
         _LeadCard(
@@ -343,6 +385,175 @@ class _LeadsScreenState extends State<LeadsScreen> {
         if (index != leads.length - 1) const SizedBox(height: 16),
       ],
     ];
+  }
+}
+
+class _PaginationBar extends StatelessWidget {
+  const _PaginationBar({
+    required this.compact,
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageTap,
+  });
+
+  final bool compact;
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Padding(
+      padding: EdgeInsets.only(top: compact ? 6 : 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_left_rounded,
+            enabled: canGoPrev,
+            onTap: () => onPageTap(currentPage - 1),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tokens.map((token) {
+              if (token == null) {
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 2 : 4,
+                    vertical: compact ? 8 : 9,
+                  ),
+                  child: Text(
+                    '...',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF64748B),
+                      fontSize: compact ? 13 : 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                );
+              }
+              final selected = token == currentPage;
+              return InkWell(
+                onTap: () => onPageTap(token),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: compact ? 34 : 36,
+                  height: compact ? 34 : 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected ? const Color(0xFF122B52) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$token',
+                    style: AppTextStyles.style(
+                      color: selected ? Colors.white : const Color(0xFF334155),
+                      fontSize: compact ? 13 : 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(growable: false),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_right_rounded,
+            enabled: canGoNext,
+            onTap: () => onPageTap(currentPage + 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<int?> _buildPageTokens(int current, int total) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (index) => index + 1);
+    }
+
+    final tokens = <int?>[1];
+    var start = current - 1;
+    var end = current + 1;
+
+    if (current <= 3) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 2) {
+      start = total - 3;
+      end = total - 1;
+    } else {
+      start = start < 2 ? 2 : start;
+      end = end > total - 1 ? total - 1 : end;
+    }
+
+    if (start > 2) {
+      tokens.add(null);
+    }
+    for (var page = start; page <= end; page += 1) {
+      tokens.add(page);
+    }
+    if (end < total - 1) {
+      tokens.add(null);
+    }
+    tokens.add(total);
+    return tokens;
+  }
+}
+
+class _PaginationArrowButton extends StatelessWidget {
+  const _PaginationArrowButton({
+    required this.compact,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final bool compact;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: compact ? 34 : 40,
+        height: compact ? 34 : 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDCE6F2)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: compact ? 20 : 22,
+          color: enabled ? const Color(0xFF122B52) : const Color(0xFFCBD5E1),
+        ),
+      ),
+    );
   }
 }
 

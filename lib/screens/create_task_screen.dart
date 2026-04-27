@@ -371,13 +371,19 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   }
 
   Widget _projectField() {
+    final uniqueProjects = _dedupeProjectsById(_projects);
+    final selectedProjectId = _resolveValidProjectValue(
+      _projectId,
+      uniqueProjects,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _label('Project Related To'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String?>(
-          value: _projectId,
+          value: selectedProjectId,
           items: [
             DropdownMenuItem<String?>(
               value: null,
@@ -390,7 +396,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 ),
               ),
             ),
-            ..._projects.map(
+            ...uniqueProjects.map(
               (project) => DropdownMenuItem<String?>(
                 value: project.id,
                 child: Text(project.title, overflow: TextOverflow.ellipsis),
@@ -743,7 +749,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       if (!mounted) return;
 
       setState(() {
-        _projects = results[0] as List<ProjectModel>;
+        _projects = _dedupeProjectsById(results[0] as List<ProjectModel>);
         _staff = results[1] as List<StaffMemberModel>;
         if (_projectId != null &&
             !_projects.any((project) => project.id == _projectId)) {
@@ -947,6 +953,29 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       default:
         return null;
     }
+  }
+
+  List<ProjectModel> _dedupeProjectsById(List<ProjectModel> projects) {
+    final byId = <String, ProjectModel>{};
+    final withoutId = <ProjectModel>[];
+    for (final project in projects) {
+      final id = project.id.trim();
+      if (id.isEmpty) {
+        withoutId.add(project);
+        continue;
+      }
+      byId.putIfAbsent(id, () => project);
+    }
+    return <ProjectModel>[...byId.values, ...withoutId];
+  }
+
+  String? _resolveValidProjectValue(String? value, List<ProjectModel> projects) {
+    final normalized = value?.trim() ?? '';
+    if (normalized.isEmpty) {
+      return null;
+    }
+    final matches = projects.where((project) => project.id == normalized).length;
+    return matches == 1 ? normalized : null;
   }
 }
 

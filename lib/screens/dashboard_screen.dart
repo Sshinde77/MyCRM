@@ -510,10 +510,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       });
     } on DioException catch (error) {
       if (!mounted) return;
+      final statusCode = error.response?.statusCode;
       setState(() {
         _isLoadingTickets = false;
-        _ticketsLoadError =
-            'Support tickets failed to load (${error.response?.statusCode ?? 'network'}).';
+        _ticketsLoadError = statusCode == 403
+            ? null
+            : 'Support tickets failed to load (${statusCode ?? 'network'}).';
       });
     } catch (_) {
       if (!mounted) return;

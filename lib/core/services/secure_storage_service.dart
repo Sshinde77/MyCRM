@@ -17,6 +17,7 @@ class SecureStorageService {
   static const String refreshTokenKey = 'refresh_token';
   static const String currentUserKey = 'current_user';
   static const String biometricEnabledKey = 'biometric_enabled';
+  static const String biometricPromptShownKey = 'biometric_prompt_shown';
   static const String fcmTokenKey = 'fcm_token';
   static const String fcmTokenSyncedUserIdKey = 'fcm_token_synced_user_id';
 
@@ -66,6 +67,15 @@ class SecureStorageService {
 
   Future<bool> isBiometricEnabled() async {
     final raw = await read(biometricEnabledKey);
+    return raw == 'true';
+  }
+
+  Future<void> setBiometricPromptShown(bool shown) async {
+    await write(biometricPromptShownKey, shown ? 'true' : 'false');
+  }
+
+  Future<bool> isBiometricPromptShown() async {
+    final raw = await read(biometricPromptShownKey);
     return raw == 'true';
   }
 

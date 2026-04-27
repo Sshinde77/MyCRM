@@ -9,6 +9,14 @@ class AppPermission {
   static const manageCalendar = 'manage_calendar';
   static const viewDashboard = 'view_dashboard';
   static const viewDashboardWelcome = 'view_dashboard_welcome';
+  static const viewBookCalls = 'view_book_calls';
+  static const createBookCalls = 'create_book_calls';
+  static const editBookCalls = 'edit_book_calls';
+  static const deleteBookCalls = 'delete_book_calls';
+  static const viewDigitalMarketingLeads = 'view_digital_marketing_leads';
+  static const createDigitalMarketingLeads = 'create_digital_marketing_leads';
+  static const editDigitalMarketingLeads = 'edit_digital_marketing_leads';
+  static const deleteDigitalMarketingLeads = 'delete_digital_marketing_leads';
   static const viewRenewals = 'view_renewals';
   static const createRenewals = 'create_renewals';
   static const editRenewals = 'edit_renewals';
@@ -38,18 +46,59 @@ class AppPermission {
   static const editStaff = 'edit_staff';
   static const deleteStaff = 'delete_staff';
   static const viewRoles = 'view_roles';
+  static const createRoles = 'create_roles';
+  static const editRoles = 'edit_roles';
+  static const deleteRoles = 'delete_roles';
   static const viewPermissions = 'view_permissions';
+  static const createPermissions = 'create_permissions';
+  static const editPermissions = 'edit_permissions';
+  static const deletePermissions = 'delete_permissions';
   static const viewServices = 'view_services';
+  static const createServices = 'create_services';
+  static const editServices = 'edit_services';
+  static const deleteServices = 'delete_services';
   static const viewVendors = 'view_vendors';
+  static const createVendors = 'create_vendors';
+  static const editVendors = 'edit_vendors';
+  static const deleteVendors = 'delete_vendors';
+  static const createDashboard = 'create_dashboard';
+  static const editDashboard = 'edit_dashboard';
+  static const deleteDashboard = 'delete_dashboard';
+  static const manageUsers = 'manage_users';
   static const manageSettings = 'manage_settings';
   static const viewGeneralSettings = 'view_general_settings';
+  static const viewCompanyInformation = 'view_company_information';
+  static const viewEmailSettings = 'view_email_settings';
+  static const viewReports = 'view_reports';
+  static const exportData = 'export_data';
+  static const importData = 'import_data';
+  static const sendNotifications = 'send_notifications';
+  static const viewAllProjects = 'view_all_projects';
+  static const viewOwnProjects = 'view_own_projects';
+  static const assignTasks = 'assign_tasks';
+  static const viewAllTasks = 'view_all_tasks';
+  static const viewOwnTasks = 'view_own_tasks';
+  static const viewUsers = 'view_users';
+  static const createUsers = 'create_users';
+  static const editUsers = 'edit_users';
+  static const deleteUsers = 'delete_users';
 }
 
 class PermissionService {
   PermissionService._();
 
+  static const Set<String> _viewRaiseIssueAliases = <String>{
+    AppPermission.viewRaiseIssue,
+    'view_raise_issues',
+    'view_issue',
+    'view_issues',
+    'view_issue_management',
+    'view_issue_master',
+  };
+
   static UserModel? _cachedUser;
   static Future<UserModel?>? _userLoadFuture;
+  static final Set<String> _runtimeDeniedPermissions = <String>{};
 
   static Future<UserModel?> getCurrentUser() async {
     if (_cachedUser != null) {
@@ -74,6 +123,7 @@ class PermissionService {
   }
 
   static void setCurrentUser(UserModel? user) {
+    _runtimeDeniedPermissions.clear();
     if (user != null &&
         user.permissions.isEmpty &&
         _cachedUser != null &&
@@ -90,6 +140,15 @@ class PermissionService {
   static void clearCachedUser() {
     _cachedUser = null;
     _userLoadFuture = null;
+    _runtimeDeniedPermissions.clear();
+  }
+
+  static void markPermissionDenied(String permission) {
+    final normalized = permission.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return;
+    }
+    _runtimeDeniedPermissions.add(normalized);
   }
 
   static Future<bool> has(String permission) async {
@@ -169,10 +228,33 @@ class PermissionService {
       return false;
     }
 
-    return user.permissions
+    if (_runtimeDeniedPermissions.contains(normalizedPermission)) {
+      return false;
+    }
+
+    final normalizedPermissions = user.permissions
         .map((entry) => entry.trim().toLowerCase())
         .where((entry) => entry.isNotEmpty)
-        .contains(normalizedPermission);
+        .toSet();
+
+    if (normalizedPermissions.contains(normalizedPermission)) {
+      return true;
+    }
+
+    if (normalizedPermission == AppPermission.viewRaiseIssue) {
+      if (normalizedPermissions.any(_viewRaiseIssueAliases.contains)) {
+        return true;
+      }
+
+      // Some APIs only return non-view issue permissions for issue access.
+      if (normalizedPermissions.contains(AppPermission.createRaiseIssue) ||
+          normalizedPermissions.contains(AppPermission.editRaiseIssue) ||
+          normalizedPermissions.contains(AppPermission.deleteRaiseIssue)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   static String? routePermission(String routeName) {

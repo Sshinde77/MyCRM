@@ -156,9 +156,21 @@ class UserModel {
   static List<String> _extractPermissionNames(Map<String, dynamic> json) {
     final permissions = <String>{};
 
+    bool _isTruthy(dynamic value) {
+      if (value == null) return false;
+      if (value is bool) return value;
+      final normalized = value.toString().trim().toLowerCase();
+      if (normalized.isEmpty) return false;
+      return normalized == '1' ||
+          normalized == 'true' ||
+          normalized == 'yes' ||
+          normalized == 'on' ||
+          normalized == 'allowed';
+    }
+
     void addPermission(dynamic value) {
       if (value is String) {
-        final normalized = value.trim();
+        final normalized = value.trim().toLowerCase();
         if (normalized.isNotEmpty) {
           permissions.add(normalized);
         }
@@ -166,7 +178,13 @@ class UserModel {
       }
 
       if (value is Map<String, dynamic>) {
-        final name = _readString(value, ['name', 'permission', 'key']);
+        final name = _readString(value, [
+          'name',
+          'permission',
+          'key',
+          'slug',
+          'code',
+        ]).trim().toLowerCase();
         if (name.isNotEmpty) {
           permissions.add(name);
         }
@@ -178,12 +196,68 @@ class UserModel {
       }
     }
 
+    void addPermissionMap(dynamic value) {
+      if (value is! Map) {
+        return;
+      }
+      final normalized = value.map(
+        (key, item) => MapEntry(key.toString().trim().toLowerCase(), item),
+      );
+
+      for (final entry in normalized.entries) {
+        final key = entry.key;
+        if (key.isEmpty) {
+          continue;
+        }
+        final item = entry.value;
+
+        if (item is Map || item is List) {
+          addPermission(item);
+          continue;
+        }
+
+        if (_isTruthy(item)) {
+          permissions.add(key);
+        } else if (item is String) {
+          final itemText = item.trim().toLowerCase();
+          if (itemText == key) {
+            permissions.add(key);
+          }
+        }
+      }
+    }
+
     void addPermissionList(dynamic value) {
       if (value is! List) {
         return;
       }
       for (final entry in value) {
         addPermission(entry);
+      }
+    }
+
+    void addPermissions(dynamic value) {
+      if (value == null) {
+        return;
+      }
+      if (value is List) {
+        addPermissionList(value);
+        return;
+      }
+      if (value is Map) {
+        addPermissionMap(value);
+        return;
+      }
+      if (value is String) {
+        final raw = value.trim();
+        if (raw.isEmpty) return;
+        if (raw.contains(',')) {
+          for (final token in raw.split(',')) {
+            addPermission(token);
+          }
+          return;
+        }
+        addPermission(raw);
       }
     }
 
@@ -198,37 +272,37 @@ class UserModel {
             : role is Map
             ? role.map((key, item) => MapEntry(key.toString(), item))
             : const <String, dynamic>{};
-        addPermissionList(roleMap['permissions']);
+        addPermissions(roleMap['permissions']);
       }
     }
 
-    addPermissionList(json['permissions']);
+    addPermissions(json['permissions']);
     addRolePermissions(json['roles']);
 
     final nestedData = json['data'];
     if (nestedData is Map<String, dynamic>) {
-      addPermissionList(nestedData['permissions']);
+      addPermissions(nestedData['permissions']);
       addRolePermissions(nestedData['roles']);
       final nestedUser = nestedData['user'];
       if (nestedUser is Map<String, dynamic>) {
-        addPermissionList(nestedUser['permissions']);
+        addPermissions(nestedUser['permissions']);
         addRolePermissions(nestedUser['roles']);
       }
     } else if (nestedData is Map) {
       final normalized = nestedData.map(
         (key, value) => MapEntry(key.toString(), value),
       );
-      addPermissionList(normalized['permissions']);
+      addPermissions(normalized['permissions']);
       addRolePermissions(normalized['roles']);
       final nestedUser = normalized['user'];
       if (nestedUser is Map<String, dynamic>) {
-        addPermissionList(nestedUser['permissions']);
+        addPermissions(nestedUser['permissions']);
         addRolePermissions(nestedUser['roles']);
       } else if (nestedUser is Map) {
         final normalizedUser = nestedUser.map(
           (key, value) => MapEntry(key.toString(), value),
         );
-        addPermissionList(normalizedUser['permissions']);
+        addPermissions(normalizedUser['permissions']);
         addRolePermissions(normalizedUser['roles']);
       }
     }

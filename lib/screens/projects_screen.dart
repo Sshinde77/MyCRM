@@ -28,6 +28,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   String? _deletingProjectId;
   String? _staffFilterId;
   String _staffFilterName = '';
+  String _selectedStatus = 'all';
 
   @override
   void initState() {
@@ -202,11 +203,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   List<ProjectModel> _filterProjects(List<ProjectModel> projects) {
     final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) {
-      return projects;
-    }
-
     return projects.where((project) {
+      if (_selectedStatus != 'all' &&
+          _projectStatusCategory(project.status) != _selectedStatus) {
+        return false;
+      }
       final haystack = [
         project.title,
         project.client,
@@ -215,6 +216,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         project.deadline,
       ].join(' ').toLowerCase();
 
+      if (query.isEmpty) {
+        return true;
+      }
       return haystack.contains(query);
     }).toList();
   }
@@ -309,11 +313,13 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             _SummaryRow(
                               isCompact: isCompact,
                               totalProjects: projects.length,
-                              planningProjects: projects
+                              inProgressProjects: projects
                                   .where(
-                                    (project) => project.status
-                                        .toLowerCase()
-                                        .contains('planning'),
+                                    (project) =>
+                                        _projectStatusCategory(
+                                          project.status,
+                                        ) ==
+                                        'in progress',
                                   )
                                   .length,
                             ),
@@ -323,6 +329,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             _ProjectsToolbar(
                               controller: _searchController,
                               onSearchChanged: (_) => setState(() {}),
+                              selectedStatus: _selectedStatus,
+                              onStatusChanged: (value) {
+                                setState(() => _selectedStatus = value);
+                              },
                             ),
                             const SizedBox(height: 16),
                             _ProjectsListSection(
@@ -418,12 +428,12 @@ class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
     required this.isCompact,
     required this.totalProjects,
-    required this.planningProjects,
+    required this.inProgressProjects,
   });
 
   final bool isCompact;
   final int totalProjects;
-  final int planningProjects;
+  final int inProgressProjects;
 
   @override
   Widget build(BuildContext context) {
@@ -445,12 +455,12 @@ class _SummaryRow extends StatelessWidget {
             const SizedBox(width: 14),
             Expanded(
               child: _MetricCard(
-                icon: Icons.groups_rounded,
-                iconColor: const Color(0xFF8B5CF6),
-                value: '$planningProjects',
-                label: 'Planning',
+                icon: Icons.timeline_rounded,
+                iconColor: const Color(0xFF1D6FEA),
+                value: '$inProgressProjects',
+                label: 'In Progress',
                 percent: 'API',
-                accent: const Color(0xFF8B5CF6),
+                accent: const Color(0xFF1D6FEA),
                 isCompact: isCompact,
               ),
             ),
@@ -462,9 +472,16 @@ class _SummaryRow extends StatelessWidget {
 }
 
 class _ProjectsToolbar extends StatelessWidget {
-  const _ProjectsToolbar({required this.controller, this.onSearchChanged});
+  const _ProjectsToolbar({
+    required this.controller,
+    required this.selectedStatus,
+    required this.onStatusChanged,
+    this.onSearchChanged,
+  });
 
   final TextEditingController controller;
+  final String selectedStatus;
+  final ValueChanged<String> onStatusChanged;
   final ValueChanged<String>? onSearchChanged;
 
   @override
@@ -474,26 +491,42 @@ class _ProjectsToolbar extends StatelessWidget {
         if (constraints.maxWidth < 360) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               _SearchField(controller: controller, onChanged: onSearchChanged),
-              SizedBox(height: 12),
-              const _FilterRow(),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatusDropdown(
+                      value: selectedStatus,
+                      onChanged: onStatusChanged,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const _CreateProjectButton(),
+                ],
+              ),
             ],
           );
         }
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              flex: 3,
-              child: _SearchField(
-                controller: controller,
-                onChanged: onSearchChanged,
-              ),
+            _SearchField(controller: controller, onChanged: onSearchChanged),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatusDropdown(
+                    value: selectedStatus,
+                    onChanged: onStatusChanged,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const _CreateProjectButton(),
+              ],
             ),
-            SizedBox(width: 12),
-            const Expanded(flex: 5, child: _FilterRow()),
           ],
         );
       },
@@ -769,95 +802,48 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _FilterRow extends StatelessWidget {
-  const _FilterRow();
+class _StatusDropdown extends StatelessWidget {
+  const _StatusDropdown({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 360) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Row(
-                children: [
-                  Expanded(
-                    child: _FilterChip(
-                      label: 'Project Status',
-                      icon: Icons.keyboard_arrow_down_rounded,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: _FilterChip(
-                      label: 'Show: 10 entries',
-                      icon: Icons.keyboard_arrow_down_rounded,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12),
-              Row(
-                children: [
-                  _CreateProjectButton(),
-                  SizedBox(width: 10),
-                  _ViewAllButton(),
-                ],
-              ),
-            ],
-          );
-        }
-
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _FilterChip(
-              label: 'Project Status',
-              icon: Icons.keyboard_arrow_down_rounded,
-            ),
-            const SizedBox(width: 10),
-            const _FilterChip(
-              label: 'Show: 10 entries',
-              icon: Icons.keyboard_arrow_down_rounded,
-            ),
-            const SizedBox(width: 10),
-            const _ViewAllButton(),
-            const SizedBox(width: 10),
-            const _CreateProjectButton(),
+    return Container(
+      constraints: const BoxConstraints(minHeight: 44),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE1E8F2)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(14),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Color(0xFF5F7087),
+          ),
+          style: AppTextStyles.style(
+            color: const Color(0xFF2F3D52),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+          items: const [
+            DropdownMenuItem(value: 'all', child: Text('All')),
+            DropdownMenuItem(value: 'not started', child: Text('not started')),
+            DropdownMenuItem(value: 'in progress', child: Text('in progress')),
+            DropdownMenuItem(value: 'on hold', child: Text('on hold')),
+            DropdownMenuItem(value: 'finished', child: Text('finished')),
+            DropdownMenuItem(value: 'cancelled', child: Text('cancelled')),
           ],
-        );
-      },
-    );
-  }
-}
-
-class _ViewAllButton extends StatelessWidget {
-  const _ViewAllButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: () {},
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE1E8F2)),
-          ),
-          child: Text(
-            'View All',
-            style: AppTextStyles.style(
-              color: const Color(0xFF1D6FEA),
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          onChanged: (value) {
+            if (value == null) return;
+            onChanged(value);
+          },
         ),
       ),
     );
@@ -897,40 +883,6 @@ class _CreateProjectButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 44),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE1E8F2)),
-      ),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: const Color(0xFF2F3D52),
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Icon(icon, size: 18, color: const Color(0xFF5F7087)),
-        ],
       ),
     );
   }
@@ -1554,23 +1506,53 @@ _ProjectCardData _toProjectCardData(ProjectModel project) {
   );
 }
 
-Color _projectAccentColor(ProjectModel project) {
-  final status = project.status.toLowerCase();
+String _projectStatusCategory(String statusValue) {
+  final status = statusValue.trim().toLowerCase();
 
+  if (status.contains('cancel')) {
+    return 'cancelled';
+  }
+  if (status.contains('hold')) {
+    return 'on hold';
+  }
   if (status.contains('progress') || status.contains('active')) {
+    return 'in progress';
+  }
+  if (status.contains('complete') ||
+      status.contains('done') ||
+      status.contains('finish')) {
+    return 'finished';
+  }
+  if (status.contains('not started') ||
+      status.contains('planning') ||
+      status.contains('pending')) {
+    return 'not started';
+  }
+
+  return 'not started';
+}
+
+Color _projectAccentColor(ProjectModel project) {
+  final statusCategory = _projectStatusCategory(project.status);
+
+  if (statusCategory == 'in progress') {
     return const Color(0xFF1D6FEA);
   }
 
-  if (status.contains('planning')) {
+  if (statusCategory == 'not started') {
     return const Color(0xFF8B5CF6);
   }
 
-  if (status.contains('hold') || status.contains('pending')) {
+  if (statusCategory == 'on hold') {
     return const Color(0xFFF59E0B);
   }
 
-  if (status.contains('complete') || status.contains('done')) {
+  if (statusCategory == 'finished') {
     return const Color(0xFF10B981);
+  }
+
+  if (statusCategory == 'cancelled') {
+    return const Color(0xFFEF4444);
   }
 
   return const Color(0xFF4F5D74);
