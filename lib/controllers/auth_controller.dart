@@ -37,12 +37,7 @@ class AuthController extends GetxController {
       return StartupDestination.biometricGate;
     }
 
-    final ok = await validateSession();
-    if (!ok) {
-      await clearLocalSession(disableBiometric: false);
-      return StartupDestination.login;
-    }
-
+    // Keep local session on app relaunch; server token refresh/validation can happen in API layer.
     return StartupDestination.dashboard;
   }
 

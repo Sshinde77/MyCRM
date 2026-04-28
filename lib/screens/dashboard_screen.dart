@@ -1938,149 +1938,149 @@ class _RenewalTile extends StatelessWidget {
                 ],
               ),
               child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-              Container(
-                width: isCompact ? 48 : 52,
-                height: isCompact ? 48 : 52,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5FA),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                alignment: Alignment.center,
-                child: Container(
-                  width: isCompact ? 32 : 36,
-                  height: isCompact ? 32 : 36,
-                  decoration: BoxDecoration(
-                    color: logoColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: AppTextStyles.style(
-                      color: Colors.white,
-                      fontSize: isCompact ? 11 : 12,
-                      fontWeight: FontWeight.w700,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: isCompact ? 48 : 52,
+                    height: isCompact ? 48 : 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5FA),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    alignment: Alignment.center,
+                    child: Container(
+                      width: isCompact ? 32 : 36,
+                      height: isCompact ? 32 : 36,
+                      decoration: BoxDecoration(
+                        color: logoColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        initials,
+                        style: AppTextStyles.style(
+                          color: Colors.white,
+                          fontSize: isCompact ? 11 : 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              SizedBox(width: isCompact ? 10 : 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isCompact) ...[
-                      Text(
-                        company,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF1E263B),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        amount,
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF1E263B),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ] else
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              company,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF1E263B),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              amount,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF1E263B),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                  SizedBox(width: isCompact ? 10 : 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.calendar_month_outlined,
-                              color: Color(0xFF91A2BD),
-                              size: 18,
+                        if (isCompact) ...[
+                          Text(
+                            company,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF1E263B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              date,
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF7587A3),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w500,
-                              ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            amount,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF1E263B),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
-                          ],
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
                           ),
-                          decoration: BoxDecoration(
-                            color: tagColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                        ] else
+                          Row(
                             children: [
-                              Icon(Icons.circle, size: 7, color: tagColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                tagLabel,
-                                style: AppTextStyles.style(
-                                  color: tagColor,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
+                              Expanded(
+                                child: Text(
+                                  company,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF1E263B),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  amount,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.right,
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF1E263B),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.calendar_month_outlined,
+                                  color: Color(0xFF91A2BD),
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  date,
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF7587A3),
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: tagColor.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.circle, size: 7, color: tagColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    tagLabel,
+                                    style: AppTextStyles.style(
+                                      color: tagColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              ],
             ),
           ),
-        )
         );
       },
     );

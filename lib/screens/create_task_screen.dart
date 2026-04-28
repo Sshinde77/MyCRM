@@ -969,12 +969,17 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     return <ProjectModel>[...byId.values, ...withoutId];
   }
 
-  String? _resolveValidProjectValue(String? value, List<ProjectModel> projects) {
+  String? _resolveValidProjectValue(
+    String? value,
+    List<ProjectModel> projects,
+  ) {
     final normalized = value?.trim() ?? '';
     if (normalized.isEmpty) {
       return null;
     }
-    final matches = projects.where((project) => project.id == normalized).length;
+    final matches = projects
+        .where((project) => project.id == normalized)
+        .length;
     return matches == 1 ? normalized : null;
   }
 }

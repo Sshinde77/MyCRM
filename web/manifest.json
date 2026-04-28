@@ -1,6 +1,6 @@
 {
-    "name": "mycrm",
-    "short_name": "mycrm",
+    "name": "My CRM",
+    "short_name": "My CRM",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

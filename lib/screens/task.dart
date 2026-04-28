@@ -449,14 +449,19 @@ class _TasksScreenState extends State<TasksScreen> {
     await _loadTasks();
   }
 
-  _TaskRecord _hydrateTaskForEdit(_TaskRecord base, Map<String, dynamic> detail) {
+  _TaskRecord _hydrateTaskForEdit(
+    _TaskRecord base,
+    Map<String, dynamic> detail,
+  ) {
     final title =
-        _readString(detail, const ['title', 'name', 'task_title']) ?? base.title;
+        _readString(detail, const ['title', 'name', 'task_title']) ??
+        base.title;
     final description =
-        _readString(
-          detail,
-          const ['description', 'details', 'task_description'],
-        ) ??
+        _readString(detail, const [
+          'description',
+          'details',
+          'task_description',
+        ]) ??
         base.description;
     final projectId = _readProjectId(detail) ?? base.projectId;
     final projectName = _readProjectName(detail);
@@ -1172,11 +1177,7 @@ List<String> _readStringList(dynamic value) {
 }
 
 List<String> _readTaskTags(Map<String, dynamic> source) {
-  final candidates = [
-    source['tags'],
-    source['tag'],
-    source['task_tags'],
-  ];
+  final candidates = [source['tags'], source['tag'], source['task_tags']];
   for (final value in candidates) {
     final parsed = _readStringList(value);
     if (parsed.isNotEmpty) {

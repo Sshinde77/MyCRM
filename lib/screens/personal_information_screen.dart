@@ -63,7 +63,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                     else if (snapshot.hasError)
                       _ErrorCard(onRetry: _refresh)
                     else if (!snapshot.hasData)
-                      _ErrorCard(onRetry: _refresh, message: 'No user data found')
+                      _ErrorCard(
+                        onRetry: _refresh,
+                        message: 'No user data found',
+                      )
                     else
                       _ProfileDetailsCard(user: snapshot.data!),
                   ],
@@ -170,7 +173,9 @@ class _LeftIdentityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final roleText = (user.role ?? '').trim().isEmpty ? 'Staff' : user.role!.trim();
+    final roleText = (user.role ?? '').trim().isEmpty
+        ? 'Staff'
+        : user.role!.trim();
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -290,13 +295,17 @@ class _DetailsPanel extends StatelessWidget {
           const SizedBox(height: 12),
           _ProfileField(
             label: 'Full Name',
-            value: user.name.trim().isEmpty ? 'Not available' : user.name.trim(),
+            value: user.name.trim().isEmpty
+                ? 'Not available'
+                : user.name.trim(),
             icon: Icons.badge_outlined,
           ),
           const SizedBox(height: 12),
           _ProfileField(
             label: 'Email',
-            value: user.email.trim().isEmpty ? 'Not available' : user.email.trim(),
+            value: user.email.trim().isEmpty
+                ? 'Not available'
+                : user.email.trim(),
             icon: Icons.mail_outline_rounded,
           ),
           const SizedBox(height: 12),

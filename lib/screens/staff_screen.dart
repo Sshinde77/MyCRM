@@ -133,7 +133,9 @@ class _StaffScreenState extends State<StaffScreen> {
         if (!mounted || _searchController.text.trim().isEmpty) {
           break;
         }
-        final pageResult = await ApiService.instance.getStaffListPage(page: page);
+        final pageResult = await ApiService.instance.getStaffListPage(
+          page: page,
+        );
         if (!mounted) return;
 
         setState(() {
@@ -274,7 +276,8 @@ class _StaffScreenState extends State<StaffScreen> {
               final query = _searchController.text.trim();
               final hasSearch = _searchController.text.trim().isNotEmpty;
               final currentPageMembers =
-                  _staffMembersByPage[_currentPage] ?? const <StaffMemberModel>[];
+                  _staffMembersByPage[_currentPage] ??
+                  const <StaffMemberModel>[];
               final searchableMembers = _flattenLoadedMembers();
               final filteredMembers = hasSearch
                   ? _filterMembers(searchableMembers)
@@ -287,7 +290,8 @@ class _StaffScreenState extends State<StaffScreen> {
 
               if (hasSearch) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted || _searchController.text.trim() != query) return;
+                  if (!mounted || _searchController.text.trim() != query)
+                    return;
                   _ensureAllPagesLoadedForSearch();
                 });
               }
@@ -1038,46 +1042,52 @@ class _PaginationBar extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: tokens.map((token) {
-              if (token == null) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 2 : 4,
-                    vertical: compact ? 8 : 9,
-                  ),
-                  child: Text(
-                    '...',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF64748B),
-                      fontSize: compact ? 13 : 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                );
-              }
-              final selected = token == currentPage;
-              return InkWell(
-                onTap: () => onPageTap(token),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: compact ? 34 : 36,
-                  height: compact ? 34 : 36,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFF122B52) : Colors.transparent,
+            children: tokens
+                .map((token) {
+                  if (token == null) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 2 : 4,
+                        vertical: compact ? 8 : 9,
+                      ),
+                      child: Text(
+                        '...',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF64748B),
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    );
+                  }
+                  final selected = token == currentPage;
+                  return InkWell(
+                    onTap: () => onPageTap(token),
                     borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$token',
-                    style: AppTextStyles.style(
-                      color: selected ? Colors.white : const Color(0xFF334155),
-                      fontSize: compact ? 13 : 14,
-                      fontWeight: FontWeight.w700,
+                    child: Container(
+                      width: compact ? 34 : 36,
+                      height: compact ? 34 : 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xFF122B52)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$token',
+                        style: AppTextStyles.style(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF334155),
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(growable: false),
+                  );
+                })
+                .toList(growable: false),
           ),
           SizedBox(width: compact ? 10 : 12),
           _PaginationArrowButton(

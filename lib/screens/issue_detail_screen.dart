@@ -36,9 +36,13 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
   }
 
   Future<void> _loadPermissions() async {
-    final canCreate = await PermissionService.has(AppPermission.createRaiseIssue);
+    final canCreate = await PermissionService.has(
+      AppPermission.createRaiseIssue,
+    );
     final canEdit = await PermissionService.has(AppPermission.editRaiseIssue);
-    final canDelete = await PermissionService.has(AppPermission.deleteRaiseIssue);
+    final canDelete = await PermissionService.has(
+      AppPermission.deleteRaiseIssue,
+    );
     if (!mounted) return;
     setState(() {
       _canCreateIssueTask = canCreate;
@@ -363,8 +367,9 @@ class _IssueHeaderCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed:
-                      canEditIssue && !isClosingIssue ? onCloseIssue : null,
+                  onPressed: canEditIssue && !isClosingIssue
+                      ? onCloseIssue
+                      : null,
                   icon: const Icon(Icons.close_rounded, size: 18),
                   label: Text(isClosingIssue ? 'Closing...' : 'Close Issue'),
                   style: ElevatedButton.styleFrom(
@@ -936,17 +941,15 @@ class _TaskBoardCard extends StatelessWidget {
                                               ),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(
-                                                        dialogContext,
-                                                      ).pop(false),
+                                                  onPressed: () => Navigator.of(
+                                                    dialogContext,
+                                                  ).pop(false),
                                                   child: const Text('Cancel'),
                                                 ),
                                                 ElevatedButton(
-                                                  onPressed: () =>
-                                                      Navigator.of(
-                                                        dialogContext,
-                                                      ).pop(true),
+                                                  onPressed: () => Navigator.of(
+                                                    dialogContext,
+                                                  ).pop(true),
                                                   style:
                                                       ElevatedButton.styleFrom(
                                                         backgroundColor:
@@ -985,7 +988,8 @@ class _TaskBoardCard extends StatelessWidget {
                                           return;
                                         }
 
-                                        if (!deleted || !context.mounted) return;
+                                        if (!deleted || !context.mounted)
+                                          return;
 
                                         if (onTaskCreated != null) {
                                           try {

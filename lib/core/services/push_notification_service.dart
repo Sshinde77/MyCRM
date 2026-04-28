@@ -508,7 +508,7 @@ class PushNotificationService {
     log(message, name: 'PushNotificationService');
   }
 
-  static bool _isFirebaseMessagingReady() { 
+  static bool _isFirebaseMessagingReady() {
     if (_firebaseReady) {
       return true;
     }

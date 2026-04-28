@@ -417,11 +417,7 @@ class _RoleCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.person,
-                  color: Color(0xFF64748B),
-                  size: 16,
-                ),
+                const Icon(Icons.person, color: Color(0xFF64748B), size: 16),
                 const SizedBox(width: 6),
                 Text(
                   '$permissions Permissions',

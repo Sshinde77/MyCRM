@@ -68,7 +68,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final shouldPromptBiometric = await _shouldPromptBiometricSetup();
       if (shouldPromptBiometric && mounted) {
         final enableBiometric = await _askEnableBiometric();
-        await _authService.setBiometricPromptShown(true);
         if (enableBiometric == true) {
           await _enableBiometricAfterLogin();
         }
@@ -128,16 +127,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<bool> _shouldPromptBiometricSetup() async {
     final alreadyEnabled = await _authService.isBiometricEnabled();
-    if (alreadyEnabled) {
-      return false;
-    }
-    final alreadyPrompted = await _authService.isBiometricPromptShown();
-    if (alreadyPrompted) {
-      return false;
-    }
-    // Show consent prompt once on first successful login.
+    // Show consent prompt on every successful login while biometric is OFF.
     // Device availability is validated only when user taps "Enable".
-    return true;
+    return !alreadyEnabled;
   }
 
   Future<void> _loadBiometricAvailability() async {
@@ -204,18 +196,6 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       if (!result.isSuccess) {
         _showBiometricError('Authentication failed');
-        return;
-      }
-
-      final valid = await _authService.validateSession();
-      if (!valid) {
-        await _authService.clearSession(clearBiometricFlag: true);
-        if (mounted) {
-          setState(() {
-            _showBiometricButton = false;
-          });
-        }
-        _showBiometricError('Session expired. Please login with password.');
         return;
       }
 

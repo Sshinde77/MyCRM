@@ -1511,17 +1511,17 @@ class _MilestoneFormDialogState extends State<_MilestoneFormDialog> {
                           items: _statusOptions
                               .map(
                                 (status) => DropdownMenuItem(
-                              value: status,
-                              child: Text(
-                                status,
-                                style: AppTextStyles.style(
-                                  color: const Color(0xFF374151),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                                  value: status,
+                                  child: Text(
+                                    status,
+                                    style: AppTextStyles.style(
+                                      color: const Color(0xFF374151),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          )
+                              )
                               .toList(),
                           onChanged: (value) {
                             if (value == null) return;

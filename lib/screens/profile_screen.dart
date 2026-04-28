@@ -121,10 +121,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       accentColor: Color(0xFF475569),
     ),
     _ProfileAction(
-
-
-
-
       title: 'Settings',
       icon: Icons.settings_outlined,
       routeName: AppRoutes.settings,

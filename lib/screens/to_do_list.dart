@@ -1181,6 +1181,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   DateTime _endsOnDate = DateTime.now();
   TimeOfDay? _selectedTime;
   TimeOfDay? _reminderTime;
+  bool _isReminderEnabled = false;
   String _repeatUnit = 'Day';
   _TaskEndType _endType = _TaskEndType.never;
   bool _isSubmitting = false;
@@ -1204,6 +1205,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     _endsOnDate = task.endsOn ?? task.date;
     _selectedTime = task.startTime;
     _reminderTime = task.reminderTime;
+    _isReminderEnabled = task.reminderTime != null;
     _repeatUnit = _toTitleCase(task.repeatUnit);
     _endType = task.endType;
     _selectedAttachments = List<_TodoAttachment>.from(task.attachments);
@@ -1329,20 +1331,26 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           ),
         ),
         SizedBox(height: isCompact ? 10 : 12),
+        _buildReminderToggle(),
+        SizedBox(height: isCompact ? 10 : 12),
         useTwoColumns
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(child: _buildRepeatField()),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildReminderField()),
+                  if (_isReminderEnabled) ...[
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildReminderField()),
+                  ],
                 ],
               )
             : Column(
                 children: [
                   _buildRepeatField(),
-                  const SizedBox(height: 10),
-                  _buildReminderField(),
+                  if (_isReminderEnabled) ...[
+                    const SizedBox(height: 10),
+                    _buildReminderField(),
+                  ],
                 ],
               ),
         SizedBox(height: isCompact ? 10 : 12),
@@ -1755,7 +1763,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             text: _reminderTime == null ? '--:--' : _formatTime(_reminderTime!),
           ),
           validator: (_) {
-            if (_reminderTime == null) {
+            if (_isReminderEnabled && _reminderTime == null) {
               return 'Please set reminder time';
             }
             return null;
@@ -1769,6 +1777,41 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildReminderToggle() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD6E2EF)),
+      ),
+      child: CheckboxListTile(
+        value: _isReminderEnabled,
+        onChanged: _isSubmitting
+            ? null
+            : (value) {
+                final enabled = value ?? false;
+                setState(() {
+                  _isReminderEnabled = enabled;
+                  if (!enabled) {
+                    _reminderTime = null;
+                  }
+                });
+              },
+        controlAffinity: ListTileControlAffinity.leading,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        title: Text(
+          'Enable task reminder',
+          style: AppTextStyles.style(
+            color: const Color(0xFF2D3846),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 
@@ -1974,7 +2017,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       description: _descriptionController.text.trim(),
       date: _selectedDate,
       startTime: _selectedTime,
-      reminderTime: _reminderTime,
+      reminderTime: _isReminderEnabled ? _reminderTime : null,
       repeatEvery: int.parse(_repeatEveryController.text.trim()),
       repeatUnit: _repeatUnit,
       startsOn: _startsDate,

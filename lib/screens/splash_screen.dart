@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 
+import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
 
 /// Simple branded preload screen shown before the login page.
@@ -16,6 +17,7 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
+  final AuthController _authController = Get.find<AuthController>();
   late final AnimationController _controller;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
@@ -39,11 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
       end: 1,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
-    _timer = Timer(const Duration(milliseconds: 2300), () {
-      if (mounted) {
-        Get.offNamed(AppRoutes.login);
-      }
-    });
+    _timer = Timer(const Duration(milliseconds: 2300), _navigateFromSplash);
   }
 
   @override
@@ -183,5 +181,27 @@ class _SplashScreenState extends State<SplashScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _navigateFromSplash() async {
+    if (!mounted) return;
+    try {
+      final destination = await _authController.determineStartupDestination();
+      if (!mounted) return;
+      switch (destination) {
+        case StartupDestination.login:
+          Get.offNamed(AppRoutes.login);
+          break;
+        case StartupDestination.biometricGate:
+          Get.offNamed(AppRoutes.biometricGate);
+          break;
+        case StartupDestination.dashboard:
+          await _authController.goToDashboard();
+          break;
+      }
+    } catch (_) {
+      if (!mounted) return;
+      Get.offNamed(AppRoutes.login);
+    }
   }
 }

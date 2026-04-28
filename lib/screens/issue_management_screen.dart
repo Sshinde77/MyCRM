@@ -64,8 +64,12 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   }
 
   Future<void> _loadActionPermissions() async {
-    final canCreate = await PermissionService.has(AppPermission.createRaiseIssue);
-    final canDelete = await PermissionService.has(AppPermission.deleteRaiseIssue);
+    final canCreate = await PermissionService.has(
+      AppPermission.createRaiseIssue,
+    );
+    final canDelete = await PermissionService.has(
+      AppPermission.deleteRaiseIssue,
+    );
     if (!mounted) {
       return;
     }

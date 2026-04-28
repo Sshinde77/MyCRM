@@ -104,7 +104,11 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     final picked = await showDateRangePicker(
       context: context,
       initialDateRange: DateTimeRange(
-        start: DateTime(initialStart.year, initialStart.month, initialStart.day),
+        start: DateTime(
+          initialStart.year,
+          initialStart.month,
+          initialStart.day,
+        ),
         end: DateTime(initialEnd.year, initialEnd.month, initialEnd.day),
       ),
       firstDate: DateTime(now.year - 10),
@@ -113,7 +117,11 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     if (picked == null || !mounted) {
       return;
     }
-    final start = DateTime(picked.start.year, picked.start.month, picked.start.day);
+    final start = DateTime(
+      picked.start.year,
+      picked.start.month,
+      picked.start.day,
+    );
     final end = DateTime(picked.end.year, picked.end.month, picked.end.day);
     setState(() {
       _fromDate = start;
@@ -197,10 +205,7 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     return status.contains('expired') || status.contains('overdue');
   }
 
-  bool _matchesStatusFilter(
-    RenewalModel renewal,
-    _RenewalFilterOption filter,
-  ) {
+  bool _matchesStatusFilter(RenewalModel renewal, _RenewalFilterOption filter) {
     switch (filter) {
       case _RenewalFilterOption.all:
         return true;
@@ -219,26 +224,34 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     final query = _searchController.text.trim().toLowerCase();
     final from = _appliedFromDate == null ? null : _dateOnly(_appliedFromDate!);
     final to = _appliedToDate == null ? null : _dateOnly(_appliedToDate!);
-    return renewals.where((renewal) {
-      if (!_matchesQuery(renewal, query)) {
-        return false;
-      }
-      final date = _effectiveRenewalDate(renewal);
-      final normalizedDate = date == null ? null : _dateOnly(date);
-      if (from != null && (normalizedDate == null || normalizedDate.isBefore(from))) {
-        return false;
-      }
-      if (to != null && (normalizedDate == null || normalizedDate.isAfter(to))) {
-        return false;
-      }
-      return true;
-    }).toList(growable: false);
+    return renewals
+        .where((renewal) {
+          if (!_matchesQuery(renewal, query)) {
+            return false;
+          }
+          final date = _effectiveRenewalDate(renewal);
+          final normalizedDate = date == null ? null : _dateOnly(date);
+          if (from != null &&
+              (normalizedDate == null || normalizedDate.isBefore(from))) {
+            return false;
+          }
+          if (to != null &&
+              (normalizedDate == null || normalizedDate.isAfter(to))) {
+            return false;
+          }
+          return true;
+        })
+        .toList(growable: false);
   }
 
-  Map<_RenewalFilterOption, int> _buildStatusCounts(List<RenewalModel> renewals) {
+  Map<_RenewalFilterOption, int> _buildStatusCounts(
+    List<RenewalModel> renewals,
+  ) {
     final counts = <_RenewalFilterOption, int>{};
     for (final option in _RenewalFilterOption.values) {
-      counts[option] = renewals.where((item) => _matchesStatusFilter(item, option)).length;
+      counts[option] = renewals
+          .where((item) => _matchesStatusFilter(item, option))
+          .length;
     }
     return counts;
   }
@@ -387,7 +400,9 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
           final safeCurrentPage = totalPages == 0
               ? 1
               : (_currentPage > totalPages ? totalPages : _currentPage);
-          final startIndex = totalPages == 0 ? 0 : (safeCurrentPage - 1) * pageSize;
+          final startIndex = totalPages == 0
+              ? 0
+              : (safeCurrentPage - 1) * pageSize;
           final endIndex = totalPages == 0
               ? 0
               : (startIndex + pageSize > filteredRenewals.length
@@ -641,65 +656,69 @@ class _FilterCard extends StatelessWidget {
                         Icons.keyboard_arrow_down_rounded,
                         color: Color(0xFF64748B),
                       ),
-                      items: _RenewalFilterOption.values.map((option) {
-                        final count = statusCounts[option] ?? 0;
-                        final visual = _statusVisualFor(option);
-                        return DropdownMenuItem<_RenewalFilterOption>(
-                          value: option,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: visual.foreground,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${option.label} ($count)',
-                                  style: AppTextStyles.style(
-                                    color: visual.foreground,
-                                    fontSize: compact ? 13 : 14,
-                                    fontWeight: FontWeight.w600,
+                      items: _RenewalFilterOption.values
+                          .map((option) {
+                            final count = statusCounts[option] ?? 0;
+                            final visual = _statusVisualFor(option);
+                            return DropdownMenuItem<_RenewalFilterOption>(
+                              value: option,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: visual.foreground,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${option.label} ($count)',
+                                      style: AppTextStyles.style(
+                                        color: visual.foreground,
+                                        fontSize: compact ? 13 : 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        );
-                      }).toList(growable: false),
+                            );
+                          })
+                          .toList(growable: false),
                       selectedItemBuilder: (context) {
-                        return _RenewalFilterOption.values.map((option) {
-                          final count = statusCounts[option] ?? 0;
-                          final visual = _statusVisualFor(option);
-                          return Row(
-                            children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: visual.foreground,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${option.label} ($count)',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.style(
-                                    color: visual.foreground,
-                                    fontSize: compact ? 13 : 14,
-                                    fontWeight: FontWeight.w700,
+                        return _RenewalFilterOption.values
+                            .map((option) {
+                              final count = statusCounts[option] ?? 0;
+                              final visual = _statusVisualFor(option);
+                              return Row(
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: visual.foreground,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(growable: false);
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      '${option.label} ($count)',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.style(
+                                        color: visual.foreground,
+                                        fontSize: compact ? 13 : 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            })
+                            .toList(growable: false);
                       },
                       onChanged: (value) {
                         if (value != null) {
@@ -711,10 +730,7 @@ class _FilterCard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: compact ? 10 : 12),
-              _DateRangeButton(
-                compact: compact,
-                onTap: onDateRangeTap,
-              ),
+              _DateRangeButton(compact: compact, onTap: onDateRangeTap),
               SizedBox(width: compact ? 8 : 10),
               _ActionButton(
                 label: 'Clear',
@@ -734,10 +750,7 @@ class _FilterCard extends StatelessWidget {
 }
 
 class _DateRangeButton extends StatelessWidget {
-  const _DateRangeButton({
-    required this.compact,
-    required this.onTap,
-  });
+  const _DateRangeButton({required this.compact, required this.onTap});
 
   final bool compact;
   final VoidCallback onTap;
@@ -873,7 +886,10 @@ class _SearchField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(compact ? 14 : 16),
-              borderSide: const BorderSide(color: Color(0xFF156CF1), width: 1.2),
+              borderSide: const BorderSide(
+                color: Color(0xFF156CF1),
+                width: 1.2,
+              ),
             ),
           ),
         ),
@@ -920,46 +936,52 @@ class _PaginationBar extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: tokens.map((token) {
-              if (token == null) {
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? 2 : 4,
-                    vertical: compact ? 8 : 9,
-                  ),
-                  child: Text(
-                    '...',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF64748B),
-                      fontSize: compact ? 13 : 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                );
-              }
-              final selected = token == currentPage;
-              return InkWell(
-                onTap: () => onPageTap(token),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: compact ? 34 : 36,
-                  height: compact ? 34 : 36,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: selected ? const Color(0xFF122B52) : Colors.transparent,
+            children: tokens
+                .map((token) {
+                  if (token == null) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 2 : 4,
+                        vertical: compact ? 8 : 9,
+                      ),
+                      child: Text(
+                        '...',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF64748B),
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    );
+                  }
+                  final selected = token == currentPage;
+                  return InkWell(
+                    onTap: () => onPageTap(token),
                     borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$token',
-                    style: AppTextStyles.style(
-                      color: selected ? Colors.white : const Color(0xFF334155),
-                      fontSize: compact ? 13 : 14,
-                      fontWeight: FontWeight.w700,
+                    child: Container(
+                      width: compact ? 34 : 36,
+                      height: compact ? 34 : 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xFF122B52)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$token',
+                        style: AppTextStyles.style(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF334155),
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(growable: false),
+                  );
+                })
+                .toList(growable: false),
           ),
           SizedBox(width: compact ? 10 : 12),
           _PaginationArrowButton(
@@ -1071,7 +1093,9 @@ class _FilterStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final background = selected ? visual.background : Colors.white;
-    final borderColor = selected ? visual.background : visual.foreground.withOpacity(0.45);
+    final borderColor = selected
+        ? visual.background
+        : visual.foreground.withOpacity(0.45);
     final textColor = selected ? visual.foreground : visual.foreground;
     return InkWell(
       onTap: onTap,

@@ -46,18 +46,6 @@ class _BiometricGateScreenState extends State<BiometricGateScreen> {
       return;
     }
 
-    final ok = await _authController.validateSession();
-    if (!mounted) return;
-
-    if (!ok) {
-      await _authController.clearLocalSession();
-      setState(() {
-        _isAuthenticating = false;
-        _statusMessage = 'Session expired. Please login with password.';
-      });
-      return;
-    }
-
     await _authController.goToDashboard();
   }
 
