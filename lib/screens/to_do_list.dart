@@ -443,13 +443,13 @@ class _TasksHeroSection extends StatelessWidget {
         return Container(
           width: double.infinity,
           padding: EdgeInsets.fromLTRB(
-            isCompact ? 16 : 20,
-            isCompact ? 18 : 20,
-            isCompact ? 16 : 20,
-            isCompact ? 16 : 18,
+            isCompact ? 10 : 12,
+            isCompact ? 10 : 12,
+            isCompact ? 10 : 12,
+            isCompact ? 8 : 10,
           ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(isCompact ? 24 : 28),
+            borderRadius: BorderRadius.circular(isCompact ? 14 : 16),
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -458,119 +458,54 @@ class _TasksHeroSection extends StatelessWidget {
             boxShadow: const [
               BoxShadow(
                 color: Color(0x221F5B8E),
-                blurRadius: 28,
-                offset: Offset(0, 14),
+                blurRadius: 14,
+                offset: Offset(0, 6),
               ),
             ],
           ),
-          child: Stack(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Positioned(
-                right: isCompact ? -36 : -24,
-                bottom: isCompact ? -46 : -36,
-                child: Container(
-                  width: isCompact ? 120 : 150,
-                  height: isCompact ? 120 : 150,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  width: isCompact ? 58 : 74,
-                  height: isCompact ? 58 : 74,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(isCompact ? 18 : 22),
-                  ),
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: const [
-                      _HeroBadge(
-                        label: 'MY DAY',
-                        foreground: Colors.white,
-                        background: Color(0x26FFFFFF),
-                      ),
-                      _HeroBadge(
-                        label: 'PERSONAL',
-                        foreground: Color(0xFFEAF8FF),
-                        background: Color(0x1FFFFFFF),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: isCompact ? 14 : 18),
-                  Text(
-                    'Focus on what matters today',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF203751),
-                      fontSize: isCompact ? 23 : 28,
-                      height: 1.12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: isCompact ? 8 : 10),
-                  Text(
-                    'Each logged-in user will only see their own recurring todos with reminders and daily focus.',
-                    style: AppTextStyles.style(
-                      color: Colors.white,
-                      fontSize: isCompact ? 12 : 13,
-                      height: 1.55,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: isCompact ? 14 : 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: onAddTask,
-                          style: ElevatedButton.styleFrom(
-                            elevation: 0,
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF174B88),
-                            padding: EdgeInsets.symmetric(
-                              vertical: isCompact ? 14 : 15,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                isCompact ? 16 : 18,
-                              ),
-                            ),
-                          ),
-                          icon: Icon(
-                            Icons.add_rounded,
-                            size: isCompact ? 18 : 20,
-                          ),
-                          label: Text(
-                            'Add To DO',
-                            style: AppTextStyles.style(
-                              fontSize: isCompact ? 13.5 : 14,
-                              fontWeight: FontWeight.w700,
-                            ),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: onAddTask,
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF174B88),
+                        padding: EdgeInsets.symmetric(
+                          vertical: isCompact ? 7 : 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            isCompact ? 10 : 12,
                           ),
                         ),
                       ),
-                      SizedBox(width: isCompact ? 8 : 10),
-                      _TodayChip(isCompact: isCompact),
-                    ],
+                      icon: Icon(
+                        Icons.add_rounded,
+                        size: isCompact ? 15 : 16,
+                      ),
+                      label: Text(
+                        'Add To DO',
+                        style: AppTextStyles.style(
+                          fontSize: isCompact ? 12 : 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ),
-                  SizedBox(height: isCompact ? 14 : 18),
-                  _HeroStatsGrid(
-                    plannedCount: plannedCount,
-                    completedCount: completedCount,
-                    dueTodayCount: dueTodayCount,
-                  ),
+                  SizedBox(width: isCompact ? 6 : 8),
+                  _TodayChip(isCompact: isCompact),
                 ],
+              ),
+              SizedBox(height: isCompact ? 10 : 12),
+              _HeroStatsGrid(
+                plannedCount: plannedCount,
+                completedCount: completedCount,
+                dueTodayCount: dueTodayCount,
               ),
             ],
           ),
@@ -589,12 +524,12 @@ class _TodayChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 12 : 14,
-        vertical: isCompact ? 10 : 12,
+        horizontal: isCompact ? 10 : 12,
+        vertical: isCompact ? 4 : 6,
       ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
+        borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
         border: Border.all(color: Colors.white.withOpacity(0.16)),
       ),
       child: Row(
@@ -603,50 +538,18 @@ class _TodayChip extends StatelessWidget {
           Icon(
             Icons.wb_sunny_outlined,
             color: Colors.white,
-            size: isCompact ? 16 : 18,
+            size: isCompact ? 14 : 15,
           ),
           SizedBox(width: isCompact ? 6 : 8),
           Text(
             'Today',
             style: AppTextStyles.style(
               color: Colors.white,
-              fontSize: isCompact ? 12 : 13,
+              fontSize: isCompact ? 11 : 12,
               fontWeight: FontWeight.w600,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HeroBadge extends StatelessWidget {
-  const _HeroBadge({
-    required this.label,
-    required this.foreground,
-    required this.background,
-  });
-
-  final String label;
-  final Color foreground;
-  final Color background;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.style(
-          color: foreground,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-        ),
       ),
     );
   }
@@ -678,7 +581,7 @@ class _HeroStatsGrid extends StatelessWidget {
                 isCompact: isCompact,
               ),
             ),
-            SizedBox(width: isCompact ? 6 : 10),
+            SizedBox(width: isCompact ? 4 : 6),
             Expanded(
               child: _HeroStatCard(
                 label: 'Completed',
@@ -686,7 +589,7 @@ class _HeroStatsGrid extends StatelessWidget {
                 isCompact: isCompact,
               ),
             ),
-            SizedBox(width: isCompact ? 6 : 10),
+            SizedBox(width: isCompact ? 4 : 6),
             Expanded(
               child: _HeroStatCard(
                 label: 'Due Today',
@@ -716,34 +619,34 @@ class _HeroStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 10 : 16,
-        vertical: isCompact ? 12 : 15,
+        horizontal: isCompact ? 12 : 15,
+        vertical: isCompact ? 4 : 5,
       ),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.16),
-        borderRadius: BorderRadius.circular(isCompact ? 16 : 20),
+        borderRadius: BorderRadius.circular(isCompact ? 18 : 20),
         border: Border.all(color: Colors.white.withOpacity(0.16)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label.toUpperCase(),
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
               color: Colors.white.withOpacity(0.76),
-              fontSize: isCompact ? 8.5 : 10,
+              fontSize: isCompact ? 7.5 : 8,
               fontWeight: FontWeight.w700,
-              letterSpacing: isCompact ? 0.4 : 0.7,
+              letterSpacing: isCompact ? 0.3 : 0.5,
             ),
           ),
-          SizedBox(height: isCompact ? 4 : 6),
+          const SizedBox(height: 1),
           Text(
             value,
             style: AppTextStyles.style(
               color: Colors.white,
-              fontSize: isCompact ? 22 : 26,
+              fontSize: isCompact ? 13 : 14,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -908,35 +811,35 @@ class _TaskListTile extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(isCompact ? 12 : 16),
+      padding: EdgeInsets.all(isCompact ? 10 : 12),
       decoration: BoxDecoration(
         color: const Color(0xFFFBFDFF),
-        borderRadius: BorderRadius.circular(isCompact ? 18 : 20),
+        borderRadius: BorderRadius.circular(isCompact ? 16 : 18),
         border: Border.all(color: const Color(0xFFDCE7F2)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: isCompact ? 38 : 42,
-            height: isCompact ? 38 : 42,
-            decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(isCompact ? 12 : 14),
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              isCompleted ? Icons.task_alt_rounded : Icons.assignment_outlined,
-              color: accentColor,
-              size: isCompact ? 20 : 22,
-            ),
-          ),
-          SizedBox(width: isCompact ? 10 : 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: isCompact ? 34 : 36,
+                height: isCompact ? 34 : 36,
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(isCompact ? 10 : 12),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  isCompleted ? Icons.task_alt_rounded : Icons.assignment_outlined,
+                  color: accentColor,
+                  size: isCompact ? 17 : 18,
+                ),
+              ),
+              SizedBox(width: isCompact ? 8 : 10),
+              Expanded(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
@@ -946,19 +849,19 @@ class _TaskListTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.style(
                           color: const Color(0xFF263548),
-                          fontSize: isCompact ? 13 : 14,
+                          fontSize: isCompact ? 12.5 : 13.5,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                    SizedBox(width: isCompact ? 6 : 8),
+                    SizedBox(width: isCompact ? 4 : 6),
                     _TaskActionButton(
                       icon: Icons.edit_outlined,
                       iconColor: const Color(0xFF2D7DD2),
                       backgroundColor: const Color(0xFFEAF4FF),
                       onTap: onEdit,
                     ),
-                    SizedBox(width: isCompact ? 6 : 8),
+                    SizedBox(width: isCompact ? 4 : 6),
                     _TaskActionButton(
                       icon: Icons.delete_outline_rounded,
                       iconColor: const Color(0xFFDC2626),
@@ -967,75 +870,73 @@ class _TaskListTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (task.description.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    task.description,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF7B8CA3),
-                      fontSize: isCompact ? 11.5 : 12,
-                      height: 1.45,
-                      fontWeight: FontWeight.w500,
-                    ),
+              ),
+            ],
+          ),
+          if (task.description.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              task.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.style(
+                color: const Color(0xFF7B8CA3),
+                fontSize: isCompact ? 11 : 11.5,
+                height: 1.35,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+          if (task.attachments.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Attachments',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF5D7491),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-                if (task.attachments.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Attachments',
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF5D7491),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: task.attachments
-                            .map(
-                              (attachment) => _TaskAttachmentPreview(
-                                attachment: attachment,
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 10),
+                ),
+                const SizedBox(height: 6),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _TaskStatusButton(
-                      isCompleted: isCompleted,
-                      onTap: onToggleStatus,
-                    ),
-                    _TaskMetaChip(
-                      icon: Icons.calendar_today_outlined,
-                      label: _formatDate(task.date),
-                    ),
-                    _TaskMetaChip(
-                      icon: Icons.access_time_rounded,
-                      label: task.startTime == null
-                          ? '--:--'
-                          : _formatTime(task.startTime!),
-                    ),
-                    _TaskMetaChip(
-                      icon: Icons.repeat_rounded,
-                      label: '${task.repeatEvery} ${task.repeatUnit}',
-                    ),
-                  ],
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: task.attachments
+                      .map(
+                        (attachment) => _TaskAttachmentPreview(
+                          attachment: attachment,
+                        ),
+                      )
+                      .toList(),
                 ),
               ],
             ),
+          ],
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _TaskStatusButton(
+                isCompleted: isCompleted,
+                onTap: onToggleStatus,
+              ),
+              _TaskMetaChip(
+                icon: Icons.calendar_today_outlined,
+                label: _formatDate(task.date),
+              ),
+              _TaskMetaChip(
+                icon: Icons.access_time_rounded,
+                label: task.startTime == null ? '--:--' : _formatTime(task.startTime!),
+              ),
+              _TaskMetaChip(
+                icon: Icons.repeat_rounded,
+                label: '${task.repeatEvery} ${task.repeatUnit}',
+              ),
+            ],
           ),
         ],
       ),
@@ -1065,21 +966,21 @@ class _TaskStatusButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 isCompleted ? Icons.undo_rounded : Icons.task_alt_rounded,
-                size: 14,
+                size: 12,
                 color: foregroundColor,
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 5),
               Text(
                 isCompleted ? 'Mark as Incomplete' : 'Mark as Complete',
                 style: AppTextStyles.style(
                   color: foregroundColor,
-                  fontSize: 11.5,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1108,14 +1009,14 @@ class _TaskActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: backgroundColor,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(icon, size: 18, color: iconColor),
+          width: 30,
+          height: 30,
+          child: Icon(icon, size: 16, color: iconColor),
         ),
       ),
     );
@@ -1131,7 +1032,7 @@ class _TaskMetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFF0F6FD),
         borderRadius: BorderRadius.circular(999),
@@ -1139,15 +1040,15 @@ class _TaskMetaChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF5D7491)),
-          const SizedBox(width: 6),
+          Icon(icon, size: 12, color: const Color(0xFF5D7491)),
+          const SizedBox(width: 5),
           Flexible(
             child: Text(
               label,
               overflow: TextOverflow.ellipsis,
               style: AppTextStyles.style(
                 color: const Color(0xFF5D7491),
-                fontSize: 11.5,
+                fontSize: 10.5,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1312,64 +1213,62 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         SizedBox(height: isCompact ? 12 : 14),
         const Divider(height: 1, color: Color(0xFFD6E2EF)),
         SizedBox(height: isCompact ? 12 : 14),
-        Text(
-          'TASK REMINDER',
-          style: AppTextStyles.style(
-            color: const Color(0xFF556273),
-            fontSize: isCompact ? 10 : 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.1,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'To Do Reminder',
-          style: AppTextStyles.style(
-            color: const Color(0xFF2D3846),
-            fontSize: isCompact ? 16 : 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        // Text(
+        //   'TASK REMINDER',
+        //   style: AppTextStyles.style(
+        //     color: const Color(0xFF556273),
+        //     fontSize: isCompact ? 10 : 11,
+        //     fontWeight: FontWeight.w700,
+        //     letterSpacing: 1.1,
+        //   ),
+        // ),
+        // const SizedBox(height: 2),
+        // Text(
+        //   'To Do Reminder',
+        //   style: AppTextStyles.style(
+        //     color: const Color(0xFF2D3846),
+        //     fontSize: isCompact ? 16 : 18,
+        //     fontWeight: FontWeight.w700,
+        //   ),
+        // ),
         SizedBox(height: isCompact ? 10 : 12),
         _buildReminderToggle(),
-        SizedBox(height: isCompact ? 10 : 12),
-        useTwoColumns
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _buildRepeatField()),
-                  if (_isReminderEnabled) ...[
+        if (_isReminderEnabled) ...[
+          SizedBox(height: isCompact ? 10 : 12),
+          useTwoColumns
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildRepeatField()),
                     const SizedBox(width: 12),
                     Expanded(child: _buildReminderField()),
                   ],
-                ],
-              )
-            : Column(
-                children: [
-                  _buildRepeatField(),
-                  if (_isReminderEnabled) ...[
+                )
+              : Column(
+                  children: [
+                    _buildRepeatField(),
                     const SizedBox(height: 10),
                     _buildReminderField(),
                   ],
-                ],
-              ),
-        SizedBox(height: isCompact ? 10 : 12),
-        useTwoColumns
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: _buildStartsField()),
-                  const SizedBox(width: 12),
-                  Expanded(child: _buildEndsField()),
-                ],
-              )
-            : Column(
-                children: [
-                  _buildStartsField(),
-                  const SizedBox(height: 10),
-                  _buildEndsField(),
-                ],
-              ),
+                ),
+          SizedBox(height: isCompact ? 10 : 12),
+          useTwoColumns
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildStartsField()),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildEndsField()),
+                  ],
+                )
+              : Column(
+                  children: [
+                    _buildStartsField(),
+                    const SizedBox(height: 10),
+                    _buildEndsField(),
+                  ],
+                ),
+        ],
       ],
     );
     final dialogActions = isCompact
@@ -1599,7 +1498,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Repeats Every', required: true),
+        const _FormFieldLabel(label: 'Repeats Every', required: false),
         const SizedBox(height: 8),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1755,7 +1654,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Set Time', required: true),
+        const _FormFieldLabel(label: 'Set Time', required: false),
         const SizedBox(height: 8),
         TextFormField(
           readOnly: true,
@@ -1819,7 +1718,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _FormFieldLabel(label: 'Starts', required: true),
+        const _FormFieldLabel(label: 'Starts', required: false),
         const SizedBox(height: 8),
         TextFormField(
           readOnly: true,

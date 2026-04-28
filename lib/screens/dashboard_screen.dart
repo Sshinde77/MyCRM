@@ -2486,20 +2486,6 @@ class _SupportTicketsSection extends StatelessWidget {
             const Spacer(),
           ],
         ),
-        const SizedBox(height: 18),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: const SizedBox(
-            height: 12,
-            child: Row(
-              children: [
-                Expanded(flex: 7, child: ColoredBox(color: Color(0xFF1769F3))),
-                Expanded(flex: 11, child: ColoredBox(color: Color(0xFFF5B71F))),
-                Expanded(flex: 6, child: ColoredBox(color: Color(0xFF39D0A0))),
-              ],
-            ),
-          ),
-        ),
         const SizedBox(height: 12),
         if (isLoading)
           const Padding(
@@ -2517,8 +2503,14 @@ class _SupportTicketsSection extends StatelessWidget {
           )
         else
           Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: issues
-                .map((issue) => _SupportTicketPreviewCard(issue: issue))
+                .map(
+                  (issue) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _SupportTicketPreviewCard(issue: issue),
+                  ),
+                )
                 .toList(growable: false),
           ),
       ],
@@ -2535,16 +2527,16 @@ class _SupportTicketPreviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: const Color(0xFFFDFEFF),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE3EAF4)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFDCE6F2)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0C0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 6),
+            color: Color(0x0A0F172A),
+            blurRadius: 8,
+            offset: Offset(0, 3),
           ),
         ],
       ),
@@ -2556,17 +2548,19 @@ class _SupportTicketPreviewCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   issue.displayClient,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.style(
-                    color: const Color(0xFF6C7D96),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF6B7D99),
+                    fontSize: 11.8,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 11,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: _priorityPillBg(issue.priority),
@@ -2576,42 +2570,42 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                   issue.displayPriority,
                   style: AppTextStyles.style(
                     color: _priorityPillFg(issue.priority),
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
           Text(
             issue.displayTitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
               color: const Color(0xFF1B2237),
-              fontSize: 18,
+              fontSize: 17,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 2),
-          Row(
-            children: [
-              Text(
-                issue.displayProject,
-                style: AppTextStyles.style(
-                  color: const Color(0xFF73839B),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            issue.displayProject,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.style(
+              color: const Color(0xFF73839B),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 11,
+                  vertical: 5,
                 ),
                 decoration: BoxDecoration(
                   color: _statusPillBg(issue.status),
@@ -2621,24 +2615,36 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                   issue.displayStatus,
                   style: AppTextStyles.style(
                     color: _statusPillFg(issue.status),
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               const Spacer(),
-              const Icon(
-                Icons.access_time_rounded,
-                size: 16,
-                color: Color(0xFF73839B),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                issue.displayDate,
-                style: AppTextStyles.style(
-                  color: const Color(0xFF73839B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F6FC),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 14,
+                      color: Color(0xFF73839B),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      issue.displayDate,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF73839B),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

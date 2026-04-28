@@ -22,12 +22,14 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
+  static const int _pageSize = 10;
   final List<_TaskRecord> _tasks = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _loadError;
   String? _staffFilterId;
   String _staffFilterName = '';
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -92,6 +94,21 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final compact = width <= 360;
+    final filteredTasks = _filteredTasks;
+    final totalTasks = filteredTasks.length;
+    final totalPages = totalTasks == 0
+        ? 1
+        : ((totalTasks + _pageSize - 1) / _pageSize).floor();
+    final safeCurrentPage = _currentPage > totalPages ? totalPages : _currentPage;
+    final startIndex = totalTasks == 0 ? 0 : (safeCurrentPage - 1) * _pageSize;
+    final endIndex = totalTasks == 0
+        ? 0
+        : (startIndex + _pageSize > totalTasks
+              ? totalTasks
+              : startIndex + _pageSize);
+    final pagedTasks = totalTasks == 0
+        ? const <_TaskRecord>[]
+        : filteredTasks.sublist(startIndex, endIndex);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -242,7 +259,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   _ErrorCard(message: _loadError!, onRetry: _loadTasks),
                 ],
                 SizedBox(height: compact ? 14 : 16),
-                if (_filteredTasks.isEmpty)
+                if (pagedTasks.isEmpty)
                   SizedBox(
                     height: compact ? 260 : 320,
                     child: _EmptyState(
@@ -251,7 +268,7 @@ class _TasksScreenState extends State<TasksScreen> {
                     ),
                   )
                 else
-                  ..._filteredTasks.map(
+                  ...pagedTasks.map(
                     (task) => _TaskCard(
                       task: task,
                       compact: compact,
@@ -260,6 +277,25 @@ class _TasksScreenState extends State<TasksScreen> {
                       onDelete: () => _deleteTask(task),
                     ),
                   ),
+                if (totalTasks > 0) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Showing ${startIndex + 1} to $endIndex of $totalTasks entries',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF475569),
+                      fontSize: compact ? 12 : 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _TasksPaginationBar(
+                    currentPage: safeCurrentPage,
+                    totalPages: totalPages,
+                    onPageTap: (page) {
+                      setState(() => _currentPage = page);
+                    },
+                  ),
+                ],
                 SizedBox(height: compact ? 8 : 12),
               ],
             ),
@@ -306,6 +342,7 @@ class _TasksScreenState extends State<TasksScreen> {
         _tasks
           ..clear()
           ..addAll(tasks);
+        _currentPage = 1;
         _isLoading = false;
       });
     } on DioException catch (error) {
@@ -566,7 +603,7 @@ class _TasksScreenState extends State<TasksScreen> {
 
   void _handleSearchChanged() {
     if (mounted) {
-      setState(() {});
+      setState(() => _currentPage = 1);
     }
   }
 
@@ -586,6 +623,138 @@ class _TasksScreenState extends State<TasksScreen> {
           width: compact ? 40 : 42,
           decoration: const BoxDecoration(shape: BoxShape.circle),
           child: Icon(icon, color: Colors.grey, size: compact ? 18 : 20),
+        ),
+      ),
+    );
+  }
+}
+
+class _TasksPaginationBar extends StatelessWidget {
+  const _TasksPaginationBar({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageTap,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) return const SizedBox.shrink();
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _TaskPageArrow(
+          icon: Icons.chevron_left_rounded,
+          enabled: canGoPrev,
+          onTap: () => onPageTap(currentPage - 1),
+        ),
+        const SizedBox(width: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: tokens.map((token) {
+            if (token == null) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                child: Text('...'),
+              );
+            }
+            final selected = token == currentPage;
+            return InkWell(
+              onTap: () => onPageTap(token),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFF122B52) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$token',
+                  style: AppTextStyles.style(
+                    color: selected ? Colors.white : const Color(0xFF334155),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            );
+          }).toList(growable: false),
+        ),
+        const SizedBox(width: 10),
+        _TaskPageArrow(
+          icon: Icons.chevron_right_rounded,
+          enabled: canGoNext,
+          onTap: () => onPageTap(currentPage + 1),
+        ),
+      ],
+    );
+  }
+
+  List<int?> _buildPageTokens(int current, int total) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (index) => index + 1);
+    }
+    final tokens = <int?>[1];
+    var start = current - 1;
+    var end = current + 1;
+    if (current <= 3) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 2) {
+      start = total - 3;
+      end = total - 1;
+    } else {
+      start = start < 2 ? 2 : start;
+      end = end > total - 1 ? total - 1 : end;
+    }
+    if (start > 2) tokens.add(null);
+    for (var page = start; page <= end; page += 1) {
+      tokens.add(page);
+    }
+    if (end < total - 1) tokens.add(null);
+    tokens.add(total);
+    return tokens;
+  }
+}
+
+class _TaskPageArrow extends StatelessWidget {
+  const _TaskPageArrow({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Opacity(
+        opacity: enabled ? 1 : 0.35,
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Icon(icon, color: const Color(0xFF475569), size: 18),
         ),
       ),
     );

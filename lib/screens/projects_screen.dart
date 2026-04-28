@@ -23,12 +23,14 @@ class ProjectsScreen extends StatefulWidget {
 }
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
+  static const int _pageSize = 10;
   final TextEditingController _searchController = TextEditingController();
   late Future<List<ProjectModel>> _projectsFuture;
   String? _deletingProjectId;
   String? _staffFilterId;
   String _staffFilterName = '';
   String _selectedStatus = 'all';
+  int _currentPage = 1;
 
   @override
   void initState() {
@@ -71,6 +73,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   void _reload() {
     setState(() {
+      _currentPage = 1;
       _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
           ? ApiService.instance.getStaffProjectsList(_staffFilterId!)
           : ApiService.instance.getProjectsList();
@@ -283,6 +286,24 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 ? allProjects
                 : _applyStaffFilter(allProjects);
             final filteredProjects = _filterProjects(projects);
+            final totalProjectsCount = filteredProjects.length;
+            final totalPages = totalProjectsCount == 0
+                ? 1
+                : ((totalProjectsCount + _pageSize - 1) / _pageSize).floor();
+            final safeCurrentPage = _currentPage > totalPages
+                ? totalPages
+                : _currentPage;
+            final startIndex = totalProjectsCount == 0
+                ? 0
+                : (safeCurrentPage - 1) * _pageSize;
+            final endIndex = totalProjectsCount == 0
+                ? 0
+                : (startIndex + _pageSize > totalProjectsCount
+                      ? totalProjectsCount
+                      : startIndex + _pageSize);
+            final pagedProjects = totalProjectsCount == 0
+                ? const <ProjectModel>[]
+                : filteredProjects.sublist(startIndex, endIndex);
 
             return LayoutBuilder(
               builder: (context, constraints) {
@@ -328,16 +349,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             const SizedBox(height: 18),
                             _ProjectsToolbar(
                               controller: _searchController,
-                              onSearchChanged: (_) => setState(() {}),
+                              onSearchChanged: (_) {
+                                setState(() => _currentPage = 1);
+                              },
                               selectedStatus: _selectedStatus,
                               onStatusChanged: (value) {
-                                setState(() => _selectedStatus = value);
+                                setState(() {
+                                  _selectedStatus = value;
+                                  _currentPage = 1;
+                                });
                               },
                             ),
                             const SizedBox(height: 16),
                             _ProjectsListSection(
                               snapshot: snapshot,
-                              projects: filteredProjects,
+                              projects: pagedProjects,
                               hasSearch: _searchController.text
                                   .trim()
                                   .isNotEmpty,
@@ -346,6 +372,28 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               onDelete: _deleteProject,
                               onRetry: _reload,
                             ),
+                            if (snapshot.connectionState !=
+                                    ConnectionState.waiting &&
+                                !snapshot.hasError &&
+                                filteredProjects.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Showing ${startIndex + 1} to $endIndex of $totalProjectsCount entries',
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF475569),
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _ProjectsPaginationBar(
+                                currentPage: safeCurrentPage,
+                                totalPages: totalPages,
+                                onPageTap: (page) {
+                                  setState(() => _currentPage = page);
+                                },
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -935,6 +983,138 @@ class _ProjectsListSection extends StatelessWidget {
             ),
           )
           .toList(),
+    );
+  }
+}
+
+class _ProjectsPaginationBar extends StatelessWidget {
+  const _ProjectsPaginationBar({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageTap,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) return const SizedBox.shrink();
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _ProjectsPageArrow(
+          icon: Icons.chevron_left_rounded,
+          enabled: canGoPrev,
+          onTap: () => onPageTap(currentPage - 1),
+        ),
+        const SizedBox(width: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: tokens.map((token) {
+            if (token == null) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                child: Text('...'),
+              );
+            }
+            final selected = token == currentPage;
+            return InkWell(
+              onTap: () => onPageTap(token),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: selected ? const Color(0xFF122B52) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$token',
+                  style: AppTextStyles.style(
+                    color: selected ? Colors.white : const Color(0xFF334155),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            );
+          }).toList(growable: false),
+        ),
+        const SizedBox(width: 10),
+        _ProjectsPageArrow(
+          icon: Icons.chevron_right_rounded,
+          enabled: canGoNext,
+          onTap: () => onPageTap(currentPage + 1),
+        ),
+      ],
+    );
+  }
+
+  List<int?> _buildPageTokens(int current, int total) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (index) => index + 1);
+    }
+    final tokens = <int?>[1];
+    var start = current - 1;
+    var end = current + 1;
+    if (current <= 3) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 2) {
+      start = total - 3;
+      end = total - 1;
+    } else {
+      start = start < 2 ? 2 : start;
+      end = end > total - 1 ? total - 1 : end;
+    }
+    if (start > 2) tokens.add(null);
+    for (var page = start; page <= end; page += 1) {
+      tokens.add(page);
+    }
+    if (end < total - 1) tokens.add(null);
+    tokens.add(total);
+    return tokens;
+  }
+}
+
+class _ProjectsPageArrow extends StatelessWidget {
+  const _ProjectsPageArrow({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Opacity(
+        opacity: enabled ? 1 : 0.35,
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Icon(icon, color: const Color(0xFF475569), size: 18),
+        ),
+      ),
     );
   }
 }

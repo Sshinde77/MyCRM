@@ -2299,6 +2299,60 @@ class ApiService {
     return _normalizeList(response.data);
   }
 
+  /// Loads book-a-call records for the authenticated user.
+  Future<List<Map<String, dynamic>>> getBookACallList() async {
+    final response = await get(ApiConstants.bookACall);
+    return _normalizeList(response.data);
+  }
+
+  /// Deletes a single book-a-call record by id.
+  Future<void> deleteBookACall(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Book-a-call id is required.');
+    }
+    final path = ApiConstants.deleteBookACall.replaceFirst('{id}', normalizedId);
+    await delete(path);
+  }
+
+  /// Loads digital marketing leads for the authenticated user.
+  Future<List<Map<String, dynamic>>> getDigitalMarketingLeads() async {
+    final response = await get(ApiConstants.digitalMarketingLeads);
+    return _normalizeList(response.data);
+  }
+
+  /// Deletes a single digital marketing lead by id.
+  Future<void> deleteDigitalMarketingLead(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Digital marketing lead id is required.');
+    }
+    final path = ApiConstants.deleteDigitalMarketingLead.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    await delete(path);
+  }
+
+  /// Loads web apps leads for the authenticated user.
+  Future<List<Map<String, dynamic>>> getWebAppsLeads() async {
+    final response = await get(ApiConstants.webAppsLeads);
+    return _normalizeList(response.data);
+  }
+
+  /// Deletes a single web apps lead by id.
+  Future<void> deleteWebAppsLead(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Web apps lead id is required.');
+    }
+    final path = ApiConstants.deleteWebAppsLead.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    await delete(path);
+  }
+
   /// Loads tasks assigned to a specific staff member.
   Future<List<Map<String, dynamic>>> getStaffTasksList(String staffId) async {
     final id = staffId.trim();
@@ -2970,6 +3024,10 @@ class ApiService {
         'client_issues',
         'clientIssues',
         'clientissues',
+        'book_a_call',
+        'book_a_calls',
+        'bookacall',
+        'bookacalls',
         'projects',
         'milestones',
         'project_milestones',

@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/screens/book_a_call.dart';
+import 'package:mycrm/screens/google_ads_screen.dart';
 
 import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
@@ -121,12 +123,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       accentColor: Color(0xFF475569),
     ),
     _ProfileAction(
+      title: 'Book A Call',
+      icon: Icons.phone_in_talk_outlined,
+      routeName: '',
+      accentColor: Color(0xFF1D6FEA),
+      screenBuilder: BookACallScreen.new,
+    ),
+    _ProfileAction(
+      title: 'Google Ads',
+      icon: Icons.ads_click_rounded,
+      routeName: '',
+      accentColor: Color(0xFF0EA5E9),
+      screenBuilder: GoogleAdsScreen.new,
+    ),
+    _ProfileAction(
       title: 'Settings',
       icon: Icons.settings_outlined,
       routeName: AppRoutes.settings,
       permission: AppPermission.manageSettings,
       accentColor: Color(0xFF0891B2),
     ),
+
   ];
 
   @override
@@ -532,7 +549,14 @@ class _ProfileActionCard extends StatelessWidget {
           final padding = isNarrow ? 12.0 : 16.0;
 
           return InkWell(
-            onTap: () => Get.toNamed(action.routeName),
+            onTap: () {
+              final screenBuilder = action.screenBuilder;
+              if (screenBuilder != null) {
+                Get.to(screenBuilder);
+                return;
+              }
+              Get.toNamed(action.routeName);
+            },
             borderRadius: BorderRadius.circular(24),
             child: Ink(
               padding: EdgeInsets.all(padding),
@@ -658,6 +682,7 @@ class _ProfileAction {
     required this.routeName,
     required this.accentColor,
     this.permission,
+    this.screenBuilder,
   });
 
   final String title;
@@ -665,4 +690,6 @@ class _ProfileAction {
   final String routeName;
   final Color accentColor;
   final String? permission;
+  final Widget Function()? screenBuilder;
 }
+

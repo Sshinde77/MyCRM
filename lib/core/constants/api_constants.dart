@@ -139,4 +139,15 @@ class ApiConstants {
   static const String renewalSettings = '$baseUrl/settings/renewal';
   static const String teamSettings = '$baseUrl/settings/teams';
   static const String departmentSettings = '$baseUrl/settings/departments';
+
+  //book a call
+  static const String bookACall = '$baseUrl/book-a-call';
+  static const String deleteBookACall = '$baseUrl/book-a-call/{id}';
+
+  //google ads leads
+  static const String digitalMarketingLeads = '$baseUrl/digital-marketing';
+  static const String deleteDigitalMarketingLead =
+      '$baseUrl/digital-marketing/{id}';
+  static const String webAppsLeads = '$baseUrl/web-apps-leads';
+  static const String deleteWebAppsLead = '$baseUrl/web-apps-leads/{id}';
 }
