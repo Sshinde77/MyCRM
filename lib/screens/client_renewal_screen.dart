@@ -1543,10 +1543,6 @@ class _ServiceCard extends StatelessWidget {
                   child: _CardAction(icon: Icons.edit_outlined, onTap: onEdit),
                 ),
                 _ActionDivider(),
-                const Expanded(
-                  child: _CardAction(icon: Icons.mail_outline_rounded),
-                ),
-                _ActionDivider(),
                 Expanded(
                   child: _CardAction(
                     icon: Icons.delete_outline_rounded,

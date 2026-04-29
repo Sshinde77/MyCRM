@@ -54,10 +54,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                 color: AppColors.primaryBlue,
                 onRefresh: _refresh,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
                   children: [
                     _Header(onBack: Get.back),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
                     if (snapshot.connectionState == ConnectionState.waiting)
                       const _LoadingCard()
                     else if (snapshot.hasError)
@@ -96,22 +96,22 @@ class _Header extends StatelessWidget {
             borderRadius: BorderRadius.circular(14),
             onTap: onBack,
             child: const Padding(
-              padding: EdgeInsets.all(12),
+              padding: EdgeInsets.all(10),
               child: Icon(
                 Icons.arrow_back_ios_new_rounded,
-                size: 18,
+                size: 16,
                 color: AppColors.primaryBlue,
               ),
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             'Personal Information',
             style: AppTextStyles.title(
               color: AppColors.primaryBlue,
-              fontSize: 22,
+              fontSize: 19,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -132,10 +132,10 @@ class _ProfileDetailsCard extends StatelessWidget {
     final wide = size.width >= 860;
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.borderColor),
         boxShadow: const [
           BoxShadow(
@@ -150,7 +150,7 @@ class _ProfileDetailsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: _LeftIdentityCard(user: user)),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(flex: 2, child: _DetailsPanel(user: user)),
               ],
             )
@@ -158,7 +158,7 @@ class _ProfileDetailsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _LeftIdentityCard(user: user),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 _DetailsPanel(user: user),
               ],
             ),
@@ -177,14 +177,14 @@ class _LeftIdentityCard extends StatelessWidget {
         ? 'Staff'
         : user.role!.trim();
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [Color(0xFFF5FAFF), Color(0xFFEAF4FF)],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderColor),
       ),
       child: Column(
@@ -193,32 +193,32 @@ class _LeftIdentityCard extends StatelessWidget {
             name: user.name,
             imageUrl: _normalizeImageUrl(user.profilePicture),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           Text(
             user.name.trim().isEmpty ? 'Unknown User' : user.name.trim(),
             textAlign: TextAlign.center,
             style: AppTextStyles.title(
               color: AppColors.primaryText,
-              fontSize: 30,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             roleText,
             style: AppTextStyles.subtitle(
               color: AppColors.secondaryText,
-              fontSize: 20,
+              fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             user.email.trim().isEmpty ? 'Not available' : user.email.trim(),
             textAlign: TextAlign.center,
             style: AppTextStyles.body(
               color: AppColors.secondaryText,
-              fontSize: 18,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -239,11 +239,11 @@ class _ProfileAvatar extends StatelessWidget {
     final initials = _buildInitials(name);
     final showImage = imageUrl != null && imageUrl!.trim().isNotEmpty;
     return Container(
-      width: 132,
-      height: 132,
+      width: 106,
+      height: 106,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFF0EA5E9), width: 3),
+        border: Border.all(color: const Color(0xFF0EA5E9), width: 2.5),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1F0EA5E9),
@@ -261,7 +261,7 @@ class _ProfileAvatar extends StatelessWidget {
                 initials,
                 style: AppTextStyles.title(
                   color: AppColors.primaryBlue,
-                  fontSize: 36,
+                  fontSize: 28,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -278,10 +278,10 @@ class _DetailsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderColor),
       ),
       child: Column(
@@ -292,7 +292,7 @@ class _DetailsPanel extends StatelessWidget {
           //   value: _normalizeImageUrl(user.profilePicture) ?? 'Not uploaded',
           //   icon: Icons.image_outlined,
           // ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _ProfileField(
             label: 'Full Name',
             value: user.name.trim().isEmpty
@@ -300,7 +300,7 @@ class _DetailsPanel extends StatelessWidget {
                 : user.name.trim(),
             icon: Icons.badge_outlined,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _ProfileField(
             label: 'Email',
             value: user.email.trim().isEmpty
@@ -308,7 +308,7 @@ class _DetailsPanel extends StatelessWidget {
                 : user.email.trim(),
             icon: Icons.mail_outline_rounded,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           _ProfileField(
             label: 'Phone',
             value: (user.phone ?? '').trim().isEmpty
@@ -342,29 +342,29 @@ class _ProfileField extends StatelessWidget {
           label,
           style: AppTextStyles.subtitle(
             color: AppColors.primaryBlue,
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFFF8FAFD),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.borderColor),
           ),
           child: Row(
             children: [
-              Icon(icon, color: AppColors.secondaryText, size: 18),
-              const SizedBox(width: 10),
+              Icon(icon, color: AppColors.secondaryText, size: 16),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   value,
                   style: AppTextStyles.body(
                     color: AppColors.primaryText,
-                    fontSize: 15,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

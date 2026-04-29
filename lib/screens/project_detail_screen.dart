@@ -66,7 +66,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               onRefresh: () async => _reload(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
                 child: snapshot.connectionState == ConnectionState.waiting
                     ? const _StateCard(
                         icon: Icons.hourglass_top_rounded,
@@ -144,7 +144,7 @@ class _BodyState extends State<_Body> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const CommonTopBar(title: 'Project Details'),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         _Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,9 +165,9 @@ class _BodyState extends State<_Body> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               const Divider(color: Color(0xFFEDF2F7)),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -176,13 +176,13 @@ class _BodyState extends State<_Body> {
                       value: project.title,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _LabelValue(label: 'Name', value: project.client),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -191,7 +191,7 @@ class _BodyState extends State<_Body> {
                       value: project.startDate,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _LabelValue(
                       label: 'Deadline',
@@ -203,7 +203,7 @@ class _BodyState extends State<_Body> {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +215,7 @@ class _BodyState extends State<_Body> {
                       'Overall Progress',
                       style: AppTextStyles.style(
                         color: ProjectDetailScreen.title,
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -224,23 +224,23 @@ class _BodyState extends State<_Body> {
                     '${(project.progress * 100).toInt()}%',
                     style: AppTextStyles.style(
                       color: ProjectDetailScreen.blue,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
                 child: LinearProgressIndicator(
                   value: project.progress,
-                  minHeight: 14,
+                  minHeight: 10,
                   backgroundColor: const Color(0xFFE9EEF5),
                   valueColor: const AlwaysStoppedAnimation(Color(0xFF4A86F7)),
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -250,7 +250,7 @@ class _BodyState extends State<_Body> {
                       color: const Color(0xFF4A86F7),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _MiniStat(
                       label: 'Completed',
@@ -258,7 +258,7 @@ class _BodyState extends State<_Body> {
                       color: const Color(0xFF22C55E),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _MiniStat(
                       label: 'Remaining',
@@ -271,7 +271,7 @@ class _BodyState extends State<_Body> {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -280,11 +280,11 @@ class _BodyState extends State<_Body> {
                 'Project Description',
                 style: AppTextStyles.style(
                   color: ProjectDetailScreen.title,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Html(
                 data: project.description.trim().isEmpty
                     ? '<p>No description available</p>'
@@ -294,7 +294,7 @@ class _BodyState extends State<_Body> {
                     margin: Margins.zero,
                     padding: HtmlPaddings.zero,
                     color: ProjectDetailScreen.muted,
-                    fontSize: FontSize(14),
+                    fontSize: FontSize(13),
                     lineHeight: const LineHeight(1.7),
                     fontWeight: FontWeight.w500,
                   ),
@@ -302,10 +302,10 @@ class _BodyState extends State<_Body> {
                 },
               ),
               if (descriptionChips.isNotEmpty) ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
                 Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+                    spacing: 8,
+                    runSpacing: 8,
                   children: descriptionChips
                       .map(
                         (chip) => _Chip(
@@ -319,7 +319,7 @@ class _BodyState extends State<_Body> {
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _Card(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,19 +332,19 @@ class _BodyState extends State<_Body> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _InfoRow(label: 'Name', value: project.client),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               _InfoRow(label: 'Email', value: project.clientEmail),
             ],
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _SectionTabs(
           selected: _selectedTab,
           onSelected: (tab) => setState(() => _selectedTab = tab),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
         _buildSelectedSection(project),
       ],
     );
@@ -400,21 +400,21 @@ class _SectionTabs extends StatelessWidget {
         children: _ProjectDetailTab.values
             .map(
               (tab) => Padding(
-                padding: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.only(right: 8),
                 child: InkWell(
                   onTap: () => onSelected(tab),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(12),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: 13,
+                      vertical: 9,
                     ),
                     decoration: BoxDecoration(
                       color: selected == tab
                           ? Colors.white
                           : const Color(0xFFEAF1FF),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: selected == tab
                             ? const Color(0xFFD5E0F4)
@@ -436,7 +436,7 @@ class _SectionTabs extends StatelessWidget {
                         color: selected == tab
                             ? ProjectDetailScreen.title
                             : ProjectDetailScreen.blue,
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: selected == tab
                             ? FontWeight.w700
                             : FontWeight.w600,
@@ -478,7 +478,7 @@ class _EmployeesSection extends StatelessWidget {
                           'Assigned Employees',
                           style: AppTextStyles.style(
                             color: ProjectDetailScreen.title,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -496,7 +496,7 @@ class _EmployeesSection extends StatelessWidget {
                             'Assigned Employees',
                             style: AppTextStyles.style(
                               color: ProjectDetailScreen.title,
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -643,7 +643,7 @@ class _TasksSectionState extends State<_TasksSection> {
                           'Project Tasks',
                           style: AppTextStyles.style(
                             color: ProjectDetailScreen.title,
-                            fontSize: 18,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -656,7 +656,7 @@ class _TasksSectionState extends State<_TasksSection> {
                             'Project Tasks',
                             style: AppTextStyles.style(
                               color: ProjectDetailScreen.title,
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -2336,7 +2336,7 @@ class _CommentsSectionState extends State<_CommentsSection> {
             'Comments',
             style: AppTextStyles.style(
               color: ProjectDetailScreen.title,
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -2499,7 +2499,7 @@ class _CommentItem extends StatelessWidget {
                 comment.userName,
                 style: AppTextStyles.style(
                   color: ProjectDetailScreen.title,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -2577,7 +2577,7 @@ class _FilesSectionState extends State<_FilesSection> {
                   'Project Files',
                   style: AppTextStyles.style(
                     color: ProjectDetailScreen.title,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -3600,16 +3600,16 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     width: double.infinity,
-    padding: const EdgeInsets.all(22),
+    padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: ProjectDetailScreen.surface,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(16),
       border: Border.all(color: ProjectDetailScreen.border),
       boxShadow: const [
         BoxShadow(
           color: Color(0x120F172A),
-          blurRadius: 18,
-          offset: Offset(0, 10),
+          blurRadius: 12,
+          offset: Offset(0, 6),
         ),
       ],
     ),
@@ -3687,7 +3687,7 @@ class _UsageSectionState extends State<_UsageSection> {
                     'Project Usage Statistics',
                     style: AppTextStyles.style(
                       color: ProjectDetailScreen.title,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -3948,7 +3948,7 @@ class _Badge extends StatelessWidget {
   final Color fg;
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
       color: bg,
       borderRadius: BorderRadius.circular(999),
@@ -3957,7 +3957,7 @@ class _Badge extends StatelessWidget {
       label,
       style: AppTextStyles.style(
         color: fg,
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: FontWeight.w700,
       ),
     ),
@@ -3976,16 +3976,16 @@ class _LabelValue extends StatelessWidget {
         label,
         style: AppTextStyles.style(
           color: ProjectDetailScreen.muted,
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.w500,
         ),
       ),
-      const SizedBox(height: 8),
+      const SizedBox(height: 6),
       Text(
         value,
         style: AppTextStyles.style(
           color: ProjectDetailScreen.title,
-          fontSize: 15,
+          fontSize: 14,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -4004,10 +4004,10 @@ class _MiniStat extends StatelessWidget {
   final Color color;
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     decoration: BoxDecoration(
       color: color.withOpacity(0.08),
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(12),
       border: Border.all(color: color.withOpacity(0.16)),
     ),
     child: Column(
@@ -4016,7 +4016,7 @@ class _MiniStat extends StatelessWidget {
           value,
           style: AppTextStyles.style(
             color: color,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -4025,7 +4025,7 @@ class _MiniStat extends StatelessWidget {
           label.toUpperCase(),
           style: AppTextStyles.style(
             color: color,
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -4040,7 +4040,7 @@ class _Chip extends StatelessWidget {
   final bool accent;
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     decoration: BoxDecoration(
       color: accent ? const Color(0xFFEAF1FF) : const Color(0xFFF2F5F9),
       borderRadius: BorderRadius.circular(999),
@@ -4049,7 +4049,7 @@ class _Chip extends StatelessWidget {
       label,
       style: AppTextStyles.style(
         color: accent ? ProjectDetailScreen.blue : const Color(0xFF53657E),
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: FontWeight.w600,
       ),
     ),
@@ -4069,7 +4069,7 @@ class _InfoRow extends StatelessWidget {
           label,
           style: AppTextStyles.style(
             color: ProjectDetailScreen.muted,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -4081,7 +4081,7 @@ class _InfoRow extends StatelessWidget {
           textAlign: TextAlign.right,
           style: AppTextStyles.style(
             color: ProjectDetailScreen.title,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -4098,13 +4098,13 @@ class _StateCard extends StatelessWidget {
   Widget build(BuildContext context) => _Card(
     child: Column(
       children: [
-        Icon(icon, size: 34, color: const Color(0xFF94A3B8)),
-        const SizedBox(height: 12),
+        Icon(icon, size: 28, color: const Color(0xFF94A3B8)),
+        const SizedBox(height: 10),
         Text(
           title,
           style: AppTextStyles.style(
             color: ProjectDetailScreen.title,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -4120,13 +4120,13 @@ class _ErrorCard extends StatelessWidget {
   Widget build(BuildContext context) => _Card(
     child: Column(
       children: [
-        const Icon(Icons.cloud_off_rounded, size: 34, color: Color(0xFFB42318)),
-        const SizedBox(height: 12),
+        const Icon(Icons.cloud_off_rounded, size: 28, color: Color(0xFFB42318)),
+        const SizedBox(height: 10),
         Text(
           'Unable to load project details',
           style: AppTextStyles.style(
             color: ProjectDetailScreen.title,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -4134,22 +4134,22 @@ class _ErrorCard extends StatelessWidget {
         Text(
           'Pull to refresh or retry the request.',
           textAlign: TextAlign.center,
-          style: AppTextStyles.style(
-            color: ProjectDetailScreen.muted,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+            style: AppTextStyles.style(
+              color: ProjectDetailScreen.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(46),
+              minimumSize: const Size.fromHeight(40),
               backgroundColor: const Color(0xFF1D6FEA),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
             icon: const Icon(Icons.refresh_rounded, color: Colors.white),

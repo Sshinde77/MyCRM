@@ -258,7 +258,7 @@ class _StaffScreenState extends State<StaffScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final compact = width <= 360;
-    final horizontalPadding = compact ? 16.0 : 20.0;
+    final horizontalPadding = compact ? 12.0 : 14.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
@@ -302,9 +302,9 @@ class _StaffScreenState extends State<StaffScreen> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(
                     horizontalPadding,
-                    16,
+                    12,
                     horizontalPadding,
-                    24,
+                    16,
                   ),
                   child: Center(
                     child: ConstrainedBox(
@@ -313,24 +313,24 @@ class _StaffScreenState extends State<StaffScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _Header(compact: compact),
-                          SizedBox(height: compact ? 18 : 20),
+                          SizedBox(height: compact ? 12 : 14),
                           _SearchBar(
                             compact: compact,
                             controller: _searchController,
                             onChanged: (_) => setState(() {}),
                           ),
-                          SizedBox(height: compact ? 14 : 16),
+                          SizedBox(height: compact ? 10 : 12),
                           PermissionGate(
                             permission: AppPermission.createStaff,
                             child: Column(
                               children: [
                                 _AddStaffButton(compact: compact),
-                                SizedBox(height: compact ? 16 : 18),
+                                SizedBox(height: compact ? 10 : 12),
                               ],
                             ),
                           ),
                           _SectionHeader(compact: compact, count: headerCount),
-                          SizedBox(height: compact ? 14 : 16),
+                          SizedBox(height: compact ? 10 : 12),
                           if (_isInitialLoading)
                             _LoadingState(compact: compact)
                           else if (_loadError != null &&
@@ -455,18 +455,18 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 14 : 16,
-        vertical: compact ? 6 : 8,
+        horizontal: compact ? 12 : 14,
+        vertical: compact ? 4 : 6,
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x120F172A),
-            blurRadius: 18,
-            offset: Offset(0, 10),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -475,11 +475,15 @@ class _SearchBar extends StatelessWidget {
         onChanged: onChanged,
         decoration: InputDecoration(
           border: InputBorder.none,
-          icon: const Icon(Icons.search_rounded, color: Color(0xFF94A3B8)),
+          icon: const Icon(
+            Icons.search_rounded,
+            color: Color(0xFF94A3B8),
+            size: 18,
+          ),
           hintText: 'Search staff members...',
           hintStyle: AppTextStyles.style(
             color: const Color(0xFF94A3B8),
-            fontSize: compact ? 13 : 14,
+            fontSize: compact ? 12 : 13,
           ),
         ),
       ),
@@ -498,18 +502,18 @@ class _AddStaffButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => Get.toNamed(AppRoutes.addStaff),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(14),
         child: Ink(
           width: double.infinity,
-          padding: EdgeInsets.symmetric(vertical: compact ? 17 : 19),
+          padding: EdgeInsets.symmetric(vertical: compact ? 12 : 13),
           decoration: BoxDecoration(
             color: const Color(0xFF1D6FEA),
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(14),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x221D6FEA),
-                blurRadius: 18,
-                offset: Offset(0, 10),
+                blurRadius: 10,
+                offset: Offset(0, 4),
               ),
             ],
           ),
@@ -519,14 +523,14 @@ class _AddStaffButton extends StatelessWidget {
               Icon(
                 Icons.add_rounded,
                 color: Colors.white,
-                size: compact ? 24 : 26,
+                size: compact ? 18 : 20,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Text(
                 'Add New Staff',
                 style: AppTextStyles.style(
                   color: Colors.white,
-                  fontSize: compact ? 16 : 17,
+                  fontSize: compact ? 13 : 14,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -603,19 +607,19 @@ class _StaffCard extends StatelessWidget {
 
     return InkWell(
       onTap: () => Get.toNamed(AppRoutes.staffDetail, arguments: member.id),
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.all(compact ? 16 : 18),
+        padding: EdgeInsets.all(compact ? 12 : 13),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: const [
             BoxShadow(
               color: Color(0x120F172A),
-              blurRadius: 18,
-              offset: Offset(0, 10),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -626,7 +630,7 @@ class _StaffCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _AvatarBadge(member: member, compact: compact),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -635,11 +639,11 @@ class _StaffCard extends StatelessWidget {
                         member.name,
                         style: AppTextStyles.style(
                           color: const Color(0xFF162033),
-                          fontSize: compact ? 15 : 16,
+                          fontSize: compact ? 13 : 14,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -655,7 +659,7 @@ class _StaffCard extends StatelessWidget {
                               : 'Staff'),
                           style: AppTextStyles.style(
                             color: accentColor,
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -683,13 +687,13 @@ class _StaffCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: compact ? 14 : 16),
+            SizedBox(height: compact ? 8 : 10),
             _InfoRow(
               icon: Icons.email_outlined,
               text: member.email,
               compact: compact,
             ),
-            SizedBox(height: compact ? 10 : 12),
+            SizedBox(height: compact ? 8 : 10),
             _InfoRow(
               icon: member.phone?.trim().isNotEmpty == true
                   ? Icons.phone_outlined
@@ -705,9 +709,9 @@ class _StaffCard extends StatelessWidget {
               //   compact: compact,
               // ),
             ],
-            SizedBox(height: compact ? 14 : 16),
+            SizedBox(height: compact ? 8 : 10),
             const Divider(height: 1, color: Color(0xFFEAF0F6)),
-            SizedBox(height: compact ? 12 : 14),
+            SizedBox(height: compact ? 8 : 10),
             Row(
               children: [
                 Expanded(
@@ -725,7 +729,7 @@ class _StaffCard extends StatelessWidget {
                     permission: AppPermission.deleteStaff,
                     child: Row(
                       children: [
-                        SizedBox(width: compact ? 10 : 12),
+                        SizedBox(width: compact ? 8 : 10),
                         Expanded(
                           child: _CardAction(
                             icon: isDeleting
@@ -767,18 +771,18 @@ class _AvatarBadge extends StatelessWidget {
     final accentColor = _accentColorFor(member);
 
     return Container(
-      height: compact ? 52 : 56,
-      width: compact ? 52 : 56,
+      height: compact ? 42 : 44,
+      width: compact ? 42 : 44,
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Text(
         initials.isEmpty ? 'ST' : initials,
         style: AppTextStyles.style(
           color: accentColor,
-          fontSize: compact ? 16 : 17,
+          fontSize: compact ? 13 : 14,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -801,14 +805,14 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF94A3B8), size: compact ? 20 : 21),
-        const SizedBox(width: 10),
+        Icon(icon, color: const Color(0xFF94A3B8), size: compact ? 16 : 17),
+        const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
             style: AppTextStyles.style(
               color: const Color(0xFF475569),
-              fontSize: compact ? 13 : 14,
+              fontSize: compact ? 11.5 : 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -842,20 +846,20 @@ class _CardAction extends StatelessWidget {
 
     return OutlinedButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, color: foregroundColor, size: 20),
+      icon: Icon(icon, color: foregroundColor, size: 16),
       label: Text(
         label,
         style: AppTextStyles.style(
           color: foregroundColor,
-          fontSize: 13,
+          fontSize: 11.5,
           fontWeight: FontWeight.w700,
         ),
       ),
       style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(44),
+        minimumSize: const Size.fromHeight(36),
         backgroundColor: backgroundColor,
         side: BorderSide(color: backgroundColor),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }

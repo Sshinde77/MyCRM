@@ -198,45 +198,43 @@ class _ClientsScreenState extends State<ClientsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: RefreshIndicator(
             onRefresh: () async => _reload(),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                const SizedBox(height: 10),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                const SizedBox(height: 8),
                 const CommonTopBar(title: 'Clients'),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
                       child: _StatCard(
                         title: 'Total Clients',
                         value: totalClients.toString(),
-                        percent: 'API',
                         icon: Icons.people,
                         color: Colors.black,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: _StatCard(
                         title: 'Active',
                         value: activeClients.toString(),
-                        percent: 'Loaded',
                         icon: Icons.check_circle,
                         color: Colors.green,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 Row(
                   children: [
                     Expanded(
                       child: Container(
-                        height: 50,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        height: 44,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
+                          borderRadius: BorderRadius.circular(24),
                         ),
                         child: TextField(
                           controller: _searchController,
@@ -248,36 +246,36 @@ class _ClientsScreenState extends State<ClientsScreen> {
                             disabledBorder: InputBorder.none,
                             errorBorder: InputBorder.none,
                             focusedErrorBorder: InputBorder.none,
-                            icon: Icon(Icons.search, color: Colors.grey),
+                            icon: Icon(Icons.search, color: Colors.grey, size: 20),
                             hintText: 'Search clients...',
-                            hintStyle: TextStyle(color: Colors.grey),
+                            hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     _circleIcon(Icons.tune),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 PermissionGate(
                   permission: AppPermission.createClients,
                   child: InkWell(
                     onTap: () => Get.toNamed(AppRoutes.addClient),
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(22),
                     child: Ink(
-                      height: 55,
+                      height: 46,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: const Color(0xFF2563EB),
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(22),
                       ),
                       child: const Center(
                         child: Text(
                           '+ Add New Client',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -285,7 +283,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: const [
@@ -298,7 +296,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 if ((_isLoading && clients.isEmpty) ||
                     (hasSearch && _isSearchLoading && filteredClients.isEmpty))
                   const Center(child: CircularProgressIndicator())
@@ -342,7 +340,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     },
                   ),
                 ],
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
               ],
             ),
           ),
@@ -353,13 +351,13 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   static Widget _circleIcon(IconData icon) {
     return Container(
-      height: 45,
-      width: 45,
+      height: 40,
+      width: 40,
       decoration: const BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: Colors.grey),
+      child: Icon(icon, color: Colors.grey, size: 20),
     );
   }
 }
@@ -630,14 +628,12 @@ class _ClientsList extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
-  final String percent;
   final IconData icon;
   final Color color;
 
   const _StatCard({
     required this.title,
     required this.value,
-    required this.percent,
     required this.icon,
     required this.color,
   });
@@ -645,41 +641,33 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 120,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.grey),
+              Icon(icon, color: Colors.grey, size: 18),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+              Expanded(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
                 ),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(percent),
               ),
             ],
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          const SizedBox(height: 6),
           Text(title, style: const TextStyle(color: Colors.grey)),
         ],
       ),
@@ -717,19 +705,19 @@ class _ClientCard extends StatelessWidget {
         Get.toNamed(AppRoutes.clientDetail, arguments: {'id': id});
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const CircleAvatar(radius: 22),
-                const SizedBox(width: 10),
+                const CircleAvatar(radius: 18),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -738,38 +726,41 @@ class _ClientCard extends StatelessWidget {
                         name,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
-                      Text(role, style: const TextStyle(color: Colors.grey)),
+                      Text(
+                        role,
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
                     ],
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                    horizontal: 8,
+                    vertical: 3,
                   ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
                     active ? 'ACTIVE' : 'INACTIVE',
-                    style: TextStyle(color: statusColor, fontSize: 12),
+                    style: TextStyle(color: statusColor, fontSize: 10),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _infoRow(Icons.email, email),
             _infoRow(Icons.phone, phone),
-            const Divider(height: 20),
+            const Divider(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Icon(Icons.remove_red_eye, color: Colors.grey),
-                const SizedBox(width: 16),
+                const Icon(Icons.remove_red_eye, color: Colors.grey, size: 19),
+                const SizedBox(width: 14),
                 PermissionGate(
                   permission: AppPermission.editClients,
                   child: Row(
@@ -777,9 +768,9 @@ class _ClientCard extends StatelessWidget {
                     children: [
                       InkWell(
                         onTap: onEdit,
-                        child: const Icon(Icons.edit, color: Colors.grey),
+                        child: const Icon(Icons.edit, color: Colors.grey, size: 19),
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: 14),
                     ],
                   ),
                 ),
@@ -787,7 +778,7 @@ class _ClientCard extends StatelessWidget {
                   permission: AppPermission.deleteClients,
                   child: InkWell(
                     onTap: onDelete,
-                    child: const Icon(Icons.delete, color: Colors.grey),
+                    child: const Icon(Icons.delete, color: Colors.grey, size: 19),
                   ),
                 ),
               ],
@@ -800,15 +791,18 @@ class _ClientCard extends StatelessWidget {
 
   Widget _infoRow(IconData icon, String text, {bool isLink = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Colors.grey),
-          const SizedBox(width: 8),
+          Icon(icon, size: 16, color: Colors.grey),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(color: isLink ? Colors.blue : Colors.black87),
+              style: TextStyle(
+                color: isLink ? Colors.blue : Colors.black87,
+                fontSize: 13,
+              ),
             ),
           ),
         ],

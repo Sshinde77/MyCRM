@@ -102,14 +102,14 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                         activitySnapshot.data ?? _StaffActivitySummary.empty();
 
                     return SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _ProfileHeaderCard(member: member),
-                          const SizedBox(height: 24),
-                          _SectionTitle(title: 'ACTIVITY TIME SUMMARY'),
                           const SizedBox(height: 12),
+                          _SectionTitle(title: 'ACTIVITY TIME SUMMARY'),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               Expanded(
@@ -129,7 +129,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: _ActionSummaryCard(
                                   title: 'Tasks',
@@ -149,7 +149,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 12),
                           _EditProfileForm(
                             formKey: _formKey,
                             firstNameController: _firstNameController,
@@ -188,7 +188,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                           // ),
                           // const SizedBox(height: 24),
                           // _PriorityBreakdownCard(summary: summary),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     );
@@ -482,21 +482,35 @@ class _ProfileHeaderCard extends StatelessWidget {
     final departmentLabel = member.departments.isNotEmpty
         ? member.departments.join(', ')
         : 'N/A';
+    final roleLabel = member.role?.trim().isNotEmpty == true
+        ? member.role!
+        : 'Staff';
+    final phoneLabel = member.phone?.trim().isNotEmpty == true
+        ? member.phone!
+        : 'Phone not available';
+    final statusLabel = member.isActive ? 'ACTIVE' : 'INACTIVE';
+    final statusColor = member.isActive
+        ? const Color(0xFF166534)
+        : const Color(0xFF64748B);
+    final statusBg = member.isActive
+        ? const Color(0xFFDCFCE7)
+        : const Color(0xFFF1F5F9);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
               CircleAvatar(
-                radius: 45,
+                radius: 28,
                 backgroundColor: const Color(0xFFE2E8F0),
                 backgroundImage: member.profileImage?.trim().isNotEmpty == true
                     ? NetworkImage(member.profileImage!)
@@ -506,7 +520,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                     : Text(
                         initials.isEmpty ? 'S' : initials,
                         style: AppTextStyles.style(
-                          fontSize: 24,
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF334155),
                         ),
@@ -514,51 +528,82 @@ class _ProfileHeaderCard extends StatelessWidget {
               ),
               if (member.isActive)
                 Positioned(
-                  bottom: 0,
-                  right: 5,
+                  bottom: 1,
+                  right: 1,
                   child: Container(
-                    height: 18,
-                    width: 18,
+                    height: 11,
+                    width: 11,
                     decoration: BoxDecoration(
                       color: const Color(0xFF22C55E),
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: Colors.white, width: 1.5),
                     ),
                   ),
                 ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            member.name.isNotEmpty ? member.name : 'Staff Member',
-            style: AppTextStyles.style(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1E293B),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        member.name.isNotEmpty ? member.name : 'Staff Member',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.style(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusBg,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        statusLabel,
+                        style: AppTextStyles.style(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$roleLabel - $teamLabel',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.style(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF3B82F6),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _InfoRow(icon: Icons.email_outlined, text: member.email),
+                const SizedBox(height: 4),
+                _InfoRow(icon: Icons.phone_outlined, text: phoneLabel),
+                const SizedBox(height: 4),
+                _InfoRow(
+                  icon: Icons.apartment_outlined,
+                  text: 'Department: $departmentLabel',
+                ),
+              ],
             ),
-          ),
-          Text(
-            '${member.role?.trim().isNotEmpty == true ? member.role! : 'Staff'} • $teamLabel',
-            style: AppTextStyles.style(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF3B82F6),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          _InfoRow(icon: Icons.email_outlined, text: member.email),
-          const SizedBox(height: 8),
-          _InfoRow(
-            icon: Icons.phone_outlined,
-            text: member.phone?.trim().isNotEmpty == true
-                ? member.phone!
-                : 'Phone not available',
-          ),
-          const SizedBox(height: 8),
-          _InfoRow(
-            icon: Icons.apartment_outlined,
-            text: 'Department: $departmentLabel',
           ),
         ],
       ),
@@ -574,16 +619,18 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
-        const SizedBox(width: 8),
+        Icon(icon, size: 14, color: const Color(0xFF94A3B8)),
+        const SizedBox(width: 6),
         Flexible(
           child: Text(
             text,
-            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.left,
             style: AppTextStyles.style(
-              fontSize: 13,
+              fontSize: 11.5,
               color: const Color(0xFF64748B),
               fontWeight: FontWeight.w500,
             ),
@@ -615,17 +662,17 @@ class _ActionSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
+          Icon(icon, color: color, size: 17),
+          const SizedBox(height: 6),
           Text(
             title,
             style: AppTextStyles.style(
@@ -637,12 +684,12 @@ class _ActionSummaryCard extends StatelessWidget {
           Text(
             value,
             style: AppTextStyles.style(
-              fontSize: 16,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF1E293B),
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             subtitle,
             style: AppTextStyles.style(
@@ -651,7 +698,7 @@ class _ActionSummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
@@ -661,12 +708,12 @@ class _ActionSummaryCard extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 8),
               ),
               child: Text(
                 buttonLabel,
                 style: AppTextStyles.style(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),
@@ -719,10 +766,10 @@ class _EditProfileForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Form(
@@ -733,11 +780,11 @@ class _EditProfileForm extends StatelessWidget {
             Text(
               'Edit Profile Details',
               style: AppTextStyles.style(
-                fontSize: 18,
+                fontSize: 15,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -746,7 +793,7 @@ class _EditProfileForm extends StatelessWidget {
                     controller: firstNameController,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Expanded(
                   child: _InputField(
                     label: 'Last Name',
@@ -755,7 +802,7 @@ class _EditProfileForm extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             _InputField(
               label: 'Email Address',
               controller: emailController,
@@ -888,22 +935,22 @@ class _InputField extends StatelessWidget {
             return null;
           },
           style: AppTextStyles.style(
-            fontSize: 14,
+            fontSize: 12.5,
             color: const Color(0xFF1E293B),
           ),
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+              horizontal: 12,
+              vertical: 10,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
           ),
@@ -952,15 +999,15 @@ class _DropdownField extends StatelessWidget {
             filled: true,
             fillColor: const Color(0xFFF8FAFC),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+              horizontal: 12,
+              vertical: 10,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
           ),
@@ -972,7 +1019,7 @@ class _DropdownField extends StatelessWidget {
                     item,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.style(
-                      fontSize: 14,
+                      fontSize: 12.5,
                       color: const Color(0xFF1E293B),
                     ),
                   ),
@@ -994,7 +1041,7 @@ class _DropdownField extends StatelessWidget {
           icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
             color: Color(0xFF64748B),
-            size: 20,
+            size: 18,
           ),
         ),
       ],

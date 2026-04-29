@@ -868,16 +868,8 @@ class _TaskCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    task.id,
-                    style: AppTextStyles.style(
-                      color: Colors.grey,
-                      fontSize: compact ? 11 : 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
                   Flexible(
                     child: Wrap(
                       alignment: WrapAlignment.end,

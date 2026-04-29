@@ -180,9 +180,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   return SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(
                       horizontalPadding,
-                      16,
+                      12,
                       horizontalPadding,
-                      24,
+                      16,
                     ),
                     child: Center(
                       child: ConstrainedBox(
@@ -191,14 +191,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _ProfileHeader(actionsCount: actions.length),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 12),
                             // _BiometricLoginCard(controller: _authController),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 12),
                             _ProfileActionsGrid(actions: actions),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 12),
                             SizedBox(
                               width: double.infinity,
-                              height: 48,
+                              height: 42,
                               child: ElevatedButton.icon(
                                 onPressed: _isLoggingOut ? null : _logout,
                                 style: ElevatedButton.styleFrom(
@@ -219,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   _isLoggingOut ? 'Logging out...' : 'Logout',
                                   style: AppTextStyles.style(
                                     color: Colors.white,
-                                    fontSize: 14,
+                                    fontSize: 13,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -270,10 +270,10 @@ class _ProfileActionsGrid extends StatelessWidget {
             ? 3
             : 4;
         final cardHeight = crossAxisCount == 1
-            ? 88.0
+            ? 76.0
             : maxWidth < 360
-            ? 112.0
-            : 126.0;
+            ? 98.0
+            : 110.0;
 
         return GridView.builder(
           shrinkWrap: true,
@@ -543,8 +543,8 @@ class _ProfileActionCard extends StatelessWidget {
         builder: (context, constraints) {
           final isNarrow = constraints.maxWidth < 150;
           final isListTile = constraints.maxWidth >= 240;
-          final iconSize = isNarrow ? 42.0 : 50.0;
-          final padding = isNarrow ? 12.0 : 16.0;
+          final iconSize = isNarrow ? 36.0 : 42.0;
+          final padding = isNarrow ? 10.0 : 12.0;
 
           return InkWell(
             onTap: () {
@@ -555,12 +555,12 @@ class _ProfileActionCard extends StatelessWidget {
               }
               Get.toNamed(action.routeName);
             },
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(18),
             child: Ink(
               padding: EdgeInsets.all(padding),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: isListTile
@@ -569,9 +569,9 @@ class _ProfileActionCard extends StatelessWidget {
                         _ProfileActionIcon(
                           action: action,
                           size: iconSize,
-                          iconSize: isNarrow ? 20 : 23,
+                          iconSize: isNarrow ? 18 : 20,
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 10),
                         Expanded(child: _ProfileActionTitle(action: action)),
                       ],
                     )
@@ -581,12 +581,12 @@ class _ProfileActionCard extends StatelessWidget {
                         _ProfileActionIcon(
                           action: action,
                           size: iconSize,
-                          iconSize: isNarrow ? 20 : 23,
+                          iconSize: isNarrow ? 18 : 20,
                         ),
                         const Spacer(),
                         _ProfileActionTitle(
                           action: action,
-                          fontSize: isNarrow ? 13.5 : 15,
+                          fontSize: isNarrow ? 10.5 : 11.5,
                         ),
                       ],
                     ),
@@ -616,7 +616,7 @@ class _ProfileActionIcon extends StatelessWidget {
       width: size,
       decoration: BoxDecoration(
         color: action.accentColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(action.icon, color: action.accentColor, size: iconSize),
     );
@@ -624,7 +624,7 @@ class _ProfileActionIcon extends StatelessWidget {
 }
 
 class _ProfileActionTitle extends StatelessWidget {
-  const _ProfileActionTitle({required this.action, this.fontSize = 15});
+  const _ProfileActionTitle({required this.action, this.fontSize = 13.5});
 
   final _ProfileAction action;
   final double fontSize;
@@ -639,7 +639,7 @@ class _ProfileActionTitle extends StatelessWidget {
         color: const Color(0xFF162033),
         fontSize: fontSize,
         fontWeight: FontWeight.w700,
-        height: 1.35,
+        height: 1.25,
       ),
     );
   }
@@ -659,14 +659,14 @@ class _CircleIconButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: Ink(
-          height: 44,
-          width: 44,
+          height: 38,
+          width: 38,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
-          child: Icon(icon, color: const Color(0xFF475569)),
+          child: Icon(icon, color: const Color(0xFF475569), size: 20),
         ),
       ),
     );

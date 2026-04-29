@@ -626,36 +626,27 @@ class _MetricCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 25,
+                height: 25,
                 decoration: BoxDecoration(
                   color: iconColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 alignment: Alignment.center,
-                child: Icon(icon, color: iconColor, size: 20),
+                child: Icon(icon, color: iconColor, size: 15),
               ),
-              const Spacer(),
+              const SizedBox(width: 10),
               Text(
-                percent,
+                value,
                 style: AppTextStyles.style(
-                  color: accent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E2A3B),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: AppTextStyles.style(
-              color: const Color(0xFF1E2A3B),
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
           Text(
             label.toUpperCase(),
             style: AppTextStyles.style(
@@ -769,19 +760,19 @@ class _TeamMemberCard extends StatelessWidget {
                 ),
               ),
             ),
-            Positioned(
-              bottom: -2,
-              right: -2,
-              child: Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: member.statusColor,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                ),
-              ),
-            ),
+            // Positioned(
+            //   bottom: -2,
+            //   right: -2,
+            //   child: Container(
+            //     width: 14,
+            //     height: 14,
+            //     decoration: BoxDecoration(
+            //       // color: member.statusColor,
+            //       shape: BoxShape.circle,
+            //       border: Border.all(color: Colors.white, width: 2),
+            //     ),
+            //   ),
+            // ),
           ],
         ),
         const SizedBox(height: 8),
@@ -1356,17 +1347,20 @@ class _ProjectCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      Wrap(
-                        spacing: 20,
-                        runSpacing: 10,
+                      Row(
                         children: [
-                          _ProjectInfoItem(
-                            icon: Icons.calendar_today_rounded,
-                            label: data.startDate,
+                          Expanded(
+                            child: _ProjectInfoItem(
+                              icon: Icons.calendar_today_rounded,
+                              label: data.startDate,
+                            ),
                           ),
-                          _ProjectInfoItem(
-                            icon: Icons.event_rounded,
-                            label: data.deadline,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _ProjectInfoItem(
+                              icon: Icons.event_rounded,
+                              label: data.deadline,
+                            ),
                           ),
                         ],
                       ),
@@ -1676,12 +1670,30 @@ _ProjectCardData _toProjectCardData(ProjectModel project) {
     title: project.title,
     client: project.client,
     status: project.status,
-    startDate: project.startDate,
-    deadline: project.deadline,
+    startDate: _formatProjectDateLabel(project.startDate),
+    deadline: _formatProjectDateLabel(project.deadline),
     progress: project.progress,
     accentColor: _projectAccentColor(project),
     members: project.members,
   );
+}
+
+String _formatProjectDateLabel(String rawValue) {
+  final raw = rawValue.trim();
+  if (raw.isEmpty || raw.toLowerCase() == 'not set') {
+    return 'Not set';
+  }
+
+  final parsed = DateTime.tryParse(raw);
+  if (parsed == null) {
+    return raw;
+  }
+
+  final local = parsed.toLocal();
+  final year = local.year.toString().padLeft(4, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
 }
 
 String _projectStatusCategory(String statusValue) {
@@ -1742,7 +1754,7 @@ class _TeamMember {
     required this.name,
     required this.initials,
     required this.avatarColor,
-    required this.statusColor,
+    // required this.statusColor,
     required this.count,
     this.profileImage,
   });
@@ -1751,7 +1763,7 @@ class _TeamMember {
   final String name;
   final String initials;
   final Color avatarColor;
-  final Color statusColor;
+  // final Color statusColor;
   final int count;
   final String? profileImage;
 }
@@ -1834,9 +1846,9 @@ List<_TeamMember> _buildTeamWorkload(List<ProjectModel> projects) {
           name: _memberFirstName(member.name),
           initials: _memberInitials(member.name),
           avatarColor: _memberAccentColor(key),
-          statusColor: member.isActive
-              ? const Color(0xFF10B981)
-              : const Color(0xFFF59E0B),
+          // statusColor: member.isActive
+          //     ? const Color(0xFF10B981)
+          //     : const Color(0xFFF59E0B),
           count: 1,
           profileImage: member.profileImage,
         );
@@ -1848,7 +1860,7 @@ List<_TeamMember> _buildTeamWorkload(List<ProjectModel> projects) {
         name: existing.name,
         initials: existing.initials,
         avatarColor: existing.avatarColor,
-        statusColor: existing.statusColor,
+        // statusColor: existing.statusColor,
         count: existing.count + 1,
         profileImage: existing.profileImage ?? member.profileImage,
       );

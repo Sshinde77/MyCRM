@@ -50,12 +50,12 @@ class LeadDetailScreen extends StatelessWidget {
               onRefresh: () => provider.loadLead(forceRefresh: true),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _TopBar(titleText: lead.displayName),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 12),
                     _ProfileCard(
                       lead: lead,
                       onEdit: () async {
@@ -69,7 +69,7 @@ class LeadDetailScreen extends StatelessWidget {
                         }
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
                     _SectionCard(
                       title: 'Lead Details',
                       child: _LeadDetailsContent(lead: lead),
@@ -109,16 +109,16 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: LeadDetailScreen.surface,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: LeadDetailScreen.border),
         boxShadow: const [
           BoxShadow(
             color: Color(0x120F172A),
-            blurRadius: 18,
-            offset: Offset(0, 8),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -129,7 +129,7 @@ class _ProfileCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _LeadAvatar(name: lead.displayName, imageUrl: lead.avatarUrl),
-              const SizedBox(width: 16),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,7 +141,7 @@ class _ProfileCard extends StatelessWidget {
                             lead.displayName,
                             style: AppTextStyles.style(
                               color: LeadDetailScreen.title,
-                              fontSize: 17,
+                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -149,12 +149,12 @@ class _ProfileCard extends StatelessWidget {
                         _StatusChip(status: lead.displayStatus),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       lead.displayCompany,
                       style: AppTextStyles.style(
                         color: const Color(0xFF5D6C84),
-                        fontSize: 14,
+                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -162,7 +162,7 @@ class _ProfileCard extends StatelessWidget {
                       lead.displayEmail,
                       style: AppTextStyles.style(
                         color: const Color(0xFF98A6BD),
-                        fontSize: 13,
+                         fontSize: 11.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -171,7 +171,7 @@ class _ProfileCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -183,7 +183,7 @@ class _ProfileCard extends StatelessWidget {
                   valueColor: LeadDetailScreen.link,
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 10),
               Expanded(
                 child: _MetricTile(
                   label: 'ASSIGNED',
@@ -193,7 +193,7 @@ class _ProfileCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -202,16 +202,16 @@ class _ProfileCard extends StatelessWidget {
                 backgroundColor: LeadDetailScreen.primary,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: const Icon(Icons.edit_outlined, size: 19),
+              icon: const Icon(Icons.edit_outlined, size: 17),
               label: Text(
                 'Edit Lead',
                 style: AppTextStyles.style(
-                  fontSize: 15,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -234,13 +234,13 @@ class _SectionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: LeadDetailScreen.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: LeadDetailScreen.border),
       ),
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
             child: Row(
               children: [
                 Expanded(
@@ -248,7 +248,7 @@ class _SectionCard extends StatelessWidget {
                     title,
                     style: AppTextStyles.style(
                       color: LeadDetailScreen.title,
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -258,7 +258,7 @@ class _SectionCard extends StatelessWidget {
           ),
           const Divider(height: 1, color: Color(0xFFF0F4F8)),
           Padding(
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 22),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
             child: child,
           ),
         ],
@@ -282,13 +282,13 @@ class _LeadDetailsContent extends StatelessWidget {
             Expanded(
               child: _DetailField(label: 'Name', value: lead.displayName),
             ),
-            const SizedBox(width: 22),
+            const SizedBox(width: 12),
             Expanded(
               child: _DetailField(label: 'Company', value: lead.displayCompany),
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -297,7 +297,7 @@ class _LeadDetailsContent extends StatelessWidget {
                 value: lead.displayPosition,
               ),
             ),
-            const SizedBox(width: 22),
+            const SizedBox(width: 12),
             Expanded(
               child: _DetailField(
                 label: 'Source',
@@ -307,9 +307,9 @@ class _LeadDetailsContent extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         _DetailField(label: 'Address', value: lead.displayAddress),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
@@ -318,13 +318,13 @@ class _LeadDetailsContent extends StatelessWidget {
                 value: lead.displayLocation,
               ),
             ),
-            const SizedBox(width: 22),
+            const SizedBox(width: 12),
             Expanded(
               child: _DetailField(label: 'Country', value: lead.displayCountry),
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -334,7 +334,7 @@ class _LeadDetailsContent extends StatelessWidget {
                 value: lead.displayZipCode,
               ),
             ),
-            const SizedBox(width: 22),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,24 +343,24 @@ class _LeadDetailsContent extends StatelessWidget {
                     'Tags',
                     style: AppTextStyles.style(
                       color: LeadDetailScreen.muted,
-                      fontSize: 12,
+                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   if (lead.tags.isEmpty)
                     Text(
                       'No tags',
                       style: AppTextStyles.style(
                         color: LeadDetailScreen.title,
-                        fontSize: 14,
+                         fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                       ),
                     )
                   else
                     Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                       spacing: 6,
+                       runSpacing: 6,
                       children: lead.tags
                           .map((tag) => _TagChip(label: tag))
                           .toList(),
@@ -370,12 +370,12 @@ class _LeadDetailsContent extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         _DetailField(
           label: 'Created Date',
           value: _formatDateTime(lead.createdAt),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         _DetailField(
           label: 'Description',
           value: lead.displayDescription,
@@ -400,10 +400,10 @@ class _MetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F6FB),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,16 +412,16 @@ class _MetricTile extends StatelessWidget {
             label,
             style: AppTextStyles.style(
               color: const Color(0xFF7084A0),
-              fontSize: 12,
+               fontSize: 10.5,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Text(
             value,
             style: AppTextStyles.style(
               color: valueColor,
-              fontSize: 18,
+               fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -453,17 +453,17 @@ class _DetailField extends StatelessWidget {
           label,
           style: AppTextStyles.style(
             color: LeadDetailScreen.muted,
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         Text(
           value,
           style: AppTextStyles.style(
             color: valueColor,
-            fontSize: 14,
-            height: isMultiline ? 1.7 : 1.4,
+            fontSize: 12.5,
+            height: isMultiline ? 1.5 : 1.3,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -480,7 +480,7 @@ class _TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: const Color(0xFFF2F5F9),
         borderRadius: BorderRadius.circular(999),
@@ -489,7 +489,7 @@ class _TagChip extends StatelessWidget {
         label,
         style: AppTextStyles.style(
           color: const Color(0xFF4B5D78),
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -508,11 +508,11 @@ class _LeadAvatar extends StatelessWidget {
     final trimmedUrl = imageUrl?.trim() ?? '';
     if (trimmedUrl.isNotEmpty) {
       return Container(
-        width: 64,
-        height: 64,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFD9E7FF), width: 2),
+          border: Border.all(color: const Color(0xFFD9E7FF), width: 1.5),
           image: DecorationImage(
             image: NetworkImage(trimmedUrl),
             fit: BoxFit.cover,
@@ -522,13 +522,13 @@ class _LeadAvatar extends StatelessWidget {
     }
 
     return CircleAvatar(
-      radius: 32,
+      radius: 26,
       backgroundColor: const Color(0xFFDCE8F8),
       child: Text(
         _initials(name),
         style: AppTextStyles.style(
           color: const Color(0xFF2E5B9A),
-          fontSize: 18,
+          fontSize: 15,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -575,7 +575,7 @@ class _StatusChip extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999),
@@ -584,7 +584,7 @@ class _StatusChip extends StatelessWidget {
         status.toUpperCase(),
         style: AppTextStyles.style(
           color: foreground,
-          fontSize: 12,
+          fontSize: 10.5,
           fontWeight: FontWeight.w600,
         ),
       ),

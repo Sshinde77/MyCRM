@@ -83,7 +83,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               final wide = constraints.maxWidth >= 980;
 
               return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1400),
@@ -93,9 +93,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                         _DetailTopBar(
                           onBack: () => Navigator.of(context).maybePop(),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 12),
                         _TaskHero(detail: detail),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                         wide
                             ? Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +104,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                     flex: 8,
                                     child: _TaskInformationCard(detail: detail),
                                   ),
-                                  const SizedBox(width: 24),
+                                  const SizedBox(width: 16),
                                   Expanded(
                                     flex: 4,
                                     child: Column(
@@ -114,11 +114,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                           assignees: detail.assignees,
                                           followers: detail.followers,
                                         ),
-                                        const SizedBox(height: 24),
+                                        const SizedBox(height: 16),
                                         _AttachmentsCard(
                                           attachments: detail.attachments,
                                         ),
-                                        const SizedBox(height: 24),
+                                        const SizedBox(height: 16),
                                         _TaskCommentsCard(
                                           taskId: widget.taskId,
                                         ),
@@ -130,17 +130,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             : Column(
                                 children: [
                                   _TaskInformationCard(detail: detail),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 14),
                                   _PeopleCard(
                                     title: 'Assignees & Followers',
                                     assignees: detail.assignees,
                                     followers: detail.followers,
                                   ),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 14),
                                   _AttachmentsCard(
                                     attachments: detail.attachments,
                                   ),
-                                  const SizedBox(height: 20),
+                                  const SizedBox(height: 14),
                                   _TaskCommentsCard(taskId: widget.taskId),
                                 ],
                               ),
@@ -734,13 +734,13 @@ class _DetailCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE5ECF5)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A0F172A),
-            blurRadius: 14,
-            offset: Offset(0, 6),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -748,7 +748,7 @@ class _DetailCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -768,11 +768,11 @@ class _DetailCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF0F172A),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF0F172A),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
                       ),
                     ],
                   ),
@@ -781,7 +781,7 @@ class _DetailCard extends StatelessWidget {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFE2E8F0)),
-          Padding(padding: const EdgeInsets.all(20), child: child),
+          Padding(padding: const EdgeInsets.all(14), child: child),
         ],
       ),
     );
@@ -814,10 +814,10 @@ class _TaskHero extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE5ECF5)),
         boxShadow: const [
           BoxShadow(
@@ -830,29 +830,29 @@ class _TaskHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           Text(
             detail.title,
             style: AppTextStyles.style(
               color: const Color(0xFF0F172A),
-              fontSize: compact ? 21 : 24,
+              fontSize: compact ? 18 : 20,
               height: 1.15,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             detail.description,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-              fontSize: compact ? 13 : 14,
+              fontSize: compact ? 12 : 13,
               height: 1.55,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -862,7 +862,7 @@ class _TaskHero extends StatelessWidget {
                   compact: compact,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _HeroStat(
                   label: 'Status',
@@ -872,7 +872,7 @@ class _TaskHero extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -882,7 +882,7 @@ class _TaskHero extends StatelessWidget {
                   compact: compact,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: _HeroStat(
                   label: 'Due Date',
@@ -912,10 +912,10 @@ class _HeroStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(9),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
@@ -925,18 +925,18 @@ class _HeroStat extends StatelessWidget {
             label,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-              fontSize: compact ? 10 : 11,
+              fontSize: compact ? 9 : 10,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
               color: const Color(0xFF0F172A),
-              fontSize: compact ? 13 : 14,
+              fontSize: compact ? 12 : 13,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -962,43 +962,43 @@ class _MetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             alignment: Alignment.center,
-            child: Icon(icon, color: accent, size: 20),
+            child: Icon(icon, color: accent, size: 17),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 9),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF64748B),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF64748B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   value,
                   style: AppTextStyles.style(
                     color: const Color(0xFF0F172A),
-                    fontSize: 15,
+                    fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -1021,10 +1021,10 @@ class _ContentBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
@@ -1032,13 +1032,13 @@ class _ContentBlock extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AppTextStyles.style(
-              color: const Color(0xFF0F172A),
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
+              style: AppTextStyles.style(
+                color: const Color(0xFF0F172A),
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           child,
         ],
       ),
@@ -1056,25 +1056,25 @@ class _SoftEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
           Icon(icon, color: const Color(0xFF94A3B8)),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: AppTextStyles.style(
-                color: const Color(0xFF64748B),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
           ),
         ],
       ),
@@ -1094,20 +1094,20 @@ class _PersonAvatar extends StatelessWidget {
 
     if (imageUrl != null && imageUrl!.trim().isNotEmpty) {
       return CircleAvatar(
-        radius: 24,
+        radius: 20,
         backgroundColor: const Color(0xFFE2E8F0),
         backgroundImage: NetworkImage(imageUrl!),
       );
     }
 
     return CircleAvatar(
-      radius: 24,
+      radius: 20,
       backgroundColor: const Color(0xFFE7F0FF),
       child: Text(
         initials,
         style: AppTextStyles.style(
           color: const Color(0xFF1D4ED8),
-          fontSize: 14,
+          fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
       ),

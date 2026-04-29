@@ -164,11 +164,11 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
 
           final client = bundle.client;
           return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 18),
             child: Column(
               children: [
                 _ProfileHeader(client: client),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -180,7 +180,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         iconColor: const Color(0xFF1769F3),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _StatBox(
                         icon: Icons.assignment_outlined,
@@ -190,7 +190,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         iconColor: const Color(0xFFF59E0B),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _StatBox(
                         icon: client.isActive
@@ -208,14 +208,14 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 _ClientInfoCard(client: client),
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
                 _SectionHeader(
                   title: 'Projects',
                   count: bundle.projects.length,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 if (bundle.projects.isEmpty)
                   const _EmptyRelatedState(
                     message: 'No projects found for this client.',
@@ -226,9 +226,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                         .map((project) => _ProjectListCard(project: project))
                         .toList(),
                   ),
-                const SizedBox(height: 20),
-                _SectionHeader(title: 'Tasks', count: bundle.tasks.length),
                 const SizedBox(height: 12),
+                _SectionHeader(title: 'Tasks', count: bundle.tasks.length),
+                const SizedBox(height: 8),
                 if (bundle.tasks.isEmpty)
                   const _EmptyRelatedState(
                     message: 'No tasks found for this client.',
@@ -279,10 +279,10 @@ class _ProfileHeader extends StatelessWidget {
         : 'Unassigned Manager';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
@@ -298,16 +298,16 @@ class _ProfileHeader extends StatelessWidget {
                           child: Text(
                             displayName,
                             style: AppTextStyles.style(
-                              fontSize: 20,
+                              fontSize: 17,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF141C33),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
+                            horizontal: 7,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
@@ -321,7 +321,7 @@ class _ProfileHeader extends StatelessWidget {
                                 ? 'ACTIVE CLIENT'
                                 : 'INACTIVE CLIENT',
                             style: AppTextStyles.style(
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.w700,
                               color: client.isActive
                                   ? const Color(0xFF059669)
@@ -334,7 +334,7 @@ class _ProfileHeader extends StatelessWidget {
                     Text(
                       company,
                       style: AppTextStyles.style(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: const Color(0xFF74839D),
                       ),
                     ),
@@ -343,7 +343,7 @@ class _ProfileHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           _infoRow(Icons.email_outlined, email),
           _infoRow(Icons.phone_outlined, phone),
           _infoRow(Icons.language_outlined, website, isLink: true),
@@ -355,16 +355,16 @@ class _ProfileHeader extends StatelessWidget {
 
   Widget _infoRow(IconData icon, String text, {bool isLink = false}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF74839D)),
-          const SizedBox(width: 12),
+          Icon(icon, size: 16, color: const Color(0xFF74839D)),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: AppTextStyles.style(
-                fontSize: 13,
+                fontSize: 12,
                 color: isLink
                     ? const Color(0xFF1769F3)
                     : const Color(0xFF141C33),
@@ -396,29 +396,29 @@ class _StatBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(7),
             ),
-            child: Icon(icon, size: 20, color: iconColor),
+            child: Icon(icon, size: 17, color: iconColor),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.style(
-              fontSize: 18,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF141C33),
             ),
@@ -426,7 +426,7 @@ class _StatBox extends StatelessWidget {
           Text(
             label,
             style: AppTextStyles.style(
-              fontSize: 10,
+              fontSize: 9,
               color: const Color(0xFF74839D),
               fontWeight: FontWeight.w500,
             ),
@@ -464,10 +464,10 @@ class _ClientInfoCard extends StatelessWidget {
         : 'Not specified';
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,7 +478,7 @@ class _ClientInfoCard extends StatelessWidget {
               Text(
                 'Client Information',
                 style: AppTextStyles.style(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF141C33),
                 ),
@@ -486,11 +486,11 @@ class _ClientInfoCard extends StatelessWidget {
               const Icon(
                 Icons.info_outline,
                 color: Color(0xFF74839D),
-                size: 20,
+                size: 18,
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
@@ -504,7 +504,7 @@ class _ClientInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -519,9 +519,9 @@ class _ClientInfoCard extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 32),
+          const Divider(height: 24),
           _InfoField(label: 'ADDRESS DETAILS', value: client.addressSummary),
-          const Divider(height: 32),
+          const Divider(height: 24),
           Row(
             children: [
               Expanded(
@@ -553,17 +553,17 @@ class _InfoField extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.style(
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF74839D),
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           value,
           style: AppTextStyles.style(
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
             color: valueColor ?? const Color(0xFF141C33),
           ),
@@ -587,13 +587,13 @@ class _SectionHeader extends StatelessWidget {
         Text(
           title,
           style: AppTextStyles.style(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
             color: const Color(0xFF141C33),
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: const Color(0xFFE8F0FE),
             borderRadius: BorderRadius.circular(999),
@@ -601,7 +601,7 @@ class _SectionHeader extends StatelessWidget {
           child: Text(
             '$count',
             style: AppTextStyles.style(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF1769F3),
             ),
@@ -621,11 +621,11 @@ class _ProjectListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,29 +637,29 @@ class _ProjectListCard extends StatelessWidget {
                 child: Text(
                   project.title.isNotEmpty ? project.title : 'Untitled Project',
                   style: AppTextStyles.style(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF141C33),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               _StatusChip(label: project.status),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             project.client.isNotEmpty ? project.client : 'No client name',
             style: AppTextStyles.style(
-              fontSize: 13,
+              fontSize: 12,
               color: const Color(0xFF74839D),
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Wrap(
-            spacing: 12,
-            runSpacing: 8,
+            spacing: 10,
+            runSpacing: 6,
             children: [
               _MetaText(
                 icon: Icons.play_circle_outline_rounded,
@@ -694,11 +694,11 @@ class _TaskListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -710,40 +710,40 @@ class _TaskListCard extends StatelessWidget {
                 child: Text(
                   task.title,
                   style: AppTextStyles.style(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFF141C33),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               _StatusChip(label: task.status),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Project: ${task.projectName}',
             style: AppTextStyles.style(
-              fontSize: 12,
+              fontSize: 11,
               color: const Color(0xFF1769F3),
               fontWeight: FontWeight.w600,
             ),
           ),
           if (task.description.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               task.description,
               style: AppTextStyles.style(
-                fontSize: 12,
+                fontSize: 11,
                 color: const Color(0xFF74839D),
                 height: 1.4,
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Wrap(
-            spacing: 12,
-            runSpacing: 8,
+            spacing: 10,
+            runSpacing: 6,
             children: [
               _MetaText(
                 icon: Icons.flag_outlined,
@@ -753,8 +753,6 @@ class _TaskListCard extends StatelessWidget {
                 icon: Icons.calendar_month_outlined,
                 text: 'Due: ${task.deadlineLabel}',
               ),
-              if (task.id.isNotEmpty)
-                _MetaText(icon: Icons.tag_outlined, text: 'ID: ${task.id}'),
             ],
           ),
         ],
@@ -773,16 +771,16 @@ class _MetaText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: const Color(0xFF74839D)),
-        const SizedBox(width: 5),
-        Text(
-          text,
-          style: AppTextStyles.style(
-            fontSize: 11,
-            color: const Color(0xFF74839D),
-            fontWeight: FontWeight.w600,
-          ),
+        children: [
+          Icon(icon, size: 13, color: const Color(0xFF74839D)),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: AppTextStyles.style(
+              fontSize: 10,
+              color: const Color(0xFF74839D),
+              fontWeight: FontWeight.w600,
+            ),
         ),
       ],
     );
@@ -827,7 +825,7 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         label.isNotEmpty ? label : 'Unknown',
         style: AppTextStyles.style(
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: FontWeight.w700,
           color: foreground,
         ),
@@ -845,20 +843,20 @@ class _EmptyRelatedState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          const Icon(Icons.inbox_outlined, color: Color(0xFF94A3B8)),
-          const SizedBox(width: 12),
+          const Icon(Icons.inbox_outlined, color: Color(0xFF94A3B8), size: 18),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
               style: AppTextStyles.style(
-                fontSize: 13,
+                fontSize: 12,
                 color: const Color(0xFF64748B),
                 fontWeight: FontWeight.w500,
               ),

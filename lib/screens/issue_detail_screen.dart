@@ -110,7 +110,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
               onRefresh: _refresh,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -127,11 +127,11 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                     ),
                     // const SizedBox(height: 24),
                     // _AssignmentsCard(issue: issue),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
                     _DetailsCard(issue: issue),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
                     _AssignmentsCompactCard(issue: issue),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
                     _TaskBoardCard(
                       issue: issue,
                       onTaskCreated: _refresh,
@@ -273,7 +273,7 @@ class _IssueHeaderCard extends StatelessWidget {
     const blue = Color(0xFF1769F3);
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: _cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,7 +293,7 @@ class _IssueHeaderCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -302,12 +302,12 @@ class _IssueHeaderCard extends StatelessWidget {
                   issue.displayProject,
                   style: AppTextStyles.style(
                     color: textMain,
-                    fontSize: 18,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               _Badge(
                 label: '${issue.displayStatus.toUpperCase()} STATUS',
                 background: _statusBg(issue.status),
@@ -315,7 +315,7 @@ class _IssueHeaderCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           RichText(
             text: TextSpan(
               children: [
@@ -323,7 +323,7 @@ class _IssueHeaderCard extends StatelessWidget {
                   text: 'Client: ',
                   style: AppTextStyles.style(
                     color: textSec,
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -331,55 +331,55 @@ class _IssueHeaderCard extends StatelessWidget {
                   text: issue.displayClient,
                   style: AppTextStyles.style(
                     color: textMain,
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Text(
             issue.displayDescription,
             style: AppTextStyles.style(
               color: textSec,
-              fontSize: 13,
+              fontSize: 12,
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: canEditIssue ? onAssign : null,
-                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
                   label: const Text('Assign'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: blue,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: canEditIssue && !isClosingIssue
                       ? onCloseIssue
                       : null,
-                  icon: const Icon(Icons.close_rounded, size: 18),
+                  icon: const Icon(Icons.close_rounded, size: 16),
                   label: Text(isClosingIssue ? 'Closing...' : 'Close Issue'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF1F5F9),
                     foregroundColor: textMain,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
@@ -420,12 +420,12 @@ class _AssignTeamsDialogState extends State<_AssignTeamsDialog> {
 
     return Dialog(
       backgroundColor: Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: FutureBuilder<List<ClientIssueTeamOption>>(
             future: _teamsFuture,
             builder: (context, snapshot) {
@@ -470,7 +470,7 @@ class _AssignTeamsDialogState extends State<_AssignTeamsDialog> {
                           'Assign Team',
                           style: AppTextStyles.style(
                             color: textMain,
-                            fontSize: 20,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -481,13 +481,13 @@ class _AssignTeamsDialogState extends State<_AssignTeamsDialog> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   if (teams.isEmpty)
                     Text(
                       'No teams available.',
                       style: AppTextStyles.style(
                         color: textSec,
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     )
@@ -1167,15 +1167,15 @@ class _Section extends StatelessWidget {
           title,
           style: AppTextStyles.style(
             color: const Color(0xFF141C33),
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: _cardDecoration(radius: 20, shadow: false),
+          padding: const EdgeInsets.all(14),
+          decoration: _cardDecoration(radius: 14, shadow: false),
           child: child,
         ),
       ],
@@ -1285,7 +1285,7 @@ class _TaskDetailDialogState extends State<_TaskDetailDialog> {
                               : task.title,
                           style: AppTextStyles.style(
                             color: textMain,
-                            fontSize: 20,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1710,7 +1710,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         vertical: compact ? 16 : 28,
       ),
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
@@ -2027,7 +2027,7 @@ class _TaskFormLabel extends StatelessWidget {
         text: text,
         style: AppTextStyles.style(
           color: const Color(0xFF64748B),
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
         children: required
@@ -2064,7 +2064,7 @@ class _TaskTextField extends StatelessWidget {
       maxLines: maxLines,
       style: AppTextStyles.style(
         color: const Color(0xFF141C33),
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.w500,
       ),
       decoration: _taskInputDecoration(hint),
@@ -2097,7 +2097,7 @@ class _TaskSelectField extends StatelessWidget {
           isExpanded: true,
           style: AppTextStyles.style(
             color: const Color(0xFF141C33),
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
           icon: const Icon(
@@ -2137,12 +2137,12 @@ class _ResponsivePair extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (compact) {
-      return Column(children: [left, const SizedBox(height: 10), right]);
+      return Column(children: [left, const SizedBox(height: 8), right]);
     }
     return Row(
       children: [
         Expanded(child: left),
-        const SizedBox(width: 14),
+        const SizedBox(width: 10),
         Expanded(child: right),
       ],
     );
@@ -2162,7 +2162,7 @@ class _ResponsiveTriple extends StatelessWidget {
         children: [
           for (var i = 0; i < children.length; i++) ...[
             children[i],
-            if (i != children.length - 1) const SizedBox(height: 10),
+            if (i != children.length - 1) const SizedBox(height: 8),
           ],
         ],
       );
@@ -2171,7 +2171,7 @@ class _ResponsiveTriple extends StatelessWidget {
       children: [
         for (var i = 0; i < children.length; i++) ...[
           Expanded(child: children[i]),
-          if (i != children.length - 1) const SizedBox(width: 14),
+          if (i != children.length - 1) const SizedBox(width: 10),
         ],
       ],
     );
@@ -2193,10 +2193,10 @@ class _TaskPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFD8E1EF)),
         boxShadow: const [
           BoxShadow(
@@ -2225,13 +2225,13 @@ class _TaskPanel extends StatelessWidget {
                 title,
                 style: AppTextStyles.style(
                   color: const Color(0xFF141C33),
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           child,
         ],
       ),
@@ -2258,7 +2258,7 @@ class _TaskDateInput extends StatelessWidget {
           onTap: onTap,
           style: AppTextStyles.style(
             color: const Color(0xFF141C33),
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
           decoration: _taskInputDecoration(hint).copyWith(
@@ -2266,7 +2266,7 @@ class _TaskDateInput extends StatelessWidget {
               label.toLowerCase().contains('time')
                   ? Icons.access_time_rounded
                   : Icons.calendar_today_rounded,
-              size: 18,
+              size: 16,
               color: const Color(0xFF74839D),
             ),
           ),
@@ -2297,17 +2297,17 @@ class _TaskInlineAddField extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         SizedBox(
-          height: 44,
+          height: 38,
           child: OutlinedButton.icon(
             onPressed: () {},
-            icon: const Icon(Icons.add_rounded, size: 18),
+            icon: const Icon(Icons.add_rounded, size: 16),
             label: const Text('Add'),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF1769F3),
               side: const BorderSide(color: Color(0xFF1769F3)),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
           ),
@@ -2331,23 +2331,23 @@ InputDecoration _taskInputDecoration(String hint) {
     hintText: hint,
     hintStyle: AppTextStyles.style(
       color: const Color(0xFF94A3B8),
-      fontSize: 13,
+      fontSize: 12,
       fontWeight: FontWeight.w500,
     ),
     isDense: true,
     filled: true,
     fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(10),
       borderSide: const BorderSide(color: Color(0xFFD8E1EF)),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(10),
       borderSide: const BorderSide(color: Color(0xFFD8E1EF)),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(10),
       borderSide: const BorderSide(color: Color(0xFF1769F3), width: 1.4),
     ),
   );
@@ -2378,18 +2378,18 @@ class _InfoRow extends StatelessWidget {
           label,
           style: AppTextStyles.style(
             color: const Color(0xFF74839D),
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(width: 18),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             value,
             textAlign: TextAlign.right,
             style: AppTextStyles.style(
               color: valueColor ?? const Color(0xFF141C33),
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -2416,7 +2416,7 @@ class _Badge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,
@@ -2462,7 +2462,7 @@ class _DetailState extends StatelessWidget {
   }
 }
 
-BoxDecoration _cardDecoration({double radius = 24, bool shadow = true}) {
+BoxDecoration _cardDecoration({double radius = 16, bool shadow = true}) {
   return BoxDecoration(
     color: Colors.white,
     borderRadius: BorderRadius.circular(radius),

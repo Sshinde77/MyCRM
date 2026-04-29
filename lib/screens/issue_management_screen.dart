@@ -258,19 +258,14 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final startEntry = _filtered.isEmpty ? 0 : ((_page - 1) * _pageSize) + 1;
-    final endEntry = _filtered.isEmpty
-        ? 0
-        : ((_page - 1) * _pageSize) + _visible.length;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAFF),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 390;
-            final side = compact ? 14.0 : 18.0;
-            final inner = compact ? 16.0 : 20.0;
+            final side = compact ? 12.0 : 14.0;
+            final inner = compact ? 12.0 : 14.0;
 
             return Column(
               children: [
@@ -279,9 +274,9 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                   child: SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(
                       0,
-                      compact ? 6 : 10,
+                      compact ? 4 : 6,
                       0,
-                      compact ? 12 : 16,
+                      compact ? 10 : 12,
                     ),
                     child: Center(
                       child: ConstrainedBox(
@@ -317,7 +312,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                 ],
                               ),
                             ),
-                            SizedBox(height: compact ? 12 : 14),
+                            SizedBox(height: compact ? 10 : 12),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: side),
                               child: _canCreateIssue
@@ -331,14 +326,14 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                   : const SizedBox.shrink(),
                             ),
                             if (_canCreateIssue)
-                              SizedBox(height: compact ? 12 : 14),
+                              SizedBox(height: compact ? 10 : 12),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: side),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(
-                                    compact ? 24 : 28,
+                                    compact ? 18 : 20,
                                   ),
                                   border: Border.all(
                                     color: const Color(0xFFD8E1EF),
@@ -346,8 +341,8 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0x120F172A),
-                                      blurRadius: compact ? 16 : 22,
-                                      offset: Offset(0, compact ? 8 : 12),
+                                      blurRadius: compact ? 10 : 12,
+                                      offset: Offset(0, compact ? 4 : 6),
                                     ),
                                   ],
                                 ),
@@ -358,97 +353,33 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                         inner,
                                         inner,
                                         inner,
-                                        compact ? 12 : 14,
+                                        compact ? 10 : 12,
                                       ),
                                       child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            children: [
-                                              Text(
-                                                'Show',
-                                                style: _ts(
-                                                  const Color(0xFF64748B),
-                                                  compact ? 14 : 15,
-                                                  FontWeight.w500,
-                                                ),
-                                              ),
-                                              SizedBox(width: compact ? 8 : 10),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: compact ? 12 : 14,
-                                                  vertical: compact ? 8 : 9,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: const Color(
-                                                    0xFFF8FAFC,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                        compact ? 16 : 18,
-                                                      ),
-                                                  border: Border.all(
-                                                    color: const Color(
-                                                      0xFFD8E1EF,
-                                                    ),
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      '10',
-                                                      style: _ts(
-                                                        const Color(0xFF334155),
-                                                        compact ? 14 : 15,
-                                                        FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                    Icon(
-                                                      Icons
-                                                          .keyboard_arrow_down_rounded,
-                                                      color: const Color(
-                                                        0xFF64748B,
-                                                      ),
-                                                      size: compact ? 18 : 20,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              SizedBox(width: compact ? 8 : 10),
-                                              Text(
-                                                'entries',
-                                                style: _ts(
-                                                  const Color(0xFF64748B),
-                                                  compact ? 14 : 15,
-                                                  FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: compact ? 12 : 14),
+                                          SizedBox(height: compact ? 4 : 6),
                                           TextField(
                                             controller: _searchController,
                                             onChanged: (_) =>
                                                 setState(() => _page = 1),
-                                            style: _ts(
-                                              const Color(0xFF334155),
-                                              compact ? 14 : 15,
-                                              FontWeight.w500,
-                                            ),
+                                              style: _ts(
+                                                const Color(0xFF334155),
+                                                compact ? 13 : 14,
+                                                FontWeight.w500,
+                                              ),
                                             decoration: InputDecoration(
                                               hintText: 'Search issues...',
                                               hintStyle: _ts(
                                                 const Color(0xFF94A3B8),
-                                                compact ? 14 : 15,
+                                                compact ? 13 : 14,
                                                 FontWeight.w500,
                                               ),
                                               prefixIcon: Icon(
                                                 Icons.search_rounded,
                                                 color: const Color(0xFF94A3B8),
-                                                size: compact ? 20 : 22,
+                                                size: compact ? 18 : 20,
                                               ),
                                               filled: true,
                                               fillColor: const Color(
@@ -461,7 +392,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                               enabledBorder: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(
-                                                      compact ? 18 : 20,
+                                                      compact ? 14 : 16,
                                                     ),
                                                 borderSide: const BorderSide(
                                                   color: Color(0xFFD8E1EF),
@@ -470,7 +401,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                               focusedBorder: OutlineInputBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(
-                                                      compact ? 18 : 20,
+                                                      compact ? 14 : 16,
                                                     ),
                                                 borderSide: const BorderSide(
                                                   color: Color(0xFF3B82F6),
@@ -488,9 +419,9 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                     Padding(
                                       padding: EdgeInsets.fromLTRB(
                                         compact ? 12 : 14,
-                                        compact ? 12 : 14,
-                                        compact ? 12 : 14,
                                         compact ? 10 : 12,
+                                        compact ? 12 : 14,
+                                        compact ? 8 : 10,
                                       ),
                                       child: Column(
                                         children:
@@ -533,7 +464,8 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                             : _visible.map((issue) {
                                                 return Padding(
                                                   padding: EdgeInsets.only(
-                                                    bottom: compact ? 12 : 14,
+                                                    // bottom: compact ? 12 : 14,
+                                                    bottom: compact ? 10 : 12,
                                                   ),
                                                   child: _IssueCard(
                                                     issue: issue,
@@ -557,53 +489,18 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                     ),
                                     Padding(
                                       padding: EdgeInsets.fromLTRB(
-                                        compact ? 12 : 16,
-                                        compact ? 14 : 16,
-                                        compact ? 12 : 16,
-                                        compact ? 16 : 18,
+                                        compact ? 12 : 14,
+                                        compact ? 10 : 12,
+                                        compact ? 12 : 14,
+                                        compact ? 12 : 14,
                                       ),
                                       child: Column(
                                         children: [
-                                          Text(
-                                            'Showing $startEntry to $endEntry of ${_filtered.length} entries',
-                                            textAlign: TextAlign.center,
-                                            style: _ts(
-                                              const Color(0xFF64748B),
-                                              compact ? 13 : 14,
-                                              FontWeight.w500,
-                                            ),
-                                          ),
-                                          SizedBox(height: compact ? 12 : 14),
-                                          Wrap(
-                                            alignment: WrapAlignment.center,
-                                            spacing: compact ? 6 : 8,
-                                            runSpacing: compact ? 8 : 10,
-                                            children: [
-                                              _PageAction(
-                                                'Previous',
-                                                _page > 1,
-                                                () => _setPage(_page - 1),
-                                                compact: compact,
-                                              ),
-                                              ...List.generate(
-                                                _pageCount > 3 ? 3 : _pageCount,
-                                                (i) {
-                                                  final p = i + 1;
-                                                  return _PageChip(
-                                                    label: '$p',
-                                                    selected: p == _page,
-                                                    compact: compact,
-                                                    onTap: () => _setPage(p),
-                                                  );
-                                                },
-                                              ),
-                                              _PageAction(
-                                                'Next',
-                                                _page < _pageCount,
-                                                () => _setPage(_page + 1),
-                                                compact: compact,
-                                              ),
-                                            ],
+                                          _IssuePaginationBar(
+                                            compact: compact,
+                                            currentPage: _page,
+                                            totalPages: _pageCount,
+                                            onPageTap: _setPage,
                                           ),
                                         ],
                                       ),
@@ -635,7 +532,7 @@ class _MobileAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: compact ? 64 : 68,
+      height: compact ? 58 : 62,
       padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -665,18 +562,18 @@ class _AddIssueButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(compact ? 16 : 18),
+      borderRadius: BorderRadius.circular(compact ? 12 : 14),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: compact ? 13 : 15),
+        padding: EdgeInsets.symmetric(vertical: compact ? 10 : 11),
         decoration: BoxDecoration(
           color: const Color(0xFF1769F3),
-          borderRadius: BorderRadius.circular(compact ? 16 : 18),
+          borderRadius: BorderRadius.circular(compact ? 12 : 14),
           boxShadow: const [
             BoxShadow(
               color: Color(0x221769F3),
-              blurRadius: 16,
-              offset: Offset(0, 8),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -696,12 +593,12 @@ class _AddIssueButton extends StatelessWidget {
               Icon(
                 Icons.add_rounded,
                 color: Colors.white,
-                size: compact ? 21 : 23,
+                size: compact ? 18 : 20,
               ),
             SizedBox(width: compact ? 8 : 10),
             Text(
               isLoading ? 'Saving Issue...' : 'Add New Issue',
-              style: _ts(Colors.white, compact ? 14 : 15, FontWeight.w700),
+              style: _ts(Colors.white, compact ? 13 : 14, FontWeight.w700),
             ),
           ],
         ),
@@ -730,25 +627,25 @@ class _IssueSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: compact ? 92 : 100,
-      padding: EdgeInsets.all(compact ? 12 : 14),
+      height: compact ? 78 : 84,
+      padding: EdgeInsets.all(compact ? 10 : 12),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(compact ? 18 : 20),
+        borderRadius: BorderRadius.circular(compact ? 14 : 16),
         border: Border.all(color: color.withValues(alpha: 0.16)),
       ),
       child: Row(
         children: [
           Container(
-            height: compact ? 38 : 42,
-            width: compact ? 38 : 42,
+            height: compact ? 32 : 36,
+            width: compact ? 32 : 36,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(compact ? 14 : 16),
+              borderRadius: BorderRadius.circular(compact ? 10 : 12),
             ),
-            child: Icon(icon, color: color, size: compact ? 20 : 22),
+            child: Icon(icon, color: color, size: compact ? 17 : 18),
           ),
-          SizedBox(width: compact ? 10 : 12),
+          SizedBox(width: compact ? 8 : 10),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -760,19 +657,19 @@ class _IssueSummaryCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: _ts(
                     color,
-                    compact ? 23 : 26,
+                    compact ? 18 : 20,
                     FontWeight.w800,
                     height: 1,
                   ),
                 ),
-                SizedBox(height: compact ? 5 : 6),
+                SizedBox(height: compact ? 4 : 5),
                 Text(
                   label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: _ts(
                     color,
-                    compact ? 12 : 13,
+                    compact ? 10.5 : 11.5,
                     FontWeight.w600,
                     height: 1.15,
                   ),
@@ -851,24 +748,24 @@ class _IssueCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onView,
-      borderRadius: BorderRadius.circular(compact ? 20 : 24),
+      borderRadius: BorderRadius.circular(compact ? 14 : 16),
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.fromLTRB(
-          compact ? 14 : 16,
-          compact ? 14 : 16,
-          compact ? 14 : 16,
-          compact ? 14 : 16,
+          compact ? 10 : 12,
+          compact ? 10 : 12,
+          compact ? 10 : 12,
+          compact ? 10 : 12,
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(compact ? 20 : 24),
+          borderRadius: BorderRadius.circular(compact ? 14 : 16),
           border: Border.all(color: const Color(0xFFE6ECF5)),
           boxShadow: [
             BoxShadow(
               color: const Color(0x0D0F172A),
-              blurRadius: compact ? 10 : 14,
-              offset: Offset(0, compact ? 5 : 7),
+              blurRadius: compact ? 7 : 9,
+              offset: Offset(0, compact ? 3 : 4),
             ),
           ],
         ),
@@ -877,18 +774,10 @@ class _IssueCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Flexible(
-                  child: _Pill(
-                    issue.displayId,
-                    const Color(0xFFF1F5F9),
-                    const Color(0xFF64748B),
-                    compact: compact,
-                  ),
-                ),
                 const Spacer(),
                 Icon(
                   Icons.calendar_today_outlined,
-                  size: compact ? 15 : 16,
+                  size: compact ? 13 : 14,
                   color: const Color(0xFF94A3B8),
                 ),
                 SizedBox(width: compact ? 5 : 6),
@@ -896,44 +785,44 @@ class _IssueCard extends StatelessWidget {
                   issue.displayDate,
                   style: _ts(
                     const Color(0xFF94A3B8),
-                    compact ? 12 : 13,
+                    compact ? 10.5 : 11.5,
                     FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: compact ? 14 : 18),
+            SizedBox(height: compact ? 8 : 10),
             Text(
               issue.displayProject.toUpperCase(),
               style: _ts(
                 const Color(0xFF3B82F6),
-                compact ? 11 : 12,
+                compact ? 10 : 11,
                 FontWeight.w700,
                 letterSpacing: 0.2,
               ),
             ),
-            SizedBox(height: compact ? 6 : 8),
+            SizedBox(height: compact ? 4 : 6),
             Text(
               issue.displayTitle,
               style: _ts(
                 const Color(0xFF17213A),
-                compact ? 18 : 19,
+                compact ? 14 : 15,
                 FontWeight.w700,
                 height: 1.22,
               ),
             ),
-            SizedBox(height: compact ? 6 : 8),
+            SizedBox(height: compact ? 4 : 6),
             Text(
               'Client: ${issue.displayClient}',
               style: _ts(
                 const Color(0xFF64748B),
-                compact ? 14 : 15,
+                compact ? 11.5 : 12.5,
                 FontWeight.w500,
               ),
             ),
-            SizedBox(height: compact ? 14 : 16),
+            SizedBox(height: compact ? 8 : 10),
             const Divider(height: 1, color: Color(0xFFF1F5F9)),
-            SizedBox(height: compact ? 12 : 14),
+            SizedBox(height: compact ? 8 : 10),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -965,13 +854,13 @@ class _IssueCard extends StatelessWidget {
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: BoxConstraints(
-                        minWidth: compact ? 32 : 36,
-                        minHeight: compact ? 32 : 36,
+                        minWidth: compact ? 28 : 30,
+                        minHeight: compact ? 28 : 30,
                       ),
                       icon: Icon(
                         Icons.remove_red_eye_outlined,
                         color: const Color(0xFF94A3B8),
-                        size: compact ? 20 : 22,
+                        size: compact ? 17 : 18,
                       ),
                       onPressed: onView,
                     ),
@@ -980,14 +869,14 @@ class _IssueCard extends StatelessWidget {
                       IconButton(
                         padding: EdgeInsets.zero,
                         constraints: BoxConstraints(
-                          minWidth: compact ? 32 : 36,
-                          minHeight: compact ? 32 : 36,
+                          minWidth: compact ? 28 : 30,
+                          minHeight: compact ? 28 : 30,
                         ),
                         onPressed: isDeleting ? null : onDelete,
                         icon: isDeleting
                             ? SizedBox(
-                                width: compact ? 17 : 18,
-                                height: compact ? 17 : 18,
+                                width: compact ? 15 : 16,
+                                height: compact ? 15 : 16,
                                 child: const CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
@@ -995,7 +884,7 @@ class _IssueCard extends StatelessWidget {
                             : Icon(
                                 Icons.delete_outline_rounded,
                                 color: const Color(0xFF94A3B8),
-                                size: compact ? 20 : 22,
+                                size: compact ? 17 : 18,
                               ),
                       ),
                     ],
@@ -1022,8 +911,8 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 14,
-        vertical: compact ? 7 : 8,
+        horizontal: compact ? 9 : 10,
+        vertical: compact ? 5 : 6,
       ),
       decoration: BoxDecoration(
         color: bg,
@@ -1031,55 +920,126 @@ class _Pill extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: _ts(fg, compact ? 11 : 12, FontWeight.w700),
+        style: _ts(fg, compact ? 10 : 11, FontWeight.w700),
       ),
     );
   }
 }
 
-class _PageAction extends StatelessWidget {
-  const _PageAction(
-    this.label,
-    this.enabled,
-    this.onTap, {
+class _IssuePaginationBar extends StatelessWidget {
+  const _IssuePaginationBar({
     required this.compact,
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageTap,
   });
 
-  final String label;
+  final bool compact;
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _IssuePaginationArrow(
+          compact: compact,
+          icon: Icons.chevron_left_rounded,
+          enabled: canGoPrev,
+          onTap: () => onPageTap(currentPage - 1),
+        ),
+        SizedBox(width: compact ? 10 : 12),
+        for (final token in tokens) ...[
+          if (token.isEllipsis)
+            SizedBox(
+              width: compact ? 34 : 36,
+              child: Center(
+                child: Text(
+                  '...',
+                  style: _ts(
+                    const Color(0xFF94A3B8),
+                    compact ? 12 : 13,
+                    FontWeight.w600,
+                  ),
+                ),
+              ),
+            )
+          else
+            _IssuePageChip(
+              compact: compact,
+              label: '${token.page}',
+              selected: token.page == currentPage,
+              onTap: () => onPageTap(token.page!),
+            ),
+          SizedBox(width: compact ? 8 : 10),
+        ],
+        _IssuePaginationArrow(
+          compact: compact,
+          icon: Icons.chevron_right_rounded,
+          enabled: canGoNext,
+          onTap: () => onPageTap(currentPage + 1),
+        ),
+      ],
+    );
+  }
+}
+
+class _IssuePaginationArrow extends StatelessWidget {
+  const _IssuePaginationArrow({
+    required this.compact,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final bool compact;
+  final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(compact ? 16 : 18),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: compact ? 14 : 16,
-          vertical: compact ? 10 : 12,
-        ),
+        width: compact ? 34 : 40,
+        height: compact ? 34 : 40,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(compact ? 16 : 18),
-          border: Border.all(color: const Color(0xFFD8E1EF)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDCE6F2)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
         ),
-        child: Text(
-          label,
-          style: _ts(
-            enabled ? const Color(0xFF64748B) : const Color(0xFFCBD5E1),
-            compact ? 13 : 14,
-            FontWeight.w500,
-          ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: compact ? 20 : 22,
+          color: enabled ? const Color(0xFF122B52) : const Color(0xFFCBD5E1),
         ),
       ),
     );
   }
 }
 
-class _PageChip extends StatelessWidget {
-  const _PageChip({
+class _IssuePageChip extends StatelessWidget {
+  const _IssuePageChip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -1095,26 +1055,65 @@ class _PageChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(compact ? 14 : 16),
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        height: compact ? 40 : 44,
-        width: compact ? 40 : 44,
+        width: compact ? 34 : 36,
+        height: compact ? 34 : 36,
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF3E82F1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(compact ? 14 : 16),
+          color: selected ? const Color(0xFF2D7EF8) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? const Color(0xFF2D7EF8)
+                : const Color(0xFFDCE6F2),
+          ),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: _ts(
-            selected ? Colors.white : const Color(0xFF334155),
-            compact ? 14 : 15,
+            selected ? Colors.white : const Color(0xFF1E293B),
+            compact ? 13 : 14,
             FontWeight.w600,
           ),
         ),
       ),
     );
   }
+}
+
+class _PageToken {
+  const _PageToken.page(this.page) : isEllipsis = false;
+  const _PageToken.ellipsis()
+    : page = null,
+      isEllipsis = true;
+
+  final int? page;
+  final bool isEllipsis;
+}
+
+List<_PageToken> _buildPageTokens(int currentPage, int totalPages) {
+  if (totalPages <= 5) {
+    return List.generate(totalPages, (index) => _PageToken.page(index + 1));
+  }
+
+  final tokens = <_PageToken>[];
+  final start = (currentPage - 1).clamp(2, totalPages - 3);
+  final end = (start + 2).clamp(3, totalPages - 1);
+
+  tokens.add(const _PageToken.page(1));
+  if (start > 2) {
+    tokens.add(const _PageToken.ellipsis());
+  }
+  for (var page = start; page <= end; page++) {
+    tokens.add(_PageToken.page(page));
+  }
+  if (end < totalPages - 1) {
+    tokens.add(const _PageToken.ellipsis());
+  }
+  tokens.add(_PageToken.page(totalPages));
+
+  return tokens;
 }
 
 class _CreateIssueRequest {

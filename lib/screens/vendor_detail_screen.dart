@@ -172,7 +172,7 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                         _TopBar(title: 'Vendor details', onBack: _closeScreen),
                         const SizedBox(height: 18),
                         _SectionHeader(
-                          title: 'Vendor Details',
+                          // title: 'Vendor Details',
                           actions: Wrap(
                             spacing: 10,
                             runSpacing: 10,
@@ -253,9 +253,10 @@ class _TopBar extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.actions});
+  const _SectionHeader({ required this.actions});
 
-  final String title;
+
+
   final Widget actions;
 
   @override
@@ -265,14 +266,14 @@ class _SectionHeader extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTextStyles.style(
-              color: const Color(0xFF17213A),
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          // Text(
+          //   title,
+          //   style: AppTextStyles.style(
+          //     color: const Color(0xFF17213A),
+          //     fontSize: 22,
+          //     fontWeight: FontWeight.w700,
+          //   ),
+          // ),
           const SizedBox(height: 10),
           Align(alignment: Alignment.centerRight, child: actions),
         ],
@@ -282,16 +283,16 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Text(
-            title,
-            style: AppTextStyles.style(
-              color: const Color(0xFF17213A),
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
+        // Expanded(
+        //   // child: Text(
+        //   //   // title,
+        //   //   // style: AppTextStyles.style(
+        //   //   //   color: const Color(0xFF17213A),
+        //   //   //   fontSize: 22,
+        //   //   //   fontWeight: FontWeight.w700,
+        //   //   // ),
+        //   // ),
+        // ),
         actions,
       ],
     );
