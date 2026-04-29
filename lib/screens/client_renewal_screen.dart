@@ -1843,16 +1843,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   Future<void> _loadLookupData() async {
     setState(() => _isLoadingOptions = true);
     try {
-      final results = await Future.wait<dynamic>([
-        _apiService.getClientsList(),
-        _apiService.getVendorsList(),
-      ]);
-      _clients = (results[0] as List<ClientModel>)
-          .where((client) => client.id.trim().isNotEmpty)
-          .toList(growable: false);
-      _vendors = (results[1] as List<VendorModel>)
-          .where((vendor) => vendor.id.trim().isNotEmpty)
-          .toList(growable: false);
+      final options = await _apiService.getClientRenewalFormOptions();
+      _clients = options.clients;
+      _vendors = options.vendors;
       _syncSelectionsWithLookup();
     } catch (error) {
       if (!mounted) {

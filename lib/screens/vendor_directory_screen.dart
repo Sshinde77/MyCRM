@@ -19,14 +19,17 @@ class VendorDirectoryScreen extends StatefulWidget {
 
 class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   final TextEditingController _searchController = TextEditingController();
-  late Future<List<VendorModel>> _vendorsFuture;
+  late Future<VendorListPageResult> _vendorsFuture;
   int _rowsPerPage = 10;
-  int _page = 0;
+  int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
-    _vendorsFuture = ApiService.instance.getVendorsList();
+    _vendorsFuture = ApiService.instance.getVendorsListPage(
+      page: _currentPage,
+      perPage: _rowsPerPage,
+    );
     _searchController.addListener(_handleSearchChanged);
   }
 
@@ -39,15 +42,18 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   }
 
   void _handleSearchChanged() {
-    setState(() {
-      _page = 0;
-    });
+    setState(() {});
   }
 
-  void _reload() {
+  void _reload({int? page}) {
+    final targetPage = page ?? _currentPage;
+    final resolvedPage = targetPage < 1 ? 1 : targetPage;
     setState(() {
-      _page = 0;
-      _vendorsFuture = ApiService.instance.getVendorsList();
+      _currentPage = resolvedPage;
+      _vendorsFuture = ApiService.instance.getVendorsListPage(
+        page: _currentPage,
+        perPage: _rowsPerPage,
+      );
     });
   }
 
@@ -134,20 +140,6 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
     }).toList();
   }
 
-  int _pageCount(List<VendorModel> vendors) {
-    final count = vendors.length;
-    return count == 0 ? 1 : ((count - 1) ~/ _rowsPerPage) + 1;
-  }
-
-  List<VendorModel> _visibleRows(List<VendorModel> vendors, int page) {
-    final start = page * _rowsPerPage;
-    final end = (start + _rowsPerPage).clamp(0, vendors.length);
-    if (start >= vendors.length) {
-      return const <VendorModel>[];
-    }
-    return vendors.sublist(start, end);
-  }
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -157,18 +149,30 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FB),
       body: SafeArea(
-        child: FutureBuilder<List<VendorModel>>(
+        child: FutureBuilder<VendorListPageResult>(
           future: _vendorsFuture,
           builder: (context, snapshot) {
-            final vendors = snapshot.data ?? const <VendorModel>[];
+            final pageResult = snapshot.data;
+            final vendors = pageResult?.items ?? const <VendorModel>[];
             final filteredVendors = _filteredVendors(vendors);
-            final pageCount = _pageCount(filteredVendors);
-            final safePage = _page >= pageCount ? pageCount - 1 : _page;
-            final visibleRows = _visibleRows(filteredVendors, safePage);
-            final startEntry = filteredVendors.isEmpty
+            final hasSearch = _searchController.text.trim().isNotEmpty;
+            final pageCount = hasSearch
+                ? 1
+                : (pageResult?.lastPage ?? 1).clamp(1, 999999);
+            final currentPage = hasSearch
+                ? 1
+                : (pageResult?.currentPage ?? _currentPage);
+            final visibleRows = filteredVendors;
+            final totalEntries = hasSearch
+                ? filteredVendors.length
+                : (pageResult?.total ?? filteredVendors.length);
+            final perPage = hasSearch
+                ? filteredVendors.length
+                : (pageResult?.perPage ?? _rowsPerPage);
+            final startEntry = totalEntries == 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            final endEntry = totalEntries == 0
                 ? 0
-                : (safePage * _rowsPerPage) + 1;
-            final endEntry = (safePage * _rowsPerPage) + visibleRows.length;
+                : (startEntry + visibleRows.length - 1).clamp(0, totalEntries);
 
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
@@ -211,7 +215,11 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                           onRowsChanged: (value) {
                             setState(() {
                               _rowsPerPage = value;
-                              _page = 0;
+                              _currentPage = 1;
+                              _vendorsFuture = ApiService.instance.getVendorsListPage(
+                                page: _currentPage,
+                                perPage: _rowsPerPage,
+                              );
                             });
                           },
                         ),
@@ -245,18 +253,17 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                           _VendorFooter(
                             startEntry: startEntry,
                             endEntry: endEntry,
-                            totalEntries: filteredVendors.length,
-                            currentPage: safePage,
+                            totalEntries: totalEntries,
+                            currentPage: currentPage - 1,
                             pageCount: pageCount,
                             compact: useMobileLayout,
-                            onPrevious: safePage > 0
-                                ? () => setState(() => _page = safePage - 1)
+                            onPrevious: (!hasSearch && currentPage > 1)
+                                ? () => _reload(page: currentPage - 1)
                                 : null,
-                            onNext: safePage < pageCount - 1
-                                ? () => setState(() => _page = safePage + 1)
+                            onNext: (!hasSearch && currentPage < pageCount)
+                                ? () => _reload(page: currentPage + 1)
                                 : null,
-                            onSelectPage: (page) =>
-                                setState(() => _page = page),
+                            onSelectPage: (page) => _reload(page: page + 1),
                           ),
                         ],
                       ],
@@ -292,228 +299,100 @@ class _VendorToolbar extends StatelessWidget {
     return Column(
       children: [
         Row(
-          children: compact
-              ? [
-                  Expanded(
-                    child: _ToolbarButton(
-                      icon: Icons.add_circle_outline_rounded,
-                      label: 'Add Vendor',
-                      filled: true,
-                      onTap: onAddVendor,
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: compact ? 40 : 36,
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search vendors...',
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFD9E2EF)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFD9E2EF)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF1D8BFF)),
                     ),
                   ),
-                ]
-              : [
-                  const Spacer(),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.end,
-                    children: [
-                      _ToolbarButton(
-                        icon: Icons.add_circle_outline_rounded,
-                        label: 'Add New Vendor',
-                        filled: true,
-                        onTap: onAddVendor,
-                      ),
-                    ],
-                  ),
-                ],
-        ),
-        const SizedBox(height: 18),
-        compact
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Show',
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF334155),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFD9E2EF)),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<int>(
-                            value: rowsPerPage,
-                            items: const [10, 25, 50]
-                                .map(
-                                  (value) => DropdownMenuItem<int>(
-                                    value: value,
-                                    child: Text('$value'),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                onRowsChanged(value);
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'entries',
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF334155),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search vendors...',
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        isDense: true,
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD9E2EF),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFFD9E2EF),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF1D8BFF),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    'Show',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF334155),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    height: 34,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFD9E2EF)),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<int>(
-                        value: rowsPerPage,
-                        items: const [10, 25, 50]
-                            .map(
-                              (value) => DropdownMenuItem<int>(
-                                value: value,
-                                child: Text('$value'),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            onRowsChanged(value);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'entries',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF334155),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: 220,
-                    child: Row(
-                      children: [
-                        Text(
-                          'Search:',
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF334155),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: SizedBox(
-                            height: 34,
-                            child: TextField(
-                              controller: searchController,
-                              decoration: InputDecoration(
-                                isDense: true,
-                                filled: true,
-                                fillColor: Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 8,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFD9E2EF),
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFD9E2EF),
-                                  ),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF1D8BFF),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: compact ? 150 : 185,
+              child: _ToolbarButton(
+                icon: Icons.add_circle_outline_rounded,
+                label: compact ? 'Add Vendor' : 'Add New Vendor',
+                filled: true,
+                onTap: onAddVendor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        // Row(
+        //   children: [
+        //     Text(
+        //       'Show',
+        //       style: AppTextStyles.style(
+        //         color: const Color(0xFF334155),
+        //         fontSize: 14,
+        //         fontWeight: FontWeight.w500,
+        //       ),
+        //     ),
+        //     const SizedBox(width: 8),
+        //     Container(
+        //       height: compact ? 36 : 34,
+        //       padding: const EdgeInsets.symmetric(horizontal: 10),
+        //       decoration: BoxDecoration(
+        //         color: Colors.white,
+        //         borderRadius: BorderRadius.circular(8),
+        //         border: Border.all(color: const Color(0xFFD9E2EF)),
+        //       ),
+        //       child: DropdownButtonHideUnderline(
+        //         child: DropdownButton<int>(
+        //           value: rowsPerPage,
+        //           items: const [10, 25, 50]
+        //               .map(
+        //                 (value) => DropdownMenuItem<int>(
+        //                   value: value,
+        //                   child: Text('$value'),
+        //                 ),
+        //               )
+        //               .toList(),
+        //           onChanged: (value) {
+        //             if (value != null) {
+        //               onRowsChanged(value);
+        //             }
+        //           },
+        //         ),
+        //       ),
+        //     ),
+        //     const SizedBox(width: 8),
+        //     Text(
+        //       'entries',
+        //       style: AppTextStyles.style(
+        //         color: const Color(0xFF334155),
+        //         fontSize: 14,
+        //         fontWeight: FontWeight.w500,
+        //       ),
+        //     ),
+        //   ],
+        // ),
       ],
     );
   }
@@ -598,29 +477,6 @@ class _VendorMobileCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDBEAFE),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'ID ${row.id}',
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF1D4ED8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           Text(
             row.vendorName,
             style: AppTextStyles.style(
@@ -741,12 +597,11 @@ class _VendorTable extends StatelessWidget {
           child: Table(
             columnWidths: const {
               0: FixedColumnWidth(40),
-              1: FixedColumnWidth(70),
-              2: FlexColumnWidth(3.4),
-              3: FlexColumnWidth(1.8),
-              4: FlexColumnWidth(1.3),
-              5: FixedColumnWidth(110),
-              6: FixedColumnWidth(150),
+              1: FlexColumnWidth(3.4),
+              2: FlexColumnWidth(1.8),
+              3: FlexColumnWidth(1.3),
+              4: FixedColumnWidth(110),
+              5: FixedColumnWidth(150),
             },
             defaultVerticalAlignment: TableCellVerticalAlignment.middle,
             children: [
@@ -754,7 +609,6 @@ class _VendorTable extends StatelessWidget {
                 decoration: const BoxDecoration(color: Color(0xFFF8FAFD)),
                 children: const [
                   _HeaderCell(child: _CheckboxStub()),
-                  _HeaderCell(label: 'Id'),
                   _HeaderCell(label: 'Vendor Name'),
                   _HeaderCell(label: 'Email ID'),
                   _HeaderCell(label: 'Contact No'),
@@ -771,16 +625,6 @@ class _VendorTable extends StatelessWidget {
                   ),
                   children: [
                     const _BodyCell(child: _CheckboxStub()),
-                    _BodyCell(
-                      child: Text(
-                        '${row.id}',
-                        style: AppTextStyles.style(
-                          color: const Color(0xFF334155),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
                     _BodyCell(
                       child: Text(
                         row.vendorName,

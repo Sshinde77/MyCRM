@@ -161,7 +161,6 @@ class _VendorRenewalDetailScreenState extends State<VendorRenewalDetailScreen> {
     final planType = value(item?.planType ?? '');
 
     return <_DetailRowData>[
-      _DetailRowData(label: 'Service ID', value: value(item?.id ?? '')),
       _DetailRowData(label: 'Vendor Name', value: value(item?.vendor ?? '')),
       _DetailRowData(
         label: 'Vendor Email',

@@ -155,7 +155,6 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
     final billing = value(item?.billing ?? '');
 
     return <_DetailRowData>[
-      _DetailRowData(label: 'Service ID', value: value(item?.id ?? '')),
       _DetailRowData(label: 'Client Name', value: value(item?.client ?? '')),
       _DetailRowData(
         label: 'Client Email',

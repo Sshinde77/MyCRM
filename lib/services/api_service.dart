@@ -88,6 +88,34 @@ class RenewalListPageResult {
   final bool hasNextPage;
 }
 
+class VendorListPageResult {
+  const VendorListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<VendorModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
+class ClientRenewalFormOptionsResult {
+  const ClientRenewalFormOptionsResult({
+    required this.clients,
+    required this.vendors,
+  });
+
+  final List<ClientModel> clients;
+  final List<VendorModel> vendors;
+}
+
 class ApiService {
   ApiService._internal() {
     if (kDebugMode) {
@@ -1037,9 +1065,70 @@ class ApiService {
 
   /// Loads the vendor list for the authenticated user.
   Future<List<VendorModel>> getVendorsList() async {
-    final response = await get(ApiConstants.vendors);
-    final records = _normalizeList(response.data);
-    return records.map(VendorModel.fromJson).toList();
+    final collected = <VendorModel>[];
+    var page = 1;
+    var lastPage = 1;
+    do {
+      final result = await getVendorsListPage(page: page);
+      collected.addAll(result.items);
+      lastPage = result.lastPage < 1 ? 1 : result.lastPage;
+      page += 1;
+    } while (page <= lastPage);
+    return collected;
+  }
+
+  /// Loads a single paginated vendor list page.
+  Future<VendorListPageResult> getVendorsListPage({
+    int page = 1,
+    int? perPage,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (perPage != null && perPage > 0) {
+      query['per_page'] = perPage;
+    }
+
+    final response = await get(
+      ApiConstants.vendors,
+      queryParameters: query,
+    );
+
+    final root = _normalizeMap(response.data);
+    final nestedData = _normalizeMap(root['data']);
+
+    Map<String, dynamic>? pagePayload;
+    if (nestedData.isNotEmpty) {
+      final inner = nestedData['data'];
+      if (inner is List) {
+        pagePayload = nestedData;
+      } else {
+        pagePayload = root;
+      }
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(response.data);
+    final items = records.map(VendorModel.fromJson).toList(growable: false);
+    final currentPage =
+        _readInt(pagePayload?['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? items.length;
+    final resolvedPerPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return VendorListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: resolvedPerPage,
+      hasNextPage: hasNextPage,
+    );
   }
 
   /// Loads a single paginated vendor renewals page.
@@ -1529,6 +1618,35 @@ class ApiService {
     final response = await get(path);
     final body = _normalizeMap(_extractDetailSource(response.data));
     return RenewalModel.fromJson(body);
+  }
+
+  /// Loads client renewal form options (clients + vendors).
+  Future<ClientRenewalFormOptionsResult> getClientRenewalFormOptions() async {
+    final response = await get(ApiConstants.clientRenewalsFormOptions);
+    final root = _normalizeMap(response.data);
+    final payload = _normalizeMap(root['data']);
+    final source = payload.isNotEmpty ? payload : root;
+
+    final rawClients = source['clients'];
+    final rawVendors = source['vendors'];
+
+    final clients = rawClients is List
+        ? rawClients
+              .map(_normalizeMap)
+              .map(ClientModel.fromJson)
+              .where((entry) => entry.id.trim().isNotEmpty)
+              .toList(growable: false)
+        : const <ClientModel>[];
+
+    final vendors = rawVendors is List
+        ? rawVendors
+              .map(_normalizeMap)
+              .map(VendorModel.fromJson)
+              .where((entry) => entry.id.trim().isNotEmpty)
+              .toList(growable: false)
+        : const <VendorModel>[];
+
+    return ClientRenewalFormOptionsResult(clients: clients, vendors: vendors);
   }
 
   /// Creates a vendor renewal/service record.

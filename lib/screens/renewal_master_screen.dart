@@ -11,14 +11,14 @@ class RenewalMasterScreen extends StatelessWidget {
   static const List<_RenewalOption> _options = [
     _RenewalOption(
       title: 'Client Renewal',
-      subtitle: 'Track client renewals, dates, owners, and follow-ups.',
+      // subtitle: 'Track client renewals, dates, owners, and follow-ups.',
       icon: Icons.assignment_turned_in_outlined,
       routeName: AppRoutes.clientRenewal,
       accentColor: Color(0xFF2563EB),
     ),
     _RenewalOption(
       title: 'Vendor Renewal',
-      subtitle: 'Review vendor contracts and upcoming renewal timelines.',
+      // subtitle: 'Review vendor contracts and upcoming renewal timelines.',
       icon: Icons.inventory_2_outlined,
       routeName: AppRoutes.vendorRenewal,
       accentColor: Color(0xFF0F766E),
@@ -32,7 +32,7 @@ class RenewalMasterScreen extends StatelessWidget {
     // ),
     _RenewalOption(
       title: 'Vendor',
-      subtitle: 'Manage vendor profiles linked with renewal workflows.',
+      // subtitle: 'Manage vendor profiles linked with renewal workflows.',
       icon: Icons.local_shipping_outlined,
       routeName: AppRoutes.renewalVendor,
       accentColor: Color(0xFFEA580C),
@@ -271,8 +271,8 @@ class _RenewalOptionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              height: compact ? 46 : 50,
-              width: compact ? 46 : 50,
+              height: compact ? 26 : 30,
+              width: compact ? 26 : 30,
               decoration: BoxDecoration(
                 color: option.accentColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
@@ -280,7 +280,7 @@ class _RenewalOptionCard extends StatelessWidget {
               child: Icon(
                 option.icon,
                 color: option.accentColor,
-                size: compact ? 22 : 24,
+                size: compact ? 15 : 20,
               ),
             ),
             const SizedBox(width: 14),
@@ -297,14 +297,14 @@ class _RenewalOptionCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    option.subtitle,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF64748B),
-                      fontSize: compact ? 12 : 13,
-                      height: 1.5,
-                    ),
-                  ),
+                  // Text(
+                  //   option.subtitle,
+                  //   style: AppTextStyles.style(
+                  //     color: const Color(0xFF64748B),
+                  //     fontSize: compact ? 12 : 13,
+                  //     height: 1.5,
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -324,14 +324,14 @@ class _RenewalOptionCard extends StatelessWidget {
 class _RenewalOption {
   const _RenewalOption({
     required this.title,
-    required this.subtitle,
+    // required this.subtitle,
     required this.icon,
     required this.routeName,
     required this.accentColor,
   });
 
   final String title;
-  final String subtitle;
+  // final String subtitle;
   final IconData icon;
   final String routeName;
   final Color accentColor;

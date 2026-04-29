@@ -421,7 +421,6 @@ class _VendorDetailTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rows = <({String label, String value})>[
-      (label: 'Vendor ID', value: '${detail.id}'),
       (label: 'Vendor Name', value: detail.vendorName),
       (label: 'Email ID', value: detail.email),
       (label: 'Contact No', value: detail.contactNo),
@@ -464,7 +463,6 @@ class _VendorDetailMobile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fields = <({IconData icon, String label, String value})>[
-      (icon: Icons.tag_outlined, label: 'Vendor ID', value: '${detail.id}'),
       (
         icon: Icons.store_outlined,
         label: 'Vendor Name',
@@ -714,21 +712,19 @@ class _ServiceTable extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Table(
           columnWidths: const {
-            0: FixedColumnWidth(110),
-            1: FixedColumnWidth(180),
-            2: FixedColumnWidth(220),
+            0: FixedColumnWidth(180),
+            1: FixedColumnWidth(220),
+            2: FixedColumnWidth(140),
             3: FixedColumnWidth(140),
-            4: FixedColumnWidth(140),
-            5: FixedColumnWidth(150),
-            6: FixedColumnWidth(120),
-            7: FixedColumnWidth(150),
+            4: FixedColumnWidth(150),
+            5: FixedColumnWidth(120),
+            6: FixedColumnWidth(150),
           },
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           children: [
             const TableRow(
               decoration: BoxDecoration(color: Color(0xFFF8FAFD)),
               children: [
-                _ServiceHeaderCell(label: 'Service ID'),
                 _ServiceHeaderCell(label: 'Client Name'),
                 _ServiceHeaderCell(label: 'Service Name'),
                 _ServiceHeaderCell(label: 'Start Date'),
@@ -744,7 +740,6 @@ class _ServiceTable extends StatelessWidget {
                   border: Border(bottom: BorderSide(color: Color(0xFFF0F4F9))),
                 ),
                 children: [
-                  _ServiceBodyCell(text: row.serviceId),
                   _ServiceBodyCell(text: row.clientName),
                   _ServiceBodyCell(text: row.serviceName),
                   _ServiceBodyCell(text: row.startDate),
@@ -801,24 +796,6 @@ class _ServiceMobileCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF1FF),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  'Service ID ${row.serviceId}',
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF1D4ED8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
               const Spacer(),
               _MiniStatusPill(status: row.status),
             ],

@@ -147,17 +147,15 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
   Future<void> _loadLookupData() async {
     setState(() => _isLoadingOptions = true);
     try {
-      final vendors = await _apiService.getVendorsList();
-      _vendors = vendors
-          .where((vendor) => vendor.id.trim().isNotEmpty)
-          .toList(growable: false);
+      final options = await _apiService.getClientRenewalFormOptions();
+      _vendors = options.vendors;
       _syncVendorSelectionWithLookup();
     } catch (error) {
       if (!mounted) {
         return;
       }
       _showSnack(
-        title: 'Unable to load vendors',
+        title: 'Unable to load form options',
         message: _readError(error, fallback: 'Please try again later.'),
         backgroundColor: const Color(0xFFB45309),
       );
