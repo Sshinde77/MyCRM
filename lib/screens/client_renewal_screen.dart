@@ -2469,7 +2469,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                             label: 'Service Details',
                             child: TextField(
                               controller: _serviceDetailsController,
-                              maxLines: 4,
+                              maxLines: 2,
                               decoration: _inputDecoration(
                                 'Enter detailed description of the service...',
                               ),

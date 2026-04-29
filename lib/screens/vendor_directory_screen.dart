@@ -295,26 +295,11 @@ class _VendorToolbar extends StatelessWidget {
           children: compact
               ? [
                   Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _ToolbarButton(
-                            icon: Icons.upload_file_outlined,
-                            label: 'Bulk Upload',
-                            filled: false,
-                            trailing: Icons.keyboard_arrow_down_rounded,
-                          ),
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: _ToolbarButton(
-                            icon: Icons.add_circle_outline_rounded,
-                            label: 'Add Vendor',
-                            filled: true,
-                            onTap: onAddVendor,
-                          ),
-                        ),
-                      ],
+                    child: _ToolbarButton(
+                      icon: Icons.add_circle_outline_rounded,
+                      label: 'Add Vendor',
+                      filled: true,
+                      onTap: onAddVendor,
                     ),
                   ),
                 ]
@@ -325,12 +310,6 @@ class _VendorToolbar extends StatelessWidget {
                     runSpacing: 8,
                     alignment: WrapAlignment.end,
                     children: [
-                      _ToolbarButton(
-                        icon: Icons.upload_file_outlined,
-                        label: 'Bulk Upload',
-                        filled: false,
-                        trailing: Icons.keyboard_arrow_down_rounded,
-                      ),
                       _ToolbarButton(
                         icon: Icons.add_circle_outline_rounded,
                         label: 'Add New Vendor',

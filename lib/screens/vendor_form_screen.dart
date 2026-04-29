@@ -262,52 +262,46 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
                           label: 'Address',
                           controller: _addressController,
                           hintText: 'Enter address (optional)',
-                          maxLines: 4,
+                          maxLines: 1,
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8FAFF),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Status',
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF334155),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            _isActive ? 'Active' : 'Inactive',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Status',
                             style: AppTextStyles.style(
-                              color: _isActive
-                                  ? const Color(0xFF15803D)
-                                  : const Color(0xFF64748B),
+                              color: const Color(0xFF334155),
                               fontSize: 13,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Switch(
+                        ),
+                        Text(
+                          _isActive ? 'Active' : 'Inactive',
+                          style: AppTextStyles.style(
+                            color: _isActive
+                                ? const Color(0xFF15803D)
+                                : const Color(0xFF64748B),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Transform.scale(
+                          scale: 0.85,
+                          child: Switch(
                             value: _isActive,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
                             onChanged: _isSubmitting || _isLoading
                                 ? null
                                 : (value) => setState(() => _isActive = value),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
                     Wrap(
