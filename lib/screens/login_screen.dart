@@ -6,6 +6,7 @@ import 'package:mycrm/core/constants/app_colors.dart';
 
 import '../core/services/biometric_service.dart';
 import '../core/services/permission_service.dart';
+import '../controllers/auth_controller.dart';
 import '../services/auth_service.dart';
 import '../utils/validators.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
@@ -161,6 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     await _authService.setBiometricEnabled(true);
+    _syncBiometricToggleState(enabled: true);
     if (!mounted) return;
     setState(() {
       _showBiometricButton = true;
@@ -169,6 +171,14 @@ class _LoginScreenState extends State<LoginScreen> {
       'Biometric enabled',
       'You can now sign in using fingerprint/face.',
     );
+  }
+
+  void _syncBiometricToggleState({required bool enabled}) {
+    if (!Get.isRegistered<AuthController>()) {
+      return;
+    }
+    final authController = Get.find<AuthController>();
+    authController.biometricEnabled.value = enabled;
   }
 
   Future<void> _unlockWithBiometrics() async {

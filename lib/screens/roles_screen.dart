@@ -39,8 +39,9 @@ class _RolesScreenState extends State<RolesScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: const Color(0xFF3B82F6),
-        elevation: 4,
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
+        elevation: 2,
+        mini: true,
+        child: const Icon(Icons.add, color: Colors.white, size: 22),
       ),
       body: Consumer<RoleProvider>(
         builder: (context, provider, _) {
@@ -48,7 +49,7 @@ class _RolesScreenState extends State<RolesScreen> {
             onRefresh: () => provider.loadRoles(forceRefresh: true),
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
               child: Column(
                 children: [
                   Row(
@@ -62,7 +63,7 @@ class _RolesScreenState extends State<RolesScreen> {
                           accentColor: const Color(0xFF3B82F6),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _SummaryCard(
                           title: 'ACTIVE',
@@ -72,7 +73,7 @@ class _RolesScreenState extends State<RolesScreen> {
                           accentColor: const Color(0xFF22C55E),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _SummaryCard(
                           title: 'PERMISSIONS',
@@ -84,12 +85,12 @@ class _RolesScreenState extends State<RolesScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
                   _RoleSearchField(
                     initialValue: provider.searchQuery,
                     onChanged: provider.updateSearchQuery,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
                   if (provider.isLoading && provider.totalRoles == 0)
                     const _RolesLoadingState()
                   else if (provider.errorMessage != null &&
@@ -125,7 +126,7 @@ class _RolesScreenState extends State<RolesScreen> {
         ),
       );
       if (index != roles.length - 1) {
-        children.add(const SizedBox(height: 16));
+        children.add(const SizedBox(height: 10));
       }
     }
     return children;
@@ -145,8 +146,8 @@ class _RoleSearchField extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -157,21 +158,22 @@ class _RoleSearchField extends StatelessWidget {
           hintText: 'Search roles by name...',
           hintStyle: AppTextStyles.style(
             color: const Color(0xFF94A3B8),
-            fontSize: 14,
+            fontSize: 12,
           ),
           prefixIcon: const Icon(
             Icons.search_rounded,
             color: Color(0xFF94A3B8),
+            size: 20,
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
         ),
@@ -186,7 +188,7 @@ class _RolesLoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 48),
+      padding: EdgeInsets.symmetric(vertical: 32),
       child: Center(child: CircularProgressIndicator(color: Color(0xFF3B82F6))),
     );
   }
@@ -202,10 +204,10 @@ class _RolesErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFFEE2E2)),
       ),
       child: Column(
@@ -213,19 +215,19 @@ class _RolesErrorState extends StatelessWidget {
           const Icon(
             Icons.error_outline_rounded,
             color: Color(0xFFEF4444),
-            size: 32,
+            size: 24,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             message,
             textAlign: TextAlign.center,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-              fontSize: 14,
+              fontSize: 12,
               height: 1.4,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           ElevatedButton(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
@@ -250,10 +252,10 @@ class _RolesEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Column(
@@ -261,14 +263,14 @@ class _RolesEmptyState extends StatelessWidget {
           const Icon(
             Icons.people_outline_rounded,
             color: Color(0xFF94A3B8),
-            size: 36,
+            size: 26,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             'No roles found.',
             style: AppTextStyles.style(
               color: const Color(0xFF475569),
-              fontSize: 15,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -296,20 +298,20 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         children: [
-          Icon(icon, color: accentColor.withValues(alpha: 0.8), size: 28),
-          const SizedBox(height: 8),
+          Icon(icon, color: accentColor.withValues(alpha: 0.8), size: 20),
+          const SizedBox(height: 6),
           Text(
             count,
             style: AppTextStyles.style(
               color: const Color(0xFF1E293B),
-              fontSize: 26,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -318,9 +320,9 @@ class _SummaryCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: AppTextStyles.style(
               color: accentColor.withValues(alpha: 0.7),
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
+              letterSpacing: 0.3,
             ),
           ),
         ],
@@ -347,16 +349,16 @@ class _RoleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 7,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -370,14 +372,14 @@ class _RoleCard extends StatelessWidget {
                 title,
                 style: AppTextStyles.style(
                   color: const Color(0xFF1E293B),
-                  fontSize: 18,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 8,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   color: isActive
@@ -391,46 +393,46 @@ class _RoleCard extends StatelessWidget {
                     color: isActive
                         ? const Color(0xFF166534)
                         : const Color(0xFF64748B),
-                    fontSize: 12,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             description,
             style: AppTextStyles.style(
               color: const Color(0xFF64748B),
-              fontSize: 14,
+              fontSize: 12,
               height: 1.5,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.person, color: Color(0xFF64748B), size: 16),
-                const SizedBox(width: 6),
+                const Icon(Icons.person, color: Color(0xFF64748B), size: 14),
+                const SizedBox(width: 5),
                 Text(
                   '$permissions Permissions',
                   style: AppTextStyles.style(
                     color: const Color(0xFF475569),
-                    fontSize: 13,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [

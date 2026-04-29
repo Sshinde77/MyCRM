@@ -151,26 +151,26 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
-                _ActionSettingTile(
-                  icon: Icons.image_outlined,
-                  title: 'Change Logo',
-                  subtitle: 'Upload and set a new company logo',
-                  onTap: () => _showComingSoon('Change Logo'),
-                ),
-                const SizedBox(height: 10),
-                _DisabledToggleTile(
-                  icon: Icons.notifications_active_outlined,
-                  title: 'Notifications',
-                  subtitle: 'Email and push notifications',
-                ),
-                const SizedBox(height: 10),
-                _ActionSettingTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Change Password',
-                  subtitle: 'Update your account password',
-                  onTap: () => _showComingSoon('Change Password'),
-                ),
-                const SizedBox(height: 10),
+                // _ActionSettingTile(
+                //   icon: Icons.image_outlined,
+                //   title: 'Change Logo',
+                //   subtitle: 'Upload and set a new company logo',
+                //   onTap: () => _showComingSoon('Change Logo'),
+                // ),
+                // const SizedBox(height: 10),
+                // _DisabledToggleTile(
+                //   icon: Icons.notifications_active_outlined,
+                //   title: 'Notifications',
+                //   subtitle: 'Email and push notifications',
+                // ),
+                // const SizedBox(height: 10),
+                // _ActionSettingTile(
+                //   icon: Icons.lock_outline_rounded,
+                //   title: 'Change Password',
+                //   subtitle: 'Update your account password',
+                //   onTap: () => _showComingSoon('Change Password'),
+                // ),
+                // const SizedBox(height: 10),
                 Obx(
                   () => _ToggleSettingTile(
                     icon: Icons.fingerprint_rounded,
