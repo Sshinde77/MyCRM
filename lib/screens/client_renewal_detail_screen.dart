@@ -84,7 +84,7 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.of(context).size.width <= 380;
+    final compact = MediaQuery.of(context).size.width <= 420;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FB),
@@ -125,10 +125,10 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
 
           return SafeArea(
             child: SingleChildScrollView(
-              padding: EdgeInsets.all(compact ? 14 : 16),
+              padding: EdgeInsets.all(compact ? 12 : 14),
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
+                  constraints: const BoxConstraints(maxWidth: 760),
                   child: _DetailCard(
                     title: 'Service Details',
                     compact: compact,
@@ -199,13 +199,13 @@ class _DetailCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFDCE2EC)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0F0F172A),
-            blurRadius: 14,
-            offset: Offset(0, 8),
+            blurRadius: 10,
+            offset: Offset(0, 6),
           ),
         ],
       ),
@@ -213,10 +213,10 @@ class _DetailCard extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
-              compact ? 14 : 18,
               compact ? 12 : 14,
-              compact ? 14 : 18,
               compact ? 10 : 12,
+              compact ? 12 : 14,
+              compact ? 8 : 10,
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +226,7 @@ class _DetailCard extends StatelessWidget {
                     title,
                     style: AppTextStyles.style(
                       color: const Color(0xFF1F2937),
-                      fontSize: compact ? 18 : 20,
+                      fontSize: compact ? 16 : 18,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -254,10 +254,10 @@ class _DetailCard extends StatelessWidget {
           ),
           const Divider(height: 1, color: Color(0xFFDCE2EC)),
           Padding(
-            padding: EdgeInsets.all(compact ? 10 : 14),
+            padding: EdgeInsets.all(compact ? 8 : 10),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: const Color(0xFFDCE2EC)),
               ),
               child: Column(
@@ -288,15 +288,15 @@ class _DetailRow extends StatelessWidget {
             textAlign: TextAlign.end,
             style: AppTextStyles.style(
               color: const Color(0xFF334155),
-              fontSize: compact ? 14 : 15,
+              fontSize: compact ? 13 : 14,
               fontWeight: FontWeight.w500,
             ),
           );
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 12 : 16,
-        vertical: compact ? 11 : 13,
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 9 : 11,
       ),
       decoration: BoxDecoration(
         border: row.isLast
@@ -307,12 +307,12 @@ class _DetailRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: compact ? 120 : 156,
+            width: compact ? 108 : 136,
             child: Text(
               '${row.label}:',
               style: AppTextStyles.style(
                 color: const Color(0xFF111827),
-                fontSize: compact ? 14 : 15,
+                fontSize: compact ? 13 : 14,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -344,23 +344,23 @@ class _HeaderButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(5),
       child: Container(
-        height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        height: 30,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
           color: filled ? const Color(0xFF1389F3) : const Color(0xFF64748B),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(5),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 7),
+            Icon(icon, color: Colors.white, size: 16),
+            const SizedBox(width: 6),
             Text(
               label,
               style: AppTextStyles.style(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -384,7 +384,7 @@ class _StatusBadge extends StatelessWidget {
     final bg = active ? const Color(0xFF22C55E) : const Color(0xFF64748B);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
@@ -393,7 +393,7 @@ class _StatusBadge extends StatelessWidget {
         text,
         style: AppTextStyles.style(
           color: Colors.white,
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: FontWeight.w700,
         ),
       ),

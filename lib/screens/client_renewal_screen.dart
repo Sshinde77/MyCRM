@@ -425,8 +425,8 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final compact = width <= 380;
-    final side = compact ? 16.0 : 20.0;
+    final compact = width <= 420;
+    final side = compact ? 12.0 : 16.0;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAFF),
@@ -474,7 +474,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                             child: Center(
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(
-                                  maxWidth: 520,
+                                  maxWidth: 480,
                                 ),
                                 child: Column(
                                   children: [
@@ -530,7 +530,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                             child: Center(
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(
-                                  maxWidth: 520,
+                                  maxWidth: 480,
                                 ),
                                 child: _PaginationBar(
                                   compact: compact,
@@ -599,7 +599,7 @@ class _RenewalListSection extends StatelessWidget {
         sliver: SliverToBoxAdapter(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: _ErrorCard(
                 compact: compact,
                 message: errorMessage!,
@@ -617,7 +617,7 @@ class _RenewalListSection extends StatelessWidget {
         sliver: SliverToBoxAdapter(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: _EmptyCard(
                 compact: compact,
                 message: hasActiveFilters
@@ -637,7 +637,7 @@ class _RenewalListSection extends StatelessWidget {
           final service = _ServiceItem.fromRenewal(renewals[index]);
           return Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 520),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: Padding(
                 padding: EdgeInsets.only(bottom: compact ? 14 : 16),
                 child: _ServiceCard(
@@ -705,7 +705,7 @@ class _FilterCard extends StatelessWidget {
       padding: EdgeInsets.all(compact ? 14 : 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 18 : 20),
+        borderRadius: BorderRadius.circular(compact ? 14 : 16),
         border: Border.all(color: const Color(0xFFDCE6F2)),
         boxShadow: const [
           BoxShadow(
@@ -1327,7 +1327,7 @@ class _AddServiceButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(compact ? 14 : 16),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: compact ? 14 : 16),
+        padding: EdgeInsets.symmetric(vertical: compact ? 11 : 13),
         decoration: BoxDecoration(
           color: const Color(0xFF156CF1),
           borderRadius: BorderRadius.circular(compact ? 14 : 16),
@@ -1345,7 +1345,7 @@ class _AddServiceButton extends StatelessWidget {
             Icon(
               Icons.add_rounded,
               color: Colors.white,
-              size: compact ? 22 : 24,
+              size: compact ? 18 : 20,
             ),
             SizedBox(width: compact ? 10 : 12),
             Text(
@@ -1353,7 +1353,7 @@ class _AddServiceButton extends StatelessWidget {
                   '',
               style: AppTextStyles.style(
                 color: Colors.white,
-                fontSize: compact ? 15 : 16,
+                fontSize: compact ? 13 : 14,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1386,7 +1386,7 @@ class _ServiceCard extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 18 : 20),
+        borderRadius: BorderRadius.circular(compact ? 14 : 16),
         border: Border.all(color: const Color(0xFFDCE6F2)),
         boxShadow: const [
           BoxShadow(
@@ -1429,7 +1429,7 @@ class _ServiceCard extends StatelessWidget {
                             service.title,
                             style: AppTextStyles.style(
                               color: const Color(0xFF17213A),
-                              fontSize: compact ? 17 : 18,
+                              fontSize: compact ? 13 : 14,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1529,7 +1529,7 @@ class _ServiceCard extends StatelessWidget {
           ),
           const Divider(height: 1, color: Color(0xFFEAF0F6)),
           SizedBox(
-            height: compact ? 52 : 56,
+            height: compact ? 46 : 50,
             child: Row(
               children: [
                 Expanded(
@@ -1573,7 +1573,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF94A3B8), size: compact ? 23 : 24),
+        Icon(icon, color: const Color(0xFF94A3B8), size: compact ? 19 : 20),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -1698,7 +1698,7 @@ class _ErrorCard extends StatelessWidget {
             'Unable to load client renewals',
             style: AppTextStyles.style(
               color: const Color(0xFF17213A),
-              fontSize: compact ? 15 : 16,
+              fontSize: compact ? 13 : 14,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -2852,3 +2852,6 @@ class _ServiceItem {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
+
+
+
