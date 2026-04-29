@@ -88,23 +88,23 @@ class RenewalMasterScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Choose a renewal section',
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF162033),
-                              fontSize: compact ? 18 : 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Open the renewal workflow you want to manage.',
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF64748B),
-                              fontSize: compact ? 13 : 14,
-                              height: 1.5,
-                            ),
-                          ),
+                          // Text(
+                          //   'Choose a renewal section',
+                          //   style: AppTextStyles.style(
+                          //     color: const Color(0xFF162033),
+                          //     fontSize: compact ? 18 : 20,
+                          //     fontWeight: FontWeight.w700,
+                          //   ),
+                          // ),
+                          // const SizedBox(height: 8),
+                          // Text(
+                          //   'Open the renewal workflow you want to manage.',
+                          //   style: AppTextStyles.style(
+                          //     color: const Color(0xFF64748B),
+                          //     fontSize: compact ? 13 : 14,
+                          //     height: 1.5,
+                          //   ),
+                          // ),
                           const SizedBox(height: 20),
                           ..._options.map(
                             (option) => Padding(

@@ -510,14 +510,14 @@ class _ProfileHeader extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              Text(
-                '$actionsCount quick actions for your workspace',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF64748B),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              // Text(
+              //   '$actionsCount quick actions for your workspace',
+              //   style: AppTextStyles.style(
+              //     color: const Color(0xFF64748B),
+              //     fontSize: 13,
+              //     fontWeight: FontWeight.w500,
+              //   ),
+              // ),
             ],
           ),
         ),
@@ -525,8 +525,6 @@ class _ProfileHeader extends StatelessWidget {
           icon: Icons.checklist_rounded,
           onTap: () => Get.to(() => const to_do.ToDoListScreen()),
         ),
-        const SizedBox(width: 10),
-        const _CircleIconButton(icon: Icons.notifications_none_rounded),
       ],
     );
   }

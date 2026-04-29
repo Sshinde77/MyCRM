@@ -133,6 +133,49 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       ),
       firstDate: DateTime(now.year - 10),
       lastDate: DateTime(now.year + 20),
+      builder: (context, child) {
+        final base = Theme.of(context);
+        return Theme(
+          data: base.copyWith(
+            colorScheme: base.colorScheme.copyWith(
+              primary: const Color(0xFF156CF1),
+              onPrimary: const Color(0xFF156CF1),
+              primaryContainer: const Color(0x1F156CF1),
+              onPrimaryContainer: const Color(0xFF156CF1),
+            ),
+            datePickerTheme: base.datePickerTheme.copyWith(
+              rangeSelectionBackgroundColor: const Color(0x1A156CF1),
+              rangeSelectionOverlayColor: MaterialStateProperty.all(
+                const Color(0x1A156CF1),
+              ),
+              dayOverlayColor: MaterialStateProperty.all(
+                const Color(0x1A156CF1),
+              ),
+              dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.white;
+                }
+                return null;
+              }),
+              dayForegroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return const Color(0xFF156CF1);
+                }
+                return null;
+              }),
+              dayShape: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return const CircleBorder(
+                    side: BorderSide(color: Color(0xFF156CF1), width: 1.4),
+                  );
+                }
+                return const CircleBorder();
+              }),
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
     if (picked == null || !mounted) {
       return;
@@ -1306,7 +1349,8 @@ class _AddServiceButton extends StatelessWidget {
             ),
             SizedBox(width: compact ? 10 : 12),
             Text(
-              'Add New Service',
+              'Add New Service'
+                  '',
               style: AppTextStyles.style(
                 color: Colors.white,
                 fontSize: compact ? 15 : 16,
@@ -2080,6 +2124,112 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     return 'Unnamed Client';
   }
 
+  Future<String?> _showSearchableSelectionSheet({
+    required String title,
+    required List<MapEntry<String, String>> options,
+    String? selectedValue,
+  }) async {
+    final queryController = TextEditingController();
+    var filtered = options;
+
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            void applyFilter(String query) {
+              final q = query.trim().toLowerCase();
+              setSheetState(() {
+                filtered = q.isEmpty
+                    ? options
+                    : options
+                          .where((entry) => entry.value.toLowerCase().contains(q))
+                          .toList(growable: false);
+              });
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 14,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
+                child: SizedBox(
+                  height: MediaQuery.of(sheetContext).size.height * 0.72,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF1E293B),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: queryController,
+                        autofocus: true,
+                        onChanged: applyFilter,
+                        decoration: _inputDecoration('Type to search...'),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No results found',
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: filtered.length,
+                                itemBuilder: (listContext, index) {
+                                  final item = filtered[index];
+                                  final isSelected = item.key == selectedValue;
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(
+                                      item.value,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    trailing: isSelected
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            size: 18,
+                                            color: Color(0xFF1D8BFF),
+                                          )
+                                        : null,
+                                    onTap: () =>
+                                        Navigator.of(sheetContext).pop(item.key),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   String _readError(Object error, {required String fallback}) {
     if (error is DioException) {
       final data = error.response?.data;
@@ -2168,24 +2318,35 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                     const SizedBox(height: 16),
                     _FormLabel(text: 'Select Client', required: true),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<String>(
-                      value:
-                          _clients.any((entry) => entry.id == _selectedClientId)
-                          ? _selectedClientId
-                          : null,
-                      items: _clients
-                          .map(
-                            (client) => DropdownMenuItem<String>(
-                              value: client.id,
-                              child: Text(_clientDisplayName(client)),
-                            ),
-                          )
-                          .toList(growable: false),
-                      onChanged: _isSubmitting
+                    _SearchSelectField(
+                      text: _clients
+                          .where((entry) => entry.id == _selectedClientId)
+                          .map(_clientDisplayName)
+                          .cast<String?>()
+                          .firstWhere(
+                            (_) => true,
+                            orElse: () => null,
+                          ),
+                      hint: 'Choose a client...',
+                      onTap: _isSubmitting
                           ? null
-                          : (value) =>
-                                setState(() => _selectedClientId = value),
-                      decoration: _inputDecoration('Choose a client...'),
+                          : () async {
+                              final selected = await _showSearchableSelectionSheet(
+                                title: 'Select Client',
+                                selectedValue: _selectedClientId,
+                                options: _clients
+                                    .map(
+                                      (entry) => MapEntry(
+                                        entry.id,
+                                        _clientDisplayName(entry),
+                                      ),
+                                    )
+                                    .toList(growable: false),
+                              );
+                              if (selected != null && mounted) {
+                                setState(() => _selectedClientId = selected);
+                              }
+                            },
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -2199,14 +2360,14 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                           ),
                         ),
                         const Spacer(),
-                        TextButton.icon(
-                          onPressed: _isSubmitting ? null : _resetServiceFields,
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('Add Another Service'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF16A34A),
-                          ),
-                        ),
+                        // TextButton.icon(
+                        //   onPressed: _isSubmitting ? null : _resetServiceFields,
+                        //   icon: const Icon(Icons.add, size: 18),
+                        //   label: const Text('Add Another Service'),
+                        //   style: TextButton.styleFrom(
+                        //     foregroundColor: const Color(0xFF16A34A),
+                        //   ),
+                        // ),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -2235,38 +2396,54 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                     child: _LabeledField(
                                       label: 'Vendor',
                                       required: true,
-                                      child: DropdownButtonFormField<String>(
-                                        value:
-                                            _vendors.any(
+                                      child: _SearchSelectField(
+                                        text: _vendors
+                                            .where(
                                               (entry) =>
                                                   entry.id == _selectedVendorId,
                                             )
-                                            ? _selectedVendorId
-                                            : null,
-                                        items: _vendors
                                             .map(
-                                              (
-                                                vendor,
-                                              ) => DropdownMenuItem<String>(
-                                                value: vendor.id,
-                                                child: Text(
-                                                  vendor.vendorName
-                                                          .trim()
-                                                          .isEmpty
-                                                      ? 'Vendor #${vendor.id}'
-                                                      : vendor.vendorName,
-                                                ),
-                                              ),
+                                              (entry) =>
+                                                  entry.vendorName.trim().isEmpty
+                                                  ? 'Vendor #${entry.id}'
+                                                  : entry.vendorName,
                                             )
-                                            .toList(growable: false),
-                                        onChanged: _isSubmitting
+                                            .cast<String?>()
+                                            .firstWhere(
+                                              (_) => true,
+                                              orElse: () => null,
+                                            ),
+                                        hint: 'Choose a vendor...',
+                                        onTap: _isSubmitting
                                             ? null
-                                            : (value) => setState(
-                                                () => _selectedVendorId = value,
-                                              ),
-                                        decoration: _inputDecoration(
-                                          'Choose a vendor...',
-                                        ),
+                                            : () async {
+                                                final selected =
+                                                    await _showSearchableSelectionSheet(
+                                                      title: 'Select Vendor',
+                                                      selectedValue:
+                                                          _selectedVendorId,
+                                                      options: _vendors
+                                                          .map(
+                                                            (entry) => MapEntry(
+                                                              entry.id,
+                                                              entry.vendorName
+                                                                      .trim()
+                                                                      .isEmpty
+                                                                  ? 'Vendor #${entry.id}'
+                                                                  : entry.vendorName,
+                                                            ),
+                                                          )
+                                                          .toList(
+                                                            growable: false,
+                                                          ),
+                                                    );
+                                                if (selected != null && mounted) {
+                                                  setState(
+                                                    () =>
+                                                        _selectedVendorId = selected,
+                                                  );
+                                                }
+                                              },
                                       ),
                                     ),
                                   ),
@@ -2370,6 +2547,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                       label: 'Status',
                                       required: true,
                                       child: DropdownButtonFormField<String>(
+                                        isExpanded: true,
+                                        menuMaxHeight: 300,
                                         value: _selectedStatus,
                                         items: _statusValues
                                             .map(
@@ -2379,6 +2558,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                                     child: Text(
                                                       entry[0].toUpperCase() +
                                                           entry.substring(1),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                             )
@@ -2573,6 +2754,61 @@ class _DateInputField extends StatelessWidget {
             const Icon(
               Icons.calendar_month_outlined,
               size: 18,
+              color: Color(0xFF64748B),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchSelectField extends StatelessWidget {
+  const _SearchSelectField({
+    required this.text,
+    required this.hint,
+    required this.onTap,
+  });
+
+  final String? text;
+  final String hint;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = (text ?? '').trim();
+    final hasValue = value.isNotEmpty;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDCE6F2)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                hasValue ? value : hint,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.style(
+                  color: hasValue
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFF94A3B8),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
               color: Color(0xFF64748B),
             ),
           ],

@@ -430,8 +430,6 @@ class _ProjectsHeader extends StatelessWidget {
           icon: Icons.checklist_rounded,
           onTap: () => Get.to(() => const to_do.ToDoListScreen()),
         ),
-        const SizedBox(width: 10),
-        _HeaderIconButton(icon: Icons.notifications_none_rounded, onTap: () {}),
       ],
     );
   }
@@ -495,7 +493,7 @@ class _SummaryRow extends StatelessWidget {
                 iconColor: const Color(0xFF4F5D74),
                 value: '$totalProjects',
                 label: 'Total Projects',
-                percent: 'API',
+                percent: '',
                 accent: const Color(0xFF4F5D74),
                 isCompact: isCompact,
               ),
@@ -507,7 +505,7 @@ class _SummaryRow extends StatelessWidget {
                 iconColor: const Color(0xFF1D6FEA),
                 value: '$inProgressProjects',
                 label: 'In Progress',
-                percent: 'API',
+                percent: '',
                 accent: const Color(0xFF1D6FEA),
                 isCompact: isCompact,
               ),

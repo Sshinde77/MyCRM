@@ -129,6 +129,8 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                     // _AssignmentsCard(issue: issue),
                     const SizedBox(height: 24),
                     _DetailsCard(issue: issue),
+                    const SizedBox(height: 14),
+                    _AssignmentsCompactCard(issue: issue),
                     const SizedBox(height: 24),
                     _TaskBoardCard(
                       issue: issue,
@@ -654,31 +656,147 @@ class _TeamAvatar extends StatelessWidget {
   }
 }
 
-class _AssignmentsCard extends StatelessWidget {
-  const _AssignmentsCard({required this.issue});
+class _AssignmentsCompactCard extends StatelessWidget {
+  const _AssignmentsCompactCard({required this.issue});
 
   final ClientIssueModel issue;
 
   @override
   Widget build(BuildContext context) {
-    return _Section(
-      title: 'Assignments',
-      child: Column(
+    final team = _valueOrFallback(issue.assignedTeam, 'Unassigned');
+    final date = issue.displayDate;
+    final compact = MediaQuery.of(context).size.width < 360;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Assignments',
+          style: AppTextStyles.style(
+            color: const Color(0xFF131D34),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F1FF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFD1E0F7)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A0F172A),
+                blurRadius: 10,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: _AssignmentHeroChip(
+                  icon: Icons.groups_rounded,
+                  label: 'Assigned Team',
+                  value: team,
+                  iconColor: const Color(0xFF1D6FEA),
+                  iconBg: const Color(0xFFE8F1FF),
+                  compact: compact,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _AssignmentHeroChip(
+                  icon: Icons.event_rounded,
+                  label: 'Assigned Date',
+                  value: date,
+                  iconColor: const Color(0xFF0F766E),
+                  iconBg: const Color(0xFFE8F7F2),
+                  compact: compact,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AssignmentHeroChip extends StatelessWidget {
+  const _AssignmentHeroChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.iconColor,
+    required this.iconBg,
+    required this.compact,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color iconColor;
+  final Color iconBg;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        compact ? 9 : 10,
+        compact ? 8 : 9,
+        compact ? 9 : 10,
+        compact ? 8 : 9,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F3)),
+      ),
+      child: Row(
         children: [
-          _InfoRow('Team', _valueOrFallback(issue.assignedTeam, 'Unassigned')),
-          const Divider(height: 32),
-          _InfoRow(
-            'Assigned To',
-            _valueOrFallback(issue.assignedTo, 'Unassigned'),
-            valueColor: const Color(0xFF1769F3),
+          Container(
+            width: compact ? 28 : 30,
+            height: compact ? 28 : 30,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: compact ? 15 : 16, color: iconColor),
           ),
-          const Divider(height: 32),
-          _InfoRow(
-            'Assigned By',
-            _valueOrFallback(issue.assignedBy, 'Not available'),
+          SizedBox(width: compact ? 8 : 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF7C8BA3),
+                    fontSize: compact ? 10.3 : 10.8,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF172033),
+                    fontSize: compact ? 11.6 : 12.2,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Divider(height: 32),
-          _InfoRow('Date', issue.displayDate),
         ],
       ),
     );

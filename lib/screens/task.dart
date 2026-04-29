@@ -143,12 +143,6 @@ class _TasksScreenState extends State<TasksScreen> {
                           onTap: () =>
                               Get.to(() => const to_do.ToDoListScreen()),
                         ),
-                        SizedBox(width: compact ? 8 : 10),
-                        _circleIcon(
-                          Icons.notifications_none_rounded,
-                          compact: compact,
-                          onTap: () {},
-                        ),
                       ],
                     ),
                   ],

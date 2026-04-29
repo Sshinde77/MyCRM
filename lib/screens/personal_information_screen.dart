@@ -287,11 +287,11 @@ class _DetailsPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _ProfileField(
-            label: 'Profile Image',
-            value: _normalizeImageUrl(user.profilePicture) ?? 'Not uploaded',
-            icon: Icons.image_outlined,
-          ),
+          // _ProfileField(
+          //   label: 'Profile Image',
+          //   value: _normalizeImageUrl(user.profilePicture) ?? 'Not uploaded',
+          //   icon: Icons.image_outlined,
+          // ),
           const SizedBox(height: 12),
           _ProfileField(
             label: 'Full Name',

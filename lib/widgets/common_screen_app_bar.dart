@@ -38,10 +38,10 @@ class CommonScreenAppBar extends StatelessWidget
             icon: const Icon(Icons.checklist_rounded),
             onPressed: () => Get.to(() => const to_do.ToDoListScreen()),
           ),
-        IconButton(
-          icon: const Icon(Icons.notifications_none_rounded),
-          onPressed: () {},
-        ),
+        // IconButton(
+        //   icon: const Icon(Icons.notifications_none_rounded),
+        //   onPressed: () {},
+        // ),
       ],
     );
   }
@@ -92,11 +92,11 @@ class CommonTopBar extends StatelessWidget {
           ),
           SizedBox(width: compact ? 8 : 10),
         ],
-        _TopBarIconButton(
-          icon: Icons.notifications_none_rounded,
-          size: iconSize,
-          onTap: () {},
-        ),
+        // _TopBarIconButton(
+        //   icon: Icons.notifications_none_rounded,
+        //   size: iconSize,
+        //   onTap: () {},
+        // ),
       ],
     );
   }

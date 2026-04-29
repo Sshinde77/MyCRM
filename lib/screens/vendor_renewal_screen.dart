@@ -113,6 +113,49 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       ),
       firstDate: DateTime(now.year - 10),
       lastDate: DateTime(now.year + 20),
+      builder: (context, child) {
+        final base = Theme.of(context);
+        return Theme(
+          data: base.copyWith(
+            colorScheme: base.colorScheme.copyWith(
+              primary: const Color(0xFF156CF1),
+              onPrimary: const Color(0xFF156CF1),
+              primaryContainer: const Color(0x1F156CF1),
+              onPrimaryContainer: const Color(0xFF156CF1),
+            ),
+            datePickerTheme: base.datePickerTheme.copyWith(
+              rangeSelectionBackgroundColor: const Color(0x1A156CF1),
+              rangeSelectionOverlayColor: MaterialStateProperty.all(
+                const Color(0x1A156CF1),
+              ),
+              dayOverlayColor: MaterialStateProperty.all(
+                const Color(0x1A156CF1),
+              ),
+              dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return Colors.white;
+                }
+                return null;
+              }),
+              dayForegroundColor: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return const Color(0xFF156CF1);
+                }
+                return null;
+              }),
+              dayShape: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return const CircleBorder(
+                    side: BorderSide(color: Color(0xFF156CF1), width: 1.4),
+                  );
+                }
+                return const CircleBorder();
+              }),
+            ),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
     if (picked == null || !mounted) {
       return;

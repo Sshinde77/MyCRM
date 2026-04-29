@@ -415,6 +415,7 @@ class _TasksHeader extends StatelessWidget {
           title: 'To-Do List',
           compact: isCompact,
           onBack: onBack,
+          showTodoButton: false,
         );
       },
     );
@@ -489,7 +490,7 @@ class _TasksHeroSection extends StatelessWidget {
                         size: isCompact ? 15 : 16,
                       ),
                       label: Text(
-                        'Add To DO',
+                        'Add To Do',
                         style: AppTextStyles.style(
                           fontSize: isCompact ? 12 : 12.5,
                           fontWeight: FontWeight.w700,

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 
@@ -162,6 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             projectMonthlySeries: _projectMonthlySeries,
                             taskMonthlySeries: _taskMonthlySeries,
                             monthLabels: _last6MonthLabels(),
+                            onViewAllTap: _openProjectsScreen,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -192,6 +194,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             issues: _recentIssues,
                             isLoading: _isLoadingTickets,
                             errorMessage: _ticketsLoadError,
+                            onIssueTap: _openSupportTicketDetail,
+                            onViewAllTap: _openIssueManagementScreen,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -481,6 +485,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? AppRoutes.clientRenewalDetail
         : AppRoutes.vendorRenewalDetail;
     Get.toNamed(route, arguments: item.renewal);
+  }
+
+  Future<void> _openSupportTicketDetail(ClientIssueModel issue) async {
+    await Get.toNamed(
+      AppRoutes.issueDetail,
+      arguments: {'issue_id': issue.id, 'issue': issue},
+    );
+    if (!mounted) return;
+    await _loadRecentIssues();
+  }
+
+  void _openProjectsScreen() {
+    Get.toNamed(AppRoutes.projects);
+  }
+
+  void _openIssueManagementScreen() {
+    Get.toNamed(AppRoutes.raiseIssue);
   }
 
   Future<void> _loadRecentIssues() async {
@@ -931,9 +952,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return null;
     }
 
-    if (message.contains(
-      'Another appointment already exists within 30 minutes',
-    )) {
+    final normalized = message.toLowerCase();
+    if ((normalized.contains('30') ||
+            normalized.contains('thirty') ||
+            normalized.contains('half hour')) &&
+        (normalized.contains('appointment') ||
+            normalized.contains('slot') ||
+            normalized.contains('time'))) {
       return message;
     }
 
@@ -1082,6 +1107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     DateTime? selectedDate = initial?.date;
     TimeOfDay? selectedTime = initial?.time;
+    final isEditing = initial != null;
 
     final saved = await showDialog<_Appointment>(
       context: context,
@@ -1091,14 +1117,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (context, setModalState) {
             Future<void> pickDate() async {
               final now = DateTime.now();
+              final today = DateTime(now.year, now.month, now.day);
               final picked = await showDatePicker(
                 context: context,
                 initialDate: selectedDate ?? now,
-                firstDate: DateTime(now.year - 1),
+                firstDate: isEditing ? DateTime(now.year - 1) : today,
                 lastDate: DateTime(now.year + 2),
               );
               if (picked != null) {
-                setModalState(() => selectedDate = picked);
+                setModalState(() {
+                  selectedDate = picked;
+                  if (!isEditing && selectedTime != null) {
+                    final selectedDateTime = DateTime(
+                      picked.year,
+                      picked.month,
+                      picked.day,
+                      selectedTime!.hour,
+                      selectedTime!.minute,
+                    );
+                    if (selectedDateTime.isBefore(DateTime.now())) {
+                      selectedTime = null;
+                    }
+                  }
+                });
               }
             }
 
@@ -1109,6 +1150,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
               );
               if (picked != null) {
+                if (!isEditing && selectedDate != null) {
+                  final selectedDateTime = DateTime(
+                    selectedDate!.year,
+                    selectedDate!.month,
+                    selectedDate!.day,
+                    picked.hour,
+                    picked.minute,
+                  );
+                  if (selectedDateTime.isBefore(DateTime.now())) {
+                    AppSnackbar.show(
+                      'Notice',
+                      'Please select a future time.',
+                    );
+                    return;
+                  }
+                }
                 setModalState(() => selectedTime = picked);
               }
             }
@@ -1144,47 +1201,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ),
                               const Spacer(),
-                              IconButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                icon: const Icon(Icons.close_rounded),
-                              ),
+                              // IconButton(
+                              //   onPressed: () => Navigator.of(context).pop(),
+                              //   icon: const Icon(Icons.close_rounded),
+                              // ),
                             ],
                           ),
                           const Divider(height: 24, color: Color(0xFFE5EAF3)),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F6FF),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFFD5E4FF),
-                              ),
-                            ),
-                            child: RichText(
-                              text: TextSpan(
-                                style: AppTextStyles.style(
-                                  color: const Color(0xFF48617D),
-                                  fontSize: 12.5,
-                                  height: 1.5,
-                                ),
-                                children: const [
-                                  TextSpan(
-                                    text: 'Notification Flow: ',
-                                    style: TextStyle(
-                                      color: Color(0xFF234B92),
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text:
-                                        'WhatsApp template message automatically at selected meeting time.\n'
-                                        'Note: Same day meetings require at least 30 minutes gap between time slots.',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          // Container(
+                          //   width: double.infinity,
+                          //   padding: const EdgeInsets.all(14),
+                          //   decoration: BoxDecoration(
+                          //     color: const Color(0xFFF1F6FF),
+                          //     borderRadius: BorderRadius.circular(12),
+                          //     border: Border.all(
+                          //       color: const Color(0xFFD5E4FF),
+                          //     ),
+                          //   ),
+                          //   child: RichText(
+                          //     text: TextSpan(
+                          //       style: AppTextStyles.style(
+                          //         color: const Color(0xFF48617D),
+                          //         fontSize: 12.5,
+                          //         height: 1.5,
+                          //       ),
+                          //       children: const [
+                          //         TextSpan(
+                          //           text: 'Notification Flow: ',
+                          //           style: TextStyle(
+                          //             color: Color(0xFF234B92),
+                          //             fontWeight: FontWeight.w700,
+                          //           ),
+                          //         ),
+                          //         TextSpan(
+                          //           text:
+                          //               'WhatsApp template message automatically at selected meeting time.\n'
+                          //               'Note: Same day meetings require at least 30 minutes gap between time slots.',
+                          //         ),
+                          //       ],
+                          //     ),
+                          //   ),
+                          // ),
                           const SizedBox(height: 16),
                           _AppointmentFormField(
                             label: 'Title',
@@ -1240,8 +1297,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 child: _AppointmentFormField(
                                   label: 'Time',
                                   requiredMark: true,
-                                  helperText:
-                                      'Choose a slot with minimum 30 minutes difference from existing meetings.',
+                                  // helperText:
+                                  //     'Choose a slot with minimum 30 minutes difference from existing meetings.',
                                   child: TextFormField(
                                     readOnly: true,
                                     onTap: pickTime,
@@ -1266,9 +1323,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 14),
                           _AppointmentFormField(
-                            label: 'Email Recipients (Optional)',
-                            helperText:
-                                'Comma-separated emails. You can keep this empty if WhatsApp numbers are added.',
+                            label: 'Email Recipients', requiredMark: true,
+                            // helperText:
+                            //     'Comma-separated emails. You can keep this empty if WhatsApp numbers are added.',
                             child: TextFormField(
                               controller: emailController,
                               decoration: _appointmentInputDecoration(
@@ -1279,10 +1336,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 14),
                           _AppointmentFormField(
-                            label: 'WhatsApp Recipients (Phone Numbers)',
+                            label: 'WhatsApp Number',
                             requiredMark: true,
-                            helperText:
-                                'Use international format. Multiple numbers comma separated.',
+                            // helperText:
+                            //     'Use international format. Multiple numbers comma separated.',
                             child: TextFormField(
                               controller: whatsappController,
                               validator: (value) =>
@@ -1324,6 +1381,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 onPressed: () {
                                   if (!formKey.currentState!.validate()) {
                                     return;
+                                  }
+                                  final conflict = _hasThirtyMinuteSlotConflict(
+                                    date: selectedDate!,
+                                    time: selectedTime!,
+                                    excludeAppointmentId: initial?.id,
+                                  );
+                                  if (conflict) {
+                                    AppSnackbar.show(
+                                      'Notice',
+                                      'Please select another time slot. Appointments require at least 30 minutes gap.',
+                                    );
+                                    return;
+                                  }
+                                  if (!isEditing) {
+                                    final selectedDateTime = DateTime(
+                                      selectedDate!.year,
+                                      selectedDate!.month,
+                                      selectedDate!.day,
+                                      selectedTime!.hour,
+                                      selectedTime!.minute,
+                                    );
+                                    if (selectedDateTime.isBefore(
+                                      DateTime.now(),
+                                    )) {
+                                      AppSnackbar.show(
+                                        'Notice',
+                                        'Please choose a future date and time.',
+                                      );
+                                      return;
+                                    }
                                   }
                                   Navigator.of(context).pop(
                                     _Appointment(
@@ -1381,6 +1468,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     return saved;
+  }
+
+  bool _hasThirtyMinuteSlotConflict({
+    required DateTime date,
+    required TimeOfDay time,
+    String? excludeAppointmentId,
+  }) {
+    final selectedMinutes = _toMinutes(time);
+    for (final appointment in _appointments) {
+      if (!_isSameDate(appointment.date, date)) {
+        continue;
+      }
+      if (excludeAppointmentId != null &&
+          appointment.id != null &&
+          appointment.id == excludeAppointmentId) {
+        continue;
+      }
+      final existingMinutes = _toMinutes(appointment.time);
+      final difference = (existingMinutes - selectedMinutes).abs();
+      if (difference < 30) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _showAppointmentsForDate(DateTime date) async {
@@ -1540,28 +1651,50 @@ class _HeaderSection extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                displayName,
-                style: AppTextStyles.style(
-                  color: const Color(0xFF1B2237),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Get.toNamed(AppRoutes.personalInformation),
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    _HeaderProfileAvatar(user: user, displayName: displayName),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF1B2237),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            role,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF7F90A9),
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                role,
-                style: AppTextStyles.style(
-                  color: const Color(0xFF7F90A9),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.1,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
         Row(
@@ -1571,17 +1704,91 @@ class _HeaderSection extends StatelessWidget {
               size: 24,
               onTap: () => Get.to(() => const to_do.ToDoListScreen()),
             ),
-            const SizedBox(width: 10),
-            _HeaderActionButton(
-              icon: Icons.notifications_none_rounded,
-              size: 25,
-              onTap: () {},
-            ),
           ],
         ),
       ],
     );
   }
+}
+
+class _HeaderProfileAvatar extends StatelessWidget {
+  const _HeaderProfileAvatar({required this.user, required this.displayName});
+
+  final UserModel? user;
+  final String displayName;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = _normalizeProfileImageUrl(user?.profilePicture);
+    final initials = _profileInitials(displayName);
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE7EEFF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD8E2F4)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: imageUrl != null
+          ? Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _avatarInitials(initials),
+            )
+          : _avatarInitials(initials),
+    );
+  }
+
+  Widget _avatarInitials(String value) {
+    return Center(
+      child: Text(
+        value,
+        style: AppTextStyles.style(
+          color: const Color(0xFF1D4ED8),
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+String? _normalizeProfileImageUrl(String? raw) {
+  final value = (raw ?? '').trim();
+  if (value.isEmpty) return null;
+  final parsed = Uri.tryParse(value);
+  if (parsed != null && parsed.hasScheme) {
+    return value;
+  }
+
+  final base = Uri.parse(ApiConstants.baseUrl);
+  final root = Uri(
+    scheme: base.scheme,
+    host: base.host,
+    port: base.hasPort ? base.port : null,
+  );
+
+  if (value.startsWith('/')) {
+    return root.resolve(value).toString();
+  }
+
+  return root.resolve('/$value').toString();
+}
+
+String _profileInitials(String name) {
+  final tokens = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList(growable: false);
+  if (tokens.isEmpty) return 'U';
+  if (tokens.length == 1) {
+    final word = tokens.first;
+    return word.substring(0, word.length >= 2 ? 2 : 1).toUpperCase();
+  }
+  return '${tokens[0][0]}${tokens[1][0]}'.toUpperCase();
 }
 
 class _HeaderActionButton extends StatelessWidget {
@@ -2094,6 +2301,7 @@ class _ProjectSummarySection extends StatelessWidget {
     required this.projectMonthlySeries,
     required this.taskMonthlySeries,
     required this.monthLabels,
+    required this.onViewAllTap,
   });
 
   final int projectCount;
@@ -2101,15 +2309,17 @@ class _ProjectSummarySection extends StatelessWidget {
   final List<int> projectMonthlySeries;
   final List<int> taskMonthlySeries;
   final List<String> monthLabels;
+  final VoidCallback onViewAllTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _ResponsiveSectionHeader(
+        _ResponsiveSectionHeader(
           title: 'Projects Summary',
-          trailing: SizedBox.shrink(),
+          forceInline: true,
+          trailing: _SectionViewAllButton(onTap: onViewAllTap),
         ),
         const SizedBox(height: 14),
         Row(
@@ -2469,22 +2679,25 @@ class _SupportTicketsSection extends StatelessWidget {
     required this.issues,
     required this.isLoading,
     required this.errorMessage,
+    required this.onIssueTap,
+    required this.onViewAllTap,
   });
 
   final List<ClientIssueModel> issues;
   final bool isLoading;
   final String? errorMessage;
+  final ValueChanged<ClientIssueModel> onIssueTap;
+  final VoidCallback onViewAllTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const _SectionTitle(title: 'Support Tickets'),
-            const Spacer(),
-          ],
+        _ResponsiveSectionHeader(
+          title: 'Support Tickets',
+          forceInline: true,
+          trailing: _SectionViewAllButton(onTap: onViewAllTap),
         ),
         const SizedBox(height: 12),
         if (isLoading)
@@ -2508,7 +2721,10 @@ class _SupportTicketsSection extends StatelessWidget {
                 .map(
                   (issue) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _SupportTicketPreviewCard(issue: issue),
+                    child: _SupportTicketPreviewCard(
+                      issue: issue,
+                      onTap: () => onIssueTap(issue),
+                    ),
                   ),
                 )
                 .toList(growable: false),
@@ -2519,137 +2735,145 @@ class _SupportTicketsSection extends StatelessWidget {
 }
 
 class _SupportTicketPreviewCard extends StatelessWidget {
-  const _SupportTicketPreviewCard({required this.issue});
+  const _SupportTicketPreviewCard({required this.issue, required this.onTap});
 
   final ClientIssueModel issue;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFEFF),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFDCE6F2)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A0F172A),
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  issue.displayClient,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF6B7D99),
-                    fontSize: 11.8,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: _priorityPillBg(issue.priority),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  issue.displayPriority,
-                  style: AppTextStyles.style(
-                    color: _priorityPillFg(issue.priority),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFDFEFF),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFDCE6F2)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0A0F172A),
+                blurRadius: 8,
+                offset: Offset(0, 3),
               ),
             ],
           ),
-          const SizedBox(height: 7),
-          Text(
-            issue.displayTitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.style(
-              color: const Color(0xFF1B2237),
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            issue.displayProject,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.style(
-              color: const Color(0xFF73839B),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: _statusPillBg(issue.status),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  issue.displayStatus,
-                  style: AppTextStyles.style(
-                    color: _statusPillFg(issue.status),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F6FC),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 14,
-                      color: Color(0xFF73839B),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      issue.displayDate,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      issue.displayClient,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.style(
-                        color: const Color(0xFF73839B),
-                        fontSize: 11.5,
+                        color: const Color(0xFF6B7D99),
+                        fontSize: 11.8,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _priorityPillBg(issue.priority),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      issue.displayPriority,
+                      style: AppTextStyles.style(
+                        color: _priorityPillFg(issue.priority),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 7),
+              Text(
+                issue.displayTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF1B2237),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
                 ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                issue.displayProject,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF73839B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _statusPillBg(issue.status),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      issue.displayStatus,
+                      style: AppTextStyles.style(
+                        color: _statusPillFg(issue.status),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F6FC),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.access_time_rounded,
+                          size: 14,
+                          color: Color(0xFF73839B),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          issue.displayDate,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF73839B),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2772,34 +2996,28 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      alignment: WrapAlignment.spaceBetween,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Calendar Appointments',
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF2D3B54),
-                                fontSize: isCompact ? 16 : 17,
-                                fontWeight: FontWeight.w700,
+                        Expanded(
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Calendar',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF2D3B54),
+                                    fontSize: isCompact ? 16 : 17,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Create meetings and keep WhatsApp reminders aligned with scheduled time.',
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF7A8CA5),
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+
                         PermissionGate(
                           permission: AppPermission.manageCalendar,
                           child: ElevatedButton.icon(
@@ -2829,7 +3047,9 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 14),
+
                     Row(
                       children: [
                         _CalendarIconButton(
@@ -2861,8 +3081,7 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                       ],
                     ),
                   ],
-                );
-              },
+                );              },
             ),
           ),
           Padding(
@@ -3723,6 +3942,34 @@ class _ResponsiveSectionHeader extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _SectionViewAllButton extends StatelessWidget {
+  const _SectionViewAllButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          child: Text(
+            'View all',
+            style: AppTextStyles.style(
+              color: const Color(0xFF2A7FFF),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

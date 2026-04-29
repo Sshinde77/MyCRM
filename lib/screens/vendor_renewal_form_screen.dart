@@ -399,6 +399,112 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
     AppSnackbar.show(title, message);
   }
 
+  Future<String?> _showSearchableSelectionSheet({
+    required String title,
+    required List<MapEntry<String, String>> options,
+    String? selectedValue,
+  }) async {
+    final queryController = TextEditingController();
+    var filtered = options;
+
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            void applyFilter(String query) {
+              final q = query.trim().toLowerCase();
+              setSheetState(() {
+                filtered = q.isEmpty
+                    ? options
+                    : options
+                          .where((entry) => entry.value.toLowerCase().contains(q))
+                          .toList(growable: false);
+              });
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 14,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+                ),
+                child: SizedBox(
+                  height: MediaQuery.of(sheetContext).size.height * 0.72,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF1E293B),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: queryController,
+                        autofocus: true,
+                        onChanged: applyFilter,
+                        decoration: _inputDecoration('Type to search...'),
+                      ),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? Center(
+                                child: Text(
+                                  'No results found',
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              )
+                            : ListView.builder(
+                                itemCount: filtered.length,
+                                itemBuilder: (listContext, index) {
+                                  final item = filtered[index];
+                                  final isSelected = item.key == selectedValue;
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(
+                                      item.value,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    trailing: isSelected
+                                        ? const Icon(
+                                            Icons.check_rounded,
+                                            size: 18,
+                                            color: Color(0xFF1D8BFF),
+                                          )
+                                        : null,
+                                    onTap: () =>
+                                        Navigator.of(sheetContext).pop(item.key),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final insetBottom = MediaQuery.of(context).viewInsets.bottom;
@@ -456,30 +562,42 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                     _LabeledField(
                       label: 'Select Vendor',
                       required: true,
-                      child: DropdownButtonFormField<String>(
-                        initialValue:
-                            _vendors.any(
-                              (entry) => entry.id == _selectedVendorId,
-                            )
-                            ? _selectedVendorId
-                            : null,
-                        items: _vendors
+                      child: _SearchSelectField(
+                        text: _vendors
+                            .where((entry) => entry.id == _selectedVendorId)
                             .map(
-                              (vendor) => DropdownMenuItem<String>(
-                                value: vendor.id,
-                                child: Text(
-                                  vendor.vendorName.trim().isEmpty
-                                      ? 'Vendor #${vendor.id}'
-                                      : vendor.vendorName,
-                                ),
-                              ),
+                              (entry) => entry.vendorName.trim().isEmpty
+                                  ? 'Vendor #${entry.id}'
+                                  : entry.vendorName,
                             )
-                            .toList(growable: false),
-                        onChanged: _isSubmitting
+                            .cast<String?>()
+                            .firstWhere(
+                              (_) => true,
+                              orElse: () => null,
+                            ),
+                        hint: 'Choose a vendor...',
+                        onTap: _isSubmitting
                             ? null
-                            : (value) =>
-                                  setState(() => _selectedVendorId = value),
-                        decoration: _inputDecoration('Choose a vendor...'),
+                            : () async {
+                                final selected =
+                                    await _showSearchableSelectionSheet(
+                                      title: 'Select Vendor',
+                                      selectedValue: _selectedVendorId,
+                                      options: _vendors
+                                          .map(
+                                            (entry) => MapEntry(
+                                              entry.id,
+                                              entry.vendorName.trim().isEmpty
+                                                  ? 'Vendor #${entry.id}'
+                                                  : entry.vendorName,
+                                            ),
+                                          )
+                                          .toList(growable: false),
+                                    );
+                                if (selected != null && mounted) {
+                                  setState(() => _selectedVendorId = selected);
+                                }
+                              },
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -513,6 +631,8 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                                 label: 'Plan Type',
                                 required: true,
                                 child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+                                  menuMaxHeight: 300,
                                   initialValue:
                                       _planTypeOptions.contains(
                                         _selectedPlanType,
@@ -533,6 +653,8 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                                                             part.substring(1),
                                                 )
                                                 .join('-'),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       )
@@ -636,6 +758,8 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                                 label: 'Status',
                                 required: true,
                                 child: DropdownButtonFormField<String>(
+                                  isExpanded: true,
+                                  menuMaxHeight: 300,
                                   initialValue: _selectedStatus,
                                   items: _statusValues
                                       .map(
@@ -644,6 +768,8 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                                           child: Text(
                                             entry[0].toUpperCase() +
                                                 entry.substring(1),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       )
@@ -838,6 +964,61 @@ class _DateInputField extends StatelessWidget {
             const Icon(
               Icons.calendar_month_outlined,
               size: 18,
+              color: Color(0xFF64748B),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchSelectField extends StatelessWidget {
+  const _SearchSelectField({
+    required this.text,
+    required this.hint,
+    required this.onTap,
+  });
+
+  final String? text;
+  final String hint;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = (text ?? '').trim();
+    final hasValue = value.isNotEmpty;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDCE6F2)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                hasValue ? value : hint,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.style(
+                  color: hasValue
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFF94A3B8),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
               color: Color(0xFF64748B),
             ),
           ],
