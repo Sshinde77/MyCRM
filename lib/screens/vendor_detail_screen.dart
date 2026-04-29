@@ -197,35 +197,35 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                               : _VendorDetailTable(detail: detail),
                         ),
                         const SizedBox(height: 18),
-                        _SectionHeader(
-                          title: 'Vendor Services',
-                          actions: _PrimaryActionButton(
-                            label: 'Add New Service',
-                            icon: Icons.add_rounded,
-                            onTap: () {},
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _Card(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _ServiceToolbar(
-                                controller: _serviceSearchController,
-                                isMobile: isMobile,
-                              ),
-                              const SizedBox(height: 14),
-                              if (filteredServices.isEmpty)
-                                const _EmptyState(
-                                  message: 'No services found for this vendor.',
-                                )
-                              else
-                                isMobile
-                                    ? _ServiceMobileList(rows: filteredServices)
-                                    : _ServiceTable(rows: filteredServices),
-                            ],
-                          ),
-                        ),
+                        // _SectionHeader(
+                        //   title: 'Vendor Services',
+                        //   actions: _PrimaryActionButton(
+                        //     label: 'Add New Service',
+                        //     icon: Icons.add_rounded,
+                        //     onTap: () {},
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 12),
+                        // _Card(
+                        //   child: Column(
+                        //     crossAxisAlignment: CrossAxisAlignment.start,
+                        //     children: [
+                        //       _ServiceToolbar(
+                        //         controller: _serviceSearchController,
+                        //         isMobile: isMobile,
+                        //       ),
+                        //       const SizedBox(height: 14),
+                        //       if (filteredServices.isEmpty)
+                        //         const _EmptyState(
+                        //           message: 'No services found for this vendor.',
+                        //         )
+                        //       else
+                        //         isMobile
+                        //             ? _ServiceMobileList(rows: filteredServices)
+                        //             : _ServiceTable(rows: filteredServices),
+                        //     ],
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
