@@ -8,6 +8,7 @@ class LeadModel {
     this.status,
     this.email,
     this.phone,
+    this.leadType,
     this.createdAt,
     this.assignedTo,
     this.source,
@@ -32,6 +33,7 @@ class LeadModel {
   final String? status;
   final String? email;
   final String? phone;
+  final String? leadType;
   final DateTime? createdAt;
   final String? assignedTo;
   final String? source;
@@ -116,6 +118,7 @@ class LeadModel {
         'phone_number',
         'contact_number',
       ]),
+      leadType: _readNullableString(source, ['lead_type', 'leadType', 'type']),
       createdAt: _readNullableDateTime(source, [
         'created_at',
         'createdAt',
@@ -211,6 +214,11 @@ class LeadModel {
   String get displayPhone {
     final value = phone?.trim();
     return value == null || value.isEmpty ? 'Phone not available' : value;
+  }
+
+  String get displayLeadType {
+    final value = leadType?.trim();
+    return value == null || value.isEmpty ? 'N/A' : value;
   }
 
   String get displayAssignedTo {

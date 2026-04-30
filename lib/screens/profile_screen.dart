@@ -90,7 +90,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       permission: AppPermission.manageSettings,
       accentColor: Color(0xFF0891B2),
     ),
-
   ];
 
   @override
@@ -225,7 +224,7 @@ class _BiometricLoginCard extends StatelessWidget {
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius. circular(18),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFE7EDF5)),
         ),
         child: SwitchListTile(
@@ -607,4 +606,3 @@ class _ProfileAction {
   final String? permission;
   final Widget Function()? screenBuilder;
 }
-

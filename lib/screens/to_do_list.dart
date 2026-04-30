@@ -485,10 +485,7 @@ class _TasksHeroSection extends StatelessWidget {
                           ),
                         ),
                       ),
-                      icon: Icon(
-                        Icons.add_rounded,
-                        size: isCompact ? 15 : 16,
-                      ),
+                      icon: Icon(Icons.add_rounded, size: isCompact ? 15 : 16),
                       label: Text(
                         'Add To Do',
                         style: AppTextStyles.style(
@@ -833,7 +830,9 @@ class _TaskListTile extends StatelessWidget {
                 ),
                 alignment: Alignment.center,
                 child: Icon(
-                  isCompleted ? Icons.task_alt_rounded : Icons.assignment_outlined,
+                  isCompleted
+                      ? Icons.task_alt_rounded
+                      : Icons.assignment_outlined,
                   color: accentColor,
                   size: isCompact ? 17 : 18,
                 ),
@@ -907,9 +906,8 @@ class _TaskListTile extends StatelessWidget {
                   runSpacing: 6,
                   children: task.attachments
                       .map(
-                        (attachment) => _TaskAttachmentPreview(
-                          attachment: attachment,
-                        ),
+                        (attachment) =>
+                            _TaskAttachmentPreview(attachment: attachment),
                       )
                       .toList(),
                 ),
@@ -931,7 +929,9 @@ class _TaskListTile extends StatelessWidget {
               ),
               _TaskMetaChip(
                 icon: Icons.access_time_rounded,
-                label: task.startTime == null ? '--:--' : _formatTime(task.startTime!),
+                label: task.startTime == null
+                    ? '--:--'
+                    : _formatTime(task.startTime!),
               ),
               _TaskMetaChip(
                 icon: Icons.repeat_rounded,

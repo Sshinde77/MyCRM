@@ -1159,10 +1159,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     picked.minute,
                   );
                   if (selectedDateTime.isBefore(DateTime.now())) {
-                    AppSnackbar.show(
-                      'Notice',
-                      'Please select a future time.',
-                    );
+                    AppSnackbar.show('Notice', 'Please select a future time.');
                     return;
                   }
                 }
@@ -1323,7 +1320,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 14),
                           _AppointmentFormField(
-                            label: 'Email Recipients', requiredMark: true,
+                            label: 'Email Recipients',
+                            requiredMark: true,
                             // helperText:
                             //     'Comma-separated emails. You can keep this empty if WhatsApp numbers are added.',
                             child: TextFormField(
@@ -2844,7 +2842,10 @@ class _SupportTicketPreviewCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F6FC),
                       borderRadius: BorderRadius.circular(999),
@@ -2995,173 +2996,175 @@ class _CalendarAppointmentsSection extends StatelessWidget {
         ),
         child: Column(
           children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFF7FAFF), Color(0xFFEEF4FF)],
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFF7FAFF), Color(0xFFEEF4FF)],
+                ),
               ),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 380;
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 380;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  'Calendar',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.style(
-                                    color: const Color(0xFF2D3B54),
-                                    fontSize: isCompact ? 16 : 17,
-                                    fontWeight: FontWeight.w700,
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Calendar',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.style(
+                                      color: const Color(0xFF2D3B54),
+                                      fontSize: isCompact ? 16 : 17,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        PermissionGate(
-                          permission: AppPermission.manageCalendar,
-                          child: ElevatedButton.icon(
-                            onPressed: onAddAppointment,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1B84FF),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
+                          PermissionGate(
+                            permission: AppPermission.manageCalendar,
+                            child: ElevatedButton.icon(
+                              onPressed: onAddAppointment,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1B84FF),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                              icon: const Icon(Icons.add_rounded, size: 18),
+                              label: Text(
+                                'Add Appointments',
+                                style: AppTextStyles.style(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            icon: const Icon(Icons.add_rounded, size: 18),
-                            label: Text(
-                              'Add Appointments',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          _CalendarIconButton(
+                            icon: Icons.chevron_left_rounded,
+                            onTap: onPreviousMonth,
+                          ),
+                          const SizedBox(width: 8),
+                          _CalendarIconButton(
+                            icon: Icons.chevron_right_rounded,
+                            onTap: onNextMonth,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _formatMonthYear(monthStart),
+                              textAlign: TextAlign.center,
                               style: AppTextStyles.style(
-                                color: Colors.white,
-                                fontSize: 12,
+                                color: const Color(0xFF2D3B54),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const _CalendarPillButton(
+                            label: 'Month',
+                            isPrimary: true,
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      for (final label in _weekdayLabels)
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.style(
+                                color: const Color(0xFF2480F0),
+                                fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        _CalendarIconButton(
-                          icon: Icons.chevron_left_rounded,
-                          onTap: onPreviousMonth,
-                        ),
-                        const SizedBox(width: 8),
-                        _CalendarIconButton(
-                          icon: Icons.chevron_right_rounded,
-                          onTap: onNextMonth,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _formatMonthYear(monthStart),
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF2D3B54),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const _CalendarPillButton(
-                          label: 'Month',
-                          isPrimary: true,
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    for (final label in _weekdayLabels)
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Text(
-                            label,
-                            textAlign: TextAlign.center,
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF2480F0),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: calendarDays.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    crossAxisSpacing: 0,
-                    mainAxisSpacing: 0,
-                    childAspectRatio: 0.62,
+                    ],
                   ),
-                  itemBuilder: (context, index) {
-                    final date = calendarDays[index];
-                    final dayAppointments =
-                        appointments
-                            .where(
-                              (appointment) =>
-                                  _isSameDate(appointment.date, date),
-                            )
-                            .toList()
-                          ..sort(
-                            (a, b) => _toMinutes(
-                              a.time,
-                            ).compareTo(_toMinutes(b.time)),
-                          );
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: calendarDays.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 7,
+                          crossAxisSpacing: 0,
+                          mainAxisSpacing: 0,
+                          childAspectRatio: 0.62,
+                        ),
+                    itemBuilder: (context, index) {
+                      final date = calendarDays[index];
+                      final dayAppointments =
+                          appointments
+                              .where(
+                                (appointment) =>
+                                    _isSameDate(appointment.date, date),
+                              )
+                              .toList()
+                            ..sort(
+                              (a, b) => _toMinutes(
+                                a.time,
+                              ).compareTo(_toMinutes(b.time)),
+                            );
 
-                    return _CalendarDayCell(
-                      date: date,
-                      displayedMonth: monthStart,
-                      today: today,
-                      appointments: dayAppointments,
-                      onTap: () => onDateTap(date),
-                    );
-                  },
-                ),
-              ],
+                      return _CalendarDayCell(
+                        date: date,
+                        displayedMonth: monthStart,
+                        today: today,
+                        appointments: dayAppointments,
+                        onTap: () => onDateTap(date),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ));
+    );
   }
 }
 
@@ -3407,6 +3410,7 @@ class _AppointmentSheetCard extends StatelessWidget {
     );
   }
 }
+
 class _DetailLine extends StatelessWidget {
   const _DetailLine({
     required this.icon,

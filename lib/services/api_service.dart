@@ -178,14 +178,42 @@ class MapListPageResult {
   final bool hasNextPage;
 }
 
+class LeadDashboardCount {
+  const LeadDashboardCount({
+    required this.todayCount,
+    required this.totalCount,
+  });
+
+  final int todayCount;
+  final int totalCount;
+}
+
+class LeadDashboardResult {
+  const LeadDashboardResult({
+    required this.recentLeads,
+    required this.leadsCount,
+    required this.bookCallsCount,
+    required this.digitalMarketingLeadsCount,
+    required this.webAppLeadsCount,
+  });
+
+  final List<LeadModel> recentLeads;
+  final LeadDashboardCount leadsCount;
+  final LeadDashboardCount bookCallsCount;
+  final LeadDashboardCount digitalMarketingLeadsCount;
+  final LeadDashboardCount webAppLeadsCount;
+}
+
 class ClientRenewalFormOptionsResult {
   const ClientRenewalFormOptionsResult({
     required this.clients,
     required this.vendors,
+    required this.statuses,
   });
 
   final List<ClientModel> clients;
   final List<VendorModel> vendors;
+  final List<String> statuses;
 }
 
 class ApiService {
@@ -947,10 +975,7 @@ class ApiService {
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
     }
-    final response = await get(
-      ApiConstants.liststaff,
-      queryParameters: query,
-    );
+    final response = await get(ApiConstants.liststaff, queryParameters: query);
     final root = _normalizeMap(response.data);
 
     Map<String, dynamic>? pagePayload;
@@ -1084,10 +1109,7 @@ class ApiService {
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
     }
-    final response = await get(
-      ApiConstants.clients,
-      queryParameters: query,
-    );
+    final response = await get(ApiConstants.clients, queryParameters: query);
     final root = _normalizeMap(response.data);
 
     Map<String, dynamic>? pagePayload;
@@ -1181,10 +1203,7 @@ class ApiService {
       query['search'] = normalizedSearch;
     }
 
-    final response = await get(
-      ApiConstants.vendors,
-      queryParameters: query,
-    );
+    final response = await get(ApiConstants.vendors, queryParameters: query);
 
     final root = _normalizeMap(response.data);
     final nestedData = _normalizeMap(root['data']);
@@ -1345,12 +1364,16 @@ class ApiService {
       if (leads is Map<String, dynamic>) {
         pagePayload = leads;
       } else if (leads is Map) {
-        pagePayload = leads.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = leads.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = rootData;
       }
     } else if (rootData is Map) {
-      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+      pagePayload = rootData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
     } else {
       pagePayload = root;
     }
@@ -1389,12 +1412,16 @@ class ApiService {
       if (projects is Map<String, dynamic>) {
         pagePayload = projects;
       } else if (projects is Map) {
-        pagePayload = projects.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = projects.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = rootData;
       }
     } else if (rootData is Map) {
-      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+      pagePayload = rootData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
     } else {
       pagePayload = root;
     }
@@ -1421,7 +1448,10 @@ class ApiService {
     );
   }
 
-  TaskListPageResult _parseTaskPageResponse(dynamic responseData, int fallbackPage) {
+  TaskListPageResult _parseTaskPageResponse(
+    dynamic responseData,
+    int fallbackPage,
+  ) {
     final root = _normalizeMap(responseData);
     Map<String, dynamic>? pagePayload;
     final rootData = root['data'];
@@ -1430,12 +1460,16 @@ class ApiService {
       if (tasks is Map<String, dynamic>) {
         pagePayload = tasks;
       } else if (tasks is Map) {
-        pagePayload = tasks.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = tasks.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = rootData;
       }
     } else if (rootData is Map) {
-      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+      pagePayload = rootData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
     } else {
       pagePayload = root;
     }
@@ -1474,12 +1508,16 @@ class ApiService {
       if (nested is Map<String, dynamic>) {
         pagePayload = nested;
       } else if (nested is Map) {
-        pagePayload = nested.map((key, value) => MapEntry(key.toString(), value));
+        pagePayload = nested.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
       } else {
         pagePayload = rootData;
       }
     } else if (rootData is Map) {
-      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+      pagePayload = rootData.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
     } else {
       pagePayload = root;
     }
@@ -1910,6 +1948,11 @@ class ApiService {
 
     final rawClients = source['clients'];
     final rawVendors = source['vendors'];
+    final rawStatuses =
+        source['statuses'] ??
+        source['status'] ??
+        source['renewal_statuses'] ??
+        source['renewalStatuses'];
 
     final clients = rawClients is List
         ? rawClients
@@ -1927,7 +1970,33 @@ class ApiService {
               .toList(growable: false)
         : const <VendorModel>[];
 
-    return ClientRenewalFormOptionsResult(clients: clients, vendors: vendors);
+    final statuses = rawStatuses is List
+        ? rawStatuses
+              .map((entry) {
+                if (entry is String) {
+                  return entry.trim().toLowerCase();
+                }
+                if (entry is Map) {
+                  final map = _normalizeMap(entry);
+                  final value =
+                      map['value'] ??
+                      map['name'] ??
+                      map['label'] ??
+                      map['status'];
+                  return value?.toString().trim().toLowerCase() ?? '';
+                }
+                return entry.toString().trim().toLowerCase();
+              })
+              .where((entry) => entry.isNotEmpty)
+              .toSet()
+              .toList(growable: false)
+        : const <String>[];
+
+    return ClientRenewalFormOptionsResult(
+      clients: clients,
+      vendors: vendors,
+      statuses: statuses,
+    );
   }
 
   /// Creates a vendor renewal/service record.
@@ -2490,6 +2559,49 @@ class ApiService {
     return records.map(LeadModel.fromJson).toList();
   }
 
+  /// Loads dashboard lead metrics and recent leads.
+  Future<LeadDashboardResult> getLeadsDashboard() async {
+    final response = await get(ApiConstants.leadsDashboard);
+    final body = _normalizeMap(response.data);
+
+    LeadDashboardCount parseCount(
+      dynamic source,
+      String todayKey,
+      String totalKey,
+    ) {
+      final map = _normalizeMap(source);
+      return LeadDashboardCount(
+        todayCount: _readInt(map[todayKey]) ?? 0,
+        totalCount: _readInt(map[totalKey]) ?? 0,
+      );
+    }
+
+    final leads = _normalizeList(body['data']).map(LeadModel.fromJson).toList();
+    return LeadDashboardResult(
+      recentLeads: leads,
+      leadsCount: parseCount(
+        body['leadsCount'],
+        'todaysLeadsCount',
+        'allLeadsCount',
+      ),
+      bookCallsCount: parseCount(
+        body['bookCallsCount'],
+        'todaysBookCallsCount',
+        'allBookCallsCount',
+      ),
+      digitalMarketingLeadsCount: parseCount(
+        body['digitalMarketingLeadsCount'],
+        'todaysDigitalMarketingLeadsCount',
+        'allDigitalMarketingLeadsCount',
+      ),
+      webAppLeadsCount: parseCount(
+        body['webAppLeadsCount'],
+        'todaysWebAppLeadsCount',
+        'allWebAppLeadsCount',
+      ),
+    );
+  }
+
   /// Loads a single paginated leads page.
   Future<LeadListPageResult> getLeadsListPage({
     int page = 1,
@@ -2808,7 +2920,10 @@ class ApiService {
     if (normalizedId.isEmpty) {
       throw Exception('Book-a-call id is required.');
     }
-    final path = ApiConstants.deleteBookACall.replaceFirst('{id}', normalizedId);
+    final path = ApiConstants.deleteBookACall.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
     await delete(path);
   }
 
@@ -2874,7 +2989,10 @@ class ApiService {
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
     }
-    final response = await get(ApiConstants.webAppsLeads, queryParameters: query);
+    final response = await get(
+      ApiConstants.webAppsLeads,
+      queryParameters: query,
+    );
     return _parseMapListPageResponse(response.data, normalizedPage);
   }
 

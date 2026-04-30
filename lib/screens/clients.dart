@@ -105,9 +105,9 @@ class _ClientsScreenState extends State<ClientsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: RefreshIndicator(
             onRefresh: () async => _reload(),
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
                 const SizedBox(height: 8),
                 const CommonTopBar(title: 'Clients'),
                 const SizedBox(height: 14),
@@ -152,9 +152,16 @@ class _ClientsScreenState extends State<ClientsScreen> {
                             disabledBorder: InputBorder.none,
                             errorBorder: InputBorder.none,
                             focusedErrorBorder: InputBorder.none,
-                            icon: Icon(Icons.search, color: Colors.grey, size: 20),
+                            icon: Icon(
+                              Icons.search,
+                              color: Colors.grey,
+                              size: 20,
+                            ),
                             hintText: 'Search clients...',
-                            hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
+                            hintStyle: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -651,7 +658,10 @@ class _ClientCard extends StatelessWidget {
                       ),
                       Text(
                         role,
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -688,7 +698,11 @@ class _ClientCard extends StatelessWidget {
                     children: [
                       InkWell(
                         onTap: onEdit,
-                        child: const Icon(Icons.edit, color: Colors.grey, size: 19),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.grey,
+                          size: 19,
+                        ),
                       ),
                       const SizedBox(width: 14),
                     ],
@@ -698,7 +712,11 @@ class _ClientCard extends StatelessWidget {
                   permission: AppPermission.deleteClients,
                   child: InkWell(
                     onTap: onDelete,
-                    child: const Icon(Icons.delete, color: Colors.grey, size: 19),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.grey,
+                      size: 19,
+                    ),
                   ),
                 ),
               ],

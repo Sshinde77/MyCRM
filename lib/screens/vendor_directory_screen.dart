@@ -156,7 +156,9 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
             final visibleRows = vendors;
             final totalEntries = pageResult?.total ?? vendors.length;
             final perPage = pageResult?.perPage ?? _rowsPerPage;
-            final startEntry = totalEntries == 0 ? 0 : ((currentPage - 1) * perPage) + 1;
+            final startEntry = totalEntries == 0
+                ? 0
+                : ((currentPage - 1) * perPage) + 1;
             final endEntry = totalEntries == 0
                 ? 0
                 : (startEntry + visibleRows.length - 1).clamp(0, totalEntries);
@@ -204,11 +206,12 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                             setState(() {
                               _rowsPerPage = value;
                               _currentPage = 1;
-                              _vendorsFuture = ApiService.instance.getVendorsListPage(
-                                page: _currentPage,
-                                perPage: _rowsPerPage,
-                                search: _appliedSearchTerm,
-                              );
+                              _vendorsFuture = ApiService.instance
+                                  .getVendorsListPage(
+                                    page: _currentPage,
+                                    perPage: _rowsPerPage,
+                                    search: _appliedSearchTerm,
+                                  );
                             });
                           },
                         ),
@@ -334,7 +337,12 @@ class _VendorToolbar extends StatelessWidget {
                 onTap: onSearchTap,
               ),
             ),
-            const SizedBox(width: 10),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
             SizedBox(
               width: compact ? 150 : 185,
               child: _ToolbarButton(

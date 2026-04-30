@@ -33,9 +33,14 @@ enum AppBottomNavTab {
     icon: Icons.check_circle_outline_rounded,
     routeName: AppRoutes.tasks,
   ),
+  leads(
+    label: 'Lead',
+    icon: Icons.group_rounded,
+    routeName: AppRoutes.allLeads,
+  ),
   profile(
-    label: 'Profile',
-    icon: Icons.person_rounded,
+    label: 'Controls',
+    icon: Icons.tune_rounded,
     routeName: AppRoutes.profile,
   );
 

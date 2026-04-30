@@ -48,7 +48,10 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
     );
     if (!mounted) return;
     if (!canView) {
-      AppSnackbar.show('Access denied', 'You do not have permission to view Google Ads leads.');
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view Google Ads leads.',
+      );
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       } else {
@@ -61,11 +64,7 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
 
   List<_LeadRecord> get _activeList => _selectedTab == 0 ? _digital : _webApp;
 
-  Future<void> _loadLeads({
-    int? tabIndex,
-    int page = 1,
-    String? search,
-  }) async {
+  Future<void> _loadLeads({int? tabIndex, int page = 1, String? search}) async {
     if (!mounted) return;
     final tab = tabIndex ?? _selectedTab;
     final normalizedSearch = (search ?? _appliedSearch).trim();
@@ -168,7 +167,9 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
   Widget build(BuildContext context) {
     final totalRecords = _totalRecords;
     final totalPages = _lastPage < 1 ? 1 : _lastPage;
-    final safeCurrentPage = _currentPage > totalPages ? totalPages : _currentPage;
+    final safeCurrentPage = _currentPage > totalPages
+        ? totalPages
+        : _currentPage;
     final page = _activeList;
     final isMobile = MediaQuery.of(context).size.width < 900;
 
@@ -224,7 +225,11 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
                               setState(() {
                                 _selectedTab = idx;
                               });
-                              _loadLeads(tabIndex: idx, page: 1, search: _appliedSearch);
+                              _loadLeads(
+                                tabIndex: idx,
+                                page: 1,
+                                search: _appliedSearch,
+                              );
                             },
                           ),
                           const SizedBox(height: 12),
@@ -266,14 +271,8 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
                           ],
                           const SizedBox(height: 12),
                           isMobile
-                              ? _LeadCards(
-                                  rows: page,
-                                  onDelete: _remove,
-                                )
-                              : _LeadTable(
-                                  rows: page,
-                                  onDelete: _remove,
-                                ),
+                              ? _LeadCards(rows: page, onDelete: _remove)
+                              : _LeadTable(rows: page, onDelete: _remove),
                           const SizedBox(height: 10),
                           _Footer(
                             currentPage: safeCurrentPage,
@@ -574,11 +573,7 @@ class _Toolbar extends StatelessWidget {
     if (compact) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          searchWidget,
-          const SizedBox(height: 10),
-          entriesWidget,
-        ],
+        children: [searchWidget, const SizedBox(height: 10), entriesWidget],
       );
     }
 
@@ -867,7 +862,10 @@ class _Pill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Text(
         text,
         style: AppTextStyles.style(
@@ -912,36 +910,42 @@ class _PaginationBar extends StatelessWidget {
         Wrap(
           spacing: 6,
           runSpacing: 6,
-          children: tokens.map((token) {
-            if (token == null) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                child: Text('...'),
-              );
-            }
-            final selected = token == currentPage;
-            return InkWell(
-              onTap: () => onPageTap(token),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 32,
-                height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? const Color(0xFF122B52) : Colors.transparent,
+          children: tokens
+              .map((token) {
+                if (token == null) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                    child: Text('...'),
+                  );
+                }
+                final selected = token == currentPage;
+                return InkWell(
+                  onTap: () => onPageTap(token),
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$token',
-                  style: AppTextStyles.style(
-                    color: selected ? Colors.white : const Color(0xFF334155),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFF122B52)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$token',
+                      style: AppTextStyles.style(
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFF334155),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }).toList(growable: false),
+                );
+              })
+              .toList(growable: false),
         ),
         const SizedBox(width: 8),
         _PageArrow(

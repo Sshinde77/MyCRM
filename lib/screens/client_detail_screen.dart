@@ -771,16 +771,16 @@ class _MetaText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: const Color(0xFF74839D)),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: AppTextStyles.style(
-              fontSize: 10,
-              color: const Color(0xFF74839D),
-              fontWeight: FontWeight.w600,
-            ),
+      children: [
+        Icon(icon, size: 13, color: const Color(0xFF74839D)),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: AppTextStyles.style(
+            fontSize: 10,
+            color: const Color(0xFF74839D),
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ],
     );

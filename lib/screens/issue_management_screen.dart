@@ -364,11 +364,11 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                             controller: _searchController,
                                             onChanged: (_) =>
                                                 setState(() => _page = 1),
-                                              style: _ts(
-                                                const Color(0xFF334155),
-                                                compact ? 13 : 14,
-                                                FontWeight.w500,
-                                              ),
+                                            style: _ts(
+                                              const Color(0xFF334155),
+                                              compact ? 13 : 14,
+                                              FontWeight.w500,
+                                            ),
                                             decoration: InputDecoration(
                                               hintText: 'Search issues...',
                                               hintStyle: _ts(
@@ -1063,9 +1063,7 @@ class _IssuePageChip extends StatelessWidget {
           color: selected ? const Color(0xFF2D7EF8) : Colors.white,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected
-                ? const Color(0xFF2D7EF8)
-                : const Color(0xFFDCE6F2),
+            color: selected ? const Color(0xFF2D7EF8) : const Color(0xFFDCE6F2),
           ),
         ),
         alignment: Alignment.center,
@@ -1084,9 +1082,7 @@ class _IssuePageChip extends StatelessWidget {
 
 class _PageToken {
   const _PageToken.page(this.page) : isEllipsis = false;
-  const _PageToken.ellipsis()
-    : page = null,
-      isEllipsis = true;
+  const _PageToken.ellipsis() : page = null, isEllipsis = true;
 
   final int? page;
   final bool isEllipsis;

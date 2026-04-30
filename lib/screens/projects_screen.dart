@@ -1034,36 +1034,42 @@ class _ProjectsPaginationBar extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: tokens.map((token) {
-            if (token == null) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                child: Text('...'),
-              );
-            }
-            final selected = token == currentPage;
-            return InkWell(
-              onTap: () => onPageTap(token),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? const Color(0xFF122B52) : Colors.transparent,
+          children: tokens
+              .map((token) {
+                if (token == null) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                    child: Text('...'),
+                  );
+                }
+                final selected = token == currentPage;
+                return InkWell(
+                  onTap: () => onPageTap(token),
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$token',
-                  style: AppTextStyles.style(
-                    color: selected ? Colors.white : const Color(0xFF334155),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFF122B52)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$token',
+                      style: AppTextStyles.style(
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFF334155),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }).toList(growable: false),
+                );
+              })
+              .toList(growable: false),
         ),
         const SizedBox(width: 10),
         _ProjectsPageArrow(

@@ -141,7 +141,7 @@ class _ProfileCard extends StatelessWidget {
                             lead.displayName,
                             style: AppTextStyles.style(
                               color: LeadDetailScreen.title,
-                               fontSize: 15,
+                              fontSize: 15,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -154,7 +154,7 @@ class _ProfileCard extends StatelessWidget {
                       lead.displayCompany,
                       style: AppTextStyles.style(
                         color: const Color(0xFF5D6C84),
-                         fontSize: 12.5,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -162,7 +162,7 @@ class _ProfileCard extends StatelessWidget {
                       lead.displayEmail,
                       style: AppTextStyles.style(
                         color: const Color(0xFF98A6BD),
-                         fontSize: 11.5,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -343,7 +343,7 @@ class _LeadDetailsContent extends StatelessWidget {
                     'Tags',
                     style: AppTextStyles.style(
                       color: LeadDetailScreen.muted,
-                       fontSize: 11,
+                      fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -353,14 +353,14 @@ class _LeadDetailsContent extends StatelessWidget {
                       'No tags',
                       style: AppTextStyles.style(
                         color: LeadDetailScreen.title,
-                         fontSize: 12.5,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w500,
                       ),
                     )
                   else
                     Wrap(
-                       spacing: 6,
-                       runSpacing: 6,
+                      spacing: 6,
+                      runSpacing: 6,
                       children: lead.tags
                           .map((tag) => _TagChip(label: tag))
                           .toList(),
@@ -412,7 +412,7 @@ class _MetricTile extends StatelessWidget {
             label,
             style: AppTextStyles.style(
               color: const Color(0xFF7084A0),
-               fontSize: 10.5,
+              fontSize: 10.5,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -421,7 +421,7 @@ class _MetricTile extends StatelessWidget {
             value,
             style: AppTextStyles.style(
               color: valueColor,
-               fontSize: 15,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
             ),
           ),

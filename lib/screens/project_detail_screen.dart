@@ -304,8 +304,8 @@ class _BodyState extends State<_Body> {
               if (descriptionChips.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: descriptionChips
                       .map(
                         (chip) => _Chip(
@@ -4134,12 +4134,12 @@ class _ErrorCard extends StatelessWidget {
         Text(
           'Pull to refresh or retry the request.',
           textAlign: TextAlign.center,
-            style: AppTextStyles.style(
-              color: ProjectDetailScreen.muted,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+          style: AppTextStyles.style(
+            color: ProjectDetailScreen.muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
+        ),
         const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,

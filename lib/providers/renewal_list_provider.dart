@@ -61,7 +61,9 @@ class RenewalListProvider extends ChangeNotifier {
             );
 
       _renewals = List<RenewalModel>.from(result.items);
-      _currentPage = result.currentPage < 1 ? normalizedPage : result.currentPage;
+      _currentPage = result.currentPage < 1
+          ? normalizedPage
+          : result.currentPage;
       _lastPage = result.lastPage < 1 ? 1 : result.lastPage;
       _perPage = result.perPage > 0 ? result.perPage : 10;
       _total = result.total >= 0 ? result.total : _renewals.length;

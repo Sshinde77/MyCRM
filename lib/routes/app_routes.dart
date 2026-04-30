@@ -7,6 +7,7 @@ class AppRoutes {
   static const String tasks = '/tasks';
   static const String editTask = '/tasks/edit';
   static const String leads = '/leads';
+  static const String allLeads = '/all-leads';
   static const String addLead = '/leads/add';
   static const String leadDetail = '/leads/detail';
   static const String projects = '/projects';

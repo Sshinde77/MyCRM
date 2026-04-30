@@ -514,11 +514,13 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                   currentPage: safeCurrentPage,
                                   totalPages: totalPages,
                                   onPageTap: (page) {
-                                    context.read<RenewalListProvider>().loadRenewals(
-                                      forceRefresh: true,
-                                      page: page,
-                                      search: _appliedSearchTerm,
-                                    );
+                                    context
+                                        .read<RenewalListProvider>()
+                                        .loadRenewals(
+                                          forceRefresh: true,
+                                          page: page,
+                                          search: _appliedSearchTerm,
+                                        );
                                   },
                                 ),
                               ),
@@ -1358,7 +1360,7 @@ class _AddServiceButton extends StatelessWidget {
             SizedBox(width: compact ? 10 : 12),
             Text(
               'Add New Service'
-                  '',
+              '',
               style: AppTextStyles.style(
                 color: Colors.white,
                 fontSize: compact ? 13 : 14,
@@ -1765,7 +1767,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
   bool get _isEditMode => (_renewalId ?? '').isNotEmpty;
 
-  static const List<String> _statusValues = <String>['active', 'inactive'];
+  List<String> _statusValues = const <String>['active', 'inactive'];
 
   @override
   void initState() {
@@ -1806,10 +1808,18 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
   String _normalizeStatusForForm(String rawStatus) {
     final normalized = rawStatus.trim().toLowerCase();
-    if (normalized.contains('inactive') || normalized == '0') {
-      return 'inactive';
+    if (_statusValues.contains(normalized)) {
+      return normalized;
     }
-    return 'active';
+    if (normalized.contains('inactive') || normalized == '0') {
+      return _statusValues.contains('inactive')
+          ? 'inactive'
+          : _statusValues.first;
+    }
+    if (normalized.contains('active') || normalized == '1') {
+      return _statusValues.contains('active') ? 'active' : _statusValues.first;
+    }
+    return _statusValues.first;
   }
 
   Future<void> _loadFormData() async {
@@ -1825,6 +1835,12 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       final options = await _apiService.getClientRenewalFormOptions();
       _clients = options.clients;
       _vendors = options.vendors;
+      if (options.statuses.isNotEmpty) {
+        _statusValues = options.statuses;
+      }
+      if (!_statusValues.contains(_selectedStatus)) {
+        _selectedStatus = _statusValues.first;
+      }
       _syncSelectionsWithLookup();
     } catch (error) {
       if (!mounted) {
@@ -2120,7 +2136,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                 filtered = q.isEmpty
                     ? options
                     : options
-                          .where((entry) => entry.value.toLowerCase().contains(q))
+                          .where(
+                            (entry) => entry.value.toLowerCase().contains(q),
+                          )
                           .toList(growable: false);
               });
             }
@@ -2185,8 +2203,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                             color: Color(0xFF1D8BFF),
                                           )
                                         : null,
-                                    onTap: () =>
-                                        Navigator.of(sheetContext).pop(item.key),
+                                    onTap: () => Navigator.of(
+                                      sheetContext,
+                                    ).pop(item.key),
                                   );
                                 },
                               ),
@@ -2295,26 +2314,24 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                           .where((entry) => entry.id == _selectedClientId)
                           .map(_clientDisplayName)
                           .cast<String?>()
-                          .firstWhere(
-                            (_) => true,
-                            orElse: () => null,
-                          ),
+                          .firstWhere((_) => true, orElse: () => null),
                       hint: 'Choose a client...',
                       onTap: _isSubmitting
                           ? null
                           : () async {
-                              final selected = await _showSearchableSelectionSheet(
-                                title: 'Select Client',
-                                selectedValue: _selectedClientId,
-                                options: _clients
-                                    .map(
-                                      (entry) => MapEntry(
-                                        entry.id,
-                                        _clientDisplayName(entry),
-                                      ),
-                                    )
-                                    .toList(growable: false),
-                              );
+                              final selected =
+                                  await _showSearchableSelectionSheet(
+                                    title: 'Select Client',
+                                    selectedValue: _selectedClientId,
+                                    options: _clients
+                                        .map(
+                                          (entry) => MapEntry(
+                                            entry.id,
+                                            _clientDisplayName(entry),
+                                          ),
+                                        )
+                                        .toList(growable: false),
+                                  );
                               if (selected != null && mounted) {
                                 setState(() => _selectedClientId = selected);
                               }
@@ -2376,7 +2393,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                             )
                                             .map(
                                               (entry) =>
-                                                  entry.vendorName.trim().isEmpty
+                                                  entry.vendorName
+                                                      .trim()
+                                                      .isEmpty
                                                   ? 'Vendor #${entry.id}'
                                                   : entry.vendorName,
                                             )
@@ -2402,17 +2421,19 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                                                       .trim()
                                                                       .isEmpty
                                                                   ? 'Vendor #${entry.id}'
-                                                                  : entry.vendorName,
+                                                                  : entry
+                                                                        .vendorName,
                                                             ),
                                                           )
                                                           .toList(
                                                             growable: false,
                                                           ),
                                                     );
-                                                if (selected != null && mounted) {
+                                                if (selected != null &&
+                                                    mounted) {
                                                   setState(
-                                                    () =>
-                                                        _selectedVendorId = selected,
+                                                    () => _selectedVendorId =
+                                                        selected,
                                                   );
                                                 }
                                               },
@@ -2531,7 +2552,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                                       entry[0].toUpperCase() +
                                                           entry.substring(1),
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                             )
@@ -2835,9 +2857,3 @@ class _ServiceItem {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
-
-
-
-
-
-

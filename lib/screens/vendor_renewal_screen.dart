@@ -487,11 +487,13 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
                                 currentPage: safeCurrentPage,
                                 totalPages: totalPages,
                                 onPageTap: (page) {
-                                  context.read<RenewalListProvider>().loadRenewals(
-                                    forceRefresh: true,
-                                    page: page,
-                                    search: _appliedSearchTerm,
-                                  );
+                                  context
+                                      .read<RenewalListProvider>()
+                                      .loadRenewals(
+                                        forceRefresh: true,
+                                        page: page,
+                                        search: _appliedSearchTerm,
+                                      );
                                 },
                               ),
                             ],
@@ -1707,9 +1709,3 @@ class _ServiceItem {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
-
-
-
-
-
-

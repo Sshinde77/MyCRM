@@ -79,9 +79,13 @@ class _TasksScreenState extends State<TasksScreen> {
     final compact = width <= 360;
     final totalTasks = _totalRecords;
     final totalPages = _lastPage < 1 ? 1 : _lastPage;
-    final safeCurrentPage = _currentPage > totalPages ? totalPages : _currentPage;
+    final safeCurrentPage = _currentPage > totalPages
+        ? totalPages
+        : _currentPage;
     final perPage = _tasks.isEmpty ? 10 : _tasks.length;
-    final startIndex = totalTasks == 0 ? 0 : ((safeCurrentPage - 1) * perPage) + 1;
+    final startIndex = totalTasks == 0
+        ? 0
+        : ((safeCurrentPage - 1) * perPage) + 1;
     final endIndex = totalTasks == 0
         ? 0
         : (startIndex + _tasks.length - 1).clamp(0, totalTasks);
@@ -334,9 +338,13 @@ class _TasksScreenState extends State<TasksScreen> {
         _tasks
           ..clear()
           ..addAll(tasks);
-        _currentPage = pageResult.currentPage < 1 ? page : pageResult.currentPage;
+        _currentPage = pageResult.currentPage < 1
+            ? page
+            : pageResult.currentPage;
         _lastPage = pageResult.lastPage < 1 ? 1 : pageResult.lastPage;
-        _totalRecords = pageResult.total >= 0 ? pageResult.total : _tasks.length;
+        _totalRecords = pageResult.total >= 0
+            ? pageResult.total
+            : _tasks.length;
         _isLoading = false;
       });
     } on DioException catch (error) {
@@ -655,36 +663,42 @@ class _TasksPaginationBar extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: tokens.map((token) {
-            if (token == null) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                child: Text('...'),
-              );
-            }
-            final selected = token == currentPage;
-            return InkWell(
-              onTap: () => onPageTap(token),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? const Color(0xFF122B52) : Colors.transparent,
+          children: tokens
+              .map((token) {
+                if (token == null) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                    child: Text('...'),
+                  );
+                }
+                final selected = token == currentPage;
+                return InkWell(
+                  onTap: () => onPageTap(token),
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$token',
-                  style: AppTextStyles.style(
-                    color: selected ? Colors.white : const Color(0xFF334155),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFF122B52)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$token',
+                      style: AppTextStyles.style(
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFF334155),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }).toList(growable: false),
+                );
+              })
+              .toList(growable: false),
         ),
         const SizedBox(width: 10),
         _TaskPageArrow(

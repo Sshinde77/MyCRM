@@ -41,7 +41,10 @@ class _BookACallScreenState extends State<BookACallScreen> {
     final canView = await PermissionService.has(AppPermission.viewBookCalls);
     if (!mounted) return;
     if (!canView) {
-      AppSnackbar.show('Access denied', 'You do not have permission to view Book A Call.');
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view Book A Call.',
+      );
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       } else {
@@ -152,7 +155,9 @@ class _BookACallScreenState extends State<BookACallScreen> {
   @override
   Widget build(BuildContext context) {
     final totalPages = _lastPage < 1 ? 1 : _lastPage;
-    final safeCurrentPage = _currentPage > totalPages ? totalPages : _currentPage;
+    final safeCurrentPage = _currentPage > totalPages
+        ? totalPages
+        : _currentPage;
     final pagedRecords = _bookCallRecords;
 
     return Scaffold(
@@ -220,7 +225,6 @@ class _BookACallScreenState extends State<BookACallScreen> {
       ),
     );
   }
-
 }
 
 class _BookACallSection extends StatelessWidget {
@@ -258,7 +262,9 @@ class _BookACallSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final showingRecords = records;
     final showingCount = showingRecords.length;
-    final startEntry = showingCount == 0 ? 0 : ((currentPage - 1) * entriesPerPage) + 1;
+    final startEntry = showingCount == 0
+        ? 0
+        : ((currentPage - 1) * entriesPerPage) + 1;
     final endEntry = showingCount == 0 ? 0 : startEntry + showingCount - 1;
 
     return Container(
@@ -435,7 +441,9 @@ class _BookACallSection extends StatelessWidget {
                         DataColumn(label: _BookCallHeaderCell(label: 'Phone')),
                         DataColumn(label: _BookCallHeaderCell(label: 'Agenda')),
                         DataColumn(label: _BookCallHeaderCell(label: 'Booked')),
-                        DataColumn(label: _BookCallHeaderCell(label: 'Created')),
+                        DataColumn(
+                          label: _BookCallHeaderCell(label: 'Created'),
+                        ),
                         DataColumn(label: _BookCallHeaderCell(label: 'Action')),
                       ],
                       rows: showingRecords
@@ -537,36 +545,42 @@ class _BookCallPaginationBar extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: tokens.map((token) {
-            if (token == null) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                child: Text('...'),
-              );
-            }
-            final selected = token == currentPage;
-            return InkWell(
-              onTap: () => onPageTap(token),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected ? const Color(0xFF122B52) : Colors.transparent,
+          children: tokens
+              .map((token) {
+                if (token == null) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                    child: Text('...'),
+                  );
+                }
+                final selected = token == currentPage;
+                return InkWell(
+                  onTap: () => onPageTap(token),
                   borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$token',
-                  style: AppTextStyles.style(
-                    color: selected ? Colors.white : const Color(0xFF334155),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? const Color(0xFF122B52)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$token',
+                      style: AppTextStyles.style(
+                        color: selected
+                            ? Colors.white
+                            : const Color(0xFF334155),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          }).toList(growable: false),
+                );
+              })
+              .toList(growable: false),
         ),
         const SizedBox(width: 10),
         _PageArrow(
@@ -640,10 +654,7 @@ class _PageArrow extends StatelessWidget {
 }
 
 class _BookCallEntriesControl extends StatelessWidget {
-  const _BookCallEntriesControl({
-    required this.value,
-    required this.onChanged,
-  });
+  const _BookCallEntriesControl({required this.value, required this.onChanged});
 
   final int value;
   final ValueChanged<int> onChanged;
@@ -794,10 +805,7 @@ class _BookCallHeaderCell extends StatelessWidget {
 }
 
 class _BookCallRecordCard extends StatelessWidget {
-  const _BookCallRecordCard({
-    required this.record,
-    required this.onDelete,
-  });
+  const _BookCallRecordCard({required this.record, required this.onDelete});
 
   final _BookCallRecord record;
   final VoidCallback onDelete;
@@ -1047,26 +1055,42 @@ class _BookCallRecord {
       return '';
     }
 
-    final bookingDate = readString(
-      const ['booking_date', 'call_date', 'date', 'book_date'],
-    );
-    final bookingTime = readString(
-      const ['booking_time', 'call_time', 'time', 'book_time'],
-    );
+    final bookingDate = readString(const [
+      'booking_date',
+      'call_date',
+      'date',
+      'book_date',
+    ]);
+    final bookingTime = readString(const [
+      'booking_time',
+      'call_time',
+      'time',
+      'book_time',
+    ]);
 
     return _BookCallRecord(
       id: readId(const ['id', 'book_call_id', 'book_a_call_id']),
-      name: readString(const ['name', 'full_name', 'client_name'], fallback: 'Unknown'),
+      name: readString(const [
+        'name',
+        'full_name',
+        'client_name',
+      ], fallback: 'Unknown'),
       email: readString(const ['email', 'email_id']),
       phone: readString(const ['phone', 'mobile', 'phone_number']),
-      meetingAgenda: readString(
-        const ['meeting_agenda', 'agenda', 'subject', 'description'],
-      ),
+      meetingAgenda: readString(const [
+        'meeting_agenda',
+        'agenda',
+        'subject',
+        'description',
+      ]),
       bookingDate: bookingDate,
       bookingTime: bookingTime,
       bookingDateTime: readString(
         const ['booking_datetime', 'booking_date_time', 'call_datetime'],
-        fallback: [bookingDate, bookingTime].where((e) => e.isNotEmpty).join(' '),
+        fallback: [
+          bookingDate,
+          bookingTime,
+        ].where((e) => e.isNotEmpty).join(' '),
       ),
       createdAt: readString(const ['created_at', 'createdAt', 'created']),
     );

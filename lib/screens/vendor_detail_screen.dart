@@ -253,9 +253,7 @@ class _TopBar extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({ required this.actions});
-
-
+  const _SectionHeader({required this.actions});
 
   final Widget actions;
 

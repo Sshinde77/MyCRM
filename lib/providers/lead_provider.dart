@@ -78,7 +78,9 @@ class LeadProvider extends ChangeNotifier {
         search: normalizedSearch,
       );
       _allLeads = result.items;
-      _currentPage = result.currentPage < 1 ? normalizedPage : result.currentPage;
+      _currentPage = result.currentPage < 1
+          ? normalizedPage
+          : result.currentPage;
       _lastPage = result.lastPage < 1 ? 1 : result.lastPage;
       _totalLeads = result.total >= 0 ? result.total : _allLeads.length;
       _searchQuery = normalizedSearch;

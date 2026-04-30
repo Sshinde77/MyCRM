@@ -67,7 +67,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
     'one-time',
   ];
 
-  static const List<String> _statusValues = <String>[
+  List<String> _statusValues = <String>[
     'active',
     'inactive',
     'pending',
@@ -109,6 +109,9 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
 
   String _normalizeStatusForForm(String rawStatus) {
     final normalized = rawStatus.trim().toLowerCase();
+    if (_statusValues.contains(normalized)) {
+      return normalized;
+    }
     if (normalized.contains('inactive') || normalized == '0') {
       return 'inactive';
     }
@@ -121,7 +124,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
     if (normalized.contains('active') || normalized == '1') {
       return 'active';
     }
-    return _statusValues.contains(normalized) ? normalized : 'active';
+    return _statusValues.contains('active') ? 'active' : _statusValues.first;
   }
 
   String _normalizePlanTypeForForm(String rawPlanType) {
@@ -149,6 +152,12 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
     try {
       final options = await _apiService.getClientRenewalFormOptions();
       _vendors = options.vendors;
+      if (options.statuses.isNotEmpty) {
+        _statusValues = options.statuses;
+      }
+      if (!_statusValues.contains(_selectedStatus)) {
+        _selectedStatus = _statusValues.first;
+      }
       _syncVendorSelectionWithLookup();
     } catch (error) {
       if (!mounted) {
@@ -421,7 +430,9 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                 filtered = q.isEmpty
                     ? options
                     : options
-                          .where((entry) => entry.value.toLowerCase().contains(q))
+                          .where(
+                            (entry) => entry.value.toLowerCase().contains(q),
+                          )
                           .toList(growable: false);
               });
             }
@@ -486,8 +497,9 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                                             color: Color(0xFF1D8BFF),
                                           )
                                         : null,
-                                    onTap: () =>
-                                        Navigator.of(sheetContext).pop(item.key),
+                                    onTap: () => Navigator.of(
+                                      sheetContext,
+                                    ).pop(item.key),
                                   );
                                 },
                               ),
@@ -569,10 +581,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                                   : entry.vendorName,
                             )
                             .cast<String?>()
-                            .firstWhere(
-                              (_) => true,
-                              orElse: () => null,
-                            ),
+                            .firstWhere((_) => true, orElse: () => null),
                         hint: 'Choose a vendor...',
                         onTap: _isSubmitting
                             ? null

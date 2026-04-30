@@ -122,7 +122,10 @@ class _LeadsScreenState extends State<LeadsScreen> {
                                     color: textLight,
                                     fontSize: 14,
                                   ),
-                                  icon: const Icon(Icons.search, color: textLight),
+                                  icon: const Icon(
+                                    Icons.search,
+                                    color: textLight,
+                                  ),
                                   suffixIcon: leadProvider.searchQuery.isEmpty
                                       ? null
                                       : IconButton(

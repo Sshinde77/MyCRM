@@ -768,11 +768,11 @@ class _DetailCard extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF0F172A),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF0F172A),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ],
                   ),
@@ -987,12 +987,12 @@ class _MetricCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF64748B),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF64748B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
                   ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   value,
@@ -1032,12 +1032,12 @@ class _ContentBlock extends StatelessWidget {
         children: [
           Text(
             title,
-              style: AppTextStyles.style(
-                color: const Color(0xFF0F172A),
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
+            style: AppTextStyles.style(
+              color: const Color(0xFF0F172A),
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
             ),
+          ),
           const SizedBox(height: 8),
           child,
         ],
@@ -1069,12 +1069,12 @@ class _SoftEmpty extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-                style: AppTextStyles.style(
-                  color: const Color(0xFF64748B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
+              style: AppTextStyles.style(
+                color: const Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
+            ),
           ),
         ],
       ),

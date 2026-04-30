@@ -734,9 +734,9 @@ String? _resolveStaffProfileImageUrl(String? rawPath) {
     return path;
   }
 
-  return Uri.parse(ApiConstants.appBaseUrl)
-      .resolve(path.startsWith('/') ? path.substring(1) : path)
-      .toString();
+  return Uri.parse(
+    ApiConstants.appBaseUrl,
+  ).resolve(path.startsWith('/') ? path.substring(1) : path).toString();
 }
 
 class _InfoRow extends StatelessWidget {

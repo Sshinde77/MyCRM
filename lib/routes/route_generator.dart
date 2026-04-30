@@ -20,6 +20,7 @@ import '../screens/task.dart';
 import '../screens/create_task_screen.dart';
 import '../screens/add_lead_screen.dart';
 import '../screens/leads_screen.dart';
+import '../screens/all_leads.dart';
 import '../screens/lead_detail_screen.dart';
 import '../screens/issue_management_screen.dart';
 import '../screens/issue_detail_screen.dart';
@@ -118,6 +119,8 @@ class RouteGenerator {
             child: const LeadsScreen(),
           ),
         );
+      case AppRoutes.allLeads:
+        return _protectedRoute(AppRoutes.allLeads, const AllLeadsScreen());
       case AppRoutes.addLead:
         return _protectedRoute(AppRoutes.addLead, const AddLeadScreen());
       case AppRoutes.leadDetail:

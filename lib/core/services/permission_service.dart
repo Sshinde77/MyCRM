@@ -266,6 +266,7 @@ class PermissionService {
       case AppRoutes.editTask:
         return AppPermission.editTasks;
       case AppRoutes.leads:
+      case AppRoutes.allLeads:
       case AppRoutes.leadDetail:
         return AppPermission.viewLeads;
       case AppRoutes.addLead:
