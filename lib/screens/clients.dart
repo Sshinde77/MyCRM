@@ -20,14 +20,12 @@ class ClientsScreen extends StatefulWidget {
 class _ClientsScreenState extends State<ClientsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final List<ClientModel> _clients = <ClientModel>[];
-  final List<ClientModel> _searchClients = <ClientModel>[];
   bool _isLoading = false;
-  bool _isSearchLoading = false;
   String? _errorMessage;
   int _currentPage = 1;
   int _lastPage = 1;
   int _totalCount = 0;
-  int _searchFetchGeneration = 0;
+  String _appliedSearch = '';
 
   @override
   void initState() {
@@ -42,13 +40,13 @@ class _ClientsScreenState extends State<ClientsScreen> {
   }
 
   void _reload() {
-    _invalidateSearchCache();
-    _loadClientsPage(_currentPage);
+    _loadClientsPage(_currentPage, search: _appliedSearch);
   }
 
-  Future<void> _loadClientsPage(int pageNumber) async {
+  Future<void> _loadClientsPage(int pageNumber, {String? search}) async {
     if (_isLoading) return;
     if (pageNumber < 1) return;
+    final normalizedSearch = (search ?? _appliedSearch).trim();
 
     setState(() {
       _errorMessage = null;
@@ -58,6 +56,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
     try {
       final page = await ApiService.instance.getClientsListPage(
         page: pageNumber,
+        search: normalizedSearch,
       );
       if (!mounted) return;
 
@@ -68,6 +67,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
         _currentPage = page.currentPage;
         _lastPage = page.lastPage;
         _totalCount = page.total;
+        _appliedSearch = normalizedSearch;
       });
     } on DioException catch (error) {
       if (!mounted) return;
@@ -86,110 +86,17 @@ class _ClientsScreenState extends State<ClientsScreen> {
     }
   }
 
-  void _invalidateSearchCache() {
-    _searchClients.clear();
-    _searchFetchGeneration += 1;
-    _isSearchLoading = false;
-  }
-
-  Future<void> _handleSearchChanged(String _) async {
-    setState(() {});
-    final query = _searchController.text.trim();
-    if (query.isEmpty) {
-      setState(() {
-        _searchClients.clear();
-        _isSearchLoading = false;
-      });
-      return;
-    }
-    await _ensureSearchClientsLoaded();
-  }
-
-  Future<void> _ensureSearchClientsLoaded() async {
-    final query = _searchController.text.trim();
-    if (query.isEmpty) {
-      return;
-    }
-
-    if (_isSearchLoading || _searchClients.isNotEmpty) {
-      return;
-    }
-
-    final generation = _searchFetchGeneration + 1;
-    setState(() {
-      _searchFetchGeneration = generation;
-      _isSearchLoading = true;
-    });
-
-    try {
-      final firstPage = await ApiService.instance.getClientsListPage(page: 1);
-      if (!mounted || generation != _searchFetchGeneration) return;
-
-      final allClients = <ClientModel>[...firstPage.items];
-      final normalizedLastPage = firstPage.lastPage < 1
-          ? 1
-          : firstPage.lastPage;
-
-      for (var page = 2; page <= normalizedLastPage; page++) {
-        final nextPage = await ApiService.instance.getClientsListPage(
-          page: page,
-        );
-        if (!mounted || generation != _searchFetchGeneration) return;
-        allClients.addAll(nextPage.items);
-      }
-
-      final dedupedById = <String, ClientModel>{};
-      for (final client in allClients) {
-        dedupedById[client.id] = client;
-      }
-
-      setState(() {
-        _searchClients
-          ..clear()
-          ..addAll(dedupedById.values);
-      });
-    } finally {
-      if (!mounted || generation != _searchFetchGeneration) return;
-      setState(() => _isSearchLoading = false);
-    }
-  }
-
-  List<ClientModel> _filterClients(List<ClientModel> clients) {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) {
-      return clients;
-    }
-
-    return clients.where((client) {
-      final haystack = [
-        client.name,
-        client.email,
-        client.industry,
-        client.website,
-        client.contactName,
-        client.contactRole,
-      ].join(' ').toLowerCase();
-
-      return haystack.contains(query);
-    }).toList();
+  Future<void> _applySearch() async {
+    await _loadClientsPage(1, search: _searchController.text.trim());
   }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final compact = width <= 360;
-    final hasSearch = _searchController.text.trim().isNotEmpty;
-    final clients = hasSearch
-        ? (_searchClients.isNotEmpty ? _searchClients : _clients)
-        : _clients;
-    final activeClientsSource = _searchClients.isNotEmpty
-        ? _searchClients
-        : _clients;
-    final filteredClients = _filterClients(clients);
+    final clients = _clients;
     final totalClients = _totalCount > 0 ? _totalCount : clients.length;
-    final activeClients = activeClientsSource
-        .where((client) => client.isActive)
-        .length;
+    final activeClients = clients.where((client) => client.isActive).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -238,7 +145,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
                         ),
                         child: TextField(
                           controller: _searchController,
-                          onChanged: _handleSearchChanged,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
@@ -251,6 +157,21 @@ class _ClientsScreenState extends State<ClientsScreen> {
                             hintStyle: TextStyle(color: Colors.grey, fontSize: 13),
                           ),
                         ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      height: 40,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _applySearch,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Search'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -297,8 +218,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                if ((_isLoading && clients.isEmpty) ||
-                    (hasSearch && _isSearchLoading && filteredClients.isEmpty))
+                if (_isLoading && clients.isEmpty)
                   const Center(child: CircularProgressIndicator())
                 else if (_errorMessage != null && clients.isEmpty)
                   Center(
@@ -318,11 +238,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   )
                 else
                   _ClientsList(
-                    clients: filteredClients,
-                    hasSearch: hasSearch,
+                    clients: clients,
+                    hasSearch: _appliedSearch.isNotEmpty,
                     onRefresh: _reload,
                   ),
-                if (!hasSearch && clients.isNotEmpty) ...[
+                if (clients.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Center(
                     child: Text(

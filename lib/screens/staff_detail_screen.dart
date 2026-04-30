@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/models/department_setting_model.dart';
 import 'package:mycrm/models/project_model.dart';
@@ -495,6 +496,7 @@ class _ProfileHeaderCard extends StatelessWidget {
     final statusBg = member.isActive
         ? const Color(0xFFDCFCE7)
         : const Color(0xFFF1F5F9);
+    final profileImageUrl = _resolveStaffProfileImageUrl(member.profileImage);
 
     return Container(
       width: double.infinity,
@@ -512,10 +514,10 @@ class _ProfileHeaderCard extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: const Color(0xFFE2E8F0),
-                backgroundImage: member.profileImage?.trim().isNotEmpty == true
-                    ? NetworkImage(member.profileImage!)
+                backgroundImage: profileImageUrl != null
+                    ? NetworkImage(profileImageUrl)
                     : null,
-                child: member.profileImage?.trim().isNotEmpty == true
+                child: profileImageUrl != null
                     ? null
                     : Text(
                         initials.isEmpty ? 'S' : initials,
@@ -609,6 +611,22 @@ class _ProfileHeaderCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _resolveStaffProfileImageUrl(String? rawPath) {
+  final path = (rawPath ?? '').trim();
+  if (path.isEmpty) {
+    return null;
+  }
+
+  final parsed = Uri.tryParse(path);
+  if (parsed != null && parsed.hasScheme) {
+    return path;
+  }
+
+  return Uri.parse(ApiConstants.appBaseUrl)
+      .resolve(path.startsWith('/') ? path.substring(1) : path)
+      .toString();
 }
 
 class _InfoRow extends StatelessWidget {

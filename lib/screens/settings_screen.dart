@@ -15,7 +15,7 @@ class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   static const List<_SettingItem> _items = [
-    _SettingItem(title: 'General Setting', icon: Icons.settings_outlined),
+    // _SettingItem(title: 'General Setting', icon: Icons.settings_outlined),
     _SettingItem(title: 'Company Information', icon: Icons.apartment_outlined),
     _SettingItem(title: 'Email Setting', icon: Icons.mail_outline_rounded),
     _SettingItem(

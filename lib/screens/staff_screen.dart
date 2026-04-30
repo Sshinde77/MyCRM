@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/models/staff_member_model.dart';
@@ -18,11 +19,10 @@ class StaffScreen extends StatefulWidget {
 
 class _StaffScreenState extends State<StaffScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final Map<int, List<StaffMemberModel>> _staffMembersByPage =
-      <int, List<StaffMemberModel>>{};
+  String _appliedSearchTerm = '';
+  List<StaffMemberModel> _currentPageMembers = const <StaffMemberModel>[];
   bool _isInitialLoading = true;
   bool _isPageLoading = false;
-  bool _isSearchLoadingAllPages = false;
   String? _loadError;
   int _currentPage = 1;
   int _lastPage = 1;
@@ -56,7 +56,7 @@ class _StaffScreenState extends State<StaffScreen> {
         _isInitialLoading = true;
         _isPageLoading = false;
         _loadError = null;
-        _staffMembersByPage.clear();
+        _currentPageMembers = const <StaffMemberModel>[];
         _currentPage = 1;
         _lastPage = 1;
         _totalRecords = 0;
@@ -69,11 +69,12 @@ class _StaffScreenState extends State<StaffScreen> {
     try {
       final pageResult = await ApiService.instance.getStaffListPage(
         page: normalizedPage,
+        search: _appliedSearchTerm,
       );
       if (!mounted) return;
 
       setState(() {
-        _staffMembersByPage[pageResult.currentPage] = pageResult.items;
+        _currentPageMembers = pageResult.items;
         _currentPage = pageResult.currentPage;
         _lastPage = pageResult.lastPage < 1 ? 1 : pageResult.lastPage;
         _totalRecords = pageResult.total;
@@ -97,76 +98,15 @@ class _StaffScreenState extends State<StaffScreen> {
   Future<void> _goToPage(int page) async {
     if (page < 1 || page > _lastPage) return;
     if (_isPageLoading || _isInitialLoading) return;
-
-    if (_staffMembersByPage.containsKey(page)) {
-      setState(() => _currentPage = page);
-      return;
-    }
-
     await _loadPage(page: page);
   }
 
-  Future<void> _ensureAllPagesLoadedForSearch() async {
-    if (_isSearchLoadingAllPages || _isInitialLoading || _lastPage <= 1) {
-      return;
-    }
-
-    final query = _searchController.text.trim();
-    if (query.isEmpty) {
-      return;
-    }
-
-    final missingPages = <int>[];
-    for (var page = 1; page <= _lastPage; page += 1) {
-      if (!_staffMembersByPage.containsKey(page)) {
-        missingPages.add(page);
-      }
-    }
-    if (missingPages.isEmpty) {
-      return;
-    }
-
-    setState(() => _isSearchLoadingAllPages = true);
-
-    try {
-      for (final page in missingPages) {
-        if (!mounted || _searchController.text.trim().isEmpty) {
-          break;
-        }
-        final pageResult = await ApiService.instance.getStaffListPage(
-          page: page,
-        );
-        if (!mounted) return;
-
-        setState(() {
-          _staffMembersByPage[pageResult.currentPage] = pageResult.items;
-          _lastPage = pageResult.lastPage < 1 ? 1 : pageResult.lastPage;
-          _totalRecords = pageResult.total;
-          _loadError = null;
-        });
-      }
-    } catch (_) {
-      // Keep current page data visible even if background search-page loading fails.
-    } finally {
-      if (mounted) {
-        setState(() => _isSearchLoadingAllPages = false);
-      }
-    }
-  }
-
-  List<StaffMemberModel> _flattenLoadedMembers() {
-    final pageNumbers = _staffMembersByPage.keys.toList()..sort();
-    final seen = <String>{};
-    final flattened = <StaffMemberModel>[];
-    for (final page in pageNumbers) {
-      final items = _staffMembersByPage[page] ?? const <StaffMemberModel>[];
-      for (final member in items) {
-        if (seen.add(member.id)) {
-          flattened.add(member);
-        }
-      }
-    }
-    return flattened;
+  Future<void> _applySearch() async {
+    setState(() {
+      _appliedSearchTerm = _searchController.text.trim();
+      _currentPage = 1;
+    });
+    await _loadPage(page: 1, showInitialLoader: true);
   }
 
   Future<void> _confirmDelete(StaffMemberModel member) async {
@@ -273,28 +213,11 @@ class _StaffScreenState extends State<StaffScreen> {
         child: SafeArea(
           child: Builder(
             builder: (context) {
-              final query = _searchController.text.trim();
-              final hasSearch = _searchController.text.trim().isNotEmpty;
-              final currentPageMembers =
-                  _staffMembersByPage[_currentPage] ??
-                  const <StaffMemberModel>[];
-              final searchableMembers = _flattenLoadedMembers();
-              final filteredMembers = hasSearch
-                  ? _filterMembers(searchableMembers)
-                  : currentPageMembers;
-              final headerCount = hasSearch
-                  ? filteredMembers.length
-                  : (_totalRecords > 0
-                        ? _totalRecords
-                        : filteredMembers.length);
-
-              if (hasSearch) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted || _searchController.text.trim() != query)
-                    return;
-                  _ensureAllPagesLoadedForSearch();
-                });
-              }
+              final hasSearch = _appliedSearchTerm.isNotEmpty;
+              final filteredMembers = _currentPageMembers;
+              final headerCount = _totalRecords > 0
+                  ? _totalRecords
+                  : filteredMembers.length;
 
               return RefreshIndicator(
                 onRefresh: _reload,
@@ -317,7 +240,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           _SearchBar(
                             compact: compact,
                             controller: _searchController,
-                            onChanged: (_) => setState(() {}),
+                            onSearchTap: _applySearch,
                           ),
                           SizedBox(height: compact ? 10 : 12),
                           PermissionGate(
@@ -334,7 +257,7 @@ class _StaffScreenState extends State<StaffScreen> {
                           if (_isInitialLoading)
                             _LoadingState(compact: compact)
                           else if (_loadError != null &&
-                              _staffMembersByPage.isEmpty)
+                              _currentPageMembers.isEmpty)
                             _ErrorState(
                               compact: compact,
                               onRetry: () => _reload(),
@@ -355,47 +278,18 @@ class _StaffScreenState extends State<StaffScreen> {
                                 ),
                               ),
                             ),
-                            if (hasSearch && _isSearchLoadingAllPages)
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: compact ? 6 : 8,
-                                  bottom: compact ? 8 : 10,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      height: compact ? 18 : 20,
-                                      width: compact ? 18 : 20,
-                                      child: const CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      'Searching all pages...',
-                                      style: AppTextStyles.style(
-                                        color: const Color(0xFF64748B),
-                                        fontSize: compact ? 12 : 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else if (!hasSearch)
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  top: compact ? 6 : 8,
-                                  bottom: compact ? 8 : 10,
-                                ),
-                                child: _PaginationBar(
-                                  compact: compact,
-                                  currentPage: _currentPage,
-                                  totalPages: _lastPage,
-                                  onPageTap: (page) => _goToPage(page),
-                                ),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                top: compact ? 6 : 8,
+                                bottom: compact ? 8 : 10,
                               ),
+                              child: _PaginationBar(
+                                compact: compact,
+                                currentPage: _currentPage,
+                                totalPages: _lastPage,
+                                onPageTap: (page) => _goToPage(page),
+                              ),
+                            ),
                           ],
                         ],
                       ),
@@ -408,24 +302,6 @@ class _StaffScreenState extends State<StaffScreen> {
         ),
       ),
     );
-  }
-
-  List<StaffMemberModel> _filterMembers(List<StaffMemberModel> members) {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return members;
-
-    return members.where((member) {
-      final haystack = [
-        member.name,
-        member.email,
-        member.phone ?? '',
-        member.role ?? '',
-        member.team ?? '',
-        member.departments.join(' '),
-      ].join(' ').toLowerCase();
-
-      return haystack.contains(query);
-    }).toList();
   }
 }
 
@@ -444,12 +320,12 @@ class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.compact,
     required this.controller,
-    this.onChanged,
+    required this.onSearchTap,
   });
 
   final bool compact;
   final TextEditingController controller;
-  final ValueChanged<String>? onChanged;
+  final VoidCallback onSearchTap;
 
   @override
   Widget build(BuildContext context) {
@@ -470,22 +346,54 @@ class _SearchBar extends StatelessWidget {
           ),
         ],
       ),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          icon: const Icon(
-            Icons.search_rounded,
-            color: Color(0xFF94A3B8),
-            size: 18,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => onSearchTap(),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                icon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF94A3B8),
+                  size: 18,
+                ),
+                hintText: 'Search staff members...',
+                hintStyle: AppTextStyles.style(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: compact ? 12 : 13,
+                ),
+              ),
+            ),
           ),
-          hintText: 'Search staff members...',
-          hintStyle: AppTextStyles.style(
-            color: const Color(0xFF94A3B8),
-            fontSize: compact ? 12 : 13,
+          const SizedBox(width: 8),
+          SizedBox(
+            height: compact ? 34 : 36,
+            child: ElevatedButton.icon(
+              onPressed: onSearchTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1D6FEA),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              icon: const Icon(Icons.search_rounded, size: 16),
+              label: Text(
+                'Search',
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -778,16 +686,57 @@ class _AvatarBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
-      child: Text(
-        initials.isEmpty ? 'ST' : initials,
-        style: AppTextStyles.style(
-          color: accentColor,
-          fontSize: compact ? 13 : 14,
-          fontWeight: FontWeight.w700,
-        ),
+      child: Builder(
+        builder: (context) {
+          final imageUrl = _resolveStaffProfileImageUrl(member.profileImage);
+          if (imageUrl != null) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                imageUrl,
+                width: compact ? 42 : 44,
+                height: compact ? 42 : 44,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Text(
+                  initials.isEmpty ? 'ST' : initials,
+                  style: AppTextStyles.style(
+                    color: accentColor,
+                    fontSize: compact ? 13 : 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return Text(
+            initials.isEmpty ? 'ST' : initials,
+            style: AppTextStyles.style(
+              color: accentColor,
+              fontSize: compact ? 13 : 14,
+              fontWeight: FontWeight.w700,
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+String? _resolveStaffProfileImageUrl(String? rawPath) {
+  final path = (rawPath ?? '').trim();
+  if (path.isEmpty) {
+    return null;
+  }
+
+  final parsed = Uri.tryParse(path);
+  if (parsed != null && parsed.hasScheme) {
+    return path;
+  }
+
+  return Uri.parse(ApiConstants.appBaseUrl)
+      .resolve(path.startsWith('/') ? path.substring(1) : path)
+      .toString();
 }
 
 class _InfoRow extends StatelessWidget {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../controllers/auth_controller.dart';
 import '../core/services/app_settings_service.dart';
 import '../core/services/biometric_service.dart';
 import '../widgets/common_screen_app_bar.dart';
@@ -15,7 +14,6 @@ class GeneralSettingsScreen extends StatefulWidget {
 }
 
 class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
-  final AuthController _authController = Get.find<AuthController>();
   final AppSettingsService _appSettingsService = AppSettingsService.instance;
   final BiometricService _biometricService = BiometricService();
 
@@ -23,7 +21,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
   bool _faceLockEnabled = false;
   bool _darkModeEnabled = false;
 
-  bool _isUpdatingBiometric = false;
   bool _isUpdatingFaceLock = false;
   bool _isUpdatingDarkMode = false;
 
@@ -34,7 +31,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
   }
 
   Future<void> _loadState() async {
-    await _authController.init();
     final faceLockEnabled = await _appSettingsService.isFaceLockEnabled();
     final darkModeEnabled = await _appSettingsService.isDarkModeEnabled();
 
@@ -43,25 +39,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
       _faceLockEnabled = faceLockEnabled;
       _darkModeEnabled = darkModeEnabled;
       _isLoading = false;
-    });
-  }
-
-  Future<void> _toggleBiometric(bool enable) async {
-    if (_isUpdatingBiometric) return;
-
-    setState(() {
-      _isUpdatingBiometric = true;
-    });
-
-    if (enable) {
-      await _authController.enableBiometricLogin();
-    } else {
-      await _authController.disableBiometricLogin();
-    }
-
-    if (!mounted) return;
-    setState(() {
-      _isUpdatingBiometric = false;
     });
   }
 
@@ -142,8 +119,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: const CommonScreenAppBar(title: 'General Settings'),
       body: _isLoading
@@ -171,17 +146,6 @@ class _GeneralSettingsScreenState extends State<GeneralSettingsScreen> {
                 //   onTap: () => _showComingSoon('Change Password'),
                 // ),
                 // const SizedBox(height: 10),
-                Obx(
-                  () => _ToggleSettingTile(
-                    icon: Icons.fingerprint_rounded,
-                    title: 'Biometric Lock',
-                    subtitle: 'Use biometrics to unlock app login',
-                    value: _authController.biometricEnabled.value,
-                    isBusy: _isUpdatingBiometric,
-                    onChanged: _toggleBiometric,
-                  ),
-                ),
-                const SizedBox(height: 10),
                 // _ToggleSettingTile(
                 //   icon: Icons.face_retouching_natural,
                 //   title: 'Face Lock',

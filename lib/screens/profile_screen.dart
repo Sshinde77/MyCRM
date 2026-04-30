@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/screens/book_a_call.dart';
 import 'package:mycrm/screens/google_ads_screen.dart';
 
+import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
-import '../controllers/auth_controller.dart';
 import '../widgets/app_bottom_navigation.dart';
-import 'package:mycrm/core/utils/app_snackbar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,59 +18,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final AuthController _authController = Get.find<AuthController>();
-  bool _isLoggingOut = false;
-
-  Future<void> _logout() async {
-    if (_isLoggingOut) {
-      return;
-    }
-
-    setState(() {
-      _isLoggingOut = true;
-    });
-
-    try {
-      await _authController.logout();
-      if (!mounted) {
-        return;
-      }
-      Get.offAllNamed(AppRoutes.login);
-      AppSnackbar.show('Logged out', 'You have been signed out successfully.');
-    } on DioException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
-      final responseData = error.response?.data;
-      String message = 'Unable to logout right now.';
-
-      if (responseData is Map<String, dynamic>) {
-        final apiMessage = responseData['message'] ?? responseData['error'];
-        if (apiMessage != null && apiMessage.toString().trim().isNotEmpty) {
-          message = apiMessage.toString();
-        }
-      }
-
-      AppSnackbar.show('Logout failed', message);
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-
-      AppSnackbar.show(
-        'Logout failed',
-        'Something went wrong while signing out.',
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoggingOut = false;
-        });
-      }
-    }
-  }
-
   static const List<_ProfileAction> _actions = [
     _ProfileAction(
       title: 'Personal Information',
@@ -126,6 +71,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Book A Call',
       icon: Icons.phone_in_talk_outlined,
       routeName: '',
+      permission: AppPermission.viewBookCalls,
       accentColor: Color(0xFF1D6FEA),
       screenBuilder: BookACallScreen.new,
     ),
@@ -133,6 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       title: 'Google Ads',
       icon: Icons.ads_click_rounded,
       routeName: '',
+      permission: AppPermission.viewDigitalMarketingLeads,
       accentColor: Color(0xFF0EA5E9),
       screenBuilder: GoogleAdsScreen.new,
     ),
@@ -195,36 +142,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             // _BiometricLoginCard(controller: _authController),
                             const SizedBox(height: 12),
                             _ProfileActionsGrid(actions: actions),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 42,
-                              child: ElevatedButton.icon(
-                                onPressed: _isLoggingOut ? null : _logout,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFDC2626),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                icon: Icon(
-                                  _isLoggingOut
-                                      ? Icons.hourglass_top_rounded
-                                      : Icons.logout_rounded,
-                                  size: 18,
-                                ),
-                                label: Text(
-                                  _isLoggingOut ? 'Logging out...' : 'Logout',
-                                  style: AppTextStyles.style(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -308,7 +225,7 @@ class _BiometricLoginCard extends StatelessWidget {
       return Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius. circular(18),
           border: Border.all(color: const Color(0xFFE7EDF5)),
         ),
         child: SwitchListTile(

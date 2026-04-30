@@ -106,6 +106,78 @@ class VendorListPageResult {
   final bool hasNextPage;
 }
 
+class LeadListPageResult {
+  const LeadListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<LeadModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
+class ProjectListPageResult {
+  const ProjectListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<ProjectModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
+class TaskListPageResult {
+  const TaskListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<Map<String, dynamic>> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
+class MapListPageResult {
+  const MapListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<Map<String, dynamic>> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
 class ClientRenewalFormOptionsResult {
   const ClientRenewalFormOptionsResult({
     required this.clients,
@@ -865,11 +937,19 @@ class ApiService {
   }
 
   /// Loads a single paginated staff page from staff-v2 index endpoint.
-  Future<StaffListPageResult> getStaffListPage({int page = 1}) async {
+  Future<StaffListPageResult> getStaffListPage({
+    int page = 1,
+    String? search,
+  }) async {
     final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
     final response = await get(
       ApiConstants.liststaff,
-      queryParameters: <String, dynamic>{'page': normalizedPage},
+      queryParameters: query,
     );
     final root = _normalizeMap(response.data);
 
@@ -994,11 +1074,19 @@ class ApiService {
   }
 
   /// Loads a single paginated clients page from clients index endpoint.
-  Future<ClientListPageResult> getClientsListPage({int page = 1}) async {
+  Future<ClientListPageResult> getClientsListPage({
+    int page = 1,
+    String? search,
+  }) async {
     final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
     final response = await get(
       ApiConstants.clients,
-      queryParameters: <String, dynamic>{'page': normalizedPage},
+      queryParameters: query,
     );
     final root = _normalizeMap(response.data);
 
@@ -1081,11 +1169,16 @@ class ApiService {
   Future<VendorListPageResult> getVendorsListPage({
     int page = 1,
     int? perPage,
+    String? search,
   }) async {
     final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
     final query = <String, dynamic>{'page': normalizedPage};
     if (perPage != null && perPage > 0) {
       query['per_page'] = perPage;
+    }
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
     }
 
     final response = await get(
@@ -1132,21 +1225,37 @@ class ApiService {
   }
 
   /// Loads a single paginated vendor renewals page.
-  Future<RenewalListPageResult> getVendorRenewalsPage({int page = 1}) async {
+  Future<RenewalListPageResult> getVendorRenewalsPage({
+    int page = 1,
+    String? search,
+  }) async {
     final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
     final response = await get(
       ApiConstants.vendorRenewals,
-      queryParameters: <String, dynamic>{'page': normalizedPage},
+      queryParameters: query,
     );
     return _parseRenewalPageResponse(response.data, normalizedPage);
   }
 
   /// Loads a single paginated client renewals page.
-  Future<RenewalListPageResult> getClientRenewalsPage({int page = 1}) async {
+  Future<RenewalListPageResult> getClientRenewalsPage({
+    int page = 1,
+    String? search,
+  }) async {
     final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
     final response = await get(
       ApiConstants.clientRenewals,
-      queryParameters: <String, dynamic>{'page': normalizedPage},
+      queryParameters: query,
     );
     return _parseRenewalPageResponse(response.data, normalizedPage);
   }
@@ -1216,6 +1325,178 @@ class ApiService {
 
     return RenewalListPageResult(
       items: items,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: perPage,
+      hasNextPage: hasNextPage,
+    );
+  }
+
+  LeadListPageResult _parseLeadPageResponse(
+    dynamic responseData,
+    int fallbackPage,
+  ) {
+    final root = _normalizeMap(responseData);
+    Map<String, dynamic>? pagePayload;
+    final rootData = root['data'];
+    if (rootData is Map<String, dynamic>) {
+      final leads = rootData['leads'];
+      if (leads is Map<String, dynamic>) {
+        pagePayload = leads;
+      } else if (leads is Map) {
+        pagePayload = leads.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = rootData;
+      }
+    } else if (rootData is Map) {
+      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(responseData);
+    final items = records.map(LeadModel.fromJson).toList(growable: false);
+    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? items.length;
+    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return LeadListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: perPage,
+      hasNextPage: hasNextPage,
+    );
+  }
+
+  ProjectListPageResult _parseProjectPageResponse(
+    dynamic responseData,
+    int fallbackPage,
+  ) {
+    final root = _normalizeMap(responseData);
+    Map<String, dynamic>? pagePayload;
+    final rootData = root['data'];
+    if (rootData is Map<String, dynamic>) {
+      final projects = rootData['projects'];
+      if (projects is Map<String, dynamic>) {
+        pagePayload = projects;
+      } else if (projects is Map) {
+        pagePayload = projects.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = rootData;
+      }
+    } else if (rootData is Map) {
+      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(responseData);
+    final items = records.map(ProjectModel.fromJson).toList(growable: false);
+    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? items.length;
+    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return ProjectListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: perPage,
+      hasNextPage: hasNextPage,
+    );
+  }
+
+  TaskListPageResult _parseTaskPageResponse(dynamic responseData, int fallbackPage) {
+    final root = _normalizeMap(responseData);
+    Map<String, dynamic>? pagePayload;
+    final rootData = root['data'];
+    if (rootData is Map<String, dynamic>) {
+      final tasks = rootData['tasks'];
+      if (tasks is Map<String, dynamic>) {
+        pagePayload = tasks;
+      } else if (tasks is Map) {
+        pagePayload = tasks.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = rootData;
+      }
+    } else if (rootData is Map) {
+      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(responseData);
+    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? records.length;
+    final perPage = _readInt(pagePayload?['per_page']) ?? records.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return TaskListPageResult(
+      items: records,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: perPage,
+      hasNextPage: hasNextPage,
+    );
+  }
+
+  MapListPageResult _parseMapListPageResponse(
+    dynamic responseData,
+    int fallbackPage, {
+    String? nestedKey,
+  }) {
+    final root = _normalizeMap(responseData);
+    Map<String, dynamic>? pagePayload;
+    final rootData = root['data'];
+    if (rootData is Map<String, dynamic>) {
+      final nested = nestedKey == null ? null : rootData[nestedKey];
+      if (nested is Map<String, dynamic>) {
+        pagePayload = nested;
+      } else if (nested is Map) {
+        pagePayload = nested.map((key, value) => MapEntry(key.toString(), value));
+      } else {
+        pagePayload = rootData;
+      }
+    } else if (rootData is Map) {
+      pagePayload = rootData.map((key, value) => MapEntry(key.toString(), value));
+    } else {
+      pagePayload = root;
+    }
+
+    final source = pagePayload?['data'];
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(responseData);
+    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload?['total']) ?? records.length;
+    final perPage = _readInt(pagePayload?['per_page']) ?? records.length;
+    final hasNextPage =
+        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+
+    return MapListPageResult(
+      items: records,
       currentPage: currentPage,
       lastPage: lastPage,
       total: total,
@@ -1828,6 +2109,21 @@ class ApiService {
     return records.map(ProjectModel.fromJson).toList();
   }
 
+  /// Loads a single paginated project page.
+  Future<ProjectListPageResult> getProjectsListPage({
+    int page = 1,
+    String? search,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final response = await get(ApiConstants.projects, queryParameters: query);
+    return _parseProjectPageResponse(response.data, normalizedPage);
+  }
+
   /// Loads projects assigned to a specific staff member.
   Future<List<ProjectModel>> getStaffProjectsList(String staffId) async {
     final id = staffId.trim();
@@ -1837,6 +2133,34 @@ class ApiService {
     final response = await get(path);
     final records = _normalizeList(response.data);
     return records.map(ProjectModel.fromJson).toList();
+  }
+
+  /// Loads a single paginated staff-projects page.
+  Future<ProjectListPageResult> getStaffProjectsListPage({
+    required String staffId,
+    int page = 1,
+    String? search,
+  }) async {
+    final id = staffId.trim();
+    if (id.isEmpty) {
+      return const ProjectListPageResult(
+        items: <ProjectModel>[],
+        currentPage: 1,
+        lastPage: 1,
+        total: 0,
+        perPage: 10,
+        hasNextPage: false,
+      );
+    }
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final path = ApiConstants.staffprojects.replaceFirst('{id}', id);
+    final response = await get(path, queryParameters: query);
+    return _parseProjectPageResponse(response.data, normalizedPage);
   }
 
   /// Loads calendar events for the authenticated user.
@@ -2166,6 +2490,27 @@ class ApiService {
     return records.map(LeadModel.fromJson).toList();
   }
 
+  /// Loads a single paginated leads page.
+  Future<LeadListPageResult> getLeadsListPage({
+    int page = 1,
+    String? search,
+    String? userId,
+    String? roleId,
+  }) async {
+    final query = await _resolveLeadQueryParameters(
+      userId: userId,
+      roleId: roleId,
+    );
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    query['page'] = normalizedPage;
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final response = await get(ApiConstants.leads, queryParameters: query);
+    return _parseLeadPageResponse(response.data, normalizedPage);
+  }
+
   /// Loads a single lead by id.
   Future<LeadModel> getLeadDetail(String id) async {
     final path = ApiConstants.leadDetail.replaceFirst('{id}', id);
@@ -2417,10 +2762,44 @@ class ApiService {
     return _normalizeList(response.data);
   }
 
+  /// Loads a single paginated tasks page for the authenticated user.
+  Future<TaskListPageResult> getTasksListPage({
+    int page = 1,
+    String? search,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final response = await get(ApiConstants.tasks, queryParameters: query);
+    return _parseTaskPageResponse(response.data, normalizedPage);
+  }
+
   /// Loads book-a-call records for the authenticated user.
   Future<List<Map<String, dynamic>>> getBookACallList() async {
     final response = await get(ApiConstants.bookACall);
     return _normalizeList(response.data);
+  }
+
+  /// Loads a single paginated book-a-call page.
+  Future<MapListPageResult> getBookACallListPage({
+    int page = 1,
+    int? perPage,
+    String? search,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (perPage != null && perPage > 0) {
+      query['per_page'] = perPage;
+    }
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final response = await get(ApiConstants.bookACall, queryParameters: query);
+    return _parseMapListPageResponse(response.data, normalizedPage);
   }
 
   /// Deletes a single book-a-call record by id.
@@ -2437,6 +2816,28 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getDigitalMarketingLeads() async {
     final response = await get(ApiConstants.digitalMarketingLeads);
     return _normalizeList(response.data);
+  }
+
+  /// Loads a single paginated digital marketing leads page.
+  Future<MapListPageResult> getDigitalMarketingLeadsPage({
+    int page = 1,
+    int? perPage,
+    String? search,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (perPage != null && perPage > 0) {
+      query['per_page'] = perPage;
+    }
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final response = await get(
+      ApiConstants.digitalMarketingLeads,
+      queryParameters: query,
+    );
+    return _parseMapListPageResponse(response.data, normalizedPage);
   }
 
   /// Deletes a single digital marketing lead by id.
@@ -2456,6 +2857,25 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getWebAppsLeads() async {
     final response = await get(ApiConstants.webAppsLeads);
     return _normalizeList(response.data);
+  }
+
+  /// Loads a single paginated web-apps leads page.
+  Future<MapListPageResult> getWebAppsLeadsPage({
+    int page = 1,
+    int? perPage,
+    String? search,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (perPage != null && perPage > 0) {
+      query['per_page'] = perPage;
+    }
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final response = await get(ApiConstants.webAppsLeads, queryParameters: query);
+    return _parseMapListPageResponse(response.data, normalizedPage);
   }
 
   /// Deletes a single web apps lead by id.
@@ -2479,6 +2899,34 @@ class ApiService {
     final path = ApiConstants.stafftasks.replaceFirst('{id}', id);
     final response = await get(path);
     return _normalizeList(response.data);
+  }
+
+  /// Loads a single paginated tasks page assigned to a specific staff member.
+  Future<TaskListPageResult> getStaffTasksListPage({
+    required String staffId,
+    int page = 1,
+    String? search,
+  }) async {
+    final id = staffId.trim();
+    if (id.isEmpty) {
+      return const TaskListPageResult(
+        items: <Map<String, dynamic>>[],
+        currentPage: 1,
+        lastPage: 1,
+        total: 0,
+        perPage: 10,
+        hasNextPage: false,
+      );
+    }
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    final path = ApiConstants.stafftasks.replaceFirst('{id}', id);
+    final response = await get(path, queryParameters: query);
+    return _parseTaskPageResponse(response.data, normalizedPage);
   }
 
   /// Loads a single task record by id.

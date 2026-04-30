@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/services/api_service.dart';
 
@@ -14,9 +15,12 @@ class BookACallScreen extends StatefulWidget {
 
 class _BookACallScreenState extends State<BookACallScreen> {
   final ApiService _apiService = ApiService.instance;
+  final TextEditingController _searchController = TextEditingController();
   int _bookCallEntriesPerPage = 10;
   int _currentPage = 1;
-  String _bookCallQuery = '';
+  int _lastPage = 1;
+  int _totalRecords = 0;
+  String _appliedSearch = '';
   bool _isLoading = false;
   String? _loadError;
   final List<_BookCallRecord> _bookCallRecords = [];
@@ -24,44 +28,55 @@ class _BookACallScreenState extends State<BookACallScreen> {
   @override
   void initState() {
     super.initState();
-    _loadBookACalls();
+    _ensureAccessAndLoad();
   }
 
-  List<_BookCallRecord> get _filteredBookCallRecords {
-    final query = _bookCallQuery.trim().toLowerCase();
-    if (query.isEmpty) {
-      return _bookCallRecords;
-    }
-
-    return _bookCallRecords.where((record) {
-      return record.id.contains(query) ||
-          record.name.toLowerCase().contains(query) ||
-          record.email.toLowerCase().contains(query) ||
-          record.phone.toLowerCase().contains(query) ||
-          record.meetingAgenda.toLowerCase().contains(query) ||
-          record.bookingDate.toLowerCase().contains(query) ||
-          record.bookingTime.toLowerCase().contains(query) ||
-          record.bookingDateTime.toLowerCase().contains(query) ||
-          record.createdAt.toLowerCase().contains(query);
-    }).toList();
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadBookACalls() async {
+  Future<void> _ensureAccessAndLoad() async {
+    final canView = await PermissionService.has(AppPermission.viewBookCalls);
     if (!mounted) return;
+    if (!canView) {
+      AppSnackbar.show('Access denied', 'You do not have permission to view Book A Call.');
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Get.back();
+      }
+      return;
+    }
+    await _loadBookACalls();
+  }
+
+  Future<void> _loadBookACalls({int page = 1, String? search}) async {
+    if (!mounted) return;
+    final normalizedSearch = (search ?? _appliedSearch).trim();
     setState(() {
       _isLoading = true;
       _loadError = null;
     });
 
     try {
-      final records = await _apiService.getBookACallList();
-      final mapped = records.map(_BookCallRecord.fromJson).toList();
+      final result = await _apiService.getBookACallListPage(
+        page: page,
+        perPage: _bookCallEntriesPerPage,
+        search: normalizedSearch,
+      );
+      final mapped = result.items.map(_BookCallRecord.fromJson).toList();
       if (!mounted) return;
       setState(() {
         _bookCallRecords
           ..clear()
           ..addAll(mapped);
-        _currentPage = 1;
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _totalRecords = result.total;
+        _bookCallEntriesPerPage = result.perPage > 0 ? result.perPage : 10;
+        _appliedSearch = normalizedSearch;
         _isLoading = false;
       });
     } on DioException catch (error) {
@@ -116,17 +131,8 @@ class _BookACallScreenState extends State<BookACallScreen> {
     try {
       await _apiService.deleteBookACall(id);
       if (!mounted) return;
-      setState(() {
-        _bookCallRecords.removeWhere((entry) => entry.id == id);
-        final totalPages = _totalPages(
-          _filteredBookCallRecords.length,
-          _bookCallEntriesPerPage,
-        );
-        if (_currentPage > totalPages) {
-          _currentPage = totalPages;
-        }
-      });
       AppSnackbar.show('Deleted', 'Book-a-call record removed.');
+      await _loadBookACalls(page: _currentPage, search: _appliedSearch);
     } on DioException catch (error) {
       if (!mounted) return;
       final responseData = error.response?.data;
@@ -145,21 +151,9 @@ class _BookACallScreenState extends State<BookACallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filteredBookCallRecords;
-    final totalRecords = filtered.length;
-    final totalPages = _totalPages(totalRecords, _bookCallEntriesPerPage);
+    final totalPages = _lastPage < 1 ? 1 : _lastPage;
     final safeCurrentPage = _currentPage > totalPages ? totalPages : _currentPage;
-    final startIndex = totalRecords == 0
-        ? 0
-        : (safeCurrentPage - 1) * _bookCallEntriesPerPage;
-    final endIndex = totalRecords == 0
-        ? 0
-        : (startIndex + _bookCallEntriesPerPage > totalRecords
-              ? totalRecords
-              : startIndex + _bookCallEntriesPerPage);
-    final pagedRecords = totalRecords == 0
-        ? const <_BookCallRecord>[]
-        : filtered.sublist(startIndex, endIndex);
+    final pagedRecords = _bookCallRecords;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
@@ -197,8 +191,8 @@ class _BookACallScreenState extends State<BookACallScreen> {
                     const SizedBox(height: 16),
                     _BookACallSection(
                       records: pagedRecords,
-                      totalRecords: totalRecords,
-                      totalCount: _bookCallRecords.length,
+                      totalRecords: _totalRecords,
+                      totalCount: _totalRecords,
                       currentPage: safeCurrentPage,
                       totalPages: totalPages,
                       entriesPerPage: _bookCallEntriesPerPage,
@@ -207,20 +201,15 @@ class _BookACallScreenState extends State<BookACallScreen> {
                       onRetry: _loadBookACalls,
                       onDelete: _deleteBookACall,
                       onPageTap: (page) {
-                        setState(() => _currentPage = page);
+                        _loadBookACalls(page: page, search: _appliedSearch);
                       },
-                      onEntriesChanged: (value) {
-                        setState(() {
-                          _bookCallEntriesPerPage = value;
-                          _currentPage = 1;
-                        });
+                      onSearch: () {
+                        _loadBookACalls(
+                          page: 1,
+                          search: _searchController.text.trim(),
+                        );
                       },
-                      onSearchChanged: (value) {
-                        setState(() {
-                          _bookCallQuery = value;
-                          _currentPage = 1;
-                        });
-                      },
+                      searchController: _searchController,
                     ),
                   ],
                 ),
@@ -232,12 +221,6 @@ class _BookACallScreenState extends State<BookACallScreen> {
     );
   }
 
-  int _totalPages(int totalItems, int pageSize) {
-    if (totalItems <= 0) {
-      return 1;
-    }
-    return ((totalItems + pageSize - 1) / pageSize).floor();
-  }
 }
 
 class _BookACallSection extends StatelessWidget {
@@ -253,8 +236,8 @@ class _BookACallSection extends StatelessWidget {
     required this.onRetry,
     required this.onDelete,
     required this.onPageTap,
-    required this.onEntriesChanged,
-    required this.onSearchChanged,
+    required this.onSearch,
+    required this.searchController,
   });
 
   final List<_BookCallRecord> records;
@@ -268,8 +251,8 @@ class _BookACallSection extends StatelessWidget {
   final VoidCallback onRetry;
   final ValueChanged<_BookCallRecord> onDelete;
   final ValueChanged<int> onPageTap;
-  final ValueChanged<int> onEntriesChanged;
-  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onSearch;
+  final TextEditingController searchController;
 
   @override
   Widget build(BuildContext context) {
@@ -340,22 +323,21 @@ class _BookACallSection extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _BookCallSearchField(onChanged: onSearchChanged),
-                    const SizedBox(height: 10),
-                    _BookCallEntriesControl(
-                      value: entriesPerPage,
-                      onChanged: onEntriesChanged,
+                    _BookCallSearchField(
+                      controller: searchController,
+                      onSearch: onSearch,
                     ),
+                    const SizedBox(height: 10),
                   ],
                 );
               }
               return Row(
                 children: [
-                  Expanded(child: _BookCallSearchField(onChanged: onSearchChanged)),
-                  const SizedBox(width: 12),
-                  _BookCallEntriesControl(
-                    value: entriesPerPage,
-                    onChanged: onEntriesChanged,
+                  Expanded(
+                    child: _BookCallSearchField(
+                      controller: searchController,
+                      onSearch: onSearch,
+                    ),
                   ),
                 ],
               );
@@ -714,44 +696,70 @@ class _BookCallEntriesControl extends StatelessWidget {
 }
 
 class _BookCallSearchField extends StatelessWidget {
-  const _BookCallSearchField({required this.onChanged});
+  const _BookCallSearchField({
+    required this.controller,
+    required this.onSearch,
+  });
 
-  final ValueChanged<String> onChanged;
+  final TextEditingController controller;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: 'Search by name, phone, date or agenda',
-        hintStyle: AppTextStyles.style(
-          color: const Color(0xFF94A3B8),
-          fontSize: 12.5,
-          fontWeight: FontWeight.w500,
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: controller,
+            onSubmitted: (_) => onSearch(),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: 'Search by name, phone, date or agenda',
+              hintStyle: AppTextStyles.style(
+                color: const Color(0xFF94A3B8),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                size: 18,
+                color: Color(0xFF64748B),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 11,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFD4DCE7)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFD4DCE7)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF1D6FEA)),
+              ),
+            ),
+          ),
         ),
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          size: 18,
-          color: Color(0xFF64748B),
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 40,
+          child: ElevatedButton(
+            onPressed: onSearch,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1D6FEA),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Search'),
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 11,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFD4DCE7)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFD4DCE7)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF1D6FEA)),
-        ),
-      ),
+      ],
     );
   }
 }

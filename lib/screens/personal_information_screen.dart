@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
 import '../core/constants/api_constants.dart';
 import '../core/constants/app_colors.dart';
 import '../core/constants/app_text_styles.dart';
+import '../core/utils/app_snackbar.dart';
+import '../controllers/auth_controller.dart';
 import '../models/user_model.dart';
+import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 
 /// Displays authenticated user details from `/me`.
@@ -18,7 +22,10 @@ class PersonalInformationScreen extends StatefulWidget {
 
 class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   final ApiService _apiService = ApiService.instance;
+  final AuthController _authController = Get.find<AuthController>();
   late Future<UserModel> _userFuture;
+  bool _isLoggingOut = false;
+  bool _isUpdatingBiometric = false;
 
   @override
   void initState() {
@@ -32,6 +39,80 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       _userFuture = next;
     });
     await next;
+  }
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) {
+      return;
+    }
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await _authController.logout();
+      if (!mounted) {
+        return;
+      }
+      Get.offAllNamed(AppRoutes.login);
+      AppSnackbar.show('Logged out', 'You have been signed out successfully.');
+    } on DioException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final responseData = error.response?.data;
+      String message = 'Unable to logout right now.';
+
+      if (responseData is Map<String, dynamic>) {
+        final apiMessage = responseData['message'] ?? responseData['error'];
+        if (apiMessage != null && apiMessage.toString().trim().isNotEmpty) {
+          message = apiMessage.toString();
+        }
+      }
+
+      AppSnackbar.show('Logout failed', message);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      AppSnackbar.show(
+        'Logout failed',
+        'Something went wrong while signing out.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingOut = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleBiometric(bool enable) async {
+    if (_isUpdatingBiometric) {
+      return;
+    }
+
+    setState(() {
+      _isUpdatingBiometric = true;
+    });
+
+    try {
+      if (enable) {
+        await _authController.enableBiometricLogin();
+      } else {
+        await _authController.disableBiometricLogin();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUpdatingBiometric = false;
+        });
+      }
+    }
   }
 
   @override
@@ -69,6 +150,44 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                       )
                     else
                       _ProfileDetailsCard(user: snapshot.data!),
+                    const SizedBox(height: 12),
+                    Obx(
+                      () => _BiometricToggleCard(
+                        value: _authController.biometricEnabled.value,
+                        isBusy: _isUpdatingBiometric,
+                        onChanged: _toggleBiometric,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 42,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoggingOut ? null : _logout,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.dangerRed,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: Icon(
+                          _isLoggingOut
+                              ? Icons.hourglass_top_rounded
+                              : Icons.logout_rounded,
+                          size: 18,
+                        ),
+                        label: Text(
+                          _isLoggingOut ? 'Logging out...' : 'Logout',
+                          style: AppTextStyles.style(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -436,6 +555,82 @@ class _ErrorCard extends StatelessWidget {
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Retry'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BiometricToggleCard extends StatelessWidget {
+  const _BiometricToggleCard({
+    required this.value,
+    required this.isBusy,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final bool isBusy;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.primaryBlue.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.fingerprint_rounded,
+              color: AppColors.primaryBlue,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Biometric Login',
+                  style: AppTextStyles.style(
+                    color: AppColors.primaryText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Use fingerprint/face to unlock app login',
+                  style: AppTextStyles.style(
+                    color: AppColors.secondaryText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          isBusy
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                )
+              : Switch(value: value, onChanged: onChanged),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:dio/dio.dart';
@@ -14,63 +15,98 @@ class GoogleAdsScreen extends StatefulWidget {
 
 class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
   final ApiService _apiService = ApiService.instance;
+  final TextEditingController _searchController = TextEditingController();
   int _selectedTab = 0;
   int _entriesPerPage = 10;
   int _currentPage = 1;
-  String _search = '';
+  int _lastPage = 1;
+  int _totalRecords = 0;
+  String _appliedSearch = '';
   bool _isLoading = false;
   String? _loadError;
 
   final List<_LeadRecord> _digital = [];
   final List<_LeadRecord> _webApp = [];
+  int _digitalTotal = 0;
+  int _webAppTotal = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadLeads();
+    _ensureAccessAndLoad();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _ensureAccessAndLoad() async {
+    final canView = await PermissionService.has(
+      AppPermission.viewDigitalMarketingLeads,
+    );
+    if (!mounted) return;
+    if (!canView) {
+      AppSnackbar.show('Access denied', 'You do not have permission to view Google Ads leads.');
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      } else {
+        Get.back();
+      }
+      return;
+    }
+    await _loadLeads();
   }
 
   List<_LeadRecord> get _activeList => _selectedTab == 0 ? _digital : _webApp;
 
-  List<_LeadRecord> get _filtered {
-    final q = _search.trim().toLowerCase();
-    if (q.isEmpty) return _activeList;
-    return _activeList.where((row) {
-      return row.id.toLowerCase().contains(q) ||
-          row.name.toLowerCase().contains(q) ||
-          row.email.toLowerCase().contains(q) ||
-          row.phone.toLowerCase().contains(q) ||
-          row.company.toLowerCase().contains(q) ||
-          row.website.toLowerCase().contains(q) ||
-          row.sourcePage.toLowerCase().contains(q) ||
-          row.createdAt.toLowerCase().contains(q);
-    }).toList();
-  }
-
-  Future<void> _loadLeads() async {
+  Future<void> _loadLeads({
+    int? tabIndex,
+    int page = 1,
+    String? search,
+  }) async {
     if (!mounted) return;
+    final tab = tabIndex ?? _selectedTab;
+    final normalizedSearch = (search ?? _appliedSearch).trim();
     setState(() {
       _isLoading = true;
       _loadError = null;
     });
 
     try {
-      final responses = await Future.wait([
-        _apiService.getDigitalMarketingLeads(),
-        _apiService.getWebAppsLeads(),
-      ]);
-      final digital = responses[0].map(_LeadRecord.fromJson).toList();
-      final webApps = responses[1].map(_LeadRecord.fromJson).toList();
+      final result = tab == 0
+          ? await _apiService.getDigitalMarketingLeadsPage(
+              page: page,
+              perPage: _entriesPerPage,
+              search: normalizedSearch,
+            )
+          : await _apiService.getWebAppsLeadsPage(
+              page: page,
+              perPage: _entriesPerPage,
+              search: normalizedSearch,
+            );
+      final mapped = result.items.map(_LeadRecord.fromJson).toList();
 
       if (!mounted) return;
       setState(() {
-        _digital
-          ..clear()
-          ..addAll(digital);
-        _webApp
-          ..clear()
-          ..addAll(webApps);
-        _currentPage = 1;
+        if (tab == 0) {
+          _digital
+            ..clear()
+            ..addAll(mapped);
+          _digitalTotal = result.total;
+        } else {
+          _webApp
+            ..clear()
+            ..addAll(mapped);
+          _webAppTotal = result.total;
+        }
+        _selectedTab = tab;
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _entriesPerPage = result.perPage > 0 ? result.perPage : 10;
+        _totalRecords = result.total;
+        _appliedSearch = normalizedSearch;
         _isLoading = false;
       });
     } on DioException catch (error) {
@@ -109,12 +145,13 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
       final target = _selectedTab == 0 ? _digital : _webApp;
       setState(() {
         target.removeWhere((x) => x.id == item.id);
-        final totalPages = _totalPages(_filtered.length, _entriesPerPage);
-        if (_currentPage > totalPages) {
-          _currentPage = totalPages;
-        }
       });
       AppSnackbar.show('Deleted', 'Lead removed successfully.');
+      await _loadLeads(
+        tabIndex: _selectedTab,
+        page: _currentPage,
+        search: _appliedSearch,
+      );
     } on DioException catch (error) {
       if (!mounted) return;
       AppSnackbar.show(
@@ -129,19 +166,10 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
-    final totalRecords = filtered.length;
-    final totalPages = _totalPages(totalRecords, _entriesPerPage);
+    final totalRecords = _totalRecords;
+    final totalPages = _lastPage < 1 ? 1 : _lastPage;
     final safeCurrentPage = _currentPage > totalPages ? totalPages : _currentPage;
-    final startIndex = totalRecords == 0 ? 0 : (safeCurrentPage - 1) * _entriesPerPage;
-    final endIndex = totalRecords == 0
-        ? 0
-        : (startIndex + _entriesPerPage > totalRecords
-              ? totalRecords
-              : startIndex + _entriesPerPage);
-    final page = totalRecords == 0
-        ? const <_LeadRecord>[]
-        : filtered.sublist(startIndex, endIndex);
+    final page = _activeList;
     final isMobile = MediaQuery.of(context).size.width < 900;
 
     return Scaffold(
@@ -164,8 +192,8 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _TopBar(
-                      digitalCount: _digital.length,
-                      webCount: _webApp.length,
+                      digitalCount: _digitalTotal,
+                      webCount: _webAppTotal,
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -195,8 +223,8 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
                             onChange: (idx) {
                               setState(() {
                                 _selectedTab = idx;
-                                _currentPage = 1;
                               });
+                              _loadLeads(tabIndex: idx, page: 1, search: _appliedSearch);
                             },
                           ),
                           const SizedBox(height: 12),
@@ -205,14 +233,20 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
                             onEntries: (v) {
                               setState(() {
                                 _entriesPerPage = v;
-                                _currentPage = 1;
                               });
+                              _loadLeads(
+                                tabIndex: _selectedTab,
+                                page: 1,
+                                search: _appliedSearch,
+                              );
                             },
-                            onSearch: (v) {
-                              setState(() {
-                                _search = v;
-                                _currentPage = 1;
-                              });
+                            searchController: _searchController,
+                            onSearch: () {
+                              _loadLeads(
+                                tabIndex: _selectedTab,
+                                page: 1,
+                                search: _searchController.text.trim(),
+                              );
                             },
                           ),
                           if (_isLoading) ...[
@@ -248,7 +282,11 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
                             total: totalRecords,
                             totalPages: totalPages,
                             onPageTap: (pageNumber) {
-                              setState(() => _currentPage = pageNumber);
+                              _loadLeads(
+                                tabIndex: _selectedTab,
+                                page: pageNumber,
+                                search: _appliedSearch,
+                              );
                             },
                           ),
                         ],
@@ -262,13 +300,6 @@ class _GoogleAdsScreenState extends State<GoogleAdsScreen> {
         ),
       ),
     );
-  }
-
-  int _totalPages(int totalItems, int pageSize) {
-    if (totalItems <= 0) {
-      return 1;
-    }
-    return ((totalItems + pageSize - 1) / pageSize).floor();
   }
 
   String _extractErrorMessage(DioException error, {required String fallback}) {
@@ -434,12 +465,14 @@ class _Toolbar extends StatelessWidget {
   const _Toolbar({
     required this.entries,
     required this.onEntries,
+    required this.searchController,
     required this.onSearch,
   });
 
   final int entries;
   final ValueChanged<int> onEntries;
-  final ValueChanged<String> onSearch;
+  final TextEditingController searchController;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -482,38 +515,60 @@ class _Toolbar extends StatelessWidget {
       ),
     );
 
-    final searchWidget = TextField(
-      onChanged: onSearch,
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: 'Search by name, email, phone...',
-        hintStyle: AppTextStyles.style(
-          color: const Color(0xFF94A3B8),
-          fontSize: 12.5,
-          fontWeight: FontWeight.w500,
+    final searchWidget = Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: searchController,
+            onSubmitted: (_) => onSearch(),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: 'Search by name, email, phone...',
+              hintStyle: AppTextStyles.style(
+                color: const Color(0xFF94A3B8),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF64748B),
+                size: 18,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFD8E2EE)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFFD8E2EE)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Color(0xFF1D6FEA)),
+              ),
+            ),
+          ),
         ),
-        prefixIcon: const Icon(
-          Icons.search_rounded,
-          color: Color(0xFF64748B),
-          size: 18,
+        const SizedBox(width: 8),
+        SizedBox(
+          height: 40,
+          child: ElevatedButton(
+            onPressed: onSearch,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1D6FEA),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Search'),
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFD8E2EE)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFD8E2EE)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF1D6FEA)),
-        ),
-      ),
+      ],
     );
 
     if (compact) {

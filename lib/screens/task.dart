@@ -22,14 +22,16 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
-  static const int _pageSize = 10;
   final List<_TaskRecord> _tasks = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
   String? _loadError;
   String? _staffFilterId;
   String _staffFilterName = '';
+  String _appliedSearchTerm = '';
   int _currentPage = 1;
+  int _lastPage = 1;
+  int _totalRecords = 0;
 
   @override
   void initState() {
@@ -59,56 +61,30 @@ class _TasksScreenState extends State<TasksScreen> {
         }
       }
     }
-    _searchController.addListener(_handleSearchChanged);
     _loadTasks();
   }
 
   @override
   void dispose() {
-    _searchController
-      ..removeListener(_handleSearchChanged)
-      ..dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   int get _runningCount => _tasks.where((task) => !task.completed).length;
   int get _completedCount => _tasks.where((task) => task.completed).length;
 
-  List<_TaskRecord> get _filteredTasks {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) {
-      return _tasks;
-    }
-
-    return _tasks.where((task) {
-      return task.title.toLowerCase().contains(query) ||
-          task.projectName.toLowerCase().contains(query) ||
-          task.description.toLowerCase().contains(query) ||
-          task.status.toLowerCase().contains(query) ||
-          task.priority.toLowerCase().contains(query) ||
-          task.id.toLowerCase().contains(query);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final compact = width <= 360;
-    final filteredTasks = _filteredTasks;
-    final totalTasks = filteredTasks.length;
-    final totalPages = totalTasks == 0
-        ? 1
-        : ((totalTasks + _pageSize - 1) / _pageSize).floor();
+    final totalTasks = _totalRecords;
+    final totalPages = _lastPage < 1 ? 1 : _lastPage;
     final safeCurrentPage = _currentPage > totalPages ? totalPages : _currentPage;
-    final startIndex = totalTasks == 0 ? 0 : (safeCurrentPage - 1) * _pageSize;
+    final perPage = _tasks.isEmpty ? 10 : _tasks.length;
+    final startIndex = totalTasks == 0 ? 0 : ((safeCurrentPage - 1) * perPage) + 1;
     final endIndex = totalTasks == 0
         ? 0
-        : (startIndex + _pageSize > totalTasks
-              ? totalTasks
-              : startIndex + _pageSize);
-    final pagedTasks = totalTasks == 0
-        ? const <_TaskRecord>[]
-        : filteredTasks.sublist(startIndex, endIndex);
+        : (startIndex + _tasks.length - 1).clamp(0, totalTasks);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -119,7 +95,7 @@ class _TasksScreenState extends State<TasksScreen> {
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
           child: RefreshIndicator(
-            onRefresh: _loadTasks,
+            onRefresh: () => _loadTasks(page: 1),
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
@@ -197,6 +173,8 @@ class _TasksScreenState extends State<TasksScreen> {
                             Expanded(
                               child: TextField(
                                 controller: _searchController,
+                                textInputAction: TextInputAction.search,
+                                onSubmitted: (_) => _applySearch(),
                                 decoration: const InputDecoration(
                                   hintText: 'Search tasks...',
                                   border: InputBorder.none,
@@ -215,6 +193,20 @@ class _TasksScreenState extends State<TasksScreen> {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: compact ? 8 : 10),
+                    SizedBox(
+                      height: compact ? 42 : 44,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLoading ? null : _applySearch,
+                        icon: const Icon(Icons.search_rounded, size: 16),
+                        label: const Text('Search'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
                         ),
                       ),
                     ),
@@ -250,19 +242,19 @@ class _TasksScreenState extends State<TasksScreen> {
                 ],
                 if (_loadError != null) ...[
                   SizedBox(height: compact ? 10 : 12),
-                  _ErrorCard(message: _loadError!, onRetry: _loadTasks),
+                  _ErrorCard(message: _loadError!, onRetry: () => _loadTasks()),
                 ],
                 SizedBox(height: compact ? 14 : 16),
-                if (pagedTasks.isEmpty)
+                if (_tasks.isEmpty)
                   SizedBox(
                     height: compact ? 260 : 320,
                     child: _EmptyState(
                       compact: compact,
-                      hasQuery: _searchController.text.trim().isNotEmpty,
+                      hasQuery: _appliedSearchTerm.trim().isNotEmpty,
                     ),
                   )
                 else
-                  ...pagedTasks.map(
+                  ..._tasks.map(
                     (task) => _TaskCard(
                       task: task,
                       compact: compact,
@@ -274,7 +266,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 if (totalTasks > 0) ...[
                   const SizedBox(height: 6),
                   Text(
-                    'Showing ${startIndex + 1} to $endIndex of $totalTasks entries',
+                    'Showing $startIndex to $endIndex of $totalTasks entries',
                     style: AppTextStyles.style(
                       color: const Color(0xFF475569),
                       fontSize: compact ? 12 : 12.5,
@@ -285,9 +277,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   _TasksPaginationBar(
                     currentPage: safeCurrentPage,
                     totalPages: totalPages,
-                    onPageTap: (page) {
-                      setState(() => _currentPage = page);
-                    },
+                    onPageTap: (page) => _loadTasks(page: page),
                   ),
                 ],
                 SizedBox(height: compact ? 8 : 12),
@@ -299,7 +289,7 @@ class _TasksScreenState extends State<TasksScreen> {
     );
   }
 
-  Future<void> _loadTasks() async {
+  Future<void> _loadTasks({int page = 1}) async {
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -310,9 +300,17 @@ class _TasksScreenState extends State<TasksScreen> {
     try {
       final staffId = _staffFilterId?.trim() ?? '';
       final useStaffEndpoint = staffId.isNotEmpty;
-      final records = useStaffEndpoint
-          ? await ApiService.instance.getStaffTasksList(staffId)
-          : await ApiService.instance.getTasksList();
+      final pageResult = useStaffEndpoint
+          ? await ApiService.instance.getStaffTasksListPage(
+              staffId: staffId,
+              page: page,
+              search: _appliedSearchTerm,
+            )
+          : await ApiService.instance.getTasksListPage(
+              page: page,
+              search: _appliedSearchTerm,
+            );
+      final records = pageResult.items;
       final tasks = <_TaskRecord>[];
       for (final record in records) {
         final parsed = _TaskRecord.fromApiRecord(record);
@@ -336,7 +334,9 @@ class _TasksScreenState extends State<TasksScreen> {
         _tasks
           ..clear()
           ..addAll(tasks);
-        _currentPage = 1;
+        _currentPage = pageResult.currentPage < 1 ? page : pageResult.currentPage;
+        _lastPage = pageResult.lastPage < 1 ? 1 : pageResult.lastPage;
+        _totalRecords = pageResult.total >= 0 ? pageResult.total : _tasks.length;
         _isLoading = false;
       });
     } on DioException catch (error) {
@@ -595,10 +595,12 @@ class _TasksScreenState extends State<TasksScreen> {
     }
   }
 
-  void _handleSearchChanged() {
-    if (mounted) {
-      setState(() => _currentPage = 1);
-    }
+  void _applySearch() {
+    setState(() {
+      _appliedSearchTerm = _searchController.text.trim();
+      _currentPage = 1;
+    });
+    _loadTasks(page: 1);
   }
 
   static Widget _circleIcon(

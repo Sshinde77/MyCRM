@@ -1,5 +1,6 @@
 /// API configuration shared across network calls.
 class ApiConstants {
+  static const String appBaseUrl = 'https://mycrm.technofra.com/';
   static const String baseUrl = 'https://mycrm.technofra.com/api/v1';
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;

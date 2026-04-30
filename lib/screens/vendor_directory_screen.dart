@@ -19,6 +19,7 @@ class VendorDirectoryScreen extends StatefulWidget {
 
 class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   final TextEditingController _searchController = TextEditingController();
+  String _appliedSearchTerm = '';
   late Future<VendorListPageResult> _vendorsFuture;
   int _rowsPerPage = 10;
   int _currentPage = 1;
@@ -29,20 +30,14 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
     _vendorsFuture = ApiService.instance.getVendorsListPage(
       page: _currentPage,
       perPage: _rowsPerPage,
+      search: _appliedSearchTerm,
     );
-    _searchController.addListener(_handleSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController
-      ..removeListener(_handleSearchChanged)
-      ..dispose();
+    _searchController.dispose();
     super.dispose();
-  }
-
-  void _handleSearchChanged() {
-    setState(() {});
   }
 
   void _reload({int? page}) {
@@ -53,6 +48,19 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
       _vendorsFuture = ApiService.instance.getVendorsListPage(
         page: _currentPage,
         perPage: _rowsPerPage,
+        search: _appliedSearchTerm,
+      );
+    });
+  }
+
+  void _applySearch() {
+    setState(() {
+      _appliedSearchTerm = _searchController.text.trim();
+      _currentPage = 1;
+      _vendorsFuture = ApiService.instance.getVendorsListPage(
+        page: _currentPage,
+        perPage: _rowsPerPage,
+        search: _appliedSearchTerm,
       );
     });
   }
@@ -129,17 +137,6 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
     }
   }
 
-  List<VendorModel> _filteredVendors(List<VendorModel> vendors) {
-    final query = _searchController.text.trim().toLowerCase();
-    if (query.isEmpty) return vendors;
-    return vendors.where((vendor) {
-      return vendor.id.contains(query) ||
-          vendor.vendorName.toLowerCase().contains(query) ||
-          vendor.email.toLowerCase().contains(query) ||
-          vendor.contactNo.toLowerCase().contains(query);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -154,21 +151,11 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
           builder: (context, snapshot) {
             final pageResult = snapshot.data;
             final vendors = pageResult?.items ?? const <VendorModel>[];
-            final filteredVendors = _filteredVendors(vendors);
-            final hasSearch = _searchController.text.trim().isNotEmpty;
-            final pageCount = hasSearch
-                ? 1
-                : (pageResult?.lastPage ?? 1).clamp(1, 999999);
-            final currentPage = hasSearch
-                ? 1
-                : (pageResult?.currentPage ?? _currentPage);
-            final visibleRows = filteredVendors;
-            final totalEntries = hasSearch
-                ? filteredVendors.length
-                : (pageResult?.total ?? filteredVendors.length);
-            final perPage = hasSearch
-                ? filteredVendors.length
-                : (pageResult?.perPage ?? _rowsPerPage);
+            final pageCount = (pageResult?.lastPage ?? 1).clamp(1, 999999);
+            final currentPage = pageResult?.currentPage ?? _currentPage;
+            final visibleRows = vendors;
+            final totalEntries = pageResult?.total ?? vendors.length;
+            final perPage = pageResult?.perPage ?? _rowsPerPage;
             final startEntry = totalEntries == 0 ? 0 : ((currentPage - 1) * perPage) + 1;
             final endEntry = totalEntries == 0
                 ? 0
@@ -211,6 +198,7 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                           compact: useMobileLayout,
                           rowsPerPage: _rowsPerPage,
                           searchController: _searchController,
+                          onSearchTap: _applySearch,
                           onAddVendor: _openCreateVendor,
                           onRowsChanged: (value) {
                             setState(() {
@@ -219,6 +207,7 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                               _vendorsFuture = ApiService.instance.getVendorsListPage(
                                 page: _currentPage,
                                 perPage: _rowsPerPage,
+                                search: _appliedSearchTerm,
                               );
                             });
                           },
@@ -257,10 +246,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                             currentPage: currentPage - 1,
                             pageCount: pageCount,
                             compact: useMobileLayout,
-                            onPrevious: (!hasSearch && currentPage > 1)
+                            onPrevious: (currentPage > 1)
                                 ? () => _reload(page: currentPage - 1)
                                 : null,
-                            onNext: (!hasSearch && currentPage < pageCount)
+                            onNext: (currentPage < pageCount)
                                 ? () => _reload(page: currentPage + 1)
                                 : null,
                             onSelectPage: (page) => _reload(page: page + 1),
@@ -284,6 +273,7 @@ class _VendorToolbar extends StatelessWidget {
     required this.compact,
     required this.rowsPerPage,
     required this.searchController,
+    required this.onSearchTap,
     required this.onAddVendor,
     required this.onRowsChanged,
   });
@@ -291,6 +281,7 @@ class _VendorToolbar extends StatelessWidget {
   final bool compact;
   final int rowsPerPage;
   final TextEditingController searchController;
+  final VoidCallback onSearchTap;
   final VoidCallback onAddVendor;
   final ValueChanged<int> onRowsChanged;
 
@@ -305,6 +296,8 @@ class _VendorToolbar extends StatelessWidget {
                 height: compact ? 40 : 36,
                 child: TextField(
                   controller: searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => onSearchTap(),
                   decoration: InputDecoration(
                     hintText: 'Search vendors...',
                     prefixIcon: const Icon(Icons.search_rounded, size: 20),
@@ -329,6 +322,16 @@ class _VendorToolbar extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: compact ? 120 : 135,
+              child: _ToolbarButton(
+                icon: Icons.search_rounded,
+                label: 'Search',
+                filled: true,
+                onTap: onSearchTap,
               ),
             ),
             const SizedBox(width: 10),

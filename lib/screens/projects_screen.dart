@@ -23,12 +23,12 @@ class ProjectsScreen extends StatefulWidget {
 }
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
-  static const int _pageSize = 10;
   final TextEditingController _searchController = TextEditingController();
-  late Future<List<ProjectModel>> _projectsFuture;
+  late Future<ProjectListPageResult> _projectsFuture;
   String? _deletingProjectId;
   String? _staffFilterId;
   String _staffFilterName = '';
+  String _appliedSearchTerm = '';
   String _selectedStatus = 'all';
   int _currentPage = 1;
 
@@ -61,8 +61,15 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
       }
     }
     _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
-        ? ApiService.instance.getStaffProjectsList(_staffFilterId!)
-        : ApiService.instance.getProjectsList();
+        ? ApiService.instance.getStaffProjectsListPage(
+            staffId: _staffFilterId!,
+            page: _currentPage,
+            search: _appliedSearchTerm,
+          )
+        : ApiService.instance.getProjectsListPage(
+            page: _currentPage,
+            search: _appliedSearchTerm,
+          );
   }
 
   @override
@@ -71,12 +78,38 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     super.dispose();
   }
 
-  void _reload() {
+  void _reload({int? page}) {
+    final targetPage = page ?? _currentPage;
+    final resolvedPage = targetPage < 1 ? 1 : targetPage;
     setState(() {
+      _currentPage = resolvedPage;
+      _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
+          ? ApiService.instance.getStaffProjectsListPage(
+              staffId: _staffFilterId!,
+              page: _currentPage,
+              search: _appliedSearchTerm,
+            )
+          : ApiService.instance.getProjectsListPage(
+              page: _currentPage,
+              search: _appliedSearchTerm,
+            );
+    });
+  }
+
+  void _applySearch() {
+    setState(() {
+      _appliedSearchTerm = _searchController.text.trim();
       _currentPage = 1;
       _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
-          ? ApiService.instance.getStaffProjectsList(_staffFilterId!)
-          : ApiService.instance.getProjectsList();
+          ? ApiService.instance.getStaffProjectsListPage(
+              staffId: _staffFilterId!,
+              page: _currentPage,
+              search: _appliedSearchTerm,
+            )
+          : ApiService.instance.getProjectsListPage(
+              page: _currentPage,
+              search: _appliedSearchTerm,
+            );
     });
   }
 
@@ -205,24 +238,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   List<ProjectModel> _filterProjects(List<ProjectModel> projects) {
-    final query = _searchController.text.trim().toLowerCase();
     return projects.where((project) {
       if (_selectedStatus != 'all' &&
           _projectStatusCategory(project.status) != _selectedStatus) {
         return false;
       }
-      final haystack = [
-        project.title,
-        project.client,
-        project.status,
-        project.startDate,
-        project.deadline,
-      ].join(' ').toLowerCase();
-
-      if (query.isEmpty) {
-        return true;
-      }
-      return haystack.contains(query);
+      return true;
     }).toList();
   }
 
@@ -277,33 +298,29 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         currentTab: AppBottomNavTab.projects,
       ),
       body: SafeArea(
-        child: FutureBuilder<List<ProjectModel>>(
+        child: FutureBuilder<ProjectListPageResult>(
           future: _projectsFuture,
           builder: (context, snapshot) {
-            final allProjects = snapshot.data ?? const <ProjectModel>[];
+            final pageResult = snapshot.data;
+            final allProjects = pageResult?.items ?? const <ProjectModel>[];
             final staffId = _staffFilterId?.trim() ?? '';
             final projects = staffId.isNotEmpty
                 ? allProjects
                 : _applyStaffFilter(allProjects);
             final filteredProjects = _filterProjects(projects);
             final totalProjectsCount = filteredProjects.length;
-            final totalPages = totalProjectsCount == 0
-                ? 1
-                : ((totalProjectsCount + _pageSize - 1) / _pageSize).floor();
-            final safeCurrentPage = _currentPage > totalPages
-                ? totalPages
-                : _currentPage;
+            final totalPages = (pageResult?.lastPage ?? 1).clamp(1, 999999);
+            final safeCurrentPage = pageResult?.currentPage ?? _currentPage;
+            final perPage = pageResult?.perPage ?? 10;
             final startIndex = totalProjectsCount == 0
                 ? 0
-                : (safeCurrentPage - 1) * _pageSize;
+                : ((safeCurrentPage - 1) * perPage) + 1;
             final endIndex = totalProjectsCount == 0
                 ? 0
-                : (startIndex + _pageSize > totalProjectsCount
-                      ? totalProjectsCount
-                      : startIndex + _pageSize);
-            final pagedProjects = totalProjectsCount == 0
-                ? const <ProjectModel>[]
-                : filteredProjects.sublist(startIndex, endIndex);
+                : (startIndex + filteredProjects.length - 1).clamp(
+                    0,
+                    pageResult?.total ?? totalProjectsCount,
+                  );
 
             return LayoutBuilder(
               builder: (context, constraints) {
@@ -349,9 +366,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             const SizedBox(height: 18),
                             _ProjectsToolbar(
                               controller: _searchController,
-                              onSearchChanged: (_) {
-                                setState(() => _currentPage = 1);
-                              },
+                              onSearchTap: _applySearch,
                               selectedStatus: _selectedStatus,
                               onStatusChanged: (value) {
                                 setState(() {
@@ -363,14 +378,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             const SizedBox(height: 16),
                             _ProjectsListSection(
                               snapshot: snapshot,
-                              projects: pagedProjects,
-                              hasSearch: _searchController.text
-                                  .trim()
-                                  .isNotEmpty,
+                              projects: filteredProjects,
+                              hasSearch: _appliedSearchTerm.trim().isNotEmpty,
                               deletingProjectId: _deletingProjectId,
                               onEdit: _editProject,
                               onDelete: _deleteProject,
-                              onRetry: _reload,
+                              onRetry: () => _reload(),
                             ),
                             if (snapshot.connectionState !=
                                     ConnectionState.waiting &&
@@ -378,7 +391,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 filteredProjects.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Text(
-                                'Showing ${startIndex + 1} to $endIndex of $totalProjectsCount entries',
+                                'Showing $startIndex to $endIndex of ${pageResult?.total ?? totalProjectsCount} entries',
                                 style: AppTextStyles.style(
                                   color: const Color(0xFF475569),
                                   fontSize: 12.5,
@@ -389,9 +402,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                               _ProjectsPaginationBar(
                                 currentPage: safeCurrentPage,
                                 totalPages: totalPages,
-                                onPageTap: (page) {
-                                  setState(() => _currentPage = page);
-                                },
+                                onPageTap: (page) => _reload(page: page),
                               ),
                             ],
                           ],
@@ -520,15 +531,15 @@ class _SummaryRow extends StatelessWidget {
 class _ProjectsToolbar extends StatelessWidget {
   const _ProjectsToolbar({
     required this.controller,
+    required this.onSearchTap,
     required this.selectedStatus,
     required this.onStatusChanged,
-    this.onSearchChanged,
   });
 
   final TextEditingController controller;
+  final VoidCallback onSearchTap;
   final String selectedStatus;
   final ValueChanged<String> onStatusChanged;
-  final ValueChanged<String>? onSearchChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -538,7 +549,7 @@ class _ProjectsToolbar extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _SearchField(controller: controller, onChanged: onSearchChanged),
+              _SearchField(controller: controller, onSearchTap: onSearchTap),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -559,7 +570,7 @@ class _ProjectsToolbar extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _SearchField(controller: controller, onChanged: onSearchChanged),
+            _SearchField(controller: controller, onSearchTap: onSearchTap),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -790,10 +801,10 @@ class _TeamMemberCard extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, this.onChanged});
+  const _SearchField({required this.controller, required this.onSearchTap});
 
   final TextEditingController controller;
-  final ValueChanged<String>? onChanged;
+  final VoidCallback onSearchTap;
 
   @override
   Widget build(BuildContext context) {
@@ -812,28 +823,45 @@ class _SearchField extends StatelessWidget {
           ),
         ],
       ),
-      child: TextField(
-        controller: controller,
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          focusedErrorBorder: InputBorder.none,
-          icon: const Icon(
-            Icons.search_rounded,
-            color: Color(0xFF9AA7B7),
-            size: 20,
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (_) => onSearchTap(),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                icon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF9AA7B7),
+                  size: 20,
+                ),
+                hintText: 'Search projects',
+                hintStyle: AppTextStyles.style(
+                  color: const Color(0xFF8A98AD),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
           ),
-          hintText: 'Search projects',
-          hintStyle: AppTextStyles.style(
-            color: const Color(0xFF8A98AD),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+          ElevatedButton.icon(
+            onPressed: onSearchTap,
+            icon: const Icon(Icons.search_rounded, size: 16),
+            label: const Text('Search'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1D6FEA),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -936,7 +964,7 @@ class _ProjectsListSection extends StatelessWidget {
     required this.onRetry,
   });
 
-  final AsyncSnapshot<List<ProjectModel>> snapshot;
+  final AsyncSnapshot<ProjectListPageResult> snapshot;
   final List<ProjectModel> projects;
   final bool hasSearch;
   final String? deletingProjectId;
@@ -1436,7 +1464,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        data.status,
+        _formatProjectStatusLabel(data.status),
         style: AppTextStyles.style(
           color: data.accentColor,
           fontSize: 11,
@@ -1720,6 +1748,43 @@ String _projectStatusCategory(String statusValue) {
   }
 
   return 'not started';
+}
+
+String _formatProjectStatusLabel(String statusValue) {
+  final normalized = statusValue.trim();
+  if (normalized.isEmpty) {
+    return 'Not Started';
+  }
+
+  final category = _projectStatusCategory(normalized);
+  switch (category) {
+    case 'in progress':
+      return 'In Progress';
+    case 'not started':
+      return 'Not Started';
+    case 'on hold':
+      return 'On Hold';
+    case 'finished':
+      return 'Finished';
+    case 'cancelled':
+      return 'Cancelled';
+  }
+
+  final cleaned = normalized
+      .replaceAll('_', ' ')
+      .replaceAll('-', ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim()
+      .toLowerCase();
+  if (cleaned.isEmpty) {
+    return 'Not Started';
+  }
+
+  return cleaned
+      .split(' ')
+      .where((word) => word.isNotEmpty)
+      .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
+      .join(' ');
 }
 
 Color _projectAccentColor(ProjectModel project) {

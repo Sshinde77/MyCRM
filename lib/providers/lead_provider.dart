@@ -13,19 +13,19 @@ class LeadProvider extends ChangeNotifier {
   String _searchQuery = '';
   bool _isLoading = false;
   String? _errorMessage;
+  int _currentPage = 1;
+  int _lastPage = 1;
+  int _totalLeads = 0;
   final Set<String> _deletingLeadIds = <String>{};
 
-  List<LeadModel> get leads {
-    if (_searchQuery.trim().isEmpty) {
-      return _allLeads;
-    }
-    return _allLeads.where((lead) => lead.matchesQuery(_searchQuery)).toList();
-  }
+  List<LeadModel> get leads => _allLeads;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
-  int get totalLeads => _allLeads.length;
+  int get totalLeads => _totalLeads;
+  int get currentPage => _currentPage;
+  int get lastPage => _lastPage;
   bool isDeletingLead(String id) => _deletingLeadIds.contains(id);
 
   int get newLeadsCount {
@@ -49,12 +49,22 @@ class LeadProvider extends ChangeNotifier {
     }).length;
   }
 
-  Future<void> loadLeads({bool forceRefresh = false}) async {
+  Future<void> loadLeads({
+    bool forceRefresh = false,
+    int page = 1,
+    String? search,
+  }) async {
     if (_isLoading) {
       return;
     }
 
-    if (!forceRefresh && _allLeads.isNotEmpty) {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? _searchQuery).trim();
+
+    if (!forceRefresh &&
+        _allLeads.isNotEmpty &&
+        _currentPage == normalizedPage &&
+        _searchQuery == normalizedSearch) {
       return;
     }
 
@@ -63,7 +73,15 @@ class LeadProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _allLeads = await _apiService.getLeadsList();
+      final result = await _apiService.getLeadsListPage(
+        page: normalizedPage,
+        search: normalizedSearch,
+      );
+      _allLeads = result.items;
+      _currentPage = result.currentPage < 1 ? normalizedPage : result.currentPage;
+      _lastPage = result.lastPage < 1 ? 1 : result.lastPage;
+      _totalLeads = result.total >= 0 ? result.total : _allLeads.length;
+      _searchQuery = normalizedSearch;
     } catch (error) {
       _errorMessage = _toMessage(error);
     } finally {
@@ -96,6 +114,9 @@ class LeadProvider extends ChangeNotifier {
       _allLeads = _allLeads
           .where((lead) => (lead.id.trim()) != normalizedId)
           .toList(growable: false);
+      if (_totalLeads > 0) {
+        _totalLeads -= 1;
+      }
     } catch (error) {
       _errorMessage = _toMessage(error);
       rethrow;

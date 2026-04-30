@@ -19,8 +19,6 @@ class LeadsScreen extends StatefulWidget {
 
 class _LeadsScreenState extends State<LeadsScreen> {
   late final TextEditingController _searchController;
-  static const int _pageSize = 10;
-  int _currentPage = 1;
 
   @override
   void initState() {
@@ -49,30 +47,23 @@ class _LeadsScreenState extends State<LeadsScreen> {
           builder: (context, leadProvider, _) {
             return RefreshIndicator(
               onRefresh: () async {
-                await leadProvider.loadLeads(forceRefresh: true);
-                if (!mounted) return;
-                setState(() => _currentPage = 1);
+                await leadProvider.loadLeads(
+                  forceRefresh: true,
+                  page: 1,
+                  search: leadProvider.searchQuery,
+                );
               },
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isCompact = constraints.maxWidth < 380;
                   final horizontalPadding = isCompact ? 16.0 : 20.0;
                   final leads = leadProvider.leads;
-                  final totalPages = leads.isEmpty
-                      ? 0
-                      : ((leads.length + _pageSize - 1) / _pageSize).floor();
-                  final safeCurrentPage = totalPages == 0
+                  final totalPages = leadProvider.lastPage < 1
                       ? 1
-                      : (_currentPage > totalPages ? totalPages : _currentPage);
-                  final startIndex = totalPages == 0
-                      ? 0
-                      : (safeCurrentPage - 1) * _pageSize;
-                  final endIndex = totalPages == 0
-                      ? 0
-                      : (startIndex + _pageSize > leads.length
-                            ? leads.length
-                            : startIndex + _pageSize);
-                  final pagedLeads = leads.sublist(startIndex, endIndex);
+                      : leadProvider.lastPage;
+                  final safeCurrentPage = leadProvider.currentPage < 1
+                      ? 1
+                      : leadProvider.currentPage;
 
                   return ListView(
                     padding: EdgeInsets.symmetric(
@@ -103,45 +94,83 @@ class _LeadsScreenState extends State<LeadsScreen> {
                       ),
                       const SizedBox(height: 14),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFE2E8F0)),
                         ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            leadProvider.updateSearchQuery(value);
-                            setState(() => _currentPage = 1);
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Search leads by name or ID...',
-                            hintStyle: AppTextStyles.style(
-                              color: textLight,
-                              fontSize: 14,
-                            ),
-                            icon: const Icon(Icons.search, color: textLight),
-                            suffixIcon: leadProvider.searchQuery.isEmpty
-                                ? null
-                                : IconButton(
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      leadProvider.updateSearchQuery('');
-                                      setState(() => _currentPage = 1);
-                                    },
-                                    icon: const Icon(
-                                      Icons.close_rounded,
-                                      color: textLight,
-                                    ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                textInputAction: TextInputAction.search,
+                                onSubmitted: (_) async {
+                                  await leadProvider.loadLeads(
+                                    forceRefresh: true,
+                                    page: 1,
+                                    search: _searchController.text.trim(),
+                                  );
+                                },
+                                decoration: InputDecoration(
+                                  hintText: 'Search leads by name or ID...',
+                                  hintStyle: AppTextStyles.style(
+                                    color: textLight,
+                                    fontSize: 14,
                                   ),
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            errorBorder: InputBorder.none,
-                            focusedErrorBorder: InputBorder.none,
-                          ),
+                                  icon: const Icon(Icons.search, color: textLight),
+                                  suffixIcon: leadProvider.searchQuery.isEmpty
+                                      ? null
+                                      : IconButton(
+                                          onPressed: () async {
+                                            _searchController.clear();
+                                            await leadProvider.loadLeads(
+                                              forceRefresh: true,
+                                              page: 1,
+                                              search: '',
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.close_rounded,
+                                            color: textLight,
+                                          ),
+                                        ),
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  disabledBorder: InputBorder.none,
+                                  errorBorder: InputBorder.none,
+                                  focusedErrorBorder: InputBorder.none,
+                                ),
+                              ),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: leadProvider.isLoading
+                                  ? null
+                                  : () async {
+                                      await leadProvider.loadLeads(
+                                        forceRefresh: true,
+                                        page: 1,
+                                        search: _searchController.text.trim(),
+                                      );
+                                    },
+                              icon: const Icon(
+                                Icons.search_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              label: const Text('Search'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryBlue,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -153,6 +182,8 @@ class _LeadsScreenState extends State<LeadsScreen> {
                                   ? null
                                   : () => leadProvider.loadLeads(
                                       forceRefresh: true,
+                                      page: 1,
+                                      search: leadProvider.searchQuery,
                                     ),
                               icon: const Icon(Icons.refresh_rounded, size: 18),
                               label: const FittedBox(
@@ -226,6 +257,8 @@ class _LeadsScreenState extends State<LeadsScreen> {
                                 ? null
                                 : () => leadProvider.loadLeads(
                                     forceRefresh: true,
+                                    page: 1,
+                                    search: leadProvider.searchQuery,
                                   ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -256,8 +289,11 @@ class _LeadsScreenState extends State<LeadsScreen> {
                           leadProvider.totalLeads == 0)
                         _LeadListError(
                           message: leadProvider.errorMessage!,
-                          onRetry: () =>
-                              leadProvider.loadLeads(forceRefresh: true),
+                          onRetry: () => leadProvider.loadLeads(
+                            forceRefresh: true,
+                            page: 1,
+                            search: leadProvider.searchQuery,
+                          ),
                         )
                       else if (leadProvider.leads.isEmpty)
                         _LeadListEmpty(
@@ -266,7 +302,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
                       else
                         ..._buildLeadCards(
                           leadProvider: leadProvider,
-                          leads: pagedLeads,
+                          leads: leads,
                         ),
                       if (leadProvider.leads.isNotEmpty) ...[
                         const SizedBox(height: 8),
@@ -274,9 +310,11 @@ class _LeadsScreenState extends State<LeadsScreen> {
                           compact: isCompact,
                           currentPage: safeCurrentPage,
                           totalPages: totalPages,
-                          onPageTap: (page) {
-                            setState(() => _currentPage = page);
-                          },
+                          onPageTap: (page) => leadProvider.loadLeads(
+                            forceRefresh: true,
+                            page: page,
+                            search: leadProvider.searchQuery,
+                          ),
                         ),
                       ],
                     ],

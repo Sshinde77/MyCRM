@@ -74,24 +74,22 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
     with WidgetsBindingObserver {
   final ApiService _apiService = ApiService.instance;
   final TextEditingController _searchController = TextEditingController();
+  String _appliedSearchTerm = '';
   DateTime? _fromDate;
   DateTime? _toDate;
   DateTime? _appliedFromDate;
   DateTime? _appliedToDate;
   _RenewalFilterOption _selectedFilter = _RenewalFilterOption.all;
-  int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
@@ -107,14 +105,11 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
     if (!mounted) {
       return;
     }
-    await context.read<RenewalListProvider>().loadRenewals(forceRefresh: true);
-  }
-
-  void _onSearchChanged() {
-    if (!mounted) {
-      return;
-    }
-    setState(() => _currentPage = 1);
+    await context.read<RenewalListProvider>().loadRenewals(
+      forceRefresh: true,
+      page: 1,
+      search: _appliedSearchTerm,
+    );
   }
 
   Future<void> _pickDateRange() async {
@@ -191,20 +186,25 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       _toDate = end;
       _appliedFromDate = start;
       _appliedToDate = end;
-      _currentPage = 1;
     });
   }
 
-  void _clearFilters() {
+  Future<void> _clearFilters() async {
+    _searchController.clear();
     setState(() {
       _fromDate = null;
       _toDate = null;
       _appliedFromDate = null;
       _appliedToDate = null;
       _selectedFilter = _RenewalFilterOption.all;
-      _searchController.clear();
-      _currentPage = 1;
+      _appliedSearchTerm = '';
     });
+    if (!mounted) return;
+    await context.read<RenewalListProvider>().loadRenewals(
+      forceRefresh: true,
+      page: 1,
+      search: '',
+    );
   }
 
   DateTime _dateOnly(DateTime value) {
@@ -219,26 +219,6 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
     final month = value.month.toString().padLeft(2, '0');
     final year = value.year.toString().padLeft(4, '0');
     return '$day-$month-$year';
-  }
-
-  bool _matchesQuery(RenewalModel renewal, String query) {
-    if (query.isEmpty) {
-      return true;
-    }
-    final q = query.toLowerCase();
-    final haystack = <String>[
-      renewal.title,
-      renewal.client,
-      renewal.vendor,
-      renewal.status,
-      renewal.serviceDetails,
-      renewal.expiryNote,
-      renewal.remarkText,
-      renewal.startDate,
-      renewal.endDate,
-      renewal.billing,
-    ].join(' ').toLowerCase();
-    return haystack.contains(q);
   }
 
   DateTime? _effectiveRenewalDate(RenewalModel renewal) {
@@ -285,14 +265,10 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   }
 
   List<RenewalModel> _applyBaseFilters(List<RenewalModel> renewals) {
-    final query = _searchController.text.trim().toLowerCase();
     final from = _appliedFromDate == null ? null : _dateOnly(_appliedFromDate!);
     final to = _appliedToDate == null ? null : _dateOnly(_appliedToDate!);
     return renewals
         .where((renewal) {
-          if (!_matchesQuery(renewal, query)) {
-            return false;
-          }
           final date = _effectiveRenewalDate(renewal);
           final normalizedDate = date == null ? null : _dateOnly(date);
           if (from != null &&
@@ -321,10 +297,23 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   }
 
   bool get _hasActiveFilters {
-    return _searchController.text.trim().isNotEmpty ||
+    return _appliedSearchTerm.isNotEmpty ||
         _selectedFilter != _RenewalFilterOption.all ||
         _appliedFromDate != null ||
         _appliedToDate != null;
+  }
+
+  Future<void> _applySearch() async {
+    final search = _searchController.text.trim();
+    setState(() => _appliedSearchTerm = search);
+    if (!mounted) {
+      return;
+    }
+    await context.read<RenewalListProvider>().loadRenewals(
+      forceRefresh: true,
+      page: 1,
+      search: search,
+    );
   }
 
   Future<void> _openServiceForm({RenewalModel? renewal}) async {
@@ -437,22 +426,10 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
           final filteredRenewals = baseRenewals
               .where((item) => _matchesStatusFilter(item, _selectedFilter))
               .toList(growable: false);
-          final pageSize = provider.perPage > 0 ? provider.perPage : 10;
-          final totalPages = filteredRenewals.isEmpty
-              ? 0
-              : ((filteredRenewals.length + pageSize - 1) / pageSize).floor();
-          final safeCurrentPage = totalPages == 0
+          final totalPages = provider.lastPage < 1 ? 1 : provider.lastPage;
+          final safeCurrentPage = provider.currentPage < 1
               ? 1
-              : (_currentPage > totalPages ? totalPages : _currentPage);
-          final startIndex = totalPages == 0
-              ? 0
-              : (safeCurrentPage - 1) * pageSize;
-          final endIndex = totalPages == 0
-              ? 0
-              : (startIndex + pageSize > filteredRenewals.length
-                    ? filteredRenewals.length
-                    : startIndex + pageSize);
-          final pagedRenewals = filteredRenewals.sublist(startIndex, endIndex);
+              : provider.currentPage;
           return SafeArea(
             child: Column(
               children: [
@@ -484,11 +461,11 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                       selectedFilter: _selectedFilter,
                                       statusCounts: counts,
                                       onDateRangeTap: _pickDateRange,
-                                      onClearTap: _clearFilters,
+                                      onClearTap: () => _clearFilters(),
+                                      onSearchTap: () => _applySearch(),
                                       onStatusChanged: (value) {
                                         setState(() {
                                           _selectedFilter = value;
-                                          _currentPage = 1;
                                         });
                                       },
                                     ),
@@ -507,7 +484,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                         _RenewalListSection(
                           compact: compact,
                           sidePadding: side,
-                          renewals: pagedRenewals,
+                          renewals: filteredRenewals,
                           isLoading: provider.isLoading,
                           errorMessage: provider.errorMessage,
                           hasActiveFilters: _hasActiveFilters,
@@ -537,7 +514,11 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                   currentPage: safeCurrentPage,
                                   totalPages: totalPages,
                                   onPageTap: (page) {
-                                    setState(() => _currentPage = page);
+                                    context.read<RenewalListProvider>().loadRenewals(
+                                      forceRefresh: true,
+                                      page: page,
+                                      search: _appliedSearchTerm,
+                                    );
                                   },
                                 ),
                               ),
@@ -687,6 +668,7 @@ class _FilterCard extends StatelessWidget {
     required this.statusCounts,
     required this.onDateRangeTap,
     required this.onClearTap,
+    required this.onSearchTap,
     required this.onStatusChanged,
   });
 
@@ -696,6 +678,7 @@ class _FilterCard extends StatelessWidget {
   final Map<_RenewalFilterOption, int> statusCounts;
   final VoidCallback onDateRangeTap;
   final VoidCallback onClearTap;
+  final VoidCallback onSearchTap;
   final ValueChanged<_RenewalFilterOption> onStatusChanged;
 
   @override
@@ -842,7 +825,11 @@ class _FilterCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: compact ? 12 : 14),
-          _SearchField(controller: searchController, compact: compact),
+          _SearchField(
+            controller: searchController,
+            compact: compact,
+            onSearchTap: onSearchTap,
+          ),
         ],
       ),
     );
@@ -932,10 +919,15 @@ class _ActionButton extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.compact});
+  const _SearchField({
+    required this.controller,
+    required this.compact,
+    required this.onSearchTap,
+  });
 
   final TextEditingController controller;
   final bool compact;
+  final VoidCallback onSearchTap;
 
   @override
   Widget build(BuildContext context) {
@@ -951,47 +943,63 @@ class _SearchField extends StatelessWidget {
           ),
         ),
         SizedBox(height: compact ? 8 : 10),
-        TextField(
-          controller: controller,
-          style: AppTextStyles.style(
-            color: const Color(0xFF17213A),
-            fontSize: compact ? 13 : 14,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            hintText: 'Search by service, client, vendor or status',
-            hintStyle: AppTextStyles.style(
-              color: const Color(0xFF94A3B8),
-              fontSize: compact ? 13 : 14,
-              fontWeight: FontWeight.w500,
-            ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: Color(0xFF64748B),
-              size: 20,
-            ),
-            filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: compact ? 12 : 14,
-              vertical: compact ? 12 : 13,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(compact ? 14 : 16),
-              borderSide: const BorderSide(color: Color(0xFFDCE6F2)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(compact ? 14 : 16),
-              borderSide: const BorderSide(color: Color(0xFFDCE6F2)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(compact ? 14 : 16),
-              borderSide: const BorderSide(
-                color: Color(0xFF156CF1),
-                width: 1.2,
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => onSearchTap(),
+                style: AppTextStyles.style(
+                  color: const Color(0xFF17213A),
+                  fontSize: compact ? 13 : 14,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search by service, client, vendor or status',
+                  hintStyle: AppTextStyles.style(
+                    color: const Color(0xFF94A3B8),
+                    fontSize: compact ? 13 : 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF64748B),
+                    size: 20,
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: compact ? 12 : 14,
+                    vertical: compact ? 12 : 13,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(compact ? 14 : 16),
+                    borderSide: const BorderSide(color: Color(0xFFDCE6F2)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(compact ? 14 : 16),
+                    borderSide: const BorderSide(color: Color(0xFFDCE6F2)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(compact ? 14 : 16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF156CF1),
+                      width: 1.2,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
+            SizedBox(width: compact ? 8 : 10),
+            _ActionButton(
+              label: 'Search',
+              icon: Icons.search_rounded,
+              filled: true,
+              compact: compact,
+              onTap: onSearchTap,
+            ),
+          ],
         ),
       ],
     );
@@ -1498,31 +1506,6 @@ class _ServiceCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (service.showExpiryAlert) ...[
-                  SizedBox(height: compact ? 14 : 16),
-                  const Divider(height: 1, color: Color(0xFFEAF0F6)),
-                  SizedBox(height: compact ? 12 : 14),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.warning_amber_rounded,
-                        color: const Color(0xFFEF4444),
-                        size: compact ? 20 : 22,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          service.expiryNote,
-                          style: AppTextStyles.style(
-                            color: const Color(0xFFEF4444),
-                            fontSize: compact ? 14 : 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
                 SizedBox(height: compact ? 14 : 16),
               ],
             ),
@@ -2842,7 +2825,7 @@ class _ServiceItem {
       endDate: _orFallback(renewal.endDate, 'N/A'),
       billing: _orFallback(renewal.billing, 'N/A'),
       status: _orFallback(renewal.status, 'Unknown'),
-      expiryNote: _orFallback(renewal.expiryNote, 'Renewal due soon'),
+      expiryNote: _orFallback(renewal.expiryNote, ''),
       showExpiryAlert: renewal.showExpiryAlert,
     );
   }
@@ -2852,6 +2835,9 @@ class _ServiceItem {
     return normalized.isEmpty ? fallback : normalized;
   }
 }
+
+
+
 
 
 

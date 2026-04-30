@@ -2946,6 +2946,20 @@ class _CalendarAppointmentsSection extends StatelessWidget {
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
 
+  void _handleHorizontalSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < 120) {
+      return;
+    }
+
+    // Swipe left -> next month, swipe right -> previous month.
+    if (velocity < 0) {
+      onNextMonth();
+    } else {
+      onPreviousMonth();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final monthStart = DateTime(displayedMonth.year, displayedMonth.month);
@@ -2962,22 +2976,25 @@ class _CalendarAppointmentsSection extends StatelessWidget {
       ),
     );
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: const Color(0xFFE3EAF5)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x120F172A),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: _handleHorizontalSwipe,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: const Color(0xFFE3EAF5)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x120F172A),
+              blurRadius: 24,
+              offset: Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -3017,7 +3034,6 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                             ],
                           ),
                         ),
-
                         PermissionGate(
                           permission: AppPermission.manageCalendar,
                           child: ElevatedButton.icon(
@@ -3047,9 +3063,7 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 14),
-
                     Row(
                       children: [
                         _CalendarIconButton(
@@ -3081,7 +3095,8 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                       ],
                     ),
                   ],
-                );              },
+                );
+              },
             ),
           ),
           Padding(
@@ -3146,7 +3161,7 @@ class _CalendarAppointmentsSection extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 
@@ -3392,7 +3407,6 @@ class _AppointmentSheetCard extends StatelessWidget {
     );
   }
 }
-
 class _DetailLine extends StatelessWidget {
   const _DetailLine({
     required this.icon,
@@ -3961,7 +3975,7 @@ class _SectionViewAllButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
           child: Text(
-            'View all',
+            'View All',
             style: AppTextStyles.style(
               color: const Color(0xFF2A7FFF),
               fontSize: 12.5,
