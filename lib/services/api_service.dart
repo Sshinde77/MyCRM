@@ -597,16 +597,17 @@ class ApiService {
     if (normalizedToken.isEmpty) return;
     final normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty) return;
+    final normalizedDeviceId =
+        (deviceInfo['device_id']?.toString() ?? normalizedUserId).trim();
+    final normalizedPlatform =
+        (deviceInfo['platform']?.toString() ?? 'unknown').trim();
 
     final response = await post(
       ApiConstants.testFcm,
       data: <String, dynamic>{
-        'token': normalizedToken,
-        'user_id': normalizedUserId,
-        'event': event,
-        'device': deviceInfo,
-        'title': 'FCM Token Sync',
-        'body': 'Device token sync event: $event',
+        'fcm_token': normalizedToken,
+        'device_id': normalizedDeviceId,
+        'platform': normalizedPlatform,
       },
     );
     return response.data;
@@ -621,16 +622,17 @@ class ApiService {
     final normalizedToken = token.trim();
     final normalizedUserId = userId.trim();
     if (normalizedToken.isEmpty || normalizedUserId.isEmpty) return;
+    final normalizedDeviceId =
+        (deviceInfo['device_id']?.toString() ?? normalizedUserId).trim();
+    final normalizedPlatform =
+        (deviceInfo['platform']?.toString() ?? 'unknown').trim();
 
     final response = await post(
       ApiConstants.testFcm,
       data: <String, dynamic>{
-        'token': normalizedToken,
-        'user_id': normalizedUserId,
-        'event': 'logout',
-        'device': deviceInfo,
-        'title': 'FCM Token Unlink',
-        'body': 'Device token unlink on logout',
+        'fcm_token': normalizedToken,
+        'device_id': normalizedDeviceId,
+        'platform': normalizedPlatform,
       },
     );
     return response.data;

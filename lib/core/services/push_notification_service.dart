@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, describeEnum, kDebugMode, kIsWeb;
+import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../firebase_options.dart';
@@ -338,6 +339,28 @@ class PushNotificationService {
       'title=${message.notification?.title}, body=${message.notification?.body}, '
       'data=${message.data}',
     );
+    _showForegroundNotificationBanner(message);
+  }
+
+  static void _showForegroundNotificationBanner(RemoteMessage message) {
+    final notification = message.notification;
+    final title = (notification?.title ?? message.data['title']?.toString() ?? '')
+        .trim();
+    final body = (notification?.body ?? message.data['body']?.toString() ?? '')
+        .trim();
+
+    if (title.isEmpty && body.isEmpty) {
+      return;
+    }
+
+    if (!Get.isSnackbarOpen) {
+      Get.snackbar(
+        title.isEmpty ? 'Notification' : title,
+        body.isEmpty ? 'You have a new notification.' : body,
+        snackPosition: SnackPosition.TOP,
+        duration: const Duration(seconds: 4),
+      );
+    }
   }
 
   static void _handleMessageOpenedApp(RemoteMessage message) {
