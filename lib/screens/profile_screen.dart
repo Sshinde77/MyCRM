@@ -19,28 +19,32 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   static const List<_ProfileAction> _actions = [
-    _ProfileAction(
-      title: 'Personal Information',
-      icon: Icons.badge_outlined,
-      routeName: AppRoutes.personalInformation,
-      accentColor: Color(0xFF1D6FEA),
-    ),
+    // _ProfileAction(
+    //   title: 'Personal Information',
+    //   subtitle: 'View & update your personal details',
+    //   icon: Icons.badge_outlined,
+    //   routeName: AppRoutes.personalInformation,
+    //   accentColor: Color(0xFF1D6FEA),
+    // ),
     _ProfileAction(
       title: 'Renewal Master',
+      subtitle: 'Manage renewals and reminders',
       icon: Icons.autorenew_rounded,
       routeName: AppRoutes.renewalMaster,
       permission: AppPermission.viewRenewals,
       accentColor: Color(0xFF0F766E),
     ),
-    _ProfileAction(
-      title: 'Leads',
-      icon: Icons.person_outline_rounded,
-      routeName: AppRoutes.leads,
-      permission: AppPermission.viewLeads,
-      accentColor: Color(0xFF7C3AED),
-    ),
+    // _ProfileAction(
+    //   title: 'Leads',
+    //   subtitle: 'Manage and track your leads',
+    //   icon: Icons.person_outline_rounded,
+    //   routeName: AppRoutes.leads,
+    //   permission: AppPermission.viewLeads,
+    //   accentColor: Color(0xFF7C3AED),
+    // ),
     _ProfileAction(
       title: 'Raise Issue',
+      subtitle: 'Report & track issues easily',
       icon: Icons.report_gmailerrorred_rounded,
       routeName: AppRoutes.raiseIssue,
       permission: AppPermission.viewRaiseIssue,
@@ -48,6 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
     _ProfileAction(
       title: 'Staff',
+      subtitle: 'Manage your team members',
       icon: Icons.groups_rounded,
       routeName: AppRoutes.staff,
       permission: AppPermission.viewStaff,
@@ -55,6 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
     _ProfileAction(
       title: 'Clients',
+      subtitle: 'View and manage your clients',
       icon: Icons.apartment_rounded,
       routeName: AppRoutes.clients,
       permission: AppPermission.viewClients,
@@ -62,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
     _ProfileAction(
       title: 'Role',
+      subtitle: 'Manage user roles & permissions',
       icon: Icons.person,
       routeName: AppRoutes.accessControl,
       permission: AppPermission.viewRoles,
@@ -69,6 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
     _ProfileAction(
       title: 'Book A Call',
+      subtitle: 'Schedule a call with our team',
       icon: Icons.phone_in_talk_outlined,
       routeName: '',
       permission: AppPermission.viewBookCalls,
@@ -77,6 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
     _ProfileAction(
       title: 'Google Ads',
+      subtitle: 'Manage your ad campaigns',
       icon: Icons.ads_click_rounded,
       routeName: '',
       permission: AppPermission.viewDigitalMarketingLeads,
@@ -85,6 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ),
     _ProfileAction(
       title: 'Settings',
+      subtitle: 'App preferences and configuration',
       icon: Icons.settings_outlined,
       routeName: AppRoutes.settings,
       permission: AppPermission.manageSettings,
@@ -137,9 +147,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _ProfileHeader(actionsCount: actions.length),
-                            const SizedBox(height: 12),
-                            // _BiometricLoginCard(controller: _authController),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 14),
+                            _QuickStatsCard(actionsCount: actions.length),
+                            const SizedBox(height: 16),
+                            const _MainMenuHeader(),
+                            const SizedBox(height: 10),
                             _ProfileActionsGrid(actions: actions),
                           ],
                         ),
@@ -177,19 +189,9 @@ class _ProfileActionsGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        final spacing = maxWidth < 360 ? 12.0 : 16.0;
-        final crossAxisCount = maxWidth < 340
-            ? 1
-            : maxWidth < 680
-            ? 2
-            : maxWidth < 900
-            ? 3
-            : 4;
-        final cardHeight = crossAxisCount == 1
-            ? 76.0
-            : maxWidth < 360
-            ? 98.0
-            : 110.0;
+        final spacing = maxWidth < 360 ? 10.0 : 12.0;
+        final crossAxisCount = maxWidth < 900 ? 2 : 3;
+        final cardHeight = maxWidth < 360 ? 100.0 : 108.0;
 
         return GridView.builder(
           shrinkWrap: true,
@@ -426,21 +428,276 @@ class _ProfileHeader extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              // Text(
-              //   '$actionsCount quick actions for your workspace',
-              //   style: AppTextStyles.style(
-              //     color: const Color(0xFF64748B),
-              //     fontSize: 13,
-              //     fontWeight: FontWeight.w500,
-              //   ),
-              // ),
+              Text(
+                '$actionsCount quick actions',
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ],
           ),
         ),
+        _ProfileHeaderCalendarBadge(date: DateTime.now()),
+        const SizedBox(width: 10),
         _CircleIconButton(
           icon: Icons.checklist_rounded,
           onTap: () => Get.to(() => const to_do.ToDoListScreen()),
         ),
+      ],
+    );
+  }
+}
+
+class _ProfileHeaderCalendarBadge extends StatelessWidget {
+  const _ProfileHeaderCalendarBadge({required this.date});
+
+  final DateTime date;
+
+  static const List<String> _months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static const List<String> _weekdays = <String>[
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.of(context).size.width < 360;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = _months[date.month - 1];
+    final dateLabel = '$day $month ${date.year}';
+    final weekdayLabel = _weekdays[date.weekday - 1];
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 5 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: compact ? 22 : 24,
+            height: compact ? 22 : 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE9FE),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.calendar_month_rounded,
+              color: Color(0xFF4F46E5),
+              size: 14,
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF4F46E5),
+                  fontSize: compact ? 9.8 : 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                weekdayLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: compact ? 9 : 9.8,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickStatsCard extends StatelessWidget {
+  const _QuickStatsCard({required this.actionsCount});
+
+  final int actionsCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = <_QuickStatItem>[
+      _QuickStatItem('Projects', actionsCount.toString(), Icons.work_outline),
+      const _QuickStatItem('Leads', '24', Icons.person_outline_rounded),
+      const _QuickStatItem('Tasks', '16', Icons.check_circle_outline_rounded),
+      const _QuickStatItem('Issues', '08', Icons.shield_outlined),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2A52E2), Color(0xFF5E2DCF)],
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x332A52E2),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                'Quick Stats',
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'This Month',
+                      style: AppTextStyles.style(
+                        color: Colors.white,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.keyboard_arrow_down_rounded,
+                        color: Colors.white, size: 16),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: stats
+                .map(
+                  (item) => Expanded(child: _QuickStatTile(item: item)),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickStatTile extends StatelessWidget {
+  const _QuickStatTile({required this.item});
+
+  final _QuickStatItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 28,
+          width: 28,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(item.icon, color: Colors.white, size: 16),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          item.value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.style(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            height: 1,
+          ),
+        ),
+        Text(
+          item.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.style(
+            color: Colors.white.withValues(alpha: 0.86),
+            fontSize: 10.5,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MainMenuHeader extends StatelessWidget {
+  const _MainMenuHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          'Main Menu',
+          style: AppTextStyles.style(
+            color: const Color(0xFF1E293B),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const Spacer(),
+        // Text(
+        //   'Customize',
+        //   style: AppTextStyles.style(
+        //     color: const Color(0xFF64748B),
+        //     fontSize: 12,
+        //     fontWeight: FontWeight.w500,
+        //   ),
+        // ),
+        // const SizedBox(width: 4),
+        // const Icon(Icons.tune_rounded, color: Color(0xFF64748B), size: 16),
       ],
     );
   }
@@ -455,60 +712,57 @@ class _ProfileActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isNarrow = constraints.maxWidth < 150;
-          final isListTile = constraints.maxWidth >= 240;
-          final iconSize = isNarrow ? 36.0 : 42.0;
-          final padding = isNarrow ? 10.0 : 12.0;
-
-          return InkWell(
-            onTap: () {
-              final screenBuilder = action.screenBuilder;
-              if (screenBuilder != null) {
-                Get.to(screenBuilder);
-                return;
-              }
-              Get.toNamed(action.routeName);
-            },
-            borderRadius: BorderRadius.circular(18),
-            child: Ink(
-              padding: EdgeInsets.all(padding),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: isListTile
-                  ? Row(
-                      children: [
-                        _ProfileActionIcon(
-                          action: action,
-                          size: iconSize,
-                          iconSize: isNarrow ? 18 : 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(child: _ProfileActionTitle(action: action)),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _ProfileActionIcon(
-                          action: action,
-                          size: iconSize,
-                          iconSize: isNarrow ? 18 : 20,
-                        ),
-                        const Spacer(),
-                        _ProfileActionTitle(
-                          action: action,
-                          fontSize: isNarrow ? 10.5 : 11.5,
-                        ),
-                      ],
-                    ),
-            ),
-          );
+      child: InkWell(
+        onTap: () {
+          final screenBuilder = action.screenBuilder;
+          if (screenBuilder != null) {
+            Get.to(screenBuilder);
+            return;
+          }
+          Get.toNamed(action.routeName);
         },
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              _ProfileActionIcon(action: action, size: 38, iconSize: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ProfileActionTitle(action: action),
+                    const SizedBox(height: 3),
+                    // Text(
+                    //   action.subtitle,
+                    //   maxLines: 2,
+                    //   overflow: TextOverflow.ellipsis,
+                    //   style: AppTextStyles.style(
+                    //     color: const Color(0xFF64748B),
+                    //     fontSize: 11.5,
+                    //     fontWeight: FontWeight.w500,
+                    //     height: 1.25,
+                    //   ),
+                    // ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF94A3B8),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -540,7 +794,7 @@ class _ProfileActionIcon extends StatelessWidget {
 }
 
 class _ProfileActionTitle extends StatelessWidget {
-  const _ProfileActionTitle({required this.action, this.fontSize = 13.5});
+  const _ProfileActionTitle({required this.action, this.fontSize = 13});
 
   final _ProfileAction action;
   final double fontSize;
@@ -592,6 +846,7 @@ class _CircleIconButton extends StatelessWidget {
 class _ProfileAction {
   const _ProfileAction({
     required this.title,
+    required this.subtitle,
     required this.icon,
     required this.routeName,
     required this.accentColor,
@@ -600,9 +855,18 @@ class _ProfileAction {
   });
 
   final String title;
+  final String subtitle;
   final IconData icon;
   final String routeName;
   final Color accentColor;
   final String? permission;
   final Widget Function()? screenBuilder;
+}
+
+class _QuickStatItem {
+  const _QuickStatItem(this.label, this.value, this.icon);
+
+  final String label;
+  final String value;
+  final IconData icon;
 }

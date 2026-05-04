@@ -9,7 +9,6 @@ import 'package:mycrm/core/utils/app_snackbar.dart';
 
 import '../models/calendar_event_model.dart';
 import '../models/client_issue_model.dart';
-import '../models/project_model.dart';
 import '../models/renewal_model.dart';
 import '../models/user_model.dart';
 import '../routes/app_routes.dart';
@@ -42,6 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _taskCount = 0;
   List<int> _projectMonthlySeries = List<int>.filled(6, 0);
   List<int> _taskMonthlySeries = List<int>.filled(6, 0);
+  List<String> _projectSummaryMonthLabels = const <String>[];
   Map<String, int> _taskStatusCounts = const {
     'notStarted': 0,
     'inProgress': 0,
@@ -73,14 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _loadCalendarEvents();
     }
     if (PermissionService.userHas(user, AppPermission.viewProjects) ||
-        PermissionService.userHas(user, AppPermission.viewTasks)) {
+        PermissionService.userHas(user, AppPermission.viewTasks) ||
+        PermissionService.userHas(user, AppPermission.viewRenewals) ||
+        PermissionService.userHas(user, AppPermission.viewRaiseIssue)) {
       _loadDashboardSummary();
-    }
-    if (PermissionService.userHas(user, AppPermission.viewRenewals)) {
-      _loadUpcomingRenewals();
-    }
-    if (PermissionService.userHas(user, AppPermission.viewRaiseIssue)) {
-      _loadRecentIssues();
     }
   }
 
@@ -162,7 +158,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             taskCount: _taskCount,
                             projectMonthlySeries: _projectMonthlySeries,
                             taskMonthlySeries: _taskMonthlySeries,
-                            monthLabels: _last6MonthLabels(),
+                            monthLabels: _projectSummaryMonthLabels.isNotEmpty
+                                ? _projectSummaryMonthLabels
+                                : _last6MonthLabels(),
                             onViewAllTap: _openProjectsScreen,
                           ),
                         ),
@@ -348,134 +346,98 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) {
       setState(() {
         _isLoadingSummary = true;
-        _summaryLoadError = null;
-      });
-    }
-
-    try {
-      final results = await Future.wait<dynamic>([
-        _apiService.getProjectsList(),
-        _apiService.getTasksList(),
-      ]);
-
-      final projectRecords = (results[0] as List)
-          .whereType<ProjectModel>()
-          .toList();
-      final projects = projectRecords.length;
-      final taskRecords = (results[1] as List)
-          .whereType<Map<String, dynamic>>()
-          .toList();
-      final taskStatuses = _extractTaskStatuses(taskRecords);
-      final projectSeries = List<int>.filled(6, 0);
-      final taskSeries = List<int>.filled(6, 0);
-      _populateProjectMonthlySeries(projectRecords, projectSeries);
-      _populateTaskMonthlySeries(taskRecords, taskSeries);
-
-      final statusCounts = <String, int>{
-        'notStarted': 0,
-        'inProgress': 0,
-        'onHold': 0,
-        'completed': 0,
-        'cancelled': 0,
-      };
-      for (final status in taskStatuses) {
-        final bucket = _statusBucket(status);
-        statusCounts[bucket] = (statusCounts[bucket] ?? 0) + 1;
-      }
-
-      if (!mounted) return;
-      setState(() {
-        _projectCount = projects;
-        _taskCount = taskStatuses.length;
-        _projectMonthlySeries = projectSeries;
-        _taskMonthlySeries = taskSeries;
-        _taskStatusCounts = statusCounts;
-        _isLoadingSummary = false;
-      });
-    } on DioException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingSummary = false;
-        _summaryLoadError =
-            'Summary failed to load (${error.response?.statusCode ?? 'network'}).';
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingSummary = false;
-        _summaryLoadError = 'Summary failed to load.';
-      });
-    }
-  }
-
-  Future<void> _loadUpcomingRenewals() async {
-    if (mounted) {
-      setState(() {
         _isLoadingRenewals = true;
+        _isLoadingTickets = true;
+        _summaryLoadError = null;
         _renewalLoadError = null;
+        _ticketsLoadError = null;
       });
     }
 
     try {
-      final results = await Future.wait<List<RenewalModel>>([
-        _apiService.getClientRenewalsList(),
-        _apiService.getVendorRenewalsList(),
-      ]);
+      final result = await _apiService.getDashboardData();
+      final projectSeries = result.projectMonthlySeries;
+      final taskSeries = result.taskMonthlySeries;
+      final monthLabels = result.monthLabels;
+      final statusCounts = result.taskStatusCounts;
 
-      final clientRenewals = results[0];
-      final vendorRenewals = results[1];
       final today = DateTime.now();
       final todayDate = DateTime(today.year, today.month, today.day);
-
-      final combined = <_UpcomingRenewalItem>[
-        ...clientRenewals.map(
+      final combinedRenewals = <_UpcomingRenewalItem>[
+        ...result.clientRenewals.map(
           (entry) => _UpcomingRenewalItem.fromRenewal(
             entry,
             source: _RenewalSource.client,
           ),
         ),
-        ...vendorRenewals.map(
+        ...result.vendorRenewals.map(
           (entry) => _UpcomingRenewalItem.fromRenewal(
             entry,
             source: _RenewalSource.vendor,
           ),
         ),
       ];
+      final upcomingRenewals = combinedRenewals.where((item) {
+        final date = item.renewalDateValue;
+        if (date == null) {
+          return false;
+        }
+        final normalized = DateTime(date.year, date.month, date.day);
+        return !normalized.isBefore(todayDate);
+      }).toList()..sort((a, b) {
+        final aDate = a.renewalDateValue;
+        final bDate = b.renewalDateValue;
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        return aDate.compareTo(bDate);
+      });
 
-      final upcoming =
-          combined.where((item) {
-            final date = item.renewalDateValue;
-            if (date == null) {
-              return false;
-            }
-            final normalized = DateTime(date.year, date.month, date.day);
-            return !normalized.isBefore(todayDate);
-          }).toList()..sort((a, b) {
-            final aDate = a.renewalDateValue;
-            final bDate = b.renewalDateValue;
-            if (aDate == null && bDate == null) return 0;
-            if (aDate == null) return 1;
-            if (bDate == null) return -1;
-            return aDate.compareTo(bDate);
-          });
+      final sortedIssues = List<ClientIssueModel>.from(result.clientIssues)
+        ..sort((a, b) {
+          final aDate = a.createdAt;
+          final bDate = b.createdAt;
+          if (aDate == null && bDate == null) return 0;
+          if (aDate == null) return 1;
+          if (bDate == null) return -1;
+          return bDate.compareTo(aDate);
+        });
 
       if (!mounted) return;
       setState(() {
-        _upcomingRenewals = upcoming;
+        _projectCount = result.totalProjects;
+        _taskCount = result.totalTasks;
+        _projectMonthlySeries = projectSeries;
+        _taskMonthlySeries = taskSeries;
+        _projectSummaryMonthLabels = monthLabels;
+        _taskStatusCounts = statusCounts;
+        _upcomingRenewals = upcomingRenewals;
+        _recentIssues = sortedIssues.take(3).toList(growable: false);
+        _isLoadingSummary = false;
         _isLoadingRenewals = false;
+        _isLoadingTickets = false;
       });
     } on DioException catch (error) {
       if (!mounted) return;
+      final statusCode = error.response?.statusCode;
+      final message = 'Dashboard failed to load (${statusCode ?? 'network'}).';
       setState(() {
+        _isLoadingSummary = false;
         _isLoadingRenewals = false;
-        _renewalLoadError =
-            'Renewals failed to load (${error.response?.statusCode ?? 'network'}).';
+        _isLoadingTickets = false;
+        _summaryLoadError = message;
+        _renewalLoadError = message;
+        _ticketsLoadError = statusCode == 403 ? null : message;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
+        _isLoadingSummary = false;
         _isLoadingRenewals = false;
-        _renewalLoadError = 'Renewals failed to load.';
+        _isLoadingTickets = false;
+        _summaryLoadError = 'Dashboard failed to load.';
+        _renewalLoadError = 'Dashboard failed to load.';
+        _ticketsLoadError = 'Dashboard failed to load.';
       });
     }
   }
@@ -493,7 +455,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       arguments: {'issue_id': issue.id, 'issue': issue},
     );
     if (!mounted) return;
-    await _loadRecentIssues();
+    await _loadDashboardSummary();
   }
 
   void _openProjectsScreen() {
@@ -504,185 +466,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Get.toNamed(AppRoutes.raiseIssue);
   }
 
-  Future<void> _loadRecentIssues() async {
-    if (mounted) {
-      setState(() {
-        _isLoadingTickets = true;
-        _ticketsLoadError = null;
-      });
-    }
-
-    try {
-      final issues = await _apiService.getClientIssuesList();
-      final sorted = List<ClientIssueModel>.from(issues)
-        ..sort((a, b) {
-          final aDate = a.createdAt;
-          final bDate = b.createdAt;
-          if (aDate == null && bDate == null) return 0;
-          if (aDate == null) return 1;
-          if (bDate == null) return -1;
-          return bDate.compareTo(aDate);
-        });
-
-      if (!mounted) return;
-      setState(() {
-        _recentIssues = sorted.take(3).toList(growable: false);
-        _isLoadingTickets = false;
-      });
-    } on DioException catch (error) {
-      if (!mounted) return;
-      final statusCode = error.response?.statusCode;
-      setState(() {
-        _isLoadingTickets = false;
-        _ticketsLoadError = statusCode == 403
-            ? null
-            : 'Support tickets failed to load (${statusCode ?? 'network'}).';
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingTickets = false;
-        _ticketsLoadError = 'Support tickets failed to load.';
-      });
-    }
-  }
-
-  List<String> _extractTaskStatuses(List<Map<String, dynamic>> taskRecords) {
-    final statuses = <String>[];
-
-    for (final record in taskRecords) {
-      final nested = record['tasks'];
-      if (nested is List && nested.isNotEmpty) {
-        for (final task in nested) {
-          final taskMap = task is Map<String, dynamic>
-              ? task
-              : task is Map
-              ? task.map((key, value) => MapEntry(key.toString(), value))
-              : const <String, dynamic>{};
-          statuses.add(_readTaskStatus(taskMap));
-        }
-        continue;
-      }
-
-      statuses.add(_readTaskStatus(record));
-    }
-
-    return statuses;
-  }
-
-  String _readTaskStatus(Map<String, dynamic> task) {
-    final status = (task['status'] ?? task['task_status'] ?? '')
-        .toString()
-        .trim();
-    return status.isEmpty ? 'Not Started' : status;
-  }
-
-  String _statusBucket(String status) {
-    final value = status.toLowerCase();
-    if (value.contains('cancel')) {
-      return 'cancelled';
-    }
-    if (value.contains('complete') || value == 'done' || value == 'closed') {
-      return 'completed';
-    }
-    if (value.contains('hold')) {
-      return 'onHold';
-    }
-    if (value.contains('progress') ||
-        value.contains('running') ||
-        value.contains('active')) {
-      return 'inProgress';
-    }
-    return 'notStarted';
-  }
-
   List<String> _last6MonthLabels() {
     final now = DateTime.now();
     return List<String>.generate(6, (index) {
       final monthDate = DateTime(now.year, now.month - 5 + index, 1);
       return _monthShortLabel(monthDate);
     });
-  }
-
-  void _populateProjectMonthlySeries(
-    List<ProjectModel> projects,
-    List<int> series,
-  ) {
-    final now = DateTime.now();
-    final firstMonth = DateTime(now.year, now.month - 5, 1);
-    for (final project in projects) {
-      final startDate = DateTime.tryParse(project.startDate.trim());
-      if (startDate == null) {
-        continue;
-      }
-      final monthIndex =
-          ((startDate.year - firstMonth.year) * 12) +
-          (startDate.month - firstMonth.month);
-      if (monthIndex >= 0 && monthIndex < series.length) {
-        series[monthIndex] = series[monthIndex] + 1;
-      }
-    }
-  }
-
-  void _populateTaskMonthlySeries(
-    List<Map<String, dynamic>> records,
-    List<int> series,
-  ) {
-    final now = DateTime.now();
-    final firstMonth = DateTime(now.year, now.month - 5, 1);
-
-    DateTime? parseTaskDate(Map<String, dynamic> source) {
-      for (final key in const [
-        'start_date',
-        'startDate',
-        'created_at',
-        'createdAt',
-        'deadline',
-        'due_date',
-      ]) {
-        final value = source[key];
-        if (value == null) {
-          continue;
-        }
-        final parsed = DateTime.tryParse(value.toString().trim());
-        if (parsed != null) {
-          return parsed;
-        }
-      }
-      return null;
-    }
-
-    void addToSeries(DateTime date) {
-      final monthIndex =
-          ((date.year - firstMonth.year) * 12) +
-          (date.month - firstMonth.month);
-      if (monthIndex >= 0 && monthIndex < series.length) {
-        series[monthIndex] = series[monthIndex] + 1;
-      }
-    }
-
-    for (final record in records) {
-      final nested = record['tasks'];
-      if (nested is List && nested.isNotEmpty) {
-        for (final task in nested) {
-          final taskMap = task is Map<String, dynamic>
-              ? task
-              : task is Map
-              ? task.map((key, value) => MapEntry(key.toString(), value))
-              : const <String, dynamic>{};
-          final date = parseTaskDate(taskMap);
-          if (date != null) {
-            addToSeries(date);
-          }
-        }
-        continue;
-      }
-
-      final date = parseTaskDate(record);
-      if (date != null) {
-        addToSeries(date);
-      }
-    }
   }
 
   _Appointment _appointmentFromEvent(CalendarEventModel event) {
@@ -1639,9 +1428,10 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = user?.name.trim().isNotEmpty == true
-        ? user!.name.trim()
-        : 'MyCRM User';
+    final fullName = user?.name.trim() ?? '';
+    final displayName = fullName.isNotEmpty
+        ? fullName.split(RegExp(r'\s+')).first
+        : 'MyCRM';
     final role = user?.role?.trim().isNotEmpty == true
         ? user!.role!.trim()
         : 'Team Member';
@@ -1670,7 +1460,7 @@ class _HeaderSection extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: AppTextStyles.style(
                               color: const Color(0xFF1B2237),
-                              fontSize: 18,
+                              fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1697,6 +1487,8 @@ class _HeaderSection extends StatelessWidget {
         ),
         Row(
           children: [
+            _HeaderCalendarBadge(date: DateTime.now()),
+            const SizedBox(width: 5),
             _HeaderActionButton(
               icon: Icons.checklist_rounded,
               size: 24,
@@ -1705,6 +1497,98 @@ class _HeaderSection extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _HeaderCalendarBadge extends StatelessWidget {
+  const _HeaderCalendarBadge({required this.date});
+
+  final DateTime date;
+
+  static const List<String> _months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static const List<String> _weekdays = <String>[
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.of(context).size.width < 360;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = _months[date.month - 1];
+    final dateLabel = '$day $month ${date.year}';
+    final weekdayLabel = _weekdays[date.weekday - 1];
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 5 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: compact ? 22 : 24,
+            height: compact ? 22 : 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE9FE),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.calendar_month_rounded,
+              color: Color(0xFF4F46E5),
+              size: 14,
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF4F46E5),
+                  fontSize: compact ? 9.8 : 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                weekdayLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: compact ? 9 : 9.8,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1887,10 +1771,11 @@ class _RenewalSection extends StatelessWidget {
               ),
               child: _RenewalTile(
                 initials: item.initials,
-                company: item.title,
-                amount: item.subtitle,
-                date: item.dateLabel,
-                tagLabel: item.tagLabel,
+                name: item.name,
+                serviceName: item.serviceName,
+                type: item.typeLabel,
+                endDate: item.endDateLabel,
+                daysLeftLabel: item.daysLeftLabel,
                 tagColor: item.tagColor,
                 logoColor: item.logoColor,
                 onTap: onItemTap == null ? null : () => onItemTap!(item),
@@ -1919,38 +1804,6 @@ class _RenewalSection extends StatelessWidget {
             ),
           ),
         ],
-        if (DateTime.now().microsecond == -1) ...[
-          const SizedBox(height: 18),
-          const _RenewalTile(
-            initials: 'AE',
-            company: 'Acme Corporation',
-            amount: '₹12,500',
-            date: 'Oct 15, 2023',
-            tagLabel: '7 DAYS LEFT',
-            tagColor: Color(0xFFF5A623),
-            logoColor: Color(0xFFB9B899),
-          ),
-          const SizedBox(height: 14),
-          const _RenewalTile(
-            initials: 'GT',
-            company: 'Global Tech Solut',
-            amount: '₹12,500',
-            date: 'Oct 15, 2023',
-            tagLabel: 'EARLY BIRD',
-            tagColor: Color(0xFF20BF7A),
-            logoColor: Color(0xFF102B3B),
-          ),
-          const SizedBox(height: 14),
-          const _RenewalTile(
-            initials: 'NX',
-            company: 'Acme Corporation',
-            amount: '₹12,500',
-            date: 'Oct 15, 2023',
-            tagLabel: '7 DAYS LEFT',
-            tagColor: Color(0xFFF5A623),
-            logoColor: Color(0xFF63AFA8),
-          ),
-        ],
       ],
     );
   }
@@ -1963,11 +1816,12 @@ class _UpcomingRenewalItem {
     required this.renewal,
     required this.source,
     required this.initials,
-    required this.title,
-    required this.subtitle,
-    required this.dateLabel,
+    required this.name,
+    required this.serviceName,
+    required this.typeLabel,
+    required this.endDateLabel,
     required this.renewalDateValue,
-    required this.tagLabel,
+    required this.daysLeftLabel,
     required this.tagColor,
     required this.logoColor,
   });
@@ -1975,11 +1829,12 @@ class _UpcomingRenewalItem {
   final RenewalModel renewal;
   final _RenewalSource source;
   final String initials;
-  final String title;
-  final String subtitle;
-  final String dateLabel;
+  final String name;
+  final String serviceName;
+  final String typeLabel;
+  final String endDateLabel;
   final DateTime? renewalDateValue;
-  final String tagLabel;
+  final String daysLeftLabel;
   final Color tagColor;
   final Color logoColor;
 
@@ -1987,30 +1842,32 @@ class _UpcomingRenewalItem {
     RenewalModel renewal, {
     required _RenewalSource source,
   }) {
-    final title = source == _RenewalSource.client
-        ? (renewal.client.trim().isEmpty ? renewal.vendor : renewal.client)
-        : (renewal.vendor.trim().isEmpty ? renewal.client : renewal.vendor);
-    final normalizedTitle = title.trim().isEmpty ? 'Renewal' : title.trim();
-    final initials = _buildInitials(normalizedTitle);
+    final name = renewal.partyName.trim().isEmpty
+        ? (source == _RenewalSource.client ? renewal.client : renewal.vendor)
+        : renewal.partyName.trim();
+    final normalizedName = name.trim().isEmpty ? 'Renewal' : name.trim();
+    final initials = _buildInitials(normalizedName);
     final renewalDate = renewal.endDateValue ?? renewal.startDateValue;
-    final tag = _buildTagLabel(renewalDate);
-    final tagColor = _buildTagColor(tag);
+    final daysLeftLabel = _buildDaysLeftLabel(renewalDate);
+    final tagColor = _buildTagColor(daysLeftLabel);
+    final typeLabel = renewal.renewalType.trim().isNotEmpty
+        ? renewal.renewalType.trim()
+        : (source == _RenewalSource.client ? 'client_renewal' : 'vendor_renewal');
 
     return _UpcomingRenewalItem(
       renewal: renewal,
       source: source,
       initials: initials,
-      title: normalizedTitle,
-      subtitle: source == _RenewalSource.client
-          ? 'Client Renewal'
-          : 'Vendor Renewal',
-      dateLabel: renewal.endDate.trim().isEmpty
+      name: normalizedName,
+      serviceName: renewal.title.trim().isEmpty ? 'Service' : renewal.title.trim(),
+      typeLabel: typeLabel,
+      endDateLabel: renewal.endDate.trim().isEmpty
           ? (renewal.startDate.trim().isEmpty ? 'N/A' : renewal.startDate)
           : renewal.endDate,
       renewalDateValue: renewalDate,
-      tagLabel: tag,
+      daysLeftLabel: daysLeftLabel,
       tagColor: tagColor,
-      logoColor: _pickLogoColor(normalizedTitle),
+      logoColor: _pickLogoColor(normalizedName),
     );
   }
 
@@ -2027,22 +1884,23 @@ class _UpcomingRenewalItem {
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
 
-  static String _buildTagLabel(DateTime? date) {
-    if (date == null) return 'UPCOMING';
+  static String _buildDaysLeftLabel(DateTime? date) {
+    if (date == null) return 'N/A';
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final current = DateTime(date.year, date.month, date.day);
+    final localDate = date.toLocal();
+    final current = DateTime(localDate.year, localDate.month, localDate.day);
     final days = current.difference(today).inDays;
-    if (days <= 0) return 'TODAY';
+    if (days < 0) return '${days.abs()} DAYS OVERDUE';
+    if (days == 0) return 'TODAY';
     if (days == 1) return '1 DAY LEFT';
-    if (days <= 7) return '$days DAYS LEFT';
-    return 'UPCOMING';
+    return '$days DAYS LEFT';
   }
 
   static Color _buildTagColor(String tag) {
-    if (tag == 'TODAY') return const Color(0xFFEF4444);
-    if (tag.contains('DAY')) return const Color(0xFFF5A623);
-    return const Color(0xFF20BF7A);
+    if (tag.contains('OVERDUE') || tag == 'TODAY') return const Color(0xFFEF4444);
+    if (tag == 'N/A') return const Color(0xFF6B7280);
+    return const Color(0xFFF5A623);
   }
 
   static Color _pickLogoColor(String seed) {
@@ -2099,20 +1957,22 @@ class _SectionActionLabel extends StatelessWidget {
 class _RenewalTile extends StatelessWidget {
   const _RenewalTile({
     required this.initials,
-    required this.company,
-    required this.amount,
-    required this.date,
-    required this.tagLabel,
+    required this.name,
+    required this.serviceName,
+    required this.type,
+    required this.endDate,
+    required this.daysLeftLabel,
     required this.tagColor,
     required this.logoColor,
     this.onTap,
   });
 
   final String initials;
-  final String company;
-  final String amount;
-  final String date;
-  final String tagLabel;
+  final String name;
+  final String serviceName;
+  final String type;
+  final String endDate;
+  final String daysLeftLabel;
   final Color tagColor;
   final Color logoColor;
   final VoidCallback? onTap;
@@ -2176,57 +2036,60 @@ class _RenewalTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isCompact) ...[
-                          Text(
-                            company,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF1E263B),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            amount,
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF1E263B),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ] else
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  company,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.style(
-                                    color: const Color(0xFF1E263B),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF1E263B),
+                                  fontSize: isCompact ? 13 : 14,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  amount,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.right,
-                                  style: AppTextStyles.style(
-                                    color: const Color(0xFF1E263B),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
                               ),
-                            ],
+                              decoration: BoxDecoration(
+                                color: tagColor.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.circle, size: 7, color: tagColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    daysLeftLabel,
+                                    style: AppTextStyles.style(
+                                      color: tagColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          serviceName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF1E263B),
+                            fontSize: isCompact ? 12.5 : 13,
+                            fontWeight: FontWeight.w600,
                           ),
+                        ),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
@@ -2243,7 +2106,7 @@ class _RenewalTile extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  date,
+                                  endDate,
                                   style: AppTextStyles.style(
                                     color: const Color(0xFF7587A3),
                                     fontSize: 11.5,
@@ -2258,23 +2121,16 @@ class _RenewalTile extends StatelessWidget {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: tagColor.withOpacity(0.12),
+                                color: const Color(0xFFEEF2FF),
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.circle, size: 7, color: tagColor),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    tagLabel,
-                                    style: AppTextStyles.style(
-                                      color: tagColor,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
+                              child: Text(
+                                type,
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF4F46E5),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
@@ -2505,7 +2361,10 @@ class _ProjectSummaryBarsPainter extends CustomPainter {
         canvas.drawRRect(tasksRect, tasksPaint);
       }
 
-      textPainter.text = TextSpan(text: monthLabels[i], style: labelStyle);
+      textPainter.text = TextSpan(
+        text: _monthOnlyLabel(monthLabels[i]),
+        style: labelStyle,
+      );
       textPainter.layout();
       textPainter.paint(
         canvas,
@@ -2527,6 +2386,18 @@ class _ProjectSummaryBarsPainter extends CustomPainter {
         oldDelegate.projectMonthlySeries != projectMonthlySeries ||
         oldDelegate.taskMonthlySeries != taskMonthlySeries ||
         oldDelegate.monthLabels != monthLabels;
+  }
+
+  String _monthOnlyLabel(String raw) {
+    final value = raw.trim();
+    if (value.isEmpty) {
+      return value;
+    }
+    final firstToken = value.split(RegExp(r'[\s\-_/]+')).first.trim();
+    if (firstToken.length >= 3) {
+      return firstToken.substring(0, 3);
+    }
+    return firstToken;
   }
 }
 
@@ -4059,3 +3930,4 @@ class _TaskDonutPainter extends CustomPainter {
         oldDelegate.backgroundColor != backgroundColor;
   }
 }
+

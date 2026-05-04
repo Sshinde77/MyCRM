@@ -20,6 +20,8 @@ class RenewalModel {
     required this.billing,
     required this.billingDateValue,
     required this.status,
+    required this.renewalType,
+    required this.partyName,
     required this.expiryNote,
     required this.createdAt,
     required this.updatedAt,
@@ -45,6 +47,8 @@ class RenewalModel {
   final String billing;
   final DateTime? billingDateValue;
   final String status;
+  final String renewalType;
+  final String partyName;
   final String expiryNote;
   final String createdAt;
   final String updatedAt;
@@ -218,6 +222,20 @@ class RenewalModel {
       billing: _formatShortDate(rawBillingDate),
       billingDateValue: _tryParseDate(rawBillingDate),
       status: _normalizeStatus(source),
+      renewalType: _readString(source, const ['type', 'renewal_type']),
+      partyName: _firstNonEmpty([
+        _readString(source, const [
+          'name',
+          'customer_name',
+          'customerName',
+          'client_name',
+          'clientName',
+          'vendor_name',
+          'vendorName',
+        ]),
+        client,
+        vendor,
+      ]),
       expiryNote: _readString(source, const [
         'expiry_note',
         'expiryNote',

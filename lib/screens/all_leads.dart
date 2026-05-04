@@ -7,7 +7,6 @@ import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/common_screen_app_bar.dart';
-import 'book_a_call.dart';
 import 'google_ads_screen.dart';
 
 class AllLeadsScreen extends StatefulWidget {
@@ -40,16 +39,6 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     try {
       final dashboard = await _apiService.getLeadsDashboard();
       final cards = <_LeadSummaryCardData>[
-        _LeadSummaryCardData(
-          title: 'Book a Call',
-          todayCount: dashboard.bookCallsCount.todayCount,
-          totalCount: dashboard.bookCallsCount.totalCount,
-          icon: Icons.phone_in_talk_rounded,
-          color: const Color(0xFF4F46E5),
-          onTap: () {
-            Get.to(() => const BookACallScreen());
-          },
-        ),
         _LeadSummaryCardData(
           title: 'Digital Marketing',
           todayCount: dashboard.digitalMarketingLeadsCount.todayCount,
@@ -89,6 +78,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         _isLoading = false;
       });
     } catch (error) {
+      debugPrint('AllLeadsScreen load error: $error');
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -286,74 +276,57 @@ class _RecentLeadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => Get.toNamed(AppRoutes.leadDetail, arguments: lead.id),
-      borderRadius: BorderRadius.circular(12),
-      child: Ink(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 17,
-              backgroundColor: const Color(0xFFE8F1FF),
-              child: Text(
-                lead.displayName.isEmpty
-                    ? '?'
-                    : lead.displayName[0].toUpperCase(),
-                style: AppTextStyles.style(
-                  color: const Color(0xFF1D6FEA),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 17,
+            backgroundColor: const Color(0xFFE8F1FF),
+            child: Text(
+              lead.displayName.isEmpty ? '?' : lead.displayName[0].toUpperCase(),
+              style: AppTextStyles.style(
+                color: const Color(0xFF1D6FEA),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  lead.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF0F172A),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 2),
+                _RecentLeadInfoRow(icon: Icons.email_outlined, text: lead.displayEmail),
+                const SizedBox(height: 2),
+                _RecentLeadInfoRow(icon: Icons.phone_outlined, text: lead.displayPhone),
+                const SizedBox(height: 2),
+                _RecentLeadInfoRow(
+                  icon: Icons.label_outline_rounded,
+                  text: lead.displayLeadType,
+                  textColor: const Color(0xFF334155),
+                  fontWeight: FontWeight.w600,
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    lead.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF0F172A),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  _RecentLeadInfoRow(
-                    icon: Icons.email_outlined,
-                    text: lead.displayEmail,
-                  ),
-                  const SizedBox(height: 2),
-                  _RecentLeadInfoRow(
-                    icon: Icons.phone_outlined,
-                    text: lead.displayPhone,
-                  ),
-                  const SizedBox(height: 2),
-                  _RecentLeadInfoRow(
-                    icon: Icons.label_outline_rounded,
-                    text: lead.displayLeadType,
-                    textColor: const Color(0xFF334155),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFF94A3B8),
-              size: 18,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

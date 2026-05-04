@@ -42,14 +42,14 @@ class SettingsScreen extends StatelessWidget {
             return _SettingTile(
               item: item,
               onTap: index == 0
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const GeneralSettingsScreen(),
-                        ),
-                      );
-                    }
-                  : index == 1
+                  // ? () {
+                  //     Navigator.of(context).push(
+                  //       MaterialPageRoute(
+                  //         builder: (_) => const GeneralSettingsScreen(),
+                  //       ),
+                  //     );
+                  //   }
+                  // : index == 1
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -57,7 +57,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       );
                     }
-                  : index == 2
+                  : index == 1
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -65,7 +65,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       );
                     }
-                  : index == 3
+                  : index == 2
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -73,7 +73,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       );
                     }
-                  : index == 4
+                  : index == 3
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -81,7 +81,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       );
                     }
-                  : index == 5
+                  : index == 4
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -89,7 +89,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       );
                     }
-                  : index == 6
+                  : index == 5
                   ? () => _openPrivacyPolicy(context)
                   : null,
             );

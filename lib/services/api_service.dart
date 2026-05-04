@@ -25,6 +25,7 @@ import '../models/calendar_event_model.dart';
 import '../models/client_issue_model.dart';
 import '../models/client_issue_task_model.dart';
 import '../models/company_information_model.dart';
+import '../models/dashboard_data_model.dart';
 import '../models/department_setting_model.dart';
 import '../models/email_settings_model.dart';
 import '../models/renewal_settings_model.dart';
@@ -2569,7 +2570,11 @@ class ApiService {
       String todayKey,
       String totalKey,
     ) {
-      final map = _normalizeMap(source);
+      final map = (source is Map<String, dynamic>)
+          ? source
+          : (source is Map)
+          ? source.map((key, value) => MapEntry(key.toString(), value))
+          : const <String, dynamic>{};
       return LeadDashboardCount(
         todayCount: _readInt(map[todayKey]) ?? 0,
         totalCount: _readInt(map[totalKey]) ?? 0,
@@ -2599,6 +2604,88 @@ class ApiService {
         'todaysWebAppLeadsCount',
         'allWebAppLeadsCount',
       ),
+    );
+  }
+
+  /// Loads non-calendar dashboard data in a single request.
+  Future<DashboardDataModel> getDashboardData() async {
+    final response = await get(ApiConstants.dashboard);
+    final root = _normalizeMap(response.data);
+
+    final projectSummary = _normalizeMap(root['project_summary'] ?? const {});
+    final tasksSummary = _normalizeMap(root['tasks_summary'] ?? const {});
+    final monthlyPoints = _extractDashboardNamedList(projectSummary, const [
+      'projects_tasks_monthly',
+      'projectsTasksMonthly',
+      'monthly',
+      'months',
+    ]);
+
+    final recentMonthly = monthlyPoints.length > 6
+        ? monthlyPoints.sublist(monthlyPoints.length - 6)
+        : monthlyPoints;
+    final monthLabels = recentMonthly
+        .map(
+          (item) => _toShortMonthLabel(
+            item['month_label']?.toString(),
+            item['month_key']?.toString(),
+          ),
+        )
+        .where((value) => value.isNotEmpty)
+        .toList(growable: false);
+    final projectMonthlySeries = recentMonthly
+        .map((item) => _readInt(item['project_count']) ?? 0)
+        .toList(growable: false);
+    final taskMonthlySeries = recentMonthly
+        .map((item) => _readInt(item['task_count']) ?? 0)
+        .toList(growable: false);
+
+    final renewals = _extractDashboardNamedList(root, const [
+      'renewals',
+      'all_renewals',
+      'allRenewals',
+    ]);
+    final clientRenewals = renewals
+        .where((entry) {
+          final type = (entry['type'] ?? '').toString().toLowerCase();
+          return type.contains('client');
+        })
+        .map(RenewalModel.fromJson)
+        .toList(growable: false);
+    final vendorRenewals = renewals
+        .where((entry) {
+          final type = (entry['type'] ?? '').toString().toLowerCase();
+          return type.contains('vendor');
+        })
+        .map(RenewalModel.fromJson)
+        .toList(growable: false);
+
+    final clientIssues = _extractDashboardNamedList(root, const [
+      'client_issues',
+      'clientIssues',
+      'issues',
+      'recent_issues',
+      'recentIssues',
+    ]).map(ClientIssueModel.fromJson).toList(growable: false);
+
+    final statusCounts = <String, int>{
+      'notStarted': _readInt(tasksSummary['not_started']) ?? 0,
+      'inProgress': _readInt(tasksSummary['in_progress']) ?? 0,
+      'onHold': _readInt(tasksSummary['on_hold']) ?? 0,
+      'completed': _readInt(tasksSummary['completed']) ?? 0,
+      'cancelled': _readInt(tasksSummary['cancelled']) ?? 0,
+    };
+
+    return DashboardDataModel(
+      totalProjects: _readInt(projectSummary['total_projects']) ?? 0,
+      totalTasks: _readInt(projectSummary['total_tasks']) ?? 0,
+      projectMonthlySeries: projectMonthlySeries,
+      taskMonthlySeries: taskMonthlySeries,
+      monthLabels: monthLabels,
+      taskStatusCounts: statusCounts,
+      clientRenewals: clientRenewals,
+      vendorRenewals: vendorRenewals,
+      clientIssues: clientIssues,
     );
   }
 
@@ -3680,6 +3767,100 @@ class ApiService {
       error: 'Unexpected staff list response format',
       type: DioExceptionType.unknown,
     );
+  }
+
+  List<Map<String, dynamic>> _extractDashboardNamedList(
+    dynamic data,
+    List<String> keys,
+  ) {
+    dynamic source;
+
+    if (data is Map<String, dynamic>) {
+      for (final key in keys) {
+        final value = data[key];
+        if (value is List) {
+          source = value;
+          break;
+        }
+        if (value is Map<String, dynamic>) {
+          final nestedData = value['data'];
+          if (nestedData is List) {
+            source = nestedData;
+            break;
+          }
+        }
+        if (value is Map) {
+          final nestedMap = value.map(
+            (nestedKey, nestedValue) =>
+                MapEntry(nestedKey.toString(), nestedValue),
+          );
+          final nestedData = nestedMap['data'];
+          if (nestedData is List) {
+            source = nestedData;
+            break;
+          }
+        }
+      }
+
+      if (source == null) {
+        final nested = data['data'];
+        if (nested is Map<String, dynamic>) {
+          return _extractDashboardNamedList(nested, keys);
+        }
+        if (nested is Map) {
+          final normalizedNested = nested.map(
+            (key, value) => MapEntry(key.toString(), value),
+          );
+          return _extractDashboardNamedList(normalizedNested, keys);
+        }
+      }
+    } else if (data is Map) {
+      final normalized = data.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      return _extractDashboardNamedList(normalized, keys);
+    }
+
+    if (source is List) {
+      return source.map(_normalizeMap).toList(growable: false);
+    }
+    return const <Map<String, dynamic>>[];
+  }
+
+  String _toShortMonthLabel(String? monthLabel, String? monthKey) {
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    final normalizedLabel = (monthLabel ?? '').trim();
+    if (normalizedLabel.isNotEmpty) {
+      final parts = normalizedLabel.split(RegExp(r'\s+'));
+      if (parts.isNotEmpty && parts.first.trim().isNotEmpty) {
+        return parts.first.trim();
+      }
+    }
+
+    final normalizedKey = (monthKey ?? '').trim();
+    final match = RegExp(r'^(\d{4})-(\d{1,2})').firstMatch(normalizedKey);
+    if (match != null) {
+      final monthNumber = int.tryParse(match.group(2) ?? '');
+      if (monthNumber != null && monthNumber >= 1 && monthNumber <= 12) {
+        return months[monthNumber - 1];
+      }
+    }
+
+    return '';
   }
 
   dynamic _extractListSource(dynamic data) {

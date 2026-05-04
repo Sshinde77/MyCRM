@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
@@ -425,6 +426,7 @@ class _ProjectsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
     return Row(
       children: [
         Expanded(
@@ -437,6 +439,8 @@ class _ProjectsHeader extends StatelessWidget {
             ),
           ),
         ),
+        _HeaderCalendarBadge(date: now),
+        const SizedBox(width: 10),
         _HeaderIconButton(
           icon: Icons.checklist_rounded,
           onTap: () => Get.to(() => const to_do.ToDoListScreen()),
@@ -1878,7 +1882,7 @@ class _AvatarCircle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = profileImage?.trim() ?? '';
+    final imageUrl = _resolveProfileImageUrl(profileImage);
 
     return CircleAvatar(
       radius: radius,
@@ -1896,6 +1900,114 @@ class _AvatarCircle extends StatelessWidget {
             ),
     );
   }
+}
+
+class _HeaderCalendarBadge extends StatelessWidget {
+  const _HeaderCalendarBadge({required this.date});
+
+  final DateTime date;
+
+  static const List<String> _months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static const List<String> _weekdays = <String>[
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.of(context).size.width < 360;
+    final day = date.day.toString().padLeft(2, '0');
+    final month = _months[date.month - 1];
+    final dateLabel = '$day $month ${date.year}';
+    final weekdayLabel = _weekdays[date.weekday - 1];
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 5 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: compact ? 22 : 24,
+            height: compact ? 22 : 24,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE9FE),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.calendar_month_rounded,
+              color: Color(0xFF4F46E5),
+              size: 14,
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF4F46E5),
+                  fontSize: compact ? 9.8 : 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                weekdayLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: compact ? 9 : 9.8,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _resolveProfileImageUrl(String? profileImage) {
+  final rawPath = (profileImage ?? '').trim();
+  if (rawPath.isEmpty) {
+    return '';
+  }
+
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+    return rawPath;
+  }
+
+  final base = ApiConstants.appBaseUrl;
+  final normalizedBase = base.endsWith('/') ? base : '$base/';
+  final normalizedPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
+  return '$normalizedBase$normalizedPath';
 }
 
 List<_TeamMember> _buildTeamWorkload(List<ProjectModel> projects) {

@@ -77,6 +77,7 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final compact = width <= 360;
+    final now = DateTime.now();
     final totalTasks = _totalRecords;
     final totalPages = _lastPage < 1 ? 1 : _lastPage;
     final safeCurrentPage = _currentPage > totalPages
@@ -117,6 +118,8 @@ class _TasksScreenState extends State<TasksScreen> {
                     ),
                     Row(
                       children: [
+                        _CalendarHeaderBadge(date: now, compact: compact),
+                        SizedBox(width: compact ? 8 : 10),
                         _circleIcon(
                           Icons.checklist_rounded,
                           compact: compact,
@@ -628,6 +631,98 @@ class _TasksScreenState extends State<TasksScreen> {
           decoration: const BoxDecoration(shape: BoxShape.circle),
           child: Icon(icon, color: Colors.grey, size: compact ? 18 : 20),
         ),
+      ),
+    );
+  }
+}
+
+class _CalendarHeaderBadge extends StatelessWidget {
+  const _CalendarHeaderBadge({required this.date, required this.compact});
+
+  final DateTime date;
+  final bool compact;
+
+  static const List<String> _months = <String>[
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  static const List<String> _weekdays = <String>[
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = _months[date.month - 1];
+    final dateLabel = '$day $month ${date.year}';
+    final weekdayLabel = _weekdays[date.weekday - 1];
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 6 : 7,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: compact ? 24 : 26,
+            height: compact ? 24 : 26,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE9FE),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.calendar_month_rounded,
+              color: Color(0xFF4F46E5),
+              size: 16,
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                dateLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF4F46E5),
+                  fontSize: compact ? 10.5 : 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                weekdayLabel,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: compact ? 10 : 10.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
