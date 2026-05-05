@@ -8,6 +8,7 @@ import '../providers/role_provider.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/clients.dart';
 import '../screens/client_detail_screen.dart';
+import '../screens/notification_list_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/biometric_gate_screen.dart';
 import '../screens/profile_screen.dart';
@@ -242,6 +243,11 @@ class RouteGenerator {
         return _protectedRoute(
           AppRoutes.clientDetail,
           ClientDetailScreen(clientId: _extractClientId(settings.arguments)),
+        );
+      case AppRoutes.notifications:
+        return _protectedRoute(
+          AppRoutes.notifications,
+          const NotificationListScreen(),
         );
       case AppRoutes.accessControl:
         return _protectedRoute(

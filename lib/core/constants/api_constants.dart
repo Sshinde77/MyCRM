@@ -13,6 +13,9 @@ class ApiConstants {
   static const String refreshToken = '$baseUrl/refresh';
   static const String testFcm = '$baseUrl/fcm-token';
   static const String dashboard = '$baseUrl/dashboard';
+  static const String notifications = '$baseUrl/notifications';
+  static const String notificationRead = '$baseUrl/notifications/{id}/read';
+  static const String notificationReadAll = '$baseUrl/notifications/read-all';
 
   //Roles Api
   static const String roles = '$baseUrl/roles';

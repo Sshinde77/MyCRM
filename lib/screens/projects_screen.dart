@@ -31,6 +31,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   String _staffFilterName = '';
   String _appliedSearchTerm = '';
   String _selectedStatus = 'all';
+  DateTime? _selectedFilterDate;
   int _currentPage = 1;
 
   @override
@@ -100,6 +101,26 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   void _applySearch() {
     setState(() {
       _appliedSearchTerm = _searchController.text.trim();
+      _currentPage = 1;
+      _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
+          ? ApiService.instance.getStaffProjectsListPage(
+              staffId: _staffFilterId!,
+              page: _currentPage,
+              search: _appliedSearchTerm,
+            )
+          : ApiService.instance.getProjectsListPage(
+              page: _currentPage,
+              search: _appliedSearchTerm,
+            );
+    });
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _appliedSearchTerm = '';
+      _selectedStatus = 'all';
+      _selectedFilterDate = null;
       _currentPage = 1;
       _projectsFuture = (_staffFilterId ?? '').trim().isNotEmpty
           ? ApiService.instance.getStaffProjectsListPage(
@@ -244,8 +265,126 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           _projectStatusCategory(project.status) != _selectedStatus) {
         return false;
       }
+      if (_selectedFilterDate != null) {
+        final projectDate = _tryParseProjectDate(project.deadline);
+        if (projectDate == null ||
+            !_isSameCalendarDate(projectDate, _selectedFilterDate!)) {
+          return false;
+        }
+      }
       return true;
     }).toList();
+  }
+
+  Future<void> _openFilterPopup(List<ProjectModel> projects) async {
+    final statusCounts = _buildStatusCounts(projects);
+    var tempStatus = _selectedStatus;
+    var tempDate = _selectedFilterDate;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Filter Projects',
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF1E2A3B),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _ProjectStatusDropdown(
+                      value: tempStatus,
+                      statusCounts: statusCounts,
+                      onChanged: (value) => setSheetState(() {
+                        tempStatus = value;
+                      }),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: tempDate ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => tempDate = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                      label: Text(
+                        tempDate == null
+                            ? 'Select Date'
+                            : _formatDateLabel(tempDate!),
+                      ),
+                    ),
+                    if (tempDate != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () => setSheetState(() => tempDate = null),
+                          child: const Text('Clear Date'),
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedStatus = 'all';
+                                _selectedFilterDate = null;
+                                _currentPage = 1;
+                              });
+                              Navigator.of(sheetContext).pop();
+                            },
+                            child: const Text('Reset'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedStatus = tempStatus;
+                                _selectedFilterDate = tempDate;
+                                _currentPage = 1;
+                              });
+                              Navigator.of(sheetContext).pop();
+                            },
+                            child: const Text('Apply'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   List<ProjectModel> _applyStaffFilter(List<ProjectModel> projects) {
@@ -368,13 +507,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                             _ProjectsToolbar(
                               controller: _searchController,
                               onSearchTap: _applySearch,
-                              selectedStatus: _selectedStatus,
-                              onStatusChanged: (value) {
-                                setState(() {
-                                  _selectedStatus = value;
-                                  _currentPage = 1;
-                                });
-                              },
+                              onFilterTap: () => _openFilterPopup(projects),
                             ),
                             const SizedBox(height: 16),
                             _ProjectsListSection(
@@ -427,19 +560,39 @@ class _ProjectsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
+    final dateText = _formatHeaderDate(now);
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(
-            'Projects',
-            style: AppTextStyles.style(
-              color: const Color(0xFF1E2A3B),
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Projects',
+                style: AppTextStyles.style(
+                  color: const Color(0xFF1E2A3B),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                dateText,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-        _HeaderCalendarBadge(date: now),
+        const SizedBox(width: 10),
+        _HeaderIconButton(
+          icon: Icons.notifications_none_rounded,
+          onTap: () => Get.toNamed(AppRoutes.notifications),
+        ),
         const SizedBox(width: 10),
         _HeaderIconButton(
           icon: Icons.checklist_rounded,
@@ -447,6 +600,26 @@ class _ProjectsHeader extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _formatHeaderDate(DateTime date) {
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final day = date.day.toString().padLeft(2, '0');
+    final month = months[date.month - 1];
+    return '$day $month ${date.year}';
   }
 }
 
@@ -498,37 +671,33 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Row(
-          children: [
-            Expanded(
-              child: _MetricCard(
-                icon: Icons.bar_chart_rounded,
-                iconColor: const Color(0xFF4F5D74),
-                value: '$totalProjects',
-                label: 'Total Projects',
-                percent: '',
-                accent: const Color(0xFF4F5D74),
-                isCompact: isCompact,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: _MetricCard(
-                icon: Icons.timeline_rounded,
-                iconColor: const Color(0xFF1D6FEA),
-                value: '$inProgressProjects',
-                label: 'In Progress',
-                percent: '',
-                accent: const Color(0xFF1D6FEA),
-                isCompact: isCompact,
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    return Row(
+      children: [
+        Expanded(
+          child: _MetricCard(
+            icon: Icons.bar_chart_rounded,
+            iconColor: const Color(0xFF4F5D74),
+            value: '$totalProjects',
+            label: 'Total Projects',
+            percent: '',
+            accent: const Color(0xFF4F5D74),
+            isCompact: isCompact,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: _MetricCard(
+            icon: Icons.timeline_rounded,
+            iconColor: const Color(0xFF1D6FEA),
+            value: '$inProgressProjects',
+            label: 'In Progress',
+            percent: '',
+            accent: const Color(0xFF1D6FEA),
+            isCompact: isCompact,
+          ),
+        ),
+      ],
+    );  
   }
 }
 
@@ -536,61 +705,74 @@ class _ProjectsToolbar extends StatelessWidget {
   const _ProjectsToolbar({
     required this.controller,
     required this.onSearchTap,
-    required this.selectedStatus,
-    required this.onStatusChanged,
+    required this.onFilterTap,
   });
 
   final TextEditingController controller;
   final VoidCallback onSearchTap;
-  final String selectedStatus;
-  final ValueChanged<String> onStatusChanged;
+  final VoidCallback onFilterTap;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 360) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _SearchField(controller: controller, onSearchTap: onSearchTap),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatusDropdown(
-                      value: selectedStatus,
-                      onChanged: onStatusChanged,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const _CreateProjectButton(),
-                ],
-              ),
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _SearchField(controller: controller, onSearchTap: onSearchTap),
-            const SizedBox(height: 12),
-            Row(
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFD2DDEA)),
+            ),
+            child: Row(
               children: [
                 Expanded(
-                  child: _StatusDropdown(
-                    value: selectedStatus,
-                    onChanged: onStatusChanged,
+                  child: TextField(
+                    controller: controller,
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => onSearchTap(),
+                    decoration: InputDecoration(
+                      hintText: 'Search projects...',
+                      hintStyle: AppTextStyles.style(
+                        color: const Color(0xFF94A3B8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF1E293B),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                const _CreateProjectButton(),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: onSearchTap,
+                  borderRadius: BorderRadius.circular(10),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF64748B),
+                      size: 20,
+                    ),
+                  ),
+                ),
               ],
             ),
-          ],
-        );
-      },
+          ),
+        ),
+        const SizedBox(width: 10),
+        _ToolbarIconButton(
+          icon: Icons.filter_alt_outlined,
+          onTap: onFilterTap,
+        ),
+        const SizedBox(width: 8),
+        const _CreateProjectButton(),
+      ],
     );
   }
 }
@@ -804,114 +986,82 @@ class _TeamMemberCard extends StatelessWidget {
   }
 }
 
-class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller, required this.onSearchTap});
-
-  final TextEditingController controller;
-  final VoidCallback onSearchTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE1E8F2)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => onSearchTap(),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                icon: const Icon(
-                  Icons.search_rounded,
-                  color: Color(0xFF9AA7B7),
-                  size: 20,
-                ),
-                hintText: 'Search projects',
-                hintStyle: AppTextStyles.style(
-                  color: const Color(0xFF8A98AD),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: onSearchTap,
-            icon: const Icon(Icons.search_rounded, size: 16),
-            label: const Text('Search'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1D6FEA),
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusDropdown extends StatelessWidget {
-  const _StatusDropdown({required this.value, required this.onChanged});
+class _ProjectStatusDropdown extends StatelessWidget {
+  const _ProjectStatusDropdown({
+    required this.value,
+    required this.statusCounts,
+    required this.onChanged,
+  });
 
   final String value;
+  final Map<String, int> statusCounts;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    const options = <String>[
+      'all',
+      'in progress',
+      'not started',
+      'on hold',
+      'finished',
+      'cancelled',
+    ];
+
+    String labelFor(String option) {
+      final title = _formatProjectStatusLabel(option);
+      final count = statusCounts[option] ?? 0;
+      return '$title ($count)';
+    }
+
     return Container(
-      constraints: const BoxConstraints(minHeight: 44),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE1E8F2)),
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD2DDEA)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          borderRadius: BorderRadius.circular(14),
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: Color(0xFF5F7087),
-          ),
+          borderRadius: BorderRadius.circular(12),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
           style: AppTextStyles.style(
-            color: const Color(0xFF2F3D52),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
+            color: const Color(0xFF334155),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
           ),
-          items: const [
-            DropdownMenuItem(value: 'all', child: Text('All')),
-            DropdownMenuItem(value: 'not started', child: Text('not started')),
-            DropdownMenuItem(value: 'in progress', child: Text('in progress')),
-            DropdownMenuItem(value: 'on hold', child: Text('on hold')),
-            DropdownMenuItem(value: 'finished', child: Text('finished')),
-            DropdownMenuItem(value: 'cancelled', child: Text('cancelled')),
-          ],
-          onChanged: (value) {
-            if (value == null) return;
-            onChanged(value);
+          items: options
+              .map(
+                (option) => DropdownMenuItem<String>(
+                  value: option,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.circle,
+                        size: 9,
+                        color: Color(0xFF334155),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          labelFor(option),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(growable: false),
+          onChanged: (next) {
+            if (next == null) {
+              return;
+            }
+            onChanged(next);
           },
         ),
       ),
@@ -928,29 +1078,45 @@ class _CreateProjectButton extends StatelessWidget {
       permission: AppPermission.createProjects,
       child: Material(
         color: const Color(0xFF1D6FEA),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: () => Get.toNamed(AppRoutes.addProject),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           child: Container(
-            constraints: const BoxConstraints(minHeight: 44),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.add_rounded, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  'Create Project',
-                  style: AppTextStyles.style(
-                    color: Colors.white,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ToolbarIconButton extends StatelessWidget {
+  const _ToolbarIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFD2DDEA)),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: const Color(0xFF475569), size: 20),
         ),
       ),
     );
@@ -1317,142 +1483,116 @@ class _ProjectCard extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 5,
-                height: 170,
-                decoration: BoxDecoration(
-                  color: data.accentColor,
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(22),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final stackedHeader = constraints.maxWidth < 260;
+
+                    if (stackedHeader) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data.title,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF1E2A3B),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _StatusChip(data: data),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            data.title,
+                            style: AppTextStyles.style(
+                              color: const Color(0xFF1E2A3B),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        _StatusChip(data: data),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  data.client,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF76839A),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final stackedHeader = constraints.maxWidth < 260;
-
-                          if (stackedHeader) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  data.title,
-                                  style: AppTextStyles.style(
-                                    color: const Color(0xFF1E2A3B),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                _StatusChip(data: data),
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  data.title,
-                                  style: AppTextStyles.style(
-                                    color: const Color(0xFF1E2A3B),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              _StatusChip(data: data),
-                            ],
-                          );
-                        },
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ProjectInfoItem(
+                        icon: Icons.play_circle_outline_rounded,
+                        label: data.startDate,
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        data.client,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _ProjectInfoItem(
+                        icon: Icons.flag_outlined,
+                        label: data.deadline,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(height: 1, color: const Color(0xFFE8EDF4)),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _ProjectAssigneeStack(members: data.members),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Assigned',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.style(
-                          color: const Color(0xFF76839A),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                          color: const Color(0xFF4C5B70),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _ProjectInfoItem(
-                              icon: Icons.calendar_today_rounded,
-                              label: data.startDate,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _ProjectInfoItem(
-                              icon: Icons.event_rounded,
-                              label: data.deadline,
-                            ),
-                          ),
-                        ],
+                    ),
+                    const SizedBox(width: 8),
+                    _ProjectCardAction(
+                      icon: Icons.remove_red_eye_outlined,
+                      onTap: () => Get.toNamed(
+                        AppRoutes.projectDetail,
+                        arguments: {'id': data.id},
                       ),
-                      const SizedBox(height: 16),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          if (constraints.maxWidth < 290) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _ProjectProgressSection(data: data),
-                                const SizedBox(height: 14),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    _ProjectAssigneeStack(
-                                      members: data.members,
-                                    ),
-                                    _ProjectQuickActions(
-                                      data: data,
-                                      isDeleting: isDeleting,
-                                      onEdit: onEdit,
-                                      onDelete: onDelete,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            );
-                          }
-
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: _ProjectProgressSection(data: data),
-                              ),
-                              const SizedBox(width: 16),
-                              _ProjectAssigneeStack(members: data.members),
-                              const SizedBox(width: 12),
-                              _ProjectQuickActions(
-                                data: data,
-                                isDeleting: isDeleting,
-                                onEdit: onEdit,
-                                onDelete: onDelete,
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 6),
+                    _ProjectQuickActions(
+                      data: data,
+                      isDeleting: isDeleting,
+                      onEdit: onEdit,
+                      onDelete: onDelete,
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1732,6 +1872,41 @@ String _formatProjectDateLabel(String rawValue) {
   final month = local.month.toString().padLeft(2, '0');
   final day = local.day.toString().padLeft(2, '0');
   return '$year-$month-$day';
+}
+
+DateTime? _tryParseProjectDate(String rawValue) {
+  final raw = rawValue.trim();
+  if (raw.isEmpty || raw.toLowerCase() == 'not set') {
+    return null;
+  }
+  return DateTime.tryParse(raw)?.toLocal();
+}
+
+bool _isSameCalendarDate(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+String _formatDateLabel(DateTime date) {
+  final year = date.year.toString().padLeft(4, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '$year-$month-$day';
+}
+
+Map<String, int> _buildStatusCounts(List<ProjectModel> items) {
+  final counts = <String, int>{
+    'all': items.length,
+    'in progress': 0,
+    'not started': 0,
+    'on hold': 0,
+    'finished': 0,
+    'cancelled': 0,
+  };
+  for (final project in items) {
+    final category = _projectStatusCategory(project.status);
+    counts[category] = (counts[category] ?? 0) + 1;
+  }
+  return counts;
 }
 
 String _projectStatusCategory(String statusValue) {

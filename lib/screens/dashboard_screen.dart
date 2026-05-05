@@ -1494,6 +1494,12 @@ class _HeaderSection extends StatelessWidget {
               size: 24,
               onTap: () => Get.to(() => const to_do.ToDoListScreen()),
             ),
+            const SizedBox(width: 5),
+            _HeaderActionButton(
+              icon: Icons.notifications_none_rounded,
+              size: 24,
+              onTap: () => Get.toNamed(AppRoutes.notifications),
+            ),
           ],
         ),
       ],

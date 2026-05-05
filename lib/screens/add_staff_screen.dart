@@ -1087,8 +1087,16 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       final responseData = error.response?.data;
       String message = 'Failed to create staff.';
 
-      if (responseData is Map && responseData['message'] != null) {
-        message = responseData['message'].toString();
+      if (responseData is Map) {
+        final normalized = responseData.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        final validationMessage = _readFirstValidationErrorMessage(normalized);
+        if (validationMessage != null && validationMessage.trim().isNotEmpty) {
+          message = validationMessage.trim();
+        } else if (normalized['message'] != null) {
+          message = normalized['message'].toString();
+        }
       } else if (error.message != null && error.message!.trim().isNotEmpty) {
         message = error.message!.trim();
       }
@@ -1381,6 +1389,28 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       actionLabel: actionLabel,
     );
   }
+}
+
+String? _readFirstValidationErrorMessage(Map<String, dynamic> payload) {
+  final rawErrors = payload['errors'];
+  if (rawErrors is Map) {
+    for (final value in rawErrors.values) {
+      if (value is List && value.isNotEmpty) {
+        final first = value.first;
+        if (first != null) {
+          final asText = first.toString().trim();
+          if (asText.isNotEmpty) {
+            return asText;
+          }
+        }
+      }
+
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+  }
+  return null;
 }
 
 class _FullWidthField extends StatelessWidget {

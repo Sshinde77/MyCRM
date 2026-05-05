@@ -36,5 +36,6 @@ class AppRoutes {
   static const String accessControl = '/profile/access-control';
   static const String settings = '/profile/settings';
   static const String to_do_list = '/to_do_list';
+  static const String notifications = '/notifications';
   static const String clientDetail = '/profile/clients/detail';
 }

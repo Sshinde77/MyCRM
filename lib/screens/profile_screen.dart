@@ -445,6 +445,11 @@ class _ProfileHeader extends StatelessWidget {
           icon: Icons.checklist_rounded,
           onTap: () => Get.to(() => const to_do.ToDoListScreen()),
         ),
+        const SizedBox(width: 10),
+        _CircleIconButton(
+          icon: Icons.notifications_none_rounded,
+          onTap: () => Get.toNamed(AppRoutes.notifications),
+        ),
       ],
     );
   }

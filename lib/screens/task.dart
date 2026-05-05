@@ -7,6 +7,7 @@ import 'package:mycrm/screens/create_task_screen.dart';
 import 'package:mycrm/screens/task_detail_screen.dart';
 import 'package:mycrm/screens/to_do_list.dart' as to_do;
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/routes/app_routes.dart';
 
 import '../widgets/app_bottom_navigation.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
@@ -22,6 +23,7 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
+  static const int _fallbackPageSize = 10;
   final List<_TaskRecord> _tasks = [];
   final TextEditingController _searchController = TextEditingController();
   bool _isLoading = false;
@@ -31,7 +33,11 @@ class _TasksScreenState extends State<TasksScreen> {
   String _appliedSearchTerm = '';
   int _currentPage = 1;
   int _lastPage = 1;
+  int _perPage = _fallbackPageSize;
   int _totalRecords = 0;
+  int _totalTasksCount = 0;
+  int _completedTasksCount = 0;
+  bool _hasStatusCounts = false;
 
   @override
   void initState() {
@@ -70,8 +76,12 @@ class _TasksScreenState extends State<TasksScreen> {
     super.dispose();
   }
 
-  int get _runningCount => _tasks.where((task) => !task.completed).length;
-  int get _completedCount => _tasks.where((task) => task.completed).length;
+  int get _resolvedTotalTasks =>
+      _hasStatusCounts ? _totalTasksCount : _totalRecords;
+  int get _resolvedCompletedTasks =>
+      _hasStatusCounts
+      ? _completedTasksCount
+      : _tasks.where((task) => task.completed).length;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +93,7 @@ class _TasksScreenState extends State<TasksScreen> {
     final safeCurrentPage = _currentPage > totalPages
         ? totalPages
         : _currentPage;
-    final perPage = _tasks.isEmpty ? 10 : _tasks.length;
+    final perPage = _perPage <= 0 ? _fallbackPageSize : _perPage;
     final startIndex = totalTasks == 0
         ? 0
         : ((safeCurrentPage - 1) * perPage) + 1;
@@ -126,6 +136,12 @@ class _TasksScreenState extends State<TasksScreen> {
                           onTap: () =>
                               Get.to(() => const to_do.ToDoListScreen()),
                         ),
+                        SizedBox(width: compact ? 8 : 10),
+                        _circleIcon(
+                          Icons.notifications_none_rounded,
+                          compact: compact,
+                          onTap: () => Get.toNamed(AppRoutes.notifications),
+                        ),
                       ],
                     ),
                   ],
@@ -135,9 +151,9 @@ class _TasksScreenState extends State<TasksScreen> {
                   children: [
                     Expanded(
                       child: _StatCard(
-                        title: 'Running Tasks',
-                        value: '$_runningCount',
-                        percent: '${_tasks.length} total',
+                        title: 'Total Tasks',
+                        value: '$_resolvedTotalTasks',
+                        percent: '${_resolvedCompletedTasks} completed',
                         color: const Color(0xFF3B82F6),
                         bgColor: const Color(0xFFE7F0FF),
                         compact: compact,
@@ -147,10 +163,10 @@ class _TasksScreenState extends State<TasksScreen> {
                     Expanded(
                       child: _StatCard(
                         title: 'Completed',
-                        value: '$_completedCount',
-                        percent: _tasks.isEmpty
+                        value: '$_resolvedCompletedTasks',
+                        percent: _resolvedTotalTasks <= 0
                             ? '0%'
-                            : '${((_completedCount / _tasks.length) * 100).round()}%',
+                            : '${((_resolvedCompletedTasks / _resolvedTotalTasks) * 100).round()}%',
                         color: const Color(0xFF22C55E),
                         bgColor: const Color(0xFFE8F8EE),
                         compact: compact,
@@ -282,6 +298,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   ),
                   const SizedBox(height: 8),
                   _TasksPaginationBar(
+                    compact: compact,
                     currentPage: safeCurrentPage,
                     totalPages: totalPages,
                     onPageTap: (page) => _loadTasks(page: page),
@@ -307,30 +324,89 @@ class _TasksScreenState extends State<TasksScreen> {
     try {
       final staffId = _staffFilterId?.trim() ?? '';
       final useStaffEndpoint = staffId.isNotEmpty;
-      final pageResult = useStaffEndpoint
-          ? await ApiService.instance.getStaffTasksListPage(
-              staffId: staffId,
-              page: page,
-              search: _appliedSearchTerm,
-            )
-          : await ApiService.instance.getTasksListPage(
-              page: page,
-              search: _appliedSearchTerm,
-            );
-      final records = pageResult.items;
-      final tasks = <_TaskRecord>[];
+      TaskListPageResult? pageResult;
+      List<Map<String, dynamic>> records = const <Map<String, dynamic>>[];
+      var usedFallbackListEndpoint = false;
+
+      try {
+        pageResult = useStaffEndpoint
+            ? await ApiService.instance.getStaffTasksListPage(
+                staffId: staffId,
+                page: page,
+                search: _appliedSearchTerm,
+              )
+            : await ApiService.instance.getTasksListPage(
+                page: page,
+                search: _appliedSearchTerm,
+              );
+        records = pageResult.items;
+      } on DioException {
+        // Some deployments do not support paginated task params consistently.
+        // Fall back to full-list endpoint and paginate locally.
+        usedFallbackListEndpoint = true;
+        records = useStaffEndpoint
+            ? await ApiService.instance.getStaffTasksList(staffId)
+            : await ApiService.instance.getTasksList();
+      }
+
+      final allTasks = <_TaskRecord>[];
       for (final record in records) {
         final parsed = _TaskRecord.fromApiRecord(record);
         if (useStaffEndpoint) {
-          tasks.addAll(parsed);
+          allTasks.addAll(parsed);
           continue;
         }
 
         for (final task in parsed) {
           if (_matchesStaffFilter(task, record)) {
-            tasks.add(task);
+            allTasks.add(task);
           }
         }
+      }
+
+      final statusCounts = pageResult?.statusCounts ?? const <String, int>{};
+      final countedTotal = statusCounts['all'] ?? statusCounts['total'] ?? 0;
+      final countedCompleted = statusCounts['completed'] ?? 0;
+
+      final backendPaginated =
+          !usedFallbackListEndpoint &&
+          pageResult != null &&
+          (pageResult.hasNextPage ||
+              pageResult.lastPage > 1 ||
+              (pageResult.perPage > 0 && pageResult.total > pageResult.perPage));
+
+      List<_TaskRecord> visibleTasks = allTasks;
+      var resolvedCurrentPage =
+          (pageResult?.currentPage ?? page) < 1
+          ? page
+          : (pageResult?.currentPage ?? page);
+      var resolvedLastPage = (pageResult?.lastPage ?? 1) < 1
+          ? 1
+          : (pageResult?.lastPage ?? 1);
+      var resolvedPerPage = (pageResult?.perPage ?? _fallbackPageSize) < 1
+          ? _fallbackPageSize
+          : (pageResult?.perPage ?? _fallbackPageSize);
+      var resolvedTotal =
+          (pageResult?.total ?? allTasks.length) >= 0
+          ? (pageResult?.total ?? allTasks.length)
+          : allTasks.length;
+
+      // Some task endpoints ignore page/per_page and return a full list.
+      // In that case, provide client-side pagination so UI behavior remains
+      // consistent with other list screens.
+      if (!backendPaginated && allTasks.length > _fallbackPageSize) {
+        resolvedTotal = allTasks.length;
+        resolvedPerPage = _fallbackPageSize;
+        resolvedLastPage = (resolvedTotal / _fallbackPageSize).ceil();
+        final safePage = page < 1
+            ? 1
+            : (page > resolvedLastPage ? resolvedLastPage : page);
+        resolvedCurrentPage = safePage;
+        final start = (safePage - 1) * _fallbackPageSize;
+        final end = (start + _fallbackPageSize) > allTasks.length
+            ? allTasks.length
+            : (start + _fallbackPageSize);
+        visibleTasks = allTasks.sublist(start, end);
       }
 
       if (!mounted) {
@@ -340,14 +416,14 @@ class _TasksScreenState extends State<TasksScreen> {
       setState(() {
         _tasks
           ..clear()
-          ..addAll(tasks);
-        _currentPage = pageResult.currentPage < 1
-            ? page
-            : pageResult.currentPage;
-        _lastPage = pageResult.lastPage < 1 ? 1 : pageResult.lastPage;
-        _totalRecords = pageResult.total >= 0
-            ? pageResult.total
-            : _tasks.length;
+          ..addAll(visibleTasks);
+        _currentPage = resolvedCurrentPage;
+        _lastPage = resolvedLastPage;
+        _perPage = resolvedPerPage;
+        _totalRecords = resolvedTotal;
+        _totalTasksCount = countedTotal > 0 ? countedTotal : resolvedTotal;
+        _completedTasksCount = countedCompleted;
+        _hasStatusCounts = statusCounts.isNotEmpty;
         _isLoading = false;
       });
     } on DioException catch (error) {
@@ -730,78 +806,98 @@ class _CalendarHeaderBadge extends StatelessWidget {
 
 class _TasksPaginationBar extends StatelessWidget {
   const _TasksPaginationBar({
+    required this.compact,
     required this.currentPage,
     required this.totalPages,
     required this.onPageTap,
   });
 
+  final bool compact;
   final int currentPage;
   final int totalPages;
   final ValueChanged<int> onPageTap;
 
   @override
   Widget build(BuildContext context) {
-    if (totalPages <= 1) return const SizedBox.shrink();
+    if (totalPages <= 1) {
+      return const SizedBox.shrink();
+    }
+
     final tokens = _buildPageTokens(currentPage, totalPages);
     final canGoPrev = currentPage > 1;
     final canGoNext = currentPage < totalPages;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _TaskPageArrow(
-          icon: Icons.chevron_left_rounded,
-          enabled: canGoPrev,
-          onTap: () => onPageTap(currentPage - 1),
-        ),
-        const SizedBox(width: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: tokens
-              .map((token) {
-                if (token == null) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-                    child: Text('...'),
-                  );
-                }
-                final selected = token == currentPage;
-                return InkWell(
-                  onTap: () => onPageTap(token),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xFF122B52)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '$token',
-                      style: AppTextStyles.style(
+    return Padding(
+      padding: EdgeInsets.only(top: compact ? 6 : 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_left_rounded,
+            enabled: canGoPrev,
+            onTap: () => onPageTap(currentPage - 1),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tokens
+                .map((token) {
+                  if (token == null) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 2 : 4,
+                        vertical: compact ? 8 : 9,
+                      ),
+                      child: Text(
+                        '...',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF64748B),
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    );
+                  }
+                  final selected = token == currentPage;
+                  return InkWell(
+                    onTap: () => onPageTap(token),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: compact ? 40 : 44,
+                      height: compact ? 40 : 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
                         color: selected
-                            ? Colors.white
-                            : const Color(0xFF334155),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                            ? const Color(0xFF122B52)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$token',
+                        style: AppTextStyles.style(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF334155),
+                          fontSize: compact ? 15 : 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                );
-              })
-              .toList(growable: false),
-        ),
-        const SizedBox(width: 10),
-        _TaskPageArrow(
-          icon: Icons.chevron_right_rounded,
-          enabled: canGoNext,
-          onTap: () => onPageTap(currentPage + 1),
-        ),
-      ],
+                  );
+                })
+                .toList(growable: false),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_right_rounded,
+            enabled: canGoNext,
+            onTap: () => onPageTap(currentPage + 1),
+          ),
+        ],
+      ),
     );
   }
 
@@ -832,13 +928,15 @@ class _TasksPaginationBar extends StatelessWidget {
   }
 }
 
-class _TaskPageArrow extends StatelessWidget {
-  const _TaskPageArrow({
+class _PaginationArrowButton extends StatelessWidget {
+  const _PaginationArrowButton({
+    required this.compact,
     required this.icon,
     required this.enabled,
     required this.onTap,
   });
 
+  final bool compact;
   final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
@@ -847,19 +945,30 @@ class _TaskPageArrow extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: Opacity(
-        opacity: enabled ? 1 : 0.35,
+        opacity: enabled ? 1 : 0.5,
         child: Container(
-          width: 34,
-          height: 34,
-          alignment: Alignment.center,
+          width: compact ? 40 : 44,
+          height: compact ? 40 : 44,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFDCE3EE)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x120F172A),
+                blurRadius: 10,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-          child: Icon(icon, color: const Color(0xFF475569), size: 18),
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            size: compact ? 20 : 22,
+            color: const Color(0xFF334155),
+          ),
         ),
       ),
     );

@@ -151,6 +151,7 @@ class TaskListPageResult {
     required this.total,
     required this.perPage,
     required this.hasNextPage,
+    required this.statusCounts,
   });
 
   final List<Map<String, dynamic>> items;
@@ -159,6 +160,7 @@ class TaskListPageResult {
   final int total;
   final int perPage;
   final bool hasNextPage;
+  final Map<String, int> statusCounts;
 }
 
 class MapListPageResult {
@@ -177,6 +179,26 @@ class MapListPageResult {
   final int total;
   final int perPage;
   final bool hasNextPage;
+}
+
+class NotificationListPageResult {
+  const NotificationListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+    required this.unreadCount,
+  });
+
+  final List<Map<String, dynamic>> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+  final int unreadCount;
 }
 
 class LeadDashboardCount {
@@ -1456,6 +1478,10 @@ class ApiService {
     int fallbackPage,
   ) {
     final root = _normalizeMap(responseData);
+    final meta = _normalizeMap(root['meta']);
+    final metaPagination = _normalizeMap(meta['pagination']);
+    final pagination = _normalizeMap(root['pagination']);
+    final pageMeta = _normalizeMap(root['page']);
     Map<String, dynamic>? pagePayload;
     final rootData = root['data'];
     if (rootData is Map<String, dynamic>) {
@@ -1481,12 +1507,110 @@ class ApiService {
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(responseData);
-    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? records.length;
-    final perPage = _readInt(pagePayload?['per_page']) ?? records.length;
+    final currentPage =
+        _readInt(pagePayload?['current_page']) ??
+        _readInt(pagePayload?['page']) ??
+        _readInt(pagePayload?['currentPage']) ??
+        _readInt(meta['current_page']) ??
+        _readInt(meta['page']) ??
+        _readInt(meta['currentPage']) ??
+        _readInt(metaPagination['current_page']) ??
+        _readInt(metaPagination['page']) ??
+        _readInt(metaPagination['currentPage']) ??
+        _readInt(pagination['current_page']) ??
+        _readInt(pagination['page']) ??
+        _readInt(pagination['currentPage']) ??
+        _readInt(pageMeta['current_page']) ??
+        _readInt(pageMeta['page']) ??
+        fallbackPage;
+    final lastPage =
+        _readInt(pagePayload?['last_page']) ??
+        _readInt(pagePayload?['lastPage']) ??
+        _readInt(pagePayload?['total_pages']) ??
+        _readInt(pagePayload?['totalPages']) ??
+        _readInt(meta['last_page']) ??
+        _readInt(meta['lastPage']) ??
+        _readInt(meta['total_pages']) ??
+        _readInt(meta['totalPages']) ??
+        _readInt(metaPagination['last_page']) ??
+        _readInt(metaPagination['lastPage']) ??
+        _readInt(metaPagination['total_pages']) ??
+        _readInt(metaPagination['totalPages']) ??
+        _readInt(pagination['last_page']) ??
+        _readInt(pagination['lastPage']) ??
+        _readInt(pagination['total_pages']) ??
+        _readInt(pagination['totalPages']) ??
+        _readInt(pageMeta['last_page']) ??
+        _readInt(pageMeta['lastPage']) ??
+        _readInt(pageMeta['total_pages']) ??
+        _readInt(pageMeta['totalPages']) ??
+        currentPage;
+    final total =
+        _readInt(pagePayload?['total']) ??
+        _readInt(pagePayload?['total_records']) ??
+        _readInt(pagePayload?['totalRecords']) ??
+        _readInt(pagePayload?['count']) ??
+        _readInt(meta['total']) ??
+        _readInt(meta['total_records']) ??
+        _readInt(meta['totalRecords']) ??
+        _readInt(meta['count']) ??
+        _readInt(metaPagination['total']) ??
+        _readInt(metaPagination['total_records']) ??
+        _readInt(metaPagination['totalRecords']) ??
+        _readInt(metaPagination['count']) ??
+        _readInt(pagination['total']) ??
+        _readInt(pagination['total_records']) ??
+        _readInt(pagination['totalRecords']) ??
+        _readInt(pagination['count']) ??
+        _readInt(pageMeta['total']) ??
+        _readInt(pageMeta['total_records']) ??
+        _readInt(pageMeta['totalRecords']) ??
+        _readInt(pageMeta['count']) ??
+        records.length;
+    final perPage =
+        _readInt(pagePayload?['per_page']) ??
+        _readInt(pagePayload?['perPage']) ??
+        _readInt(pagePayload?['page_size']) ??
+        _readInt(pagePayload?['pageSize']) ??
+        _readInt(pagePayload?['limit']) ??
+        _readInt(meta['per_page']) ??
+        _readInt(meta['perPage']) ??
+        _readInt(meta['page_size']) ??
+        _readInt(meta['pageSize']) ??
+        _readInt(meta['limit']) ??
+        _readInt(metaPagination['per_page']) ??
+        _readInt(metaPagination['perPage']) ??
+        _readInt(metaPagination['page_size']) ??
+        _readInt(metaPagination['pageSize']) ??
+        _readInt(metaPagination['limit']) ??
+        _readInt(pagination['per_page']) ??
+        _readInt(pagination['perPage']) ??
+        _readInt(pagination['page_size']) ??
+        _readInt(pagination['pageSize']) ??
+        _readInt(pagination['limit']) ??
+        _readInt(pageMeta['per_page']) ??
+        _readInt(pageMeta['perPage']) ??
+        _readInt(pageMeta['page_size']) ??
+        _readInt(pageMeta['pageSize']) ??
+        _readInt(pageMeta['limit']) ??
+        records.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload?['next_page_url'] != null ||
+        pagePayload?['nextPageUrl'] != null ||
+        metaPagination['next_page_url'] != null ||
+        metaPagination['nextPageUrl'] != null ||
+        metaPagination['has_more_pages'] == true ||
+        pagination['next_page_url'] != null ||
+        pagination['nextPageUrl'] != null ||
+        currentPage < lastPage;
+    final countsSource = _normalizeMap(meta['counts']);
+    final statusCounts = <String, int>{};
+    countsSource.forEach((key, value) {
+      final parsed = _readInt(value);
+      if (parsed != null) {
+        statusCounts[key.toString()] = parsed;
+      }
+    });
 
     return TaskListPageResult(
       items: records,
@@ -1495,6 +1619,7 @@ class ApiService {
       total: total,
       perPage: perPage,
       hasNextPage: hasNextPage,
+      statusCounts: statusCounts,
     );
   }
 
@@ -3085,6 +3210,60 @@ class ApiService {
     return _parseMapListPageResponse(response.data, normalizedPage);
   }
 
+  Future<NotificationListPageResult> getNotificationsPage({
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedPerPage = perPage < 1 ? 20 : perPage;
+    final response = await get(
+      ApiConstants.notifications,
+      queryParameters: <String, dynamic>{
+        'page': normalizedPage,
+        'per_page': normalizedPerPage,
+      },
+    );
+
+    final root = _normalizeMap(response.data);
+    final source = _extractListSource(root['data']);
+    final records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : const <Map<String, dynamic>>[];
+    final meta = _normalizeMap(root['meta']);
+
+    final currentPage = _readInt(meta['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(meta['last_page']) ?? currentPage;
+    final total = _readInt(meta['total']) ?? records.length;
+    final resolvedPerPage = _readInt(meta['per_page']) ?? normalizedPerPage;
+    final unreadCount = _readInt(meta['unread_count']) ?? 0;
+    final hasNextPage = currentPage < lastPage;
+
+    return NotificationListPageResult(
+      items: records,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: resolvedPerPage,
+      hasNextPage: hasNextPage,
+      unreadCount: unreadCount,
+    );
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) return;
+
+    final path = ApiConstants.notificationRead.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    await patch(path);
+  }
+
+  Future<void> markAllNotificationsAsRead() async {
+    await patch(ApiConstants.notificationReadAll);
+  }
+
   /// Deletes a single web apps lead by id.
   Future<void> deleteWebAppsLead(String id) async {
     final normalizedId = id.trim();
@@ -3123,6 +3302,7 @@ class ApiService {
         total: 0,
         perPage: 10,
         hasNextPage: false,
+        statusCounts: <String, int>{},
       );
     }
     final normalizedPage = page < 1 ? 1 : page;
@@ -3609,6 +3789,7 @@ class ApiService {
       'departments': normalizedDepartments,
       'password': password,
       'sendWelcomeEmail': sendWelcomeEmail,
+      'send_welcome_email': sendWelcomeEmail,
     };
 
     if (role != null && role.trim().isNotEmpty) {
@@ -3616,15 +3797,43 @@ class ApiService {
     }
 
     if (profileImagePath != null && profileImagePath.isNotEmpty) {
-      final fileName = profileImagePath.split(RegExp(r'[\\/]')).last;
-      payload['profile_image'] = await MultipartFile.fromFile(
-        profileImagePath,
-        filename: fileName,
-      );
-    }
+      final formData = FormData();
+      formData.fields.addAll(<MapEntry<String, String>>[
+        MapEntry('first_name', firstName),
+        MapEntry('last_name', lastName),
+        MapEntry('email', email),
+        MapEntry('phone', phone),
+        MapEntry('status', status),
+        MapEntry('team', normalizedTeam.toString()),
+        MapEntry('password', password),
+        MapEntry(
+          'sendWelcomeEmail',
+          sendWelcomeEmail ? 'true' : 'false',
+        ),
+        MapEntry(
+          'send_welcome_email',
+          sendWelcomeEmail ? '1' : '0',
+        ),
+      ]);
+      for (final department in normalizedDepartments) {
+        final value = department.toString().trim();
+        if (value.isNotEmpty) {
+          formData.fields.add(MapEntry('departments[]', value));
+        }
+      }
+      if (role != null && role.trim().isNotEmpty) {
+        formData.fields.add(MapEntry('role', role.trim()));
+      }
 
-    if (profileImagePath != null && profileImagePath.isNotEmpty) {
-      await postForm(ApiConstants.createstaff, data: FormData.fromMap(payload));
+      final fileName = profileImagePath.split(RegExp(r'[\\/]')).last;
+      formData.files.add(
+        MapEntry(
+          'profile_image',
+          await MultipartFile.fromFile(profileImagePath, filename: fileName),
+        ),
+      );
+
+      await postForm(ApiConstants.createstaff, data: formData);
       _invalidateStaffCaches();
       return;
     }

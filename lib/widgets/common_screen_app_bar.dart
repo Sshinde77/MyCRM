@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mycrm/routes/app_routes.dart';
 import 'package:mycrm/screens/to_do_list.dart' as to_do;
 
 class CommonScreenAppBar extends StatelessWidget
@@ -9,11 +10,13 @@ class CommonScreenAppBar extends StatelessWidget
     required this.title,
     this.showBackButton = true,
     this.showTodoButton = true,
+    this.showNotificationButton = true,
   });
 
   final String title;
   final bool showBackButton;
   final bool showTodoButton;
+  final bool showNotificationButton;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -41,10 +44,11 @@ class CommonScreenAppBar extends StatelessWidget
             icon: const Icon(Icons.checklist_rounded),
             onPressed: () => Get.to(() => const to_do.ToDoListScreen()),
           ),
-        IconButton(
-          icon: const Icon(Icons.notifications_none_rounded),
-          onPressed: () {},
-        ),
+        if (showNotificationButton)
+          IconButton(
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: _openNotifications,
+          ),
       ],
     );
   }
@@ -56,12 +60,14 @@ class CommonTopBar extends StatelessWidget {
     required this.title,
     this.onBack,
     this.showTodoButton = true,
+    this.showNotificationButton = true,
     this.compact = false,
   });
 
   final String title;
   final VoidCallback? onBack;
   final bool showTodoButton;
+  final bool showNotificationButton;
   final bool compact;
 
   @override
@@ -98,14 +104,22 @@ class CommonTopBar extends StatelessWidget {
           ),
           SizedBox(width: compact ? 8 : 10),
         ],
-        // _TopBarIconButton(
-        //   icon: Icons.notifications_none_rounded,
-        //   size: iconSize,
-        //   onTap: () {},
-        // ),
+        if (showNotificationButton)
+          _TopBarIconButton(
+            icon: Icons.notifications_none_rounded,
+            size: iconSize,
+            onTap: _openNotifications,
+          ),
       ],
     );
   }
+}
+
+void _openNotifications() {
+  if (Get.currentRoute == AppRoutes.notifications) {
+    return;
+  }
+  Get.toNamed(AppRoutes.notifications);
 }
 
 class _TopBarCalendarBadge extends StatelessWidget {
