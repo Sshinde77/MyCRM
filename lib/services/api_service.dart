@@ -1478,10 +1478,10 @@ class ApiService {
     int fallbackPage,
   ) {
     final root = _normalizeMap(responseData);
-    final meta = _normalizeMap(root['meta']);
-    final metaPagination = _normalizeMap(meta['pagination']);
-    final pagination = _normalizeMap(root['pagination']);
-    final pageMeta = _normalizeMap(root['page']);
+    final meta = _normalizeLooseMap(root['meta']);
+    final metaPagination = _normalizeLooseMap(meta['pagination']);
+    final pagination = _normalizeLooseMap(root['pagination']);
+    final pageMeta = _normalizeLooseMap(root['page']);
     Map<String, dynamic>? pagePayload;
     final rootData = root['data'];
     if (rootData is Map<String, dynamic>) {
@@ -1603,7 +1603,7 @@ class ApiService {
         pagination['next_page_url'] != null ||
         pagination['nextPageUrl'] != null ||
         currentPage < lastPage;
-    final countsSource = _normalizeMap(meta['counts']);
+    final countsSource = _normalizeLooseMap(meta['counts']);
     final statusCounts = <String, int>{};
     countsSource.forEach((key, value) {
       final parsed = _readInt(value);
@@ -3095,12 +3095,17 @@ class ApiService {
   }) async {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
-    final query = <String, dynamic>{'page': normalizedPage};
+    final query = <String, dynamic>{'page': normalizedPage, 'per_page': 10};
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
     }
     final response = await get(ApiConstants.tasks, queryParameters: query);
-    return _parseTaskPageResponse(response.data, normalizedPage);
+    final parsed = _parseTaskPageResponse(response.data, normalizedPage);
+    return _resolveTaskPageResultFromMeta(
+      parsed: parsed,
+      responseData: response.data,
+      fallbackPage: normalizedPage,
+    );
   }
 
   /// Loads book-a-call records for the authenticated user.
@@ -3307,13 +3312,75 @@ class ApiService {
     }
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
-    final query = <String, dynamic>{'page': normalizedPage};
+    final query = <String, dynamic>{'page': normalizedPage, 'per_page': 10};
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
     }
     final path = ApiConstants.stafftasks.replaceFirst('{id}', id);
     final response = await get(path, queryParameters: query);
-    return _parseTaskPageResponse(response.data, normalizedPage);
+    final parsed = _parseTaskPageResponse(response.data, normalizedPage);
+    return _resolveTaskPageResultFromMeta(
+      parsed: parsed,
+      responseData: response.data,
+      fallbackPage: normalizedPage,
+    );
+  }
+
+  TaskListPageResult _resolveTaskPageResultFromMeta({
+    required TaskListPageResult parsed,
+    required dynamic responseData,
+    required int fallbackPage,
+  }) {
+    final root = _normalizeMap(responseData);
+    final meta = _normalizeLooseMap(root['meta']);
+    final metaPagination = _normalizeLooseMap(meta['pagination']);
+
+    final metaCurrentPage =
+        _readInt(metaPagination['current_page']) ??
+        _readInt(meta['current_page']) ??
+        fallbackPage;
+    final metaLastPage =
+        _readInt(metaPagination['last_page']) ??
+        _readInt(meta['last_page']) ??
+        parsed.lastPage;
+    final metaTotal =
+        _readInt(metaPagination['total']) ??
+        _readInt(meta['total']) ??
+        parsed.total;
+    final metaPerPage =
+        _readInt(metaPagination['per_page']) ??
+        _readInt(meta['per_page']) ??
+        parsed.perPage;
+    final metaHasMorePages =
+        metaPagination['has_more_pages'] == true ||
+        metaPagination['hasMorePages'] == true ||
+        (metaCurrentPage < metaLastPage);
+
+    if (metaLastPage <= parsed.lastPage &&
+        metaTotal <= parsed.total &&
+        metaPerPage <= 0) {
+      return parsed;
+    }
+
+    return TaskListPageResult(
+      items: parsed.items,
+      currentPage: metaCurrentPage < 1 ? parsed.currentPage : metaCurrentPage,
+      lastPage: metaLastPage < 1 ? parsed.lastPage : metaLastPage,
+      total: metaTotal < 0 ? parsed.total : metaTotal,
+      perPage: metaPerPage < 1 ? parsed.perPage : metaPerPage,
+      hasNextPage: parsed.hasNextPage || metaHasMorePages,
+      statusCounts: parsed.statusCounts,
+    );
+  }
+
+  Map<String, dynamic> _normalizeLooseMap(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    if (data is Map) {
+      return data.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return const <String, dynamic>{};
   }
 
   /// Loads a single task record by id.
