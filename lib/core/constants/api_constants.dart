@@ -159,4 +159,7 @@ class ApiConstants {
       '$baseUrl/digital-marketing/{id}';
   static const String webAppsLeads = '$baseUrl/web-apps-leads';
   static const String deleteWebAppsLead = '$baseUrl/web-apps-leads/{id}';
+  static const String metaLeads = '$baseUrl/meta-leads';
+  static const String metaLeadDetail = '$baseUrl/meta-leads/{id}';
+  static const String deleteMetaLead = '$baseUrl/meta-leads/{id}';
 }

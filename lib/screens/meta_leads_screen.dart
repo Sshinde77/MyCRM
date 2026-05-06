@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../core/constants/app_text_styles.dart';
@@ -26,9 +27,10 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
   bool _isLoading = false;
   String? _error;
   String _appliedSearch = '';
-  DateTime? _selectedDate;
-  String _cityStateFilter = '';
-  List<_MetaLeadRecord> _records = const <_MetaLeadRecord>[];
+  DateTime? _selectedDateFrom;
+  DateTime? _selectedDateTo;
+  String _selectedFormId = '';
+  List<MetaLeadRecord> _records = const <MetaLeadRecord>[];
 
   @override
   void initState() {
@@ -72,12 +74,17 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
     });
 
     try {
-      final result = await _apiService.getDigitalMarketingLeadsPage(
+      final result = await _apiService.getMetaLeadsPage(
         page: page,
         perPage: _entriesPerPage,
         search: normalizedSearch,
+        dateFrom: _selectedDateFrom == null
+            ? null
+            : _formatDate(_selectedDateFrom!),
+        dateTo: _selectedDateTo == null ? null : _formatDate(_selectedDateTo!),
+        formId: _selectedFormId,
       );
-      final mapped = result.items.map(_MetaLeadRecord.fromJson).toList();
+      final mapped = result.items.map(MetaLeadRecord.fromJson).toList();
       if (!mounted) return;
       setState(() {
         _records = mapped;
@@ -111,8 +118,10 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
   }
 
   Future<void> _openFilterPopup() async {
-    var tempDate = _selectedDate;
-    var tempCityState = _cityStateFilter;
+    var tempDateFrom = _selectedDateFrom;
+    var tempDateTo = _selectedDateTo;
+    var tempFormId = _selectedFormId;
+    final formController = TextEditingController(text: tempFormId);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -143,43 +152,64 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: tempDateFrom ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => tempDateFrom = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                      label: Text(
+                        tempDateFrom == null
+                            ? 'Date From'
+                            : 'Date From: ${_formatDate(tempDateFrom!)}',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: tempDateTo ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => tempDateTo = picked);
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                      label: Text(
+                        tempDateTo == null
+                            ? 'Date To'
+                            : 'Date To: ${_formatDate(tempDateTo!)}',
+                      ),
+                    ),
+                    if (tempDateFrom != null || tempDateTo != null)
+                      TextButton(
+                        onPressed: () => setSheetState(() {
+                          tempDateFrom = null;
+                          tempDateTo = null;
+                        }),
+                        child: const Text('Clear Date Range'),
+                      ),
+                    const SizedBox(height: 8),
                     TextField(
-                      onChanged: (value) => setSheetState(() {
-                        tempCityState = value.trim();
-                      }),
-                      controller: TextEditingController(text: tempCityState),
+                      controller: formController,
+                      onChanged: (value) => tempFormId = value.trim(),
                       decoration: InputDecoration(
-                        hintText: 'City or State',
+                        hintText: 'Form ID',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: tempDate ?? DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          setSheetState(() => tempDate = picked);
-                        }
-                      },
-                      icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                      label: Text(
-                        tempDate == null
-                            ? 'Select Lead Date'
-                            : _formatDate(tempDate!),
-                      ),
-                    ),
-                    if (tempDate != null)
-                      TextButton(
-                        onPressed: () => setSheetState(() => tempDate = null),
-                        child: const Text('Clear Date'),
-                      ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -187,10 +217,12 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                           child: OutlinedButton(
                             onPressed: () {
                               setState(() {
-                                _selectedDate = null;
-                                _cityStateFilter = '';
+                                _selectedDateFrom = null;
+                                _selectedDateTo = null;
+                                _selectedFormId = '';
                               });
                               Navigator.of(sheetContext).pop();
+                              _loadMetaLeads(page: 1, search: _appliedSearch);
                             },
                             child: const Text('Reset'),
                           ),
@@ -200,10 +232,12 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                           child: ElevatedButton(
                             onPressed: () {
                               setState(() {
-                                _selectedDate = tempDate;
-                                _cityStateFilter = tempCityState;
+                                _selectedDateFrom = tempDateFrom;
+                                _selectedDateTo = tempDateTo;
+                                _selectedFormId = tempFormId.trim();
                               });
                               Navigator.of(sheetContext).pop();
+                              _loadMetaLeads(page: 1, search: _appliedSearch);
                             },
                             child: const Text('Apply'),
                           ),
@@ -220,36 +254,11 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
     );
   }
 
-  List<_MetaLeadRecord> _applyFilters(List<_MetaLeadRecord> base) {
-    return base
-        .where((record) {
-          if (_cityStateFilter.isNotEmpty) {
-            final needle = _cityStateFilter.toLowerCase();
-            final hay = '${record.city} ${record.state}'.toLowerCase();
-            if (!hay.contains(needle)) {
-              return false;
-            }
-          }
-          if (_selectedDate != null) {
-            final date = record.leadDateParsed;
-            if (date == null ||
-                date.year != _selectedDate!.year ||
-                date.month != _selectedDate!.month ||
-                date.day != _selectedDate!.day) {
-              return false;
-            }
-          }
-          return true;
-        })
-        .toList(growable: false);
-  }
-
   @override
   Widget build(BuildContext context) {
     final totalPages = _lastPage < 1 ? 1 : _lastPage;
     final currentPage = _currentPage > totalPages ? totalPages : _currentPage;
-    final filteredRecords = _applyFilters(_records);
-    final showingCount = filteredRecords.length;
+    final showingCount = _records.length;
     final startEntry = showingCount == 0
         ? 0
         : ((currentPage - 1) * _entriesPerPage) + 1;
@@ -290,17 +299,20 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                   )
                 else if (_error != null)
                   _MetaErrorCard(message: _error!, onRetry: _loadMetaLeads)
-                else if (filteredRecords.isEmpty)
+                else if (_records.isEmpty)
                   _MetaEmptyCard(
                     message: _appliedSearch.isEmpty
                         ? 'No Meta leads found.'
                         : 'No Meta leads matched your search/filter.',
                   )
                 else
-                  ...filteredRecords.map(
+                  ..._records.map(
                     (record) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _MetaLeadCard(record: record),
+                      child: _MetaLeadCard(
+                        record: record,
+                        onView: () => _openLeadDetails(record),
+                      ),
                     ),
                   ),
                 const SizedBox(height: 10),
@@ -318,6 +330,15 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openLeadDetails(MetaLeadRecord record) async {
+    final deleted = await Get.to<bool>(
+      () => MetaLeadDetailsScreen(record: record),
+    );
+    if (deleted == true && mounted) {
+      await _loadMetaLeads(page: 1, search: _appliedSearch);
+    }
   }
 }
 
@@ -396,9 +417,10 @@ class _MetaLeadsToolbar extends StatelessWidget {
 }
 
 class _MetaLeadCard extends StatelessWidget {
-  const _MetaLeadCard({required this.record});
+  const _MetaLeadCard({required this.record, required this.onView});
 
-  final _MetaLeadRecord record;
+  final MetaLeadRecord record;
+  final VoidCallback onView;
 
   @override
   Widget build(BuildContext context) {
@@ -411,9 +433,9 @@ class _MetaLeadCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE2E9F2)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x100F172A),
-            blurRadius: 12,
-            offset: Offset(0, 6),
+            color: Color(0x140F172A),
+            blurRadius: 16,
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -438,10 +460,7 @@ class _MetaLeadCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              TextButton(
-                onPressed: () => _showLeadDetails(context, record),
-                child: const Text('View'),
-              ),
+              TextButton(onPressed: onView, child: const Text('View')),
             ],
           ),
           const SizedBox(height: 8),
@@ -454,108 +473,11 @@ class _MetaLeadCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _MetaInfoRow(
-            icon: Icons.email_outlined,
-            label: 'Email',
-            value: record.email,
-          ),
-          _MetaInfoRow(
-            icon: Icons.call_outlined,
-            label: 'Phone',
-            value: record.phone,
-          ),
-          _MetaInfoRow(
-            icon: Icons.badge_outlined,
-            label: 'Form ID',
-            value: record.formId,
-          ),
-          _MetaInfoRow(
-            icon: Icons.location_on_outlined,
-            label: 'City/State',
-            value: record.cityState,
-          ),
-          _MetaInfoRow(
-            icon: Icons.calendar_month_outlined,
-            label: 'Lead Date',
-            value: record.leadDate,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showLeadDetails(BuildContext context, _MetaLeadRecord record) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Meta Lead Details'),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('ID: ${record.id}'),
-                Text('Name: ${record.name}'),
-                Text('Email: ${record.email}'),
-                Text('Phone: ${record.phone}'),
-                Text('Form ID: ${record.formId}'),
-                Text('City/State: ${record.cityState}'),
-                Text('Lead Date: ${record.leadDate}'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _MetaInfoRow extends StatelessWidget {
-  const _MetaInfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 14, color: const Color(0xFF64748B)),
-          const SizedBox(width: 6),
-          Text(
-            '$label:',
-            style: AppTextStyles.style(
-              color: const Color(0xFF64748B),
-              fontSize: 11.8,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              value,
-              style: AppTextStyles.style(
-                color: const Color(0xFF1E293B),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
+          _detailLine('Email', record.email),
+          _detailLine('Phone', record.phone),
+          _detailLine('Form ID', record.formId),
+          _detailLine('City/State', record.cityState),
+          _detailLine('Lead Date', record.leadDate),
         ],
       ),
     );
@@ -624,8 +546,8 @@ class _MetaEmptyCard extends StatelessWidget {
   }
 }
 
-class _MetaLeadRecord {
-  const _MetaLeadRecord({
+class MetaLeadRecord {
+  const MetaLeadRecord({
     required this.id,
     required this.name,
     required this.email,
@@ -634,6 +556,10 @@ class _MetaLeadRecord {
     required this.city,
     required this.state,
     required this.leadDate,
+    required this.pageId,
+    required this.adId,
+    required this.storedAt,
+    required this.raw,
   });
 
   final String id;
@@ -644,6 +570,10 @@ class _MetaLeadRecord {
   final String city;
   final String state;
   final String leadDate;
+  final String pageId;
+  final String adId;
+  final String storedAt;
+  final Map<String, dynamic> raw;
 
   String get cityState {
     final cityValue = city.trim();
@@ -656,13 +586,74 @@ class _MetaLeadRecord {
     return '$cityValue, $stateValue';
   }
 
-  DateTime? get leadDateParsed {
-    final raw = leadDate.trim();
-    if (raw.isEmpty || raw == '-') return null;
-    return DateTime.tryParse(raw);
+  Map<String, String> get formFields {
+    final candidates = <dynamic>[
+      raw['all_form_fields'],
+      raw['allFormFields'],
+      raw['form_fields'],
+      raw['formFields'],
+      raw['field_data'],
+      raw['fieldData'],
+      raw['data'],
+      raw['payload'],
+    ];
+
+    for (final candidate in candidates) {
+      final extracted = _extractFormFields(candidate);
+      if (extracted.isNotEmpty) {
+        return extracted;
+      }
+    }
+
+    const excludedKeys = <String>{
+      'id',
+      'lead_id',
+      'meta_lead_id',
+      'name',
+      'full_name',
+      'lead_name',
+      'email',
+      'email_address',
+      'phone',
+      'mobile',
+      'phone_number',
+      'form_id',
+      'formId',
+      'meta_form_id',
+      'city',
+      'state',
+      'lead_date',
+      'created_at',
+      'date',
+      'submitted_at',
+      'stored_at',
+      'page_id',
+      'ad_id',
+      'status',
+      'all_form_fields',
+      'allFormFields',
+      'form_fields',
+      'formFields',
+      'field_data',
+      'fieldData',
+      'data',
+      'payload',
+    };
+    final fallback = <String, String>{};
+    raw.forEach((key, value) {
+      final normalizedKey = key.trim();
+      if (normalizedKey.isEmpty || excludedKeys.contains(normalizedKey)) {
+        return;
+      }
+      if (value is Map || value is List || value == null) return;
+      final text = value.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null') return;
+      fallback[_humanizeKey(normalizedKey)] = text;
+    });
+    return fallback;
   }
 
-  factory _MetaLeadRecord.fromJson(Map<String, dynamic> source) {
+  factory MetaLeadRecord.fromJson(Map<String, dynamic> source) {
     String readString(List<String> keys, {String fallback = '-'}) {
       for (final key in keys) {
         final value = source[key];
@@ -675,7 +666,13 @@ class _MetaLeadRecord {
       return fallback;
     }
 
-    return _MetaLeadRecord(
+    final submittedAt = readString(const [
+      'lead_date',
+      'submitted_at',
+      'created_at',
+      'date',
+    ]);
+    return MetaLeadRecord(
       id: readString(const ['id', 'lead_id', 'meta_lead_id'], fallback: ''),
       name: readString(const ['name', 'full_name', 'lead_name']),
       email: readString(const ['email', 'email_address']),
@@ -683,11 +680,484 @@ class _MetaLeadRecord {
       formId: readString(const ['form_id', 'formId', 'meta_form_id']),
       city: readString(const ['city'], fallback: ''),
       state: readString(const ['state'], fallback: ''),
-      leadDate: _normalizeLeadDate(
-        readString(const ['lead_date', 'created_at', 'date']),
+      leadDate: _normalizeLeadDate(submittedAt),
+      pageId: readString(const ['page_id', 'pageId']),
+      adId: readString(const ['ad_id', 'adId']),
+      storedAt: _normalizeLeadDate(readString(const ['stored_at', 'storedAt'])),
+      raw: Map<String, dynamic>.from(source),
+    );
+  }
+}
+
+class MetaLeadDetailsScreen extends StatefulWidget {
+  const MetaLeadDetailsScreen({super.key, required this.record});
+
+  final MetaLeadRecord record;
+
+  @override
+  State<MetaLeadDetailsScreen> createState() => _MetaLeadDetailsScreenState();
+}
+
+class _MetaLeadDetailsScreenState extends State<MetaLeadDetailsScreen> {
+  bool _isLoading = true;
+  String? _error;
+  late MetaLeadRecord _record;
+
+  @override
+  void initState() {
+    super.initState();
+    _record = widget.record;
+    _loadLeadDetail();
+  }
+
+  Future<void> _loadLeadDetail() async {
+    final id = widget.record.id.trim();
+    if (id.isEmpty) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Meta lead id is missing.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final detail = await ApiService.instance.getMetaLeadDetail(id);
+      if (!mounted) return;
+      setState(() {
+        _record = MetaLeadRecord.fromJson(detail);
+        _isLoading = false;
+      });
+    } on DioException catch (error) {
+      if (!mounted) return;
+      final responseData = error.response?.data;
+      var message = 'Failed to load lead details.';
+      if (responseData is Map && responseData['message'] != null) {
+        message = responseData['message'].toString();
+      } else if (error.message != null && error.message!.trim().isNotEmpty) {
+        message = error.message!.trim();
+      }
+      setState(() {
+        _isLoading = false;
+        _error = message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = 'Failed to load lead details.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final record = _record;
+    final formFields = record.formFields;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FC),
+      appBar: AppBar(
+        title: const Text('Meta Lead Details'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFFB42318),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton(
+                        onPressed: _loadLeadDetail,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _MetaTopHeader(record: record),
+                    const SizedBox(height: 12),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact = constraints.maxWidth < 900;
+                        if (compact) {
+                          return Column(
+                            children: [
+                              _ContactInformationCard(record: record),
+                              const SizedBox(height: 10),
+                              _MetaInformationCard(record: record),
+                            ],
+                          );
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _ContactInformationCard(record: record),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _MetaInformationCard(record: record),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    _AllFormFieldsCard(fields: formFields),
+                  ],
+                ),
+              ),
       ),
     );
   }
+}
+
+class _MetaTopHeader extends StatelessWidget {
+  const _MetaTopHeader({required this.record});
+
+  final MetaLeadRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFF6F9FF)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE3E8F4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 14,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1D8CF8),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: const Icon(Icons.ads_click, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.name,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF1A2A41),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text('Lead ID: ${record.id}'),
+                const SizedBox(height: 2),
+                Text('Submitted on ${record.leadDate}'),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF19C943),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Complete',
+              style: AppTextStyles.style(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ContactInformationCard extends StatelessWidget {
+  const _ContactInformationCard({required this.record});
+
+  final MetaLeadRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'Contact Information',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _detailLine('Full Name', record.name),
+          _detailLine('Email', record.email),
+          _detailLine('Phone', record.phone),
+          _detailLine('City', record.city.isEmpty ? '-' : record.city),
+          _detailLine('State', record.state.isEmpty ? '-' : record.state),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaInformationCard extends StatelessWidget {
+  const _MetaInformationCard({required this.record});
+
+  final MetaLeadRecord record;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'Meta Information',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _detailLine('Lead ID', record.id)),
+              TextButton(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: record.id));
+                  AppSnackbar.show('Copied', 'Lead ID copied.');
+                },
+                child: const Text('Copy'),
+              ),
+            ],
+          ),
+          _detailLine('Form ID', record.formId),
+          _detailLine('Page ID', record.pageId),
+          _detailLine('Ad ID', record.adId),
+          _detailLine('Submitted At', record.leadDate),
+          _detailLine('Stored At', record.storedAt),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllFormFieldsCard extends StatelessWidget {
+  const _AllFormFieldsCard({required this.fields});
+
+  final Map<String, String> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SectionCard(
+      title: 'All Form Fields',
+      child: fields.isEmpty
+          ? const Text('No form field data available.')
+          : SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 900),
+                child: Table(
+                  border: TableBorder.all(color: const Color(0xFFD7DCE7)),
+                  columnWidths: const {
+                    0: FlexColumnWidth(1.3),
+                    1: FlexColumnWidth(1.9),
+                  },
+                  children: [
+                    const TableRow(
+                      decoration: BoxDecoration(color: Color(0xFFF5F7FC)),
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Text(
+                            'Field Name',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Text(
+                            'Value',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                    ...fields.entries.toList().asMap().entries.map(
+                      (row) => TableRow(
+                        decoration: BoxDecoration(
+                          color: row.key.isEven
+                              ? Colors.white
+                              : const Color(0xFFFBFDFF),
+                        ),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Text(row.value.key),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Text(row.value.value),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE3E8F4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0E0F172A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTextStyles.style(
+              color: const Color(0xFF1A2A41),
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+Widget _detailLine(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: RichText(
+      text: TextSpan(
+        text: '$label: ',
+        style: const TextStyle(
+          color: Color(0xFF101928),
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
+        children: [
+          TextSpan(
+            text: value.isEmpty ? '-' : value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF23364D),
+              fontSize: 15,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Map<String, String> _extractFormFields(dynamic source) {
+  if (source is Map) {
+    final map = source.map((key, value) => MapEntry(key.toString(), value));
+    final result = <String, String>{};
+    map.forEach((key, value) {
+      if (value is Map || value is List || value == null) return;
+      final text = value.toString().trim();
+      if (text.isEmpty || text.toLowerCase() == 'null') return;
+      result[_humanizeKey(key)] = text;
+    });
+    return result;
+  }
+  if (source is List) {
+    final result = <String, String>{};
+    for (final item in source) {
+      if (item is! Map) continue;
+      final map = item.map((key, value) => MapEntry(key.toString(), value));
+      final key =
+          map['field_name'] ??
+          map['name'] ??
+          map['label'] ??
+          map['key'] ??
+          map['question'];
+      final value =
+          map['value'] ?? map['field_value'] ?? map['answer'] ?? map['text'];
+      if (key == null || value == null) continue;
+      final keyText = key.toString().trim();
+      final valueText = value.toString().trim();
+      if (keyText.isEmpty || valueText.isEmpty) continue;
+      result[keyText] = valueText;
+    }
+    return result;
+  }
+  return const <String, String>{};
+}
+
+String _humanizeKey(String key) {
+  final cleaned = key
+      .replaceAll('_', ' ')
+      .replaceAll('-', ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  if (cleaned.isEmpty) return key;
+  return cleaned
+      .split(' ')
+      .map(
+        (word) => word.isEmpty
+            ? word
+            : '${word[0].toUpperCase()}${word.substring(1)}',
+      )
+      .join(' ');
 }
 
 String _normalizeLeadDate(String raw) {

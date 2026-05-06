@@ -3272,6 +3272,66 @@ class ApiService {
     return _parseMapListPageResponse(response.data, normalizedPage);
   }
 
+  /// Loads a single paginated Meta leads page.
+  Future<MapListPageResult> getMetaLeadsPage({
+    int page = 1,
+    int? perPage,
+    String? search,
+    String? dateFrom,
+    String? dateTo,
+    String? formId,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final normalizedDateFrom = (dateFrom ?? '').trim();
+    final normalizedDateTo = (dateTo ?? '').trim();
+    final normalizedFormId = (formId ?? '').trim();
+
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (perPage != null && perPage > 0) {
+      final clampedPerPage = perPage > 100 ? 100 : perPage;
+      query['per_page'] = clampedPerPage;
+    }
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    if (normalizedDateFrom.isNotEmpty) {
+      query['date_from'] = normalizedDateFrom;
+    }
+    if (normalizedDateTo.isNotEmpty) {
+      query['date_to'] = normalizedDateTo;
+    }
+    if (normalizedFormId.isNotEmpty) {
+      query['form_id'] = normalizedFormId;
+    }
+
+    final response = await get(ApiConstants.metaLeads, queryParameters: query);
+    return _parseMapListPageResponse(response.data, normalizedPage);
+  }
+
+  /// Loads a single Meta lead by id.
+  Future<Map<String, dynamic>> getMetaLeadDetail(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Meta lead id is required.');
+    }
+    final path = ApiConstants.metaLeadDetail.replaceFirst('{id}', normalizedId);
+    final response = await get(path);
+    final body = _normalizeMap(response.data);
+    final detail = _normalizeMap(_extractDetailSource(body));
+    return detail.isNotEmpty ? detail : body;
+  }
+
+  /// Deletes a single Meta lead by id.
+  Future<void> deleteMetaLead(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Meta lead id is required.');
+    }
+    final path = ApiConstants.deleteMetaLead.replaceFirst('{id}', normalizedId);
+    await delete(path);
+  }
+
   Future<NotificationListPageResult> getNotificationsPage({
     int page = 1,
     int perPage = 20,
