@@ -120,7 +120,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 14),
             children: [
-              const CommonTopBar(title: 'Lead'),
+              const CommonTopBar(title: 'Lead', showBackButton: false),
               const SizedBox(height: 10),
               if (_isLoading)
                 const Padding(

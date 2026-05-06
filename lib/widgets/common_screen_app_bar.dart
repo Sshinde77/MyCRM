@@ -59,6 +59,7 @@ class CommonTopBar extends StatelessWidget {
     super.key,
     required this.title,
     this.onBack,
+    this.showBackButton = true,
     this.showTodoButton = true,
     this.showNotificationButton = true,
     this.compact = false,
@@ -66,6 +67,7 @@ class CommonTopBar extends StatelessWidget {
 
   final String title;
   final VoidCallback? onBack;
+  final bool showBackButton;
   final bool showTodoButton;
   final bool showNotificationButton;
   final bool compact;
@@ -76,12 +78,14 @@ class CommonTopBar extends StatelessWidget {
     final now = DateTime.now();
     return Row(
       children: [
-        _TopBarIconButton(
-          icon: Icons.arrow_back_ios_new_rounded,
-          size: iconSize,
-          onTap: onBack ?? () => Navigator.of(context).maybePop(),
-        ),
-        SizedBox(width: compact ? 10 : 12),
+        if (showBackButton) ...[
+          _TopBarIconButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            size: iconSize,
+            onTap: onBack ?? () => Navigator.of(context).maybePop(),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+        ],
         Expanded(
           child: Text(
             title,

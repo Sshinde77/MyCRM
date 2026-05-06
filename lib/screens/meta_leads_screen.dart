@@ -654,9 +654,11 @@ class MetaLeadRecord {
   }
 
   factory MetaLeadRecord.fromJson(Map<String, dynamic> source) {
+    final payload = _extractMetaLeadSource(source);
+
     String readString(List<String> keys, {String fallback = '-'}) {
       for (final key in keys) {
-        final value = source[key];
+        final value = payload[key];
         if (value == null) continue;
         final text = value.toString().trim();
         if (text.isNotEmpty && text.toLowerCase() != 'null') {
@@ -667,14 +669,15 @@ class MetaLeadRecord {
     }
 
     final submittedAt = readString(const [
+      'created_time',
       'lead_date',
       'submitted_at',
       'created_at',
       'date',
     ]);
     return MetaLeadRecord(
-      id: readString(const ['id', 'lead_id', 'meta_lead_id'], fallback: ''),
-      name: readString(const ['name', 'full_name', 'lead_name']),
+      id: readString(const ['lead_id', 'id', 'meta_lead_id'], fallback: ''),
+      name: readString(const ['full_name', 'name', 'lead_name']),
       email: readString(const ['email', 'email_address']),
       phone: readString(const ['phone', 'mobile', 'phone_number']),
       formId: readString(const ['form_id', 'formId', 'meta_form_id']),
@@ -683,8 +686,10 @@ class MetaLeadRecord {
       leadDate: _normalizeLeadDate(submittedAt),
       pageId: readString(const ['page_id', 'pageId']),
       adId: readString(const ['ad_id', 'adId']),
-      storedAt: _normalizeLeadDate(readString(const ['stored_at', 'storedAt'])),
-      raw: Map<String, dynamic>.from(source),
+      storedAt: _normalizeLeadDate(
+        readString(const ['created_at', 'stored_at', 'storedAt']),
+      ),
+      raw: Map<String, dynamic>.from(payload),
     );
   }
 }
@@ -982,58 +987,52 @@ class _AllFormFieldsCard extends StatelessWidget {
       title: 'All Form Fields',
       child: fields.isEmpty
           ? const Text('No form field data available.')
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 900),
-                child: Table(
-                  border: TableBorder.all(color: const Color(0xFFD7DCE7)),
-                  columnWidths: const {
-                    0: FlexColumnWidth(1.3),
-                    1: FlexColumnWidth(1.9),
-                  },
+          : Table(
+              border: TableBorder.all(color: const Color(0xFFD7DCE7)),
+              columnWidths: const {
+                0: FlexColumnWidth(1.3),
+                1: FlexColumnWidth(1.9),
+              },
+              children: [
+                const TableRow(
+                  decoration: BoxDecoration(color: Color(0xFFF5F7FC)),
                   children: [
-                    const TableRow(
-                      decoration: BoxDecoration(color: Color(0xFFF5F7FC)),
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Text(
-                            'Field Name',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(10),
-                          child: Text(
-                            'Value',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ],
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Text(
+                        'Field Name',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
-                    ...fields.entries.toList().asMap().entries.map(
-                      (row) => TableRow(
-                        decoration: BoxDecoration(
-                          color: row.key.isEven
-                              ? Colors.white
-                              : const Color(0xFFFBFDFF),
-                        ),
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Text(row.value.key),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(10),
-                            child: Text(row.value.value),
-                          ),
-                        ],
+                    Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Text(
+                        'Value',
+                        style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
                   ],
                 ),
-              ),
+                ...fields.entries.toList().asMap().entries.map(
+                  (row) => TableRow(
+                    decoration: BoxDecoration(
+                      color: row.key.isEven
+                          ? Colors.white
+                          : const Color(0xFFFBFDFF),
+                    ),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(row.value.key),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(row.value.value),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
     );
   }
@@ -1130,17 +1129,43 @@ Map<String, String> _extractFormFields(dynamic source) {
           map['label'] ??
           map['key'] ??
           map['question'];
+      final values = map['values'];
+      String? valuesJoined;
+      if (values is List) {
+        final normalized = values
+            .map((entry) => entry?.toString().trim() ?? '')
+            .where((entry) => entry.isNotEmpty && entry.toLowerCase() != 'null')
+            .toList(growable: false);
+        if (normalized.isNotEmpty) {
+          valuesJoined = normalized.join(', ');
+        }
+      }
       final value =
-          map['value'] ?? map['field_value'] ?? map['answer'] ?? map['text'];
+          valuesJoined ??
+          map['value'] ??
+          map['field_value'] ??
+          map['answer'] ??
+          map['text'];
       if (key == null || value == null) continue;
       final keyText = key.toString().trim();
       final valueText = value.toString().trim();
       if (keyText.isEmpty || valueText.isEmpty) continue;
-      result[keyText] = valueText;
+      result[_humanizeKey(keyText)] = valueText;
     }
     return result;
   }
   return const <String, String>{};
+}
+
+Map<String, dynamic> _extractMetaLeadSource(Map<String, dynamic> source) {
+  final nested = source['data'];
+  if (nested is Map<String, dynamic>) {
+    return nested;
+  }
+  if (nested is Map) {
+    return nested.map((key, value) => MapEntry(key.toString(), value));
+  }
+  return source;
 }
 
 String _humanizeKey(String key) {
