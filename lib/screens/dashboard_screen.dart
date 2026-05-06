@@ -377,21 +377,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ];
-      final upcomingRenewals = combinedRenewals.where((item) {
-        final date = item.renewalDateValue;
-        if (date == null) {
-          return false;
-        }
-        final normalized = DateTime(date.year, date.month, date.day);
-        return !normalized.isBefore(todayDate);
-      }).toList()..sort((a, b) {
-        final aDate = a.renewalDateValue;
-        final bDate = b.renewalDateValue;
-        if (aDate == null && bDate == null) return 0;
-        if (aDate == null) return 1;
-        if (bDate == null) return -1;
-        return aDate.compareTo(bDate);
-      });
+      final upcomingRenewals =
+          combinedRenewals.where((item) {
+            final date = item.renewalDateValue;
+            if (date == null) {
+              return false;
+            }
+            final normalized = DateTime(date.year, date.month, date.day);
+            return !normalized.isBefore(todayDate);
+          }).toList()..sort((a, b) {
+            final aDate = a.renewalDateValue;
+            final bDate = b.renewalDateValue;
+            if (aDate == null && bDate == null) return 0;
+            if (aDate == null) return 1;
+            if (bDate == null) return -1;
+            return aDate.compareTo(bDate);
+          });
 
       final sortedIssues = List<ClientIssueModel>.from(result.clientIssues)
         ..sort((a, b) {
@@ -1858,14 +1859,18 @@ class _UpcomingRenewalItem {
     final tagColor = _buildTagColor(daysLeftLabel);
     final typeLabel = renewal.renewalType.trim().isNotEmpty
         ? renewal.renewalType.trim()
-        : (source == _RenewalSource.client ? 'client_renewal' : 'vendor_renewal');
+        : (source == _RenewalSource.client
+              ? 'client_renewal'
+              : 'vendor_renewal');
 
     return _UpcomingRenewalItem(
       renewal: renewal,
       source: source,
       initials: initials,
       name: normalizedName,
-      serviceName: renewal.title.trim().isEmpty ? 'Service' : renewal.title.trim(),
+      serviceName: renewal.title.trim().isEmpty
+          ? 'Service'
+          : renewal.title.trim(),
       typeLabel: typeLabel,
       endDateLabel: renewal.endDate.trim().isEmpty
           ? (renewal.startDate.trim().isEmpty ? 'N/A' : renewal.startDate)
@@ -1904,7 +1909,8 @@ class _UpcomingRenewalItem {
   }
 
   static Color _buildTagColor(String tag) {
-    if (tag.contains('OVERDUE') || tag == 'TODAY') return const Color(0xFFEF4444);
+    if (tag.contains('OVERDUE') || tag == 'TODAY')
+      return const Color(0xFFEF4444);
     if (tag == 'N/A') return const Color(0xFF6B7280);
     return const Color(0xFFF5A623);
   }
@@ -3936,4 +3942,3 @@ class _TaskDonutPainter extends CustomPainter {
         oldDelegate.backgroundColor != backgroundColor;
   }
 }
-

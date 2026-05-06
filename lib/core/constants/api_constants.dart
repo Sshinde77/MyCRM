@@ -8,11 +8,12 @@ class ApiConstants {
   // Endpoints
   //Authentication Api
   static const String login = '$baseUrl/login';
-  static const String user = '$baseUrl/me'; 
+  static const String user = '$baseUrl/me';
   static const String logout = '$baseUrl/logout';
   static const String refreshToken = '$baseUrl/refresh';
   static const String testFcm = '$baseUrl/fcm-token';
   static const String dashboard = '$baseUrl/dashboard';
+  static const String quickStats = '$baseUrl/quick-stats';
   static const String notifications = '$baseUrl/notifications';
   static const String notificationRead = '$baseUrl/notifications/{id}/read';
   static const String notificationReadAll = '$baseUrl/notifications/read-all';

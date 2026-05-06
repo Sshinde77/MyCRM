@@ -1,5 +1,6 @@
 import java.io.FileInputStream
 import java.util.Properties
+import org.gradle.api.GradleException
 
 plugins {
     id("com.android.application")
@@ -56,7 +57,8 @@ android {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file(keystoreProperties["storeFile"] as String)
+                val configuredStoreFile = keystoreProperties["storeFile"] as String
+                storeFile = rootProject.file(configuredStoreFile)
                 storePassword = keystoreProperties["storePassword"] as String
             }
         }
@@ -70,11 +72,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (!keystorePropertiesFile.exists()) {
+                throw GradleException(
+                    "Missing android/key.properties. Configure release keystore before building release APK/AAB.",
+                )
             }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }

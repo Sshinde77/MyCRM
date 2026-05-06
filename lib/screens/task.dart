@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
@@ -26,6 +27,7 @@ class _TasksScreenState extends State<TasksScreen> {
   static const int _fallbackPageSize = 10;
   final List<_TaskRecord> _tasks = [];
   final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
   bool _isLoading = false;
   String? _loadError;
   String? _staffFilterId;
@@ -73,14 +75,14 @@ class _TasksScreenState extends State<TasksScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
   int get _resolvedTotalTasks =>
       _hasStatusCounts ? _totalTasksCount : _totalRecords;
-  int get _resolvedCompletedTasks =>
-      _hasStatusCounts
+  int get _resolvedCompletedTasks => _hasStatusCounts
       ? _completedTasksCount
       : _tasks.where((task) => task.completed).length;
 
@@ -130,6 +132,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 _TasksToolbar(
                   controller: _searchController,
                   onSearchTap: _isLoading ? null : _applySearch,
+                  onSearchChanged: _onSearchChanged,
                   onFilterTap: _isLoading ? null : _openFilterPopup,
                   onCreateTap: _isLoading ? null : _openCreateTaskScreen,
                 ),
@@ -253,11 +256,11 @@ class _TasksScreenState extends State<TasksScreen> {
           pageResult != null &&
           (pageResult.hasNextPage ||
               pageResult.lastPage > 1 ||
-              (pageResult.perPage > 0 && pageResult.total > pageResult.perPage));
+              (pageResult.perPage > 0 &&
+                  pageResult.total > pageResult.perPage));
 
       List<_TaskRecord> visibleTasks = allTasks;
-      var resolvedCurrentPage =
-          (pageResult?.currentPage ?? page) < 1
+      var resolvedCurrentPage = (pageResult?.currentPage ?? page) < 1
           ? page
           : (pageResult?.currentPage ?? page);
       var resolvedLastPage = (pageResult?.lastPage ?? 1) < 1
@@ -266,8 +269,7 @@ class _TasksScreenState extends State<TasksScreen> {
       var resolvedPerPage = (pageResult?.perPage ?? _fallbackPageSize) < 1
           ? _fallbackPageSize
           : (pageResult?.perPage ?? _fallbackPageSize);
-      var resolvedTotal =
-          (pageResult?.total ?? allTasks.length) >= 0
+      var resolvedTotal = (pageResult?.total ?? allTasks.length) >= 0
           ? (pageResult?.total ?? allTasks.length)
           : allTasks.length;
 
@@ -563,11 +565,20 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _applySearch() {
+    final nextTerm = _searchController.text.trim();
+    if (nextTerm == _appliedSearchTerm) {
+      return;
+    }
     setState(() {
-      _appliedSearchTerm = _searchController.text.trim();
+      _appliedSearchTerm = nextTerm;
       _currentPage = 1;
     });
     _loadTasks(page: 1);
+  }
+
+  void _onSearchChanged(String _) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), _applySearch);
   }
 
   Future<void> _openFilterPopup() async {
@@ -641,7 +652,6 @@ class _TasksScreenState extends State<TasksScreen> {
       },
     );
   }
-
 }
 
 class _TasksHeader extends StatelessWidget {
@@ -955,12 +965,14 @@ class _TasksToolbar extends StatelessWidget {
   const _TasksToolbar({
     required this.controller,
     required this.onSearchTap,
+    required this.onSearchChanged,
     required this.onFilterTap,
     required this.onCreateTap,
   });
 
   final TextEditingController controller;
   final VoidCallback? onSearchTap;
+  final ValueChanged<String> onSearchChanged;
   final VoidCallback? onFilterTap;
   final VoidCallback? onCreateTap;
 
@@ -983,6 +995,7 @@ class _TasksToolbar extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     textInputAction: TextInputAction.search,
+                    onChanged: onSearchChanged,
                     onSubmitted: (_) => onSearchTap?.call(),
                     decoration: InputDecoration(
                       hintText: 'Search tasks...',

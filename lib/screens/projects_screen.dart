@@ -697,7 +697,7 @@ class _SummaryRow extends StatelessWidget {
           ),
         ),
       ],
-    );  
+    );
   }
 }
 
@@ -766,10 +766,7 @@ class _ProjectsToolbar extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        _ToolbarIconButton(
-          icon: Icons.filter_alt_outlined,
-          onTap: onFilterTap,
-        ),
+        _ToolbarIconButton(icon: Icons.filter_alt_outlined, onTap: onFilterTap),
         const SizedBox(width: 8),
         const _CreateProjectButton(),
       ],
@@ -2181,7 +2178,9 @@ String _resolveProfileImageUrl(String? profileImage) {
 
   final base = ApiConstants.appBaseUrl;
   final normalizedBase = base.endsWith('/') ? base : '$base/';
-  final normalizedPath = rawPath.startsWith('/') ? rawPath.substring(1) : rawPath;
+  final normalizedPath = rawPath.startsWith('/')
+      ? rawPath.substring(1)
+      : rawPath;
   return '$normalizedBase$normalizedPath';
 }
 

@@ -344,8 +344,8 @@ class PushNotificationService {
 
   static void _showForegroundNotificationBanner(RemoteMessage message) {
     final notification = message.notification;
-    final title = (notification?.title ?? message.data['title']?.toString() ?? '')
-        .trim();
+    final title =
+        (notification?.title ?? message.data['title']?.toString() ?? '').trim();
     final body = (notification?.body ?? message.data['body']?.toString() ?? '')
         .trim();
 

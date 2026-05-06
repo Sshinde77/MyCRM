@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
-import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:dio/dio.dart';
 import '../models/client_issue_model.dart';
 import '../routes/app_routes.dart';
+import '../screens/to_do_list.dart' as to_do;
 import '../services/api_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 
@@ -19,6 +20,7 @@ class IssueManagementScreen extends StatefulWidget {
 class _IssueManagementScreenState extends State<IssueManagementScreen> {
   final ApiService _apiService = ApiService.instance;
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
   List<ClientIssueModel> _allIssues = const [];
   List<ClientIssueSelectOption> _projectOptions = const [];
   List<ClientIssueSelectOption> _customerOptions = const [];
@@ -30,11 +32,17 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   static const _pageSize = 10;
   bool _canCreateIssue = false;
   bool _canDeleteIssue = false;
+  String _selectedStatus = 'all';
+  String _appliedSearchTerm = '';
 
   List<ClientIssueModel> get _filtered {
-    final q = _searchController.text.trim().toLowerCase();
-    if (q.isEmpty) return _allIssues;
-    return _allIssues.where((issue) => issue.matchesQuery(q)).toList();
+    final statusFiltered = _allIssues.where((issue) {
+      if (_selectedStatus == 'all') {
+        return true;
+      }
+      return _issueStatusCategory(issue.status) == _selectedStatus;
+    });
+    return statusFiltered.toList(growable: false);
   }
 
   int get _pageCount =>
@@ -81,21 +89,30 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadIssues({bool forceRefresh = false}) async {
+  Future<void> _loadIssues({bool forceRefresh = false, String? search}) async {
     if (_isLoading) return;
-    if (!forceRefresh && _allIssues.isNotEmpty) return;
+    final normalizedSearch = (search ?? _appliedSearchTerm).trim();
+    if (!forceRefresh &&
+        _allIssues.isNotEmpty &&
+        normalizedSearch == _appliedSearchTerm) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _appliedSearchTerm = normalizedSearch;
     });
 
     try {
-      final data = await _apiService.getClientIssuesIndexData();
+      final data = await _apiService.getClientIssuesIndexData(
+        search: normalizedSearch,
+      );
       if (!mounted) return;
       setState(() {
         _allIssues = data.issues;
@@ -256,266 +273,202 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
     return raw.isEmpty ? 'Unable to load issues right now.' : raw;
   }
 
+  void _applySearch() {
+    final nextTerm = _searchController.text.trim();
+    if (nextTerm == _appliedSearchTerm) {
+      return;
+    }
+    setState(() => _page = 1);
+    _loadIssues(forceRefresh: true, search: nextTerm);
+  }
+
+  void _onSearchChanged(String _) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), _applySearch);
+  }
+
+  Future<void> _openFilterPopup() async {
+    var tempStatus = _selectedStatus;
+    final counts = _buildIssueStatusCounts(_allIssues);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Filter Issues',
+                      style: _ts(const Color(0xFF1E2A3B), 16, FontWeight.w700),
+                    ),
+                    const SizedBox(height: 12),
+                    _IssueStatusDropdown(
+                      value: tempStatus,
+                      statusCounts: counts,
+                      onChanged: (value) {
+                        setSheetState(() => tempStatus = value);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(sheetContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedStatus = tempStatus;
+                                _page = 1;
+                              });
+                              Navigator.of(sheetContext).pop();
+                            },
+                            child: const Text('Apply'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final totalPages = _pageCount < 1 ? 1 : _pageCount;
+    final safeCurrentPage = _page > totalPages ? totalPages : _page;
     return Scaffold(
-      backgroundColor: const Color(0xFFF7FAFF),
+      backgroundColor: const Color(0xFFF4F6F9),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 390;
-            final side = compact ? 12.0 : 14.0;
-            final inner = compact ? 12.0 : 14.0;
-
-            return Column(
-              children: [
-                _MobileAppBar(compact: compact),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      0,
-                      compact ? 4 : 6,
-                      0,
-                      compact ? 10 : 12,
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 560),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: side),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: _IssueSummaryCard(
-                                      label: 'Total Issues',
-                                      value: '$_totalIssueCount',
-                                      icon: Icons.report_problem_outlined,
-                                      color: const Color(0xFF3B82F6),
-                                      backgroundColor: const Color(0xFFEAF2FF),
-                                      compact: compact,
-                                    ),
-                                  ),
-                                  SizedBox(width: compact ? 10 : 12),
-                                  Expanded(
-                                    child: _IssueSummaryCard(
-                                      label: 'Completed',
-                                      value: '$_completedIssueCount',
-                                      icon: Icons.task_alt_rounded,
-                                      color: const Color(0xFF16A34A),
-                                      backgroundColor: const Color(0xFFE8F8EE),
-                                      compact: compact,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: compact ? 10 : 12),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: side),
-                              child: _canCreateIssue
-                                  ? _AddIssueButton(
-                                      compact: compact,
-                                      isLoading: _isCreatingIssue,
-                                      onTap: _isCreatingIssue
-                                          ? null
-                                          : _openCreateIssueDialog,
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                            if (_canCreateIssue)
-                              SizedBox(height: compact ? 10 : 12),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: side),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(
-                                    compact ? 18 : 20,
-                                  ),
-                                  border: Border.all(
-                                    color: const Color(0xFFD8E1EF),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0x120F172A),
-                                      blurRadius: compact ? 10 : 12,
-                                      offset: Offset(0, compact ? 4 : 6),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  children: [
-                                    Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        inner,
-                                        inner,
-                                        inner,
-                                        compact ? 10 : 12,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          SizedBox(height: compact ? 4 : 6),
-                                          TextField(
-                                            controller: _searchController,
-                                            onChanged: (_) =>
-                                                setState(() => _page = 1),
-                                            style: _ts(
-                                              const Color(0xFF334155),
-                                              compact ? 13 : 14,
-                                              FontWeight.w500,
-                                            ),
-                                            decoration: InputDecoration(
-                                              hintText: 'Search issues...',
-                                              hintStyle: _ts(
-                                                const Color(0xFF94A3B8),
-                                                compact ? 13 : 14,
-                                                FontWeight.w500,
-                                              ),
-                                              prefixIcon: Icon(
-                                                Icons.search_rounded,
-                                                color: const Color(0xFF94A3B8),
-                                                size: compact ? 18 : 20,
-                                              ),
-                                              filled: true,
-                                              fillColor: const Color(
-                                                0xFFF8FAFC,
-                                              ),
-                                              contentPadding:
-                                                  EdgeInsets.symmetric(
-                                                    vertical: compact ? 13 : 15,
-                                                  ),
-                                              enabledBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                      compact ? 14 : 16,
-                                                    ),
-                                                borderSide: const BorderSide(
-                                                  color: Color(0xFFD8E1EF),
-                                                ),
-                                              ),
-                                              focusedBorder: OutlineInputBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                      compact ? 14 : 16,
-                                                    ),
-                                                borderSide: const BorderSide(
-                                                  color: Color(0xFF3B82F6),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const Divider(
-                                      height: 1,
-                                      color: Color(0xFFD8E1EF),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        compact ? 12 : 14,
-                                        compact ? 10 : 12,
-                                        compact ? 12 : 14,
-                                        compact ? 8 : 10,
-                                      ),
-                                      child: Column(
-                                        children:
-                                            _isLoading && _allIssues.isEmpty
-                                            ? [
-                                                const Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                    vertical: 28,
-                                                  ),
-                                                  child: Center(
-                                                    child:
-                                                        CircularProgressIndicator(),
-                                                  ),
-                                                ),
-                                              ]
-                                            : _errorMessage != null &&
-                                                  _allIssues.isEmpty
-                                            ? [
-                                                _IssueStateCard(
-                                                  message: _errorMessage!,
-                                                  compact: compact,
-                                                  actionLabel: 'Retry',
-                                                  onAction: () => _loadIssues(
-                                                    forceRefresh: true,
-                                                  ),
-                                                ),
-                                              ]
-                                            : _visible.isEmpty
-                                            ? [
-                                                _IssueStateCard(
-                                                  message:
-                                                      _searchController.text
-                                                          .trim()
-                                                          .isEmpty
-                                                      ? 'No issues available.'
-                                                      : 'No issues match your search.',
-                                                  compact: compact,
-                                                ),
-                                              ]
-                                            : _visible.map((issue) {
-                                                return Padding(
-                                                  padding: EdgeInsets.only(
-                                                    // bottom: compact ? 12 : 14,
-                                                    bottom: compact ? 10 : 12,
-                                                  ),
-                                                  child: _IssueCard(
-                                                    issue: issue,
-                                                    compact: compact,
-                                                    isDeleting:
-                                                        _deletingIssueId ==
-                                                        issue.id.trim(),
-                                                    canDelete: _canDeleteIssue,
-                                                    onView: () =>
-                                                        _openIssue(issue),
-                                                    onDelete: () =>
-                                                        _deleteIssue(issue),
-                                                  ),
-                                                );
-                                              }).toList(),
-                                      ),
-                                    ),
-                                    const Divider(
-                                      height: 1,
-                                      color: Color(0xFFD8E1EF),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.fromLTRB(
-                                        compact ? 12 : 14,
-                                        compact ? 10 : 12,
-                                        compact ? 12 : 14,
-                                        compact ? 12 : 14,
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          _IssuePaginationBar(
-                                            compact: compact,
-                                            currentPage: _page,
-                                            totalPages: _pageCount,
-                                            onPageTap: _setPage,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+            return RefreshIndicator(
+              onRefresh: () => _loadIssues(forceRefresh: true),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 14),
+                children: [
+                  SizedBox(height: compact ? 8 : 10),
+                  _MobileAppBar(compact: compact),
+                  SizedBox(height: compact ? 14 : 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _IssueSummaryCard(
+                          label: 'Total Issues',
+                          value: '$_totalIssueCount',
+                          icon: Icons.bar_chart_rounded,
+                          color: const Color(0xFF4F5D74),
+                          backgroundColor: Colors.white,
+                          compact: compact,
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: _IssueSummaryCard(
+                          label: 'Completed',
+                          value: '$_completedIssueCount',
+                          icon: Icons.check_circle_outline_rounded,
+                          color: const Color(0xFF1D6FEA),
+                          backgroundColor: Colors.white,
+                          compact: compact,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  SizedBox(height: compact ? 14 : 16),
+                  _IssueToolbar(
+                    controller: _searchController,
+                    canCreateIssue: _canCreateIssue,
+                    isCreatingIssue: _isCreatingIssue,
+                    onSearchTap: _applySearch,
+                    onSearchChanged: _onSearchChanged,
+                    onFilterTap: _openFilterPopup,
+                    onCreateTap: _isCreatingIssue
+                        ? null
+                        : _openCreateIssueDialog,
+                  ),
+                  if (_isLoading) ...[
+                    SizedBox(height: compact ? 10 : 12),
+                    const LinearProgressIndicator(
+                      minHeight: 3,
+                      color: Color(0xFF2563EB),
+                      backgroundColor: Color(0xFFD8E7FB),
+                    ),
+                  ],
+                  if (_errorMessage != null && _allIssues.isEmpty) ...[
+                    SizedBox(height: compact ? 12 : 14),
+                    _IssueStateCard(
+                      message: _errorMessage!,
+                      compact: compact,
+                      actionLabel: 'Retry',
+                      onAction: () => _loadIssues(forceRefresh: true),
+                    ),
+                  ] else if (_visible.isEmpty) ...[
+                    SizedBox(height: compact ? 12 : 14),
+                    _IssueStateCard(
+                      message: _appliedSearchTerm.isEmpty
+                          ? 'No issues available.'
+                          : 'No issues match your search.',
+                      compact: compact,
+                    ),
+                  ] else ...[
+                    SizedBox(height: compact ? 14 : 16),
+                    ..._visible.map(
+                      (issue) => _IssueCard(
+                        issue: issue,
+                        compact: compact,
+                        isDeleting: _deletingIssueId == issue.id.trim(),
+                        canDelete: _canDeleteIssue,
+                        onView: () => _openIssue(issue),
+                        onDelete: () => _deleteIssue(issue),
+                      ),
+                    ),
+                  ],
+                  if (_filtered.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Showing ${_visible.length} of ${_filtered.length} (Page $safeCurrentPage/$totalPages)',
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF475569),
+                        fontSize: compact ? 12 : 12.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _IssuePaginationBar(
+                      compact: compact,
+                      currentPage: safeCurrentPage,
+                      totalPages: totalPages,
+                      onPageTap: _setPage,
+                    ),
+                  ],
+                  SizedBox(height: compact ? 8 : 12),
+                ],
+              ),
             );
           },
         ),
@@ -531,17 +484,105 @@ class _MobileAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: compact ? 58 : 62,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFD8E1EF))),
-      ),
-      child: CommonTopBar(
-        title: 'Issue Management',
-        compact: compact,
-        onBack: Get.back,
+    final now = DateTime.now();
+    final dateText = _formatHeaderDate(now);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _HeaderIconButton(
+          icon: Icons.arrow_back_rounded,
+          onTap: () => Get.back(),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Issue Management',
+                style: AppTextStyles.style(
+                  color: const Color(0xFF1E2A3B),
+                  fontSize: compact ? 20 : 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                dateText,
+                style: AppTextStyles.style(
+                  color: const Color(0xFF64748B),
+                  fontSize: compact ? 12 : 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        _HeaderIconButton(
+          icon: Icons.notifications_none_rounded,
+          onTap: () => Get.toNamed(AppRoutes.notifications),
+        ),
+        const SizedBox(width: 10),
+        _HeaderIconButton(
+          icon: Icons.checklist_rounded,
+          onTap: () => Get.to(() => const to_do.ToDoListScreen()),
+        ),
+      ],
+    );
+  }
+
+  String _formatHeaderDate(DateTime date) {
+    const months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final day = date.day.toString().padLeft(2, '0');
+    final month = months[date.month - 1];
+    return '$day $month ${date.year}';
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x120F172A),
+                blurRadius: 12,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: const Color(0xFF2D3B52), size: 22),
+        ),
       ),
     );
   }
@@ -627,57 +668,204 @@ class _IssueSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: compact ? 78 : 84,
-      padding: EdgeInsets.all(compact ? 10 : 12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(compact ? 14 : 16),
-        border: Border.all(color: color.withValues(alpha: 0.16)),
+      padding: EdgeInsets.fromLTRB(
+        compact ? 14 : 18,
+        compact ? 16 : 18,
+        compact ? 14 : 18,
+        compact ? 16 : 18,
       ),
-      child: Row(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE3EAF3)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 14,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            height: compact ? 32 : 36,
-            width: compact ? 32 : 36,
+          Row(
+            children: [
+              Container(
+                width: 25,
+                height: 25,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                alignment: Alignment.center,
+                child: Icon(icon, color: color, size: 15),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                value,
+                style: _ts(const Color(0xFF1E2A3B), 20, FontWeight.w700),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label.toUpperCase(),
+            style: _ts(
+              const Color(0xFF7C8BA1),
+              11,
+              FontWeight.w600,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IssueToolbar extends StatelessWidget {
+  const _IssueToolbar({
+    required this.controller,
+    required this.canCreateIssue,
+    required this.isCreatingIssue,
+    required this.onSearchTap,
+    required this.onSearchChanged,
+    required this.onFilterTap,
+    required this.onCreateTap,
+  });
+
+  final TextEditingController controller;
+  final bool canCreateIssue;
+  final bool isCreatingIssue;
+  final VoidCallback onSearchTap;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onFilterTap;
+  final VoidCallback? onCreateTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(compact ? 10 : 12),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFD2DDEA)),
             ),
-            child: Icon(icon, color: color, size: compact ? 17 : 18),
-          ),
-          SizedBox(width: compact ? 8 : 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: _ts(
-                    color,
-                    compact ? 18 : 20,
-                    FontWeight.w800,
-                    height: 1,
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    textInputAction: TextInputAction.search,
+                    onChanged: onSearchChanged,
+                    onSubmitted: (_) => onSearchTap(),
+                    decoration: InputDecoration(
+                      hintText: 'Search issues...',
+                      hintStyle: _ts(
+                        const Color(0xFF94A3B8),
+                        14,
+                        FontWeight.w500,
+                      ),
+                      border: InputBorder.none,
+                    ),
+                    style: _ts(const Color(0xFF1E293B), 14, FontWeight.w500),
                   ),
                 ),
-                SizedBox(height: compact ? 4 : 5),
-                Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: _ts(
-                    color,
-                    compact ? 10.5 : 11.5,
-                    FontWeight.w600,
-                    height: 1.15,
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: onSearchTap,
+                  borderRadius: BorderRadius.circular(10),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF64748B),
+                      size: 20,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ),
+        const SizedBox(width: 10),
+        _IssueToolbarIconButton(
+          icon: Icons.filter_alt_outlined,
+          onTap: onFilterTap,
+        ),
+        if (canCreateIssue) ...[
+          const SizedBox(width: 8),
+          _CreateIssueIconButton(
+            onTap: onCreateTap,
+            isLoading: isCreatingIssue,
+          ),
         ],
+      ],
+    );
+  }
+}
+
+class _IssueToolbarIconButton extends StatelessWidget {
+  const _IssueToolbarIconButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFD2DDEA)),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: const Color(0xFF475569), size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateIssueIconButton extends StatelessWidget {
+  const _CreateIssueIconButton({required this.onTap, required this.isLoading});
+
+  final VoidCallback? onTap;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF1D6FEA),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: isLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Icon(Icons.add_rounded, color: Colors.white, size: 22),
+        ),
       ),
     );
   }
@@ -746,26 +934,32 @@ class _IssueCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusBg = _statusBg(issue.status);
+    final statusFg = _statusFg(issue.status);
+    final priorityBg = _priorityBg(issue.priority);
+    final priorityFg = _priorityFg(issue.priority);
+    final cardRadius = BorderRadius.circular(compact ? 18 : 20);
+
     return InkWell(
       onTap: onView,
-      borderRadius: BorderRadius.circular(compact ? 14 : 16),
+      borderRadius: cardRadius,
       child: Container(
-        width: double.infinity,
+        margin: EdgeInsets.only(bottom: compact ? 10 : 12),
         padding: EdgeInsets.fromLTRB(
-          compact ? 10 : 12,
-          compact ? 10 : 12,
-          compact ? 10 : 12,
-          compact ? 10 : 12,
+          compact ? 14 : 16,
+          compact ? 14 : 16,
+          compact ? 14 : 16,
+          compact ? 12 : 14,
         ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(compact ? 14 : 16),
-          border: Border.all(color: const Color(0xFFE6ECF5)),
-          boxShadow: [
+          borderRadius: cardRadius,
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: const [
             BoxShadow(
-              color: const Color(0x0D0F172A),
-              blurRadius: compact ? 7 : 9,
-              offset: Offset(0, compact ? 3 : 4),
+              color: Color(0x100F172A),
+              blurRadius: 14,
+              offset: Offset(0, 6),
             ),
           ],
         ),
@@ -773,126 +967,197 @@ class _IssueCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Spacer(),
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: compact ? 13 : 14,
-                  color: const Color(0xFF94A3B8),
+                Expanded(
+                  child: Text(
+                    issue.displayTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: _ts(const Color(0xFF1E293B), 16, FontWeight.w700),
+                  ),
                 ),
-                SizedBox(width: compact ? 5 : 6),
-                Text(
-                  issue.displayDate,
-                  style: _ts(
-                    const Color(0xFF94A3B8),
-                    compact ? 10.5 : 11.5,
-                    FontWeight.w500,
+                const SizedBox(width: 10),
+                _Pill(
+                  issue.displayStatus,
+                  statusBg,
+                  statusFg,
+                  compact: compact,
+                ),
+              ],
+            ),
+            SizedBox(height: compact ? 6 : 7),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    issue.displayProject,
+                    style: _ts(const Color(0xFF64748B), 12, FontWeight.w500),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _Pill(issue.priority, priorityBg, priorityFg, compact: compact),
+              ],
+            ),
+            SizedBox(height: compact ? 10 : 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _IssueMetaItem(
+                    icon: Icons.person_outline_rounded,
+                    value: issue.displayClient,
+                    compact: compact,
+                  ),
+                ),
+                SizedBox(width: compact ? 10 : 12),
+                Expanded(
+                  child: _IssueMetaItem(
+                    icon: Icons.calendar_today_outlined,
+                    value: issue.displayDate,
+                    compact: compact,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: compact ? 8 : 10),
-            Text(
-              issue.displayProject.toUpperCase(),
-              style: _ts(
-                const Color(0xFF3B82F6),
-                compact ? 10 : 11,
-                FontWeight.w700,
-                letterSpacing: 0.2,
-              ),
-            ),
-            SizedBox(height: compact ? 4 : 6),
-            Text(
-              issue.displayTitle,
-              style: _ts(
-                const Color(0xFF17213A),
-                compact ? 14 : 15,
-                FontWeight.w700,
-                height: 1.22,
-              ),
-            ),
-            SizedBox(height: compact ? 4 : 6),
-            Text(
-              'Client: ${issue.displayClient}',
-              style: _ts(
-                const Color(0xFF64748B),
-                compact ? 11.5 : 12.5,
-                FontWeight.w500,
-              ),
-            ),
-            SizedBox(height: compact ? 8 : 10),
-            const Divider(height: 1, color: Color(0xFFF1F5F9)),
-            SizedBox(height: compact ? 8 : 10),
+            SizedBox(height: compact ? 10 : 11),
+            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            SizedBox(height: compact ? 9 : 10),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: compact ? 8 : 10,
-                    runSpacing: compact ? 8 : 10,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      _Pill(
-                        issue.priority,
-                        _priorityBg(issue.priority),
-                        _priorityFg(issue.priority),
-                        compact: compact,
-                      ),
-                      _Pill(
-                        issue.displayStatus,
-                        _statusBg(issue.status),
-                        _statusFg(issue.status),
-                        compact: compact,
-                      ),
-                    ],
+                const Spacer(),
+                _IssueQuickIconAction(
+                  icon: Icons.remove_red_eye_outlined,
+                  background: const Color(0xFFE2E8F0),
+                  foreground: const Color(0xFF475569),
+                  compact: compact,
+                  onTap: onView,
+                ),
+                if (canDelete) ...[
+                  SizedBox(width: compact ? 8 : 10),
+                  _IssueQuickIconAction(
+                    icon: isDeleting
+                        ? Icons.hourglass_top_rounded
+                        : Icons.delete_outline_rounded,
+                    background: const Color(0xFFFFE8E8),
+                    foreground: const Color(0xFFDC2626),
+                    compact: compact,
+                    onTap: isDeleting ? () {} : onDelete,
                   ),
-                ),
-                SizedBox(width: compact ? 8 : 10),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(
-                        minWidth: compact ? 28 : 30,
-                        minHeight: compact ? 28 : 30,
-                      ),
-                      icon: Icon(
-                        Icons.remove_red_eye_outlined,
-                        color: const Color(0xFF94A3B8),
-                        size: compact ? 17 : 18,
-                      ),
-                      onPressed: onView,
-                    ),
-                    if (canDelete) ...[
-                      SizedBox(width: compact ? 4 : 6),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: BoxConstraints(
-                          minWidth: compact ? 28 : 30,
-                          minHeight: compact ? 28 : 30,
-                        ),
-                        onPressed: isDeleting ? null : onDelete,
-                        icon: isDeleting
-                            ? SizedBox(
-                                width: compact ? 15 : 16,
-                                height: compact ? 15 : 16,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Icon(
-                                Icons.delete_outline_rounded,
-                                color: const Color(0xFF94A3B8),
-                                size: compact ? 17 : 18,
-                              ),
-                      ),
-                    ],
-                  ],
-                ),
+                ],
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IssueMetaItem extends StatelessWidget {
+  const _IssueMetaItem({
+    required this.icon,
+    required this.value,
+    required this.compact,
+  });
+
+  final IconData icon;
+  final String value;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: compact ? 14 : 15, color: const Color(0xFF94A3B8)),
+        SizedBox(width: compact ? 6 : 8),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _ts(const Color(0xFF64748B), 11.5, FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _IssueQuickIconAction extends StatelessWidget {
+  const _IssueQuickIconAction({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    required this.compact,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: Container(
+        width: compact ? 34 : 36,
+        height: compact ? 34 : 36,
+        decoration: BoxDecoration(color: background, shape: BoxShape.circle),
+        alignment: Alignment.center,
+        child: Icon(icon, size: compact ? 17 : 18, color: foreground),
+      ),
+    );
+  }
+}
+
+class _IssueStatusDropdown extends StatelessWidget {
+  const _IssueStatusDropdown({
+    required this.value,
+    required this.statusCounts,
+    required this.onChanged,
+  });
+
+  final String value;
+  final Map<String, int> statusCounts;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const options = <String>['all', 'completed', 'in progress', 'open'];
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD2DDEA)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(12),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+          style: _ts(const Color(0xFF334155), 14, FontWeight.w700),
+          items: options
+              .map(
+                (option) => DropdownMenuItem<String>(
+                  value: option,
+                  child: Text(
+                    '${_formatIssueStatusLabel(option)} (${statusCounts[option] ?? 0})',
+                  ),
+                ),
+              )
+              .toList(growable: false),
+          onChanged: (value) {
+            if (value != null) {
+              onChanged(value);
+            }
+          },
         ),
       ),
     );
@@ -1539,6 +1804,48 @@ String _titleCase(String value) {
       .where((part) => part.isNotEmpty)
       .map((part) => part[0].toUpperCase() + part.substring(1).toLowerCase())
       .join(' ');
+}
+
+String _issueStatusCategory(String value) {
+  final normalized = value.trim().toLowerCase();
+  if (normalized.contains('closed') ||
+      normalized.contains('complete') ||
+      normalized.contains('resolved')) {
+    return 'completed';
+  }
+  if (normalized.contains('progress') || normalized.contains('active')) {
+    return 'in progress';
+  }
+  return 'open';
+}
+
+String _formatIssueStatusLabel(String value) {
+  switch (value) {
+    case 'all':
+      return 'All';
+    case 'completed':
+      return 'Completed';
+    case 'in progress':
+      return 'In Progress';
+    case 'open':
+      return 'Open';
+    default:
+      return value;
+  }
+}
+
+Map<String, int> _buildIssueStatusCounts(List<ClientIssueModel> issues) {
+  final counts = <String, int>{
+    'all': issues.length,
+    'completed': 0,
+    'in progress': 0,
+    'open': 0,
+  };
+  for (final issue in issues) {
+    final key = _issueStatusCategory(issue.status);
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
 }
 
 Color _priorityBg(String priority) {

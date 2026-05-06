@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../core/constants/app_text_styles.dart';
 import '../models/lead_model.dart';
@@ -8,6 +9,7 @@ import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/common_screen_app_bar.dart';
 import 'google_ads_screen.dart';
+import 'meta_leads_screen.dart';
 
 class AllLeadsScreen extends StatefulWidget {
   const AllLeadsScreen({super.key});
@@ -43,7 +45,11 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           title: 'Digital Marketing',
           todayCount: dashboard.digitalMarketingLeadsCount.todayCount,
           totalCount: dashboard.digitalMarketingLeadsCount.totalCount,
-          icon: Icons.campaign_rounded,
+          icon: const Icon(
+            Icons.campaign_rounded,
+            color: Colors.white,
+            size: 17,
+          ),
           color: const Color(0xFF7C3AED),
           onTap: () {
             Get.to(() => const GoogleAdsScreen());
@@ -53,7 +59,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           title: 'Web & App',
           todayCount: dashboard.webAppLeadsCount.todayCount,
           totalCount: dashboard.webAppLeadsCount.totalCount,
-          icon: Icons.code_rounded,
+          icon: const Icon(Icons.code_rounded, color: Colors.white, size: 17),
           color: const Color(0xFF2563EB),
           onTap: () {
             Get.to(() => const GoogleAdsScreen());
@@ -63,10 +69,24 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           title: 'Leads',
           todayCount: dashboard.leadsCount.todayCount,
           totalCount: dashboard.leadsCount.totalCount,
-          icon: Icons.groups_rounded,
+          icon: const Icon(Icons.groups_rounded, color: Colors.white, size: 17),
           color: const Color(0xFF4F46E5),
           onTap: () {
             Get.toNamed(AppRoutes.leads);
+          },
+        ),
+        _LeadSummaryCardData(
+          title: 'Meta Data Lead',
+          todayCount: dashboard.bookCallsCount.todayCount,
+          totalCount: dashboard.bookCallsCount.totalCount,
+          icon: const FaIcon(
+            FontAwesomeIcons.meta,
+            color: Colors.white,
+            size: 17,
+          ),
+          color: const Color(0xFF1877F2),
+          onTap: () {
+            Get.to(() => const MetaLeadsScreen());
           },
         ),
       ];
@@ -176,7 +196,7 @@ class _LeadSummaryCardData {
   final String title;
   final int todayCount;
   final int totalCount;
-  final IconData icon;
+  final Widget icon;
   final Color color;
   final VoidCallback onTap;
 }
@@ -213,7 +233,7 @@ class _LeadSummaryCard extends StatelessWidget {
                           color: card.color,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Icon(card.icon, color: Colors.white, size: 17),
+                        child: Center(child: card.icon),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -289,7 +309,9 @@ class _RecentLeadCard extends StatelessWidget {
             radius: 17,
             backgroundColor: const Color(0xFFE8F1FF),
             child: Text(
-              lead.displayName.isEmpty ? '?' : lead.displayName[0].toUpperCase(),
+              lead.displayName.isEmpty
+                  ? '?'
+                  : lead.displayName[0].toUpperCase(),
               style: AppTextStyles.style(
                 color: const Color(0xFF1D6FEA),
                 fontSize: 14,
@@ -313,9 +335,15 @@ class _RecentLeadCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                _RecentLeadInfoRow(icon: Icons.email_outlined, text: lead.displayEmail),
+                _RecentLeadInfoRow(
+                  icon: Icons.email_outlined,
+                  text: lead.displayEmail,
+                ),
                 const SizedBox(height: 2),
-                _RecentLeadInfoRow(icon: Icons.phone_outlined, text: lead.displayPhone),
+                _RecentLeadInfoRow(
+                  icon: Icons.phone_outlined,
+                  text: lead.displayPhone,
+                ),
                 const SizedBox(height: 2),
                 _RecentLeadInfoRow(
                   icon: Icons.label_outline_rounded,

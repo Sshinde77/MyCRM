@@ -32,6 +32,7 @@ import '../models/renewal_settings_model.dart';
 import '../models/renewal_model.dart';
 import '../models/team_setting_model.dart';
 import '../models/vendor_model.dart';
+import '../models/quick_stats_model.dart';
 import '../core/services/secure_storage_service.dart';
 
 /// Thin wrapper around Dio so API calls share one base configuration.
@@ -621,8 +622,8 @@ class ApiService {
     if (normalizedUserId.isEmpty) return;
     final normalizedDeviceId =
         (deviceInfo['device_id']?.toString() ?? normalizedUserId).trim();
-    final normalizedPlatform =
-        (deviceInfo['platform']?.toString() ?? 'unknown').trim();
+    final normalizedPlatform = (deviceInfo['platform']?.toString() ?? 'unknown')
+        .trim();
 
     final response = await post(
       ApiConstants.testFcm,
@@ -646,8 +647,8 @@ class ApiService {
     if (normalizedToken.isEmpty || normalizedUserId.isEmpty) return;
     final normalizedDeviceId =
         (deviceInfo['device_id']?.toString() ?? normalizedUserId).trim();
-    final normalizedPlatform =
-        (deviceInfo['platform']?.toString() ?? 'unknown').trim();
+    final normalizedPlatform = (deviceInfo['platform']?.toString() ?? 'unknown')
+        .trim();
 
     final response = await post(
       ApiConstants.testFcm,
@@ -1678,8 +1679,14 @@ class ApiService {
   }
 
   /// Loads client issues and form option data from the index endpoint.
-  Future<ClientIssueIndexData> getClientIssuesIndexData() async {
+  Future<ClientIssueIndexData> getClientIssuesIndexData({
+    String? search,
+  }) async {
     final query = await _resolveClientIssueQueryParameters();
+    final normalizedSearch = (search ?? '').trim();
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
     Response response;
     try {
       response = await get(
@@ -2731,6 +2738,56 @@ class ApiService {
         'todaysWebAppLeadsCount',
         'allWebAppLeadsCount',
       ),
+    );
+  }
+
+  /// Loads quick stats for profile/dashboard summary section.
+  Future<QuickStatsModel> getQuickStats() async {
+    final response = await get(ApiConstants.quickStats);
+    final root = _normalizeMap(response.data);
+
+    final nestedData = root['data'];
+    final payload = nestedData is Map
+        ? nestedData.map((key, value) => MapEntry(key.toString(), value))
+        : root;
+
+    int readCount(List<String> keys) {
+      for (final key in keys) {
+        final value = payload[key];
+        final parsed = _readInt(value);
+        if (parsed != null) {
+          return parsed;
+        }
+      }
+      return 0;
+    }
+
+    return QuickStatsModel(
+      projectsCount: readCount(const [
+        'projects',
+        'project_count',
+        'projects_count',
+        'total_projects',
+      ]),
+      leadsCount: readCount(const [
+        'leads',
+        'lead_count',
+        'leads_count',
+        'total_leads',
+      ]),
+      tasksCount: readCount(const [
+        'tasks',
+        'task_count',
+        'tasks_count',
+        'total_tasks',
+      ]),
+      issuesCount: readCount(const [
+        'issues',
+        'issue_count',
+        'issues_count',
+        'client_issues',
+        'total_issues',
+      ]),
     );
   }
 
@@ -3873,14 +3930,8 @@ class ApiService {
         MapEntry('status', status),
         MapEntry('team', normalizedTeam.toString()),
         MapEntry('password', password),
-        MapEntry(
-          'sendWelcomeEmail',
-          sendWelcomeEmail ? 'true' : 'false',
-        ),
-        MapEntry(
-          'send_welcome_email',
-          sendWelcomeEmail ? '1' : '0',
-        ),
+        MapEntry('sendWelcomeEmail', sendWelcomeEmail ? 'true' : 'false'),
+        MapEntry('send_welcome_email', sendWelcomeEmail ? '1' : '0'),
       ]);
       for (final department in normalizedDepartments) {
         final value = department.toString().trim();

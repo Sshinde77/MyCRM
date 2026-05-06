@@ -136,9 +136,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                 onMarkAll: _markAllAsRead,
               ),
               const SizedBox(height: 10),
-              Expanded(
-                child: _buildBody(compact),
-              ),
+              Expanded(child: _buildBody(compact)),
               if (_lastPage > 1) ...[
                 const SizedBox(height: 8),
                 _PaginationBar(

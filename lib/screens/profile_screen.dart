@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/models/quick_stats_model.dart';
+import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/screens/book_a_call.dart';
 import 'package:mycrm/screens/google_ads_screen.dart';
 
@@ -18,6 +20,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  late final Future<QuickStatsModel> _quickStatsFuture;
+
   static const List<_ProfileAction> _actions = [
     // _ProfileAction(
     //   title: 'Personal Information',
@@ -103,6 +107,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _quickStatsFuture = ApiService.instance.getQuickStats();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
@@ -148,7 +158,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             _ProfileHeader(actionsCount: actions.length),
                             const SizedBox(height: 14),
-                            _QuickStatsCard(actionsCount: actions.length),
+                            _QuickStatsCard(
+                              actionsCount: actions.length,
+                              quickStatsFuture: _quickStatsFuture,
+                            ),
                             const SizedBox(height: 16),
                             const _MainMenuHeader(),
                             const SizedBox(height: 10),
@@ -548,19 +561,16 @@ class _ProfileHeaderCalendarBadge extends StatelessWidget {
 }
 
 class _QuickStatsCard extends StatelessWidget {
-  const _QuickStatsCard({required this.actionsCount});
+  const _QuickStatsCard({
+    required this.actionsCount,
+    required this.quickStatsFuture,
+  });
 
   final int actionsCount;
+  final Future<QuickStatsModel> quickStatsFuture;
 
   @override
   Widget build(BuildContext context) {
-    final stats = <_QuickStatItem>[
-      _QuickStatItem('Projects', actionsCount.toString(), Icons.work_outline),
-      const _QuickStatItem('Leads', '24', Icons.person_outline_rounded),
-      const _QuickStatItem('Tasks', '16', Icons.check_circle_outline_rounded),
-      const _QuickStatItem('Issues', '08', Icons.shield_outlined),
-    ];
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
@@ -593,7 +603,10 @@ class _QuickStatsCard extends StatelessWidget {
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(10),
@@ -610,20 +623,69 @@ class _QuickStatsCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.keyboard_arrow_down_rounded,
-                        color: Colors.white, size: 16),
+                    const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: stats
-                .map(
-                  (item) => Expanded(child: _QuickStatTile(item: item)),
-                )
-                .toList(),
+          FutureBuilder<QuickStatsModel>(
+            future: quickStatsFuture,
+            builder: (context, snapshot) {
+              final hasApiValues = snapshot.hasData;
+              final data = snapshot.data;
+              final stats = <_QuickStatItem>[
+                _QuickStatItem(
+                  'Projects',
+                  (data?.projectsCount ?? actionsCount).toString(),
+                  Icons.work_outline,
+                ),
+                _QuickStatItem(
+                  'Leads',
+                  (data?.leadsCount ?? 0).toString(),
+                  Icons.person_outline_rounded,
+                ),
+                _QuickStatItem(
+                  'Tasks',
+                  (data?.tasksCount ?? 0).toString(),
+                  Icons.check_circle_outline_rounded,
+                ),
+                _QuickStatItem(
+                  'Issues',
+                  (data?.issuesCount ?? 0).toString(),
+                  Icons.shield_outlined,
+                ),
+              ];
+
+              return Column(
+                children: [
+                  Row(
+                    children: stats
+                        .map((item) => Expanded(child: _QuickStatTile(item: item)))
+                        .toList(),
+                  ),
+                  if (snapshot.hasError && !hasApiValues) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Stats unavailable right now. Showing fallback values.',
+                        style: AppTextStyles.style(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),
