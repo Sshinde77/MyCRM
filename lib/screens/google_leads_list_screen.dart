@@ -9,14 +9,14 @@ import '../core/utils/app_snackbar.dart';
 import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 
-class MetaLeadsScreen extends StatefulWidget {
-  const MetaLeadsScreen({super.key});
+class GoogleLeadsListScreen extends StatefulWidget {
+  const GoogleLeadsListScreen({super.key});
 
   @override
-  State<MetaLeadsScreen> createState() => _MetaLeadsScreenState();
+  State<GoogleLeadsListScreen> createState() => _GoogleLeadsListScreenState();
 }
 
-class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
+class _GoogleLeadsListScreenState extends State<GoogleLeadsListScreen> {
   final ApiService _apiService = ApiService.instance;
   final TextEditingController _searchController = TextEditingController();
 
@@ -29,8 +29,10 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
   String _appliedSearch = '';
   DateTime? _selectedDateFrom;
   DateTime? _selectedDateTo;
-  String _selectedFormId = '';
-  List<MetaLeadRecord> _records = const <MetaLeadRecord>[];
+  String _selectedType = '';
+  String _selectedCampaignId = '';
+  String _selectedLeadStage = '';
+  List<GoogleLeadRecord> _records = const <GoogleLeadRecord>[];
 
   @override
   void initState() {
@@ -52,7 +54,7 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
     if (!canView) {
       AppSnackbar.show(
         'Access denied',
-        'You do not have permission to view Meta leads.',
+        'You do not have permission to view Google leads.',
       );
       if (Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
@@ -61,10 +63,10 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
       }
       return;
     }
-    await _loadMetaLeads();
+    await _loadGoogleLeads();
   }
 
-  Future<void> _loadMetaLeads({int page = 1, String? search}) async {
+  Future<void> _loadGoogleLeads({int page = 1, String? search}) async {
     if (!mounted) return;
     final normalizedSearch = (search ?? _appliedSearch).trim();
 
@@ -74,17 +76,15 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
     });
 
     try {
-      final result = await _apiService.getMetaLeadsPage(
+      final result = await _apiService.getGoogleAdsLeadsPage(
         page: page,
         perPage: _entriesPerPage,
         search: normalizedSearch,
-        dateFrom: _selectedDateFrom == null
-            ? null
-            : _formatDate(_selectedDateFrom!),
-        dateTo: _selectedDateTo == null ? null : _formatDate(_selectedDateTo!),
-        formId: _selectedFormId,
+        type: _selectedType,
+        campaignId: _selectedCampaignId,
+        leadStage: _selectedLeadStage,
       );
-      final mapped = result.items.map(MetaLeadRecord.fromJson).toList();
+      final mapped = result.items.map(GoogleLeadRecord.fromJson).toList();
       if (!mounted) return;
       setState(() {
         _records = mapped;
@@ -98,7 +98,7 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
     } on DioException catch (error) {
       if (!mounted) return;
       final responseData = error.response?.data;
-      var message = 'Failed to load Meta leads.';
+      var message = 'Failed to load Google leads.';
       if (responseData is Map && responseData['message'] != null) {
         message = responseData['message'].toString();
       } else if (error.message != null && error.message!.trim().isNotEmpty) {
@@ -112,7 +112,7 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load Meta leads.';
+        _error = 'Failed to load Google leads.';
       });
     }
   }
@@ -120,8 +120,12 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
   Future<void> _openFilterPopup() async {
     var tempDateFrom = _selectedDateFrom;
     var tempDateTo = _selectedDateTo;
-    var tempFormId = _selectedFormId;
-    final formController = TextEditingController(text: tempFormId);
+    var tempType = _selectedType;
+    var tempCampaignId = _selectedCampaignId;
+    var tempLeadStage = _selectedLeadStage;
+    final typeController = TextEditingController(text: tempType);
+    final campaignIdController = TextEditingController(text: tempCampaignId);
+    final leadStageController = TextEditingController(text: tempLeadStage);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -144,7 +148,7 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Filter Meta Leads',
+                      'Filter Google Leads',
                       style: AppTextStyles.style(
                         color: const Color(0xFF1E2A3B),
                         fontSize: 16,
@@ -201,10 +205,32 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                       ),
                     const SizedBox(height: 8),
                     TextField(
-                      controller: formController,
-                      onChanged: (value) => tempFormId = value.trim(),
+                      controller: typeController,
+                      onChanged: (value) => tempType = value.trim(),
                       decoration: InputDecoration(
-                        hintText: 'Form ID',
+                        hintText: 'Type (e.g. real)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: campaignIdController,
+                      onChanged: (value) => tempCampaignId = value.trim(),
+                      decoration: InputDecoration(
+                        hintText: 'Campaign ID',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: leadStageController,
+                      onChanged: (value) => tempLeadStage = value.trim(),
+                      decoration: InputDecoration(
+                        hintText: 'Lead Stage (e.g. NEW)',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -219,10 +245,12 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                               setState(() {
                                 _selectedDateFrom = null;
                                 _selectedDateTo = null;
-                                _selectedFormId = '';
+                                _selectedType = '';
+                                _selectedCampaignId = '';
+                                _selectedLeadStage = '';
                               });
                               Navigator.of(sheetContext).pop();
-                              _loadMetaLeads(page: 1, search: _appliedSearch);
+                              _loadGoogleLeads(page: 1, search: _appliedSearch);
                             },
                             child: const Text('Reset'),
                           ),
@@ -234,10 +262,12 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                               setState(() {
                                 _selectedDateFrom = tempDateFrom;
                                 _selectedDateTo = tempDateTo;
-                                _selectedFormId = tempFormId.trim();
+                                _selectedType = tempType.trim();
+                                _selectedCampaignId = tempCampaignId.trim();
+                                _selectedLeadStage = tempLeadStage.trim();
                               });
                               Navigator.of(sheetContext).pop();
-                              _loadMetaLeads(page: 1, search: _appliedSearch);
+                              _loadGoogleLeads(page: 1, search: _appliedSearch);
                             },
                             child: const Text('Apply'),
                           ),
@@ -252,6 +282,10 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
         );
       },
     );
+
+    typeController.dispose();
+    campaignIdController.dispose();
+    leadStageController.dispose();
   }
 
   @override
@@ -270,22 +304,22 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
         currentTab: AppBottomNavTab.leads,
       ),
       appBar: AppBar(
-        title: const Text('Meta Leads'),
+        title: const Text('Google Leads'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _loadMetaLeads(page: currentPage),
+          onRefresh: () => _loadGoogleLeads(page: currentPage),
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 120),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _MetaLeadsToolbar(
+                _GoogleLeadsToolbar(
                   controller: _searchController,
-                  onSearchTap: () => _loadMetaLeads(
+                  onSearchTap: () => _loadGoogleLeads(
                     page: 1,
                     search: _searchController.text.trim(),
                   ),
@@ -298,18 +332,18 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else if (_error != null)
-                  _MetaErrorCard(message: _error!, onRetry: _loadMetaLeads)
+                  _GoogleErrorCard(message: _error!, onRetry: _loadGoogleLeads)
                 else if (_records.isEmpty)
-                  _MetaEmptyCard(
+                  _GoogleEmptyCard(
                     message: _appliedSearch.isEmpty
-                        ? 'No Meta leads found.'
-                        : 'No Meta leads matched your search/filter.',
+                        ? 'No Google leads found.'
+                        : 'No Google leads matched your search/filter.',
                   )
                 else
                   ..._records.map(
                     (record) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _MetaLeadCard(
+                      child: _GoogleLeadCard(
                         record: record,
                         onTap: () => _openLeadDetails(record),
                       ),
@@ -332,18 +366,37 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
     );
   }
 
-  Future<void> _openLeadDetails(MetaLeadRecord record) async {
-    final deleted = await Get.to<bool>(
-      () => MetaLeadDetailsScreen(record: record),
-    );
-    if (deleted == true && mounted) {
-      await _loadMetaLeads(page: 1, search: _appliedSearch);
+  Future<void> _openLeadDetails(GoogleLeadRecord record) async {
+    try {
+      final id = record.id.trim();
+      if (id.isEmpty) {
+        await Get.to<void>(() => GoogleLeadDetailsScreen(record: record));
+        return;
+      }
+      final detail = await _apiService.getGoogleAdsLeadDetail(id);
+      final fullRecord = GoogleLeadRecord.fromJson(detail);
+      await Get.to<void>(() => GoogleLeadDetailsScreen(record: fullRecord));
+    } on DioException catch (error) {
+      if (!mounted) return;
+      final responseData = error.response?.data;
+      var message = 'Failed to load lead details.';
+      if (responseData is Map && responseData['message'] != null) {
+        message = responseData['message'].toString();
+      } else if (error.message != null && error.message!.trim().isNotEmpty) {
+        message = error.message!.trim();
+      }
+      AppSnackbar.show('Load failed', message);
+      await Get.to<void>(() => GoogleLeadDetailsScreen(record: record));
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.show('Load failed', 'Failed to load lead details.');
+      await Get.to<void>(() => GoogleLeadDetailsScreen(record: record));
     }
   }
 }
 
-class _MetaLeadsToolbar extends StatelessWidget {
-  const _MetaLeadsToolbar({
+class _GoogleLeadsToolbar extends StatelessWidget {
+  const _GoogleLeadsToolbar({
     required this.controller,
     required this.onSearchTap,
     required this.onFilterTap,
@@ -374,7 +427,7 @@ class _MetaLeadsToolbar extends StatelessWidget {
                     textInputAction: TextInputAction.search,
                     onSubmitted: (_) => onSearchTap(),
                     decoration: InputDecoration(
-                      hintText: 'Search Meta leads...',
+                      hintText: 'Search Google leads...',
                       hintStyle: AppTextStyles.style(
                         color: const Color(0xFF94A3B8),
                         fontSize: 14,
@@ -416,10 +469,10 @@ class _MetaLeadsToolbar extends StatelessWidget {
   }
 }
 
-class _MetaLeadCard extends StatelessWidget {
-  const _MetaLeadCard({required this.record, required this.onTap});
+class _GoogleLeadCard extends StatelessWidget {
+  const _GoogleLeadCard({required this.record, required this.onTap});
 
-  final MetaLeadRecord record;
+  final GoogleLeadRecord record;
   final VoidCallback onTap;
 
   @override
@@ -458,9 +511,10 @@ class _MetaLeadCard extends StatelessWidget {
               const SizedBox(height: 8),
               _detailLine('Email', record.email),
               _detailLine('Phone', record.phone),
-              _detailLine('Form ID', record.formId),
-              _detailLine('City/State', record.cityState),
-              _detailLine('Lead Date', record.leadDate),
+              _detailLine('Company', record.company),
+              _detailLine('Website', record.website),
+              _detailLine('Source', record.sourcePage),
+              _detailLine('Lead Date', record.createdAt),
             ],
           ),
         ),
@@ -469,8 +523,8 @@ class _MetaLeadCard extends StatelessWidget {
   }
 }
 
-class _MetaErrorCard extends StatelessWidget {
-  const _MetaErrorCard({required this.message, required this.onRetry});
+class _GoogleErrorCard extends StatelessWidget {
+  const _GoogleErrorCard({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -504,8 +558,8 @@ class _MetaErrorCard extends StatelessWidget {
   }
 }
 
-class _MetaEmptyCard extends StatelessWidget {
-  const _MetaEmptyCard({required this.message});
+class _GoogleEmptyCard extends StatelessWidget {
+  const _GoogleEmptyCard({required this.message});
 
   final String message;
 
@@ -531,19 +585,16 @@ class _MetaEmptyCard extends StatelessWidget {
   }
 }
 
-class MetaLeadRecord {
-  const MetaLeadRecord({
+class GoogleLeadRecord {
+  const GoogleLeadRecord({
     required this.id,
     required this.name,
     required this.email,
     required this.phone,
-    required this.formId,
-    required this.city,
-    required this.state,
-    required this.leadDate,
-    required this.pageId,
-    required this.adId,
-    required this.storedAt,
+    required this.company,
+    required this.website,
+    required this.sourcePage,
+    required this.createdAt,
     required this.raw,
   });
 
@@ -551,99 +602,54 @@ class MetaLeadRecord {
   final String name;
   final String email;
   final String phone;
-  final String formId;
-  final String city;
-  final String state;
-  final String leadDate;
-  final String pageId;
-  final String adId;
-  final String storedAt;
+  final String company;
+  final String website;
+  final String sourcePage;
+  final String createdAt;
   final Map<String, dynamic> raw;
 
-  String get cityState {
-    final cityValue = city.trim();
-    final stateValue = state.trim();
-    if (cityValue.isEmpty && stateValue.isEmpty) {
-      return '-';
-    }
-    if (cityValue.isEmpty) return stateValue;
-    if (stateValue.isEmpty) return cityValue;
-    return '$cityValue, $stateValue';
-  }
-
-  Map<String, String> get formFields {
-    final candidates = <dynamic>[
-      raw['all_form_fields'],
-      raw['allFormFields'],
-      raw['form_fields'],
-      raw['formFields'],
-      raw['field_data'],
-      raw['fieldData'],
-      raw['data'],
-      raw['payload'],
-    ];
-
-    for (final candidate in candidates) {
-      final extracted = _extractFormFields(candidate);
-      if (extracted.isNotEmpty) {
-        return extracted;
-      }
-    }
-
-    const excludedKeys = <String>{
+  Map<String, String> get allFields {
+    final excludedKeys = <String>{
       'id',
-      'lead_id',
-      'meta_lead_id',
       'name',
       'full_name',
-      'lead_name',
+      'client_name',
       'email',
       'email_address',
       'phone',
       'mobile',
-      'phone_number',
-      'form_id',
-      'formId',
-      'meta_form_id',
-      'city',
-      'state',
-      'lead_date',
+      'contact_number',
+      'company',
+      'company_name',
+      'website',
+      'website_url',
+      'url',
+      'source_page',
+      'sourcePage',
+      'source',
       'created_at',
-      'date',
-      'submitted_at',
-      'stored_at',
-      'page_id',
-      'ad_id',
-      'status',
-      'all_form_fields',
-      'allFormFields',
-      'form_fields',
-      'formFields',
-      'field_data',
-      'fieldData',
-      'data',
-      'payload',
+      'createdAt',
+      'created',
     };
-    final fallback = <String, String>{};
+
+    final fields = <String, String>{};
     raw.forEach((key, value) {
       final normalizedKey = key.trim();
       if (normalizedKey.isEmpty || excludedKeys.contains(normalizedKey)) {
         return;
       }
-      if (value is Map || value is List || value == null) return;
+      if (value == null || value is Map || value is List) return;
       final text = value.toString().trim();
       if (text.isEmpty || text.toLowerCase() == 'null') return;
-      fallback[_humanizeKey(normalizedKey)] = text;
+      fields[_humanizeKey(normalizedKey)] = text;
     });
-    return fallback;
+    return fields;
   }
 
-  factory MetaLeadRecord.fromJson(Map<String, dynamic> source) {
-    final payload = _extractMetaLeadSource(source);
-
-    String readString(List<String> keys, {String fallback = '-'}) {
+  factory GoogleLeadRecord.fromJson(Map<String, dynamic> json) {
+    String read(List<String> keys, {String fallback = '-'}) {
       for (final key in keys) {
-        final value = payload[key];
+        final value = json[key];
         if (value == null) continue;
         final text = value.toString().trim();
         if (text.isNotEmpty && text.toLowerCase() != 'null') {
@@ -653,208 +659,84 @@ class MetaLeadRecord {
       return fallback;
     }
 
-    final submittedAt = readString(const [
-      'created_time',
-      'lead_date',
-      'submitted_at',
-      'created_at',
-      'date',
-    ]);
-    return MetaLeadRecord(
-      id: readString(const ['lead_id', 'id', 'meta_lead_id'], fallback: ''),
-      name: readString(const ['full_name', 'name', 'lead_name']),
-      email: readString(const ['email', 'email_address']),
-      phone: readString(const ['phone', 'mobile', 'phone_number']),
-      formId: readString(const ['form_id', 'formId', 'meta_form_id']),
-      city: readString(const ['city'], fallback: ''),
-      state: readString(const ['state'], fallback: ''),
-      leadDate: _normalizeLeadDate(submittedAt),
-      pageId: readString(const ['page_id', 'pageId']),
-      adId: readString(const ['ad_id', 'adId']),
-      storedAt: _normalizeLeadDate(
-        readString(const ['created_at', 'stored_at', 'storedAt']),
+    return GoogleLeadRecord(
+      id: read(const ['id'], fallback: ''),
+      name: read(const ['name', 'full_name', 'client_name']),
+      email: read(const ['email', 'email_address']),
+      phone: read(const ['phone', 'mobile', 'contact_number']),
+      company: read(const ['company', 'company_name']),
+      website: read(const ['website', 'website_url', 'url']),
+      sourcePage: read(const ['source_page', 'sourcePage', 'source']),
+      createdAt: _normalizeLeadDate(
+        read(const ['created_at', 'createdAt', 'created']),
       ),
-      raw: Map<String, dynamic>.from(payload),
+      raw: Map<String, dynamic>.from(json),
     );
   }
 }
 
-class MetaLeadDetailsScreen extends StatefulWidget {
-  const MetaLeadDetailsScreen({super.key, required this.record});
+class GoogleLeadDetailsScreen extends StatelessWidget {
+  const GoogleLeadDetailsScreen({super.key, required this.record});
 
-  final MetaLeadRecord record;
-
-  @override
-  State<MetaLeadDetailsScreen> createState() => _MetaLeadDetailsScreenState();
-}
-
-class _MetaLeadDetailsScreenState extends State<MetaLeadDetailsScreen> {
-  bool _isLoading = true;
-  String? _error;
-  late MetaLeadRecord _record;
-
-  @override
-  void initState() {
-    super.initState();
-    _record = widget.record;
-    _loadLeadDetail();
-  }
-
-  Future<void> _loadLeadDetail() async {
-    final id = _resolveDetailId(widget.record);
-    if (id.isEmpty) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Meta lead id is missing.';
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final detail = await ApiService.instance.getMetaLeadDetail(id);
-      if (!mounted) return;
-      setState(() {
-        _record = MetaLeadRecord.fromJson(detail);
-        _isLoading = false;
-      });
-    } on DioException catch (error) {
-      if (!mounted) return;
-      final responseData = error.response?.data;
-      var message = 'Failed to load lead details.';
-      if (responseData is Map && responseData['message'] != null) {
-        message = responseData['message'].toString();
-      } else if (error.message != null && error.message!.trim().isNotEmpty) {
-        message = error.message!.trim();
-      }
-      setState(() {
-        _isLoading = false;
-        _error = message;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _error = 'Failed to load lead details.';
-      });
-    }
-  }
-
-  String _resolveDetailId(MetaLeadRecord record) {
-    final rawIdValue = record.raw['id'];
-    final rawId = rawIdValue == null ? '' : rawIdValue.toString().trim();
-    if (rawId.isNotEmpty) {
-      return rawId;
-    }
-
-    final fallbackId = record.id.trim();
-    if (fallbackId.isEmpty) {
-      return '';
-    }
-
-    // Block likely external lead_id values from being used on /meta-leads/{id}.
-    if (_looksLikeExternalLeadId(fallbackId)) {
-      return '';
-    }
-
-    return fallbackId;
-  }
-
-  bool _looksLikeExternalLeadId(String value) {
-    return RegExp(r'^\d{13,}$').hasMatch(value);
-  }
+  final GoogleLeadRecord record;
 
   @override
   Widget build(BuildContext context) {
-    final record = _record;
-    final formFields = record.formFields;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
-        title: const Text('Meta Lead Details'),
+        title: const Text('Google Lead Details'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _GoogleTopHeader(record: record),
+              const SizedBox(height: 12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 900;
+                  if (compact) {
+                    return Column(
+                      children: [
+                        _GoogleContactInformationCard(record: record),
+                        const SizedBox(height: 10),
+                        _GoogleLeadInformationCard(record: record),
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.style(
-                          color: const Color(0xFFB42318),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Expanded(
+                        child: _GoogleContactInformationCard(record: record),
                       ),
-                      const SizedBox(height: 10),
-                      OutlinedButton(
-                        onPressed: _loadLeadDetail,
-                        child: const Text('Retry'),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _GoogleLeadInformationCard(record: record),
                       ),
                     ],
-                  ),
-                ),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(14, 8, 14, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _MetaTopHeader(record: record),
-                    const SizedBox(height: 12),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxWidth < 900;
-                        if (compact) {
-                          return Column(
-                            children: [
-                              _ContactInformationCard(record: record),
-                              const SizedBox(height: 10),
-                              _MetaInformationCard(record: record),
-                            ],
-                          );
-                        }
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _ContactInformationCard(record: record),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _MetaInformationCard(record: record),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _AllFormFieldsCard(fields: formFields),
-                  ],
-                ),
+                  );
+                },
               ),
+              const SizedBox(height: 12),
+              _GoogleAllFieldsCard(fields: record.allFields),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _MetaTopHeader extends StatelessWidget {
-  const _MetaTopHeader({required this.record});
+class _GoogleTopHeader extends StatelessWidget {
+  const _GoogleTopHeader({required this.record});
 
-  final MetaLeadRecord record;
+  final GoogleLeadRecord record;
 
   @override
   Widget build(BuildContext context) {
@@ -881,7 +763,7 @@ class _MetaTopHeader extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFF1D8CF8),
+              color: const Color(0xFFEA4335),
               borderRadius: BorderRadius.circular(28),
             ),
             child: const Icon(Icons.ads_click, color: Colors.white),
@@ -901,7 +783,7 @@ class _MetaTopHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Lead ID: ${record.id}',
+                  'Lead ID: ${record.id.isEmpty ? '-' : record.id}',
                   style: AppTextStyles.style(
                     color: const Color(0xFF64748B),
                     fontSize: 13,
@@ -910,7 +792,7 @@ class _MetaTopHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Submitted on ${record.leadDate}',
+                  'Submitted on ${record.createdAt}',
                   style: AppTextStyles.style(
                     color: const Color(0xFF64748B),
                     fontSize: 13,
@@ -941,10 +823,10 @@ class _MetaTopHeader extends StatelessWidget {
   }
 }
 
-class _ContactInformationCard extends StatelessWidget {
-  const _ContactInformationCard({required this.record});
+class _GoogleContactInformationCard extends StatelessWidget {
+  const _GoogleContactInformationCard({required this.record});
 
-  final MetaLeadRecord record;
+  final GoogleLeadRecord record;
 
   @override
   Widget build(BuildContext context) {
@@ -956,60 +838,61 @@ class _ContactInformationCard extends StatelessWidget {
           _detailLine('Full Name', record.name),
           _detailLine('Email', record.email),
           _detailLine('Phone', record.phone),
-          _detailLine('City', record.city.isEmpty ? '-' : record.city),
-          _detailLine('State', record.state.isEmpty ? '-' : record.state),
+          _detailLine('Company', record.company),
+          _detailLine('Website', record.website),
         ],
       ),
     );
   }
 }
 
-class _MetaInformationCard extends StatelessWidget {
-  const _MetaInformationCard({required this.record});
+class _GoogleLeadInformationCard extends StatelessWidget {
+  const _GoogleLeadInformationCard({required this.record});
 
-  final MetaLeadRecord record;
+  final GoogleLeadRecord record;
 
   @override
   Widget build(BuildContext context) {
+    final leadId = record.id.isEmpty ? '-' : record.id;
+
     return _SectionCard(
-      title: 'Meta Information',
+      title: 'Lead Information',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(child: _detailLine('Lead ID', record.id)),
+              Expanded(child: _detailLine('Lead ID', leadId)),
               TextButton(
                 onPressed: () {
-                  Clipboard.setData(ClipboardData(text: record.id));
-                  AppSnackbar.show('Copied', 'Lead ID copied.');
+                  if (leadId != '-') {
+                    Clipboard.setData(ClipboardData(text: leadId));
+                    AppSnackbar.show('Copied', 'Lead ID copied.');
+                  }
                 },
                 child: const Text('Copy'),
               ),
             ],
           ),
-          _detailLine('Form ID', record.formId),
-          _detailLine('Page ID', record.pageId),
-          _detailLine('Ad ID', record.adId),
-          _detailLine('Submitted At', record.leadDate),
-          _detailLine('Stored At', record.storedAt),
+          _detailLine('Source', record.sourcePage),
+          _detailLine('Submitted At', record.createdAt),
         ],
       ),
     );
   }
 }
 
-class _AllFormFieldsCard extends StatelessWidget {
-  const _AllFormFieldsCard({required this.fields});
+class _GoogleAllFieldsCard extends StatelessWidget {
+  const _GoogleAllFieldsCard({required this.fields});
 
   final Map<String, String> fields;
 
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
-      title: 'All Form Fields',
+      title: 'All Fields',
       child: fields.isEmpty
-          ? const Text('No form field data available.')
+          ? const Text('No additional field data available.')
           : Table(
               border: TableBorder.all(color: const Color(0xFFD7DCE7)),
               columnWidths: const {
@@ -1116,7 +999,7 @@ Widget _detailLine(String label, String value) {
         ),
         children: [
           TextSpan(
-            text: value.isEmpty ? '-' : value,
+            text: value.trim().isEmpty ? '-' : value.trim(),
             style: const TextStyle(
               fontWeight: FontWeight.w500,
               color: Color(0xFF23364D),
@@ -1127,68 +1010,6 @@ Widget _detailLine(String label, String value) {
       ),
     ),
   );
-}
-
-Map<String, String> _extractFormFields(dynamic source) {
-  if (source is Map) {
-    final map = source.map((key, value) => MapEntry(key.toString(), value));
-    final result = <String, String>{};
-    map.forEach((key, value) {
-      if (value is Map || value is List || value == null) return;
-      final text = value.toString().trim();
-      if (text.isEmpty || text.toLowerCase() == 'null') return;
-      result[_humanizeKey(key)] = text;
-    });
-    return result;
-  }
-  if (source is List) {
-    final result = <String, String>{};
-    for (final item in source) {
-      if (item is! Map) continue;
-      final map = item.map((key, value) => MapEntry(key.toString(), value));
-      final key =
-          map['field_name'] ??
-          map['name'] ??
-          map['label'] ??
-          map['key'] ??
-          map['question'];
-      final values = map['values'];
-      String? valuesJoined;
-      if (values is List) {
-        final normalized = values
-            .map((entry) => entry?.toString().trim() ?? '')
-            .where((entry) => entry.isNotEmpty && entry.toLowerCase() != 'null')
-            .toList(growable: false);
-        if (normalized.isNotEmpty) {
-          valuesJoined = normalized.join(', ');
-        }
-      }
-      final value =
-          valuesJoined ??
-          map['value'] ??
-          map['field_value'] ??
-          map['answer'] ??
-          map['text'];
-      if (key == null || value == null) continue;
-      final keyText = key.toString().trim();
-      final valueText = value.toString().trim();
-      if (keyText.isEmpty || valueText.isEmpty) continue;
-      result[_humanizeKey(keyText)] = valueText;
-    }
-    return result;
-  }
-  return const <String, String>{};
-}
-
-Map<String, dynamic> _extractMetaLeadSource(Map<String, dynamic> source) {
-  final nested = source['data'];
-  if (nested is Map<String, dynamic>) {
-    return nested;
-  }
-  if (nested is Map) {
-    return nested.map((key, value) => MapEntry(key.toString(), value));
-  }
-  return source;
 }
 
 String _humanizeKey(String key) {

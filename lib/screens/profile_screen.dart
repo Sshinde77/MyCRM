@@ -5,7 +5,7 @@ import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/models/quick_stats_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/screens/book_a_call.dart';
-import 'package:mycrm/screens/google_ads_screen.dart';
+import 'package:mycrm/screens/web_leads.dart';
 
 import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
@@ -88,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       screenBuilder: BookACallScreen.new,
     ),
     _ProfileAction(
-      title: 'Google Ads',
+      title: 'Web Ads',
       subtitle: 'Manage your ad campaigns',
       icon: Icons.ads_click_rounded,
       routeName: '',

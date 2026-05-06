@@ -3231,6 +3231,60 @@ class ApiService {
     return _parseMapListPageResponse(response.data, normalizedPage);
   }
 
+  /// Loads a single paginated Google Ads leads page.
+  Future<MapListPageResult> getGoogleAdsLeadsPage({
+    int page = 1,
+    int? perPage,
+    String? search,
+    String? type,
+    String? campaignId,
+    String? leadStage,
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedSearch = (search ?? '').trim();
+    final normalizedType = (type ?? '').trim();
+    final normalizedCampaignId = (campaignId ?? '').trim();
+    final normalizedLeadStage = (leadStage ?? '').trim();
+
+    final query = <String, dynamic>{'page': normalizedPage};
+    if (perPage != null && perPage > 0) {
+      query['per_page'] = perPage;
+    }
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+    if (normalizedType.isNotEmpty) {
+      query['type'] = normalizedType;
+    }
+    if (normalizedCampaignId.isNotEmpty) {
+      query['campaign_id'] = normalizedCampaignId;
+    }
+    if (normalizedLeadStage.isNotEmpty) {
+      query['lead_stage'] = normalizedLeadStage;
+    }
+
+    final response = await get(
+      ApiConstants.googleAdsLeads,
+      queryParameters: query,
+    );
+    return _parseMapListPageResponse(response.data, normalizedPage);
+  }
+
+  /// Loads a single Google Ads lead detail by id.
+  Future<Map<String, dynamic>> getGoogleAdsLeadDetail(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Google Ads lead id is required.');
+    }
+    final path = ApiConstants.googleAdsLeadDetail.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final response = await get(path);
+    final source = _extractDetailSource(response.data);
+    return _normalizeMap(source);
+  }
+
   /// Deletes a single digital marketing lead by id.
   Future<void> deleteDigitalMarketingLead(String id) async {
     final normalizedId = id.trim();

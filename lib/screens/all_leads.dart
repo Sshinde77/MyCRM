@@ -8,7 +8,8 @@ import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/common_screen_app_bar.dart';
-import 'google_ads_screen.dart';
+import 'web_leads.dart';
+import 'google_leads_list_screen.dart';
 import 'meta_leads_screen.dart';
 
 class AllLeadsScreen extends StatefulWidget {
@@ -73,6 +74,20 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           color: const Color(0xFF4F46E5),
           onTap: () {
             Get.toNamed(AppRoutes.leads);
+          },
+        ),
+        _LeadSummaryCardData(
+          title: 'Google Leads',
+          todayCount: dashboard.digitalMarketingLeadsCount.todayCount,
+          totalCount: dashboard.digitalMarketingLeadsCount.totalCount,
+          icon: const FaIcon(
+            FontAwesomeIcons.google,
+            color: Colors.white,
+            size: 16,
+          ),
+          color: const Color(0xFFEA4335),
+          onTap: () {
+            Get.to(() => const GoogleLeadsListScreen());
           },
         ),
         _LeadSummaryCardData(
