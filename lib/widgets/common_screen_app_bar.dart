@@ -163,56 +163,73 @@ class _TopBarCalendarBadge extends StatelessWidget {
     final month = _months[date.month - 1];
     final dateLabel = '$day $month ${date.year}';
     final weekdayLabel = _weekdays[date.weekday - 1];
+    final badgeWidth = compact ? 108.0 : 118.0;
+    final badgeHeight = compact ? 40.0 : 44.0;
+    final iconSize = compact ? 22.0 : 24.0;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 5 : 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: compact ? 22 : 24,
-            height: compact ? 22 : 24,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEDE9FE),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              Icons.calendar_month_rounded,
-              color: Color(0xFF4F46E5),
-              size: 14,
-            ),
-          ),
-          SizedBox(width: compact ? 6 : 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                dateLabel,
-                style: TextStyle(
-                  color: const Color(0xFF4F46E5),
-                  fontSize: compact ? 9.8 : 10.5,
-                  fontWeight: FontWeight.w700,
-                ),
+    return SizedBox(
+      width: badgeWidth,
+      height: badgeHeight,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: compact ? 7 : 9),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: iconSize,
+              height: iconSize,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDE9FE),
+                borderRadius: BorderRadius.circular(8),
               ),
-              Text(
-                weekdayLabel,
-                style: TextStyle(
-                  color: const Color(0xFF64748B),
-                  fontSize: compact ? 9 : 9.8,
-                  fontWeight: FontWeight.w500,
-                ),
+              child: const Icon(
+                Icons.calendar_month_rounded,
+                color: Color(0xFF4F46E5),
+                size: 14,
               ),
-            ],
-          ),
-        ],
+            ),
+            SizedBox(width: compact ? 6 : 8),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      dateLabel,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: const Color(0xFF4F46E5),
+                        fontSize: compact ? 11 : 11.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      weekdayLabel,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: const Color(0xFF64748B),
+                        fontSize: compact ? 9.5 : 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
