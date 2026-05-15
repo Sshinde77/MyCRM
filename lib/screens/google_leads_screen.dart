@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../core/constants/app_text_styles.dart';
+
 import '../core/services/permission_service.dart';
 import '../core/utils/app_snackbar.dart';
 import '../services/api_service.dart';

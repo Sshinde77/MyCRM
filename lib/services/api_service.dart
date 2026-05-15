@@ -1273,12 +1273,32 @@ class ApiService {
   Future<RenewalListPageResult> getVendorRenewalsPage({
     int page = 1,
     String? search,
+    String? status,
+    String? dateFrom,
+    String? dateTo,
   }) async {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
-    final query = <String, dynamic>{'page': normalizedPage};
+    final normalizedStatus = (status ?? '').trim();
+    final normalizedDateFrom = (dateFrom ?? '').trim();
+    final normalizedDateTo = (dateTo ?? '').trim();
+    final query = <String, dynamic>{};
+    if (normalizedStatus.isEmpty || normalizedPage > 1) {
+      query['page'] = normalizedPage;
+    }
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
+    }
+    if (normalizedStatus == 'upcoming') {
+      query['tab'] = normalizedStatus;
+    } else if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
+    }
+    if (normalizedDateFrom.isNotEmpty) {
+      query['date_from'] = normalizedDateFrom;
+    }
+    if (normalizedDateTo.isNotEmpty) {
+      query['date_to'] = normalizedDateTo;
     }
     final response = await get(
       ApiConstants.vendorRenewals,
@@ -1291,12 +1311,32 @@ class ApiService {
   Future<RenewalListPageResult> getClientRenewalsPage({
     int page = 1,
     String? search,
+    String? status,
+    String? dateFrom,
+    String? dateTo,
   }) async {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
-    final query = <String, dynamic>{'page': normalizedPage};
+    final normalizedStatus = (status ?? '').trim();
+    final normalizedDateFrom = (dateFrom ?? '').trim();
+    final normalizedDateTo = (dateTo ?? '').trim();
+    final query = <String, dynamic>{};
+    if (normalizedStatus.isEmpty || normalizedPage > 1) {
+      query['page'] = normalizedPage;
+    }
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
+    }
+    if (normalizedStatus == 'upcoming') {
+      query['tab'] = normalizedStatus;
+    } else if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
+    }
+    if (normalizedDateFrom.isNotEmpty) {
+      query['date_from'] = normalizedDateFrom;
+    }
+    if (normalizedDateTo.isNotEmpty) {
+      query['date_to'] = normalizedDateTo;
     }
     final response = await get(
       ApiConstants.clientRenewals,

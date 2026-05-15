@@ -20,6 +20,9 @@ class RenewalListProvider extends ChangeNotifier {
   int _currentPage = 1;
   int _lastPage = 1;
   String _currentSearch = '';
+  String _currentStatus = '';
+  String _currentDateFrom = '';
+  String _currentDateTo = '';
 
   List<RenewalModel> get renewals => _renewals;
   bool get isLoading => _isLoading;
@@ -29,19 +32,31 @@ class RenewalListProvider extends ChangeNotifier {
   int get currentPage => _currentPage;
   int get lastPage => _lastPage;
   String get currentSearch => _currentSearch;
+  String get currentStatus => _currentStatus;
+  String get currentDateFrom => _currentDateFrom;
+  String get currentDateTo => _currentDateTo;
 
   Future<void> loadRenewals({
     bool forceRefresh = false,
     int page = 1,
     String? search,
+    String? status,
+    String? dateFrom,
+    String? dateTo,
   }) async {
     if (_isLoading) return;
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
+    final normalizedStatus = (status ?? '').trim();
+    final normalizedDateFrom = (dateFrom ?? '').trim();
+    final normalizedDateTo = (dateTo ?? '').trim();
     if (!forceRefresh &&
         _renewals.isNotEmpty &&
         _currentPage == normalizedPage &&
-        _currentSearch == normalizedSearch) {
+        _currentSearch == normalizedSearch &&
+        _currentStatus == normalizedStatus &&
+        _currentDateFrom == normalizedDateFrom &&
+        _currentDateTo == normalizedDateTo) {
       return;
     }
 
@@ -54,10 +69,16 @@ class RenewalListProvider extends ChangeNotifier {
           ? await _apiService.getVendorRenewalsPage(
               page: normalizedPage,
               search: normalizedSearch,
+              status: normalizedStatus,
+              dateFrom: normalizedDateFrom,
+              dateTo: normalizedDateTo,
             )
           : await _apiService.getClientRenewalsPage(
               page: normalizedPage,
               search: normalizedSearch,
+              status: normalizedStatus,
+              dateFrom: normalizedDateFrom,
+              dateTo: normalizedDateTo,
             );
 
       _renewals = List<RenewalModel>.from(result.items);
@@ -68,6 +89,9 @@ class RenewalListProvider extends ChangeNotifier {
       _perPage = result.perPage > 0 ? result.perPage : 10;
       _total = result.total >= 0 ? result.total : _renewals.length;
       _currentSearch = normalizedSearch;
+      _currentStatus = normalizedStatus;
+      _currentDateFrom = normalizedDateFrom;
+      _currentDateTo = normalizedDateTo;
     } catch (error) {
       _errorMessage = _toMessage(error);
     } finally {

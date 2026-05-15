@@ -109,7 +109,14 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       forceRefresh: true,
       page: 1,
       search: _appliedSearchTerm,
+      status: _selectedStatusQuery,
     );
+  }
+
+  String? get _selectedStatusQuery {
+    return _selectedFilter == _RenewalFilterOption.all
+        ? null
+        : _selectedFilter.name;
   }
 
   Future<void> _pickDateRange() async {
@@ -204,6 +211,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       forceRefresh: true,
       page: 1,
       search: '',
+      status: null,
     );
   }
 
@@ -284,18 +292,6 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
         .toList(growable: false);
   }
 
-  Map<_RenewalFilterOption, int> _buildStatusCounts(
-    List<RenewalModel> renewals,
-  ) {
-    final counts = <_RenewalFilterOption, int>{};
-    for (final option in _RenewalFilterOption.values) {
-      counts[option] = renewals
-          .where((item) => _matchesStatusFilter(item, option))
-          .length;
-    }
-    return counts;
-  }
-
   bool get _hasActiveFilters {
     return _appliedSearchTerm.isNotEmpty ||
         _selectedFilter != _RenewalFilterOption.all ||
@@ -313,6 +309,22 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       forceRefresh: true,
       page: 1,
       search: search,
+      status: _selectedStatusQuery,
+    );
+  }
+
+  Future<void> _applyStatusFilter(_RenewalFilterOption value) async {
+    setState(() {
+      _selectedFilter = value;
+    });
+    if (!mounted) {
+      return;
+    }
+    await context.read<RenewalListProvider>().loadRenewals(
+      forceRefresh: true,
+      page: 1,
+      search: _appliedSearchTerm,
+      status: _selectedStatusQuery,
     );
   }
 
@@ -422,10 +434,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       body: Consumer<RenewalListProvider>(
         builder: (context, provider, _) {
           final baseRenewals = _applyBaseFilters(provider.renewals);
-          final counts = _buildStatusCounts(baseRenewals);
-          final filteredRenewals = baseRenewals
-              .where((item) => _matchesStatusFilter(item, _selectedFilter))
-              .toList(growable: false);
+          final filteredRenewals = baseRenewals;
           final totalPages = provider.lastPage < 1 ? 1 : provider.lastPage;
           final safeCurrentPage = provider.currentPage < 1
               ? 1
@@ -459,15 +468,10 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                       compact: compact,
                                       searchController: _searchController,
                                       selectedFilter: _selectedFilter,
-                                      statusCounts: counts,
                                       onDateRangeTap: _pickDateRange,
                                       onClearTap: () => _clearFilters(),
                                       onSearchTap: () => _applySearch(),
-                                      onStatusChanged: (value) {
-                                        setState(() {
-                                          _selectedFilter = value;
-                                        });
-                                      },
+                                      onStatusChanged: _applyStatusFilter,
                                     ),
                                     SizedBox(height: compact ? 16 : 18),
                                     _AddServiceButton(
@@ -490,7 +494,12 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                           hasActiveFilters: _hasActiveFilters,
                           onRetry: () => context
                               .read<RenewalListProvider>()
-                              .loadRenewals(forceRefresh: true),
+                              .loadRenewals(
+                                forceRefresh: true,
+                                page: 1,
+                                search: _appliedSearchTerm,
+                                status: _selectedStatusQuery,
+                              ),
                           onView: (renewal) => _openDetail(renewal),
                           onEdit: (renewal) =>
                               _openServiceForm(renewal: renewal),
@@ -520,6 +529,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                           forceRefresh: true,
                                           page: page,
                                           search: _appliedSearchTerm,
+                                          status: _selectedStatusQuery,
                                         );
                                   },
                                 ),
@@ -667,7 +677,6 @@ class _FilterCard extends StatelessWidget {
     required this.compact,
     required this.searchController,
     required this.selectedFilter,
-    required this.statusCounts,
     required this.onDateRangeTap,
     required this.onClearTap,
     required this.onSearchTap,
@@ -677,7 +686,6 @@ class _FilterCard extends StatelessWidget {
   final bool compact;
   final TextEditingController searchController;
   final _RenewalFilterOption selectedFilter;
-  final Map<_RenewalFilterOption, int> statusCounts;
   final VoidCallback onDateRangeTap;
   final VoidCallback onClearTap;
   final VoidCallback onSearchTap;
@@ -742,10 +750,9 @@ class _FilterCard extends StatelessWidget {
                         color: Color(0xFF64748B),
                       ),
                       items: _RenewalFilterOption.values
-                          .map((option) {
-                            final count = statusCounts[option] ?? 0;
-                            final visual = _statusVisualFor(option);
-                            return DropdownMenuItem<_RenewalFilterOption>(
+                            .map((option) {
+                              final visual = _statusVisualFor(option);
+                              return DropdownMenuItem<_RenewalFilterOption>(
                               value: option,
                               child: Row(
                                 children: [
@@ -760,7 +767,7 @@ class _FilterCard extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      '${option.label} ($count)',
+                                      option.label,
                                       style: AppTextStyles.style(
                                         color: visual.foreground,
                                         fontSize: compact ? 13 : 14,
@@ -776,7 +783,6 @@ class _FilterCard extends StatelessWidget {
                       selectedItemBuilder: (context) {
                         return _RenewalFilterOption.values
                             .map((option) {
-                              final count = statusCounts[option] ?? 0;
                               final visual = _statusVisualFor(option);
                               return Row(
                                 children: [
@@ -791,7 +797,7 @@ class _FilterCard extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      '${option.label} ($count)',
+                                      option.label,
                                       overflow: TextOverflow.ellipsis,
                                       style: AppTextStyles.style(
                                         color: visual.foreground,

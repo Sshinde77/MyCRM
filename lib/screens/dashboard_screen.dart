@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
@@ -53,6 +54,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<ClientIssueModel> _recentIssues = const <ClientIssueModel>[];
 
   UserModel? _currentUser;
+
+  void _logDashboardApiCall(String method, String endpoint) {
+    if (kDebugMode) {
+      debugPrint('[Dashboard API] $method $endpoint');
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     try {
+      _logDashboardApiCall('GET', ApiConstants.user);
       final user = await _apiService.getCurrentUser();
       if (!mounted) {
         return;
@@ -125,160 +134,188 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 430),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _HeaderSection(user: _currentUser),
-                  const SizedBox(height: 18),
-                  PermissionGate(
-                    permission: AppPermission.viewRenewals,
-                    child: Column(
-                      children: [
-                        _SectionCard(
-                          padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
-                          child: _RenewalSection(
-                            items: _upcomingRenewals,
-                            isLoading: _isLoadingRenewals,
-                            errorMessage: _renewalLoadError,
-                            onItemTap: _openUpcomingRenewalDetail,
+              child: Builder(
+                builder: (context) {
+                  final clientRenewals = _upcomingRenewals
+                      .where((item) => item.source == _RenewalSource.client)
+                      .toList(growable: false);
+                  final vendorRenewals = _upcomingRenewals
+                      .where((item) => item.source == _RenewalSource.vendor)
+                      .toList(growable: false);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _HeaderSection(user: _currentUser),
+                      const SizedBox(height: 18),
+                      PermissionGate(
+                        permission: AppPermission.viewRenewals,
+                        child: Column(
+                          children: [
+                            _SectionCard(
+                              padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
+                              child: _RenewalSection(
+                                title: 'Client Renewals',
+                                emptyMessage: 'No upcoming client renewals.',
+                                items: clientRenewals,
+                                isLoading: _isLoadingRenewals,
+                                errorMessage: _renewalLoadError,
+                                onItemTap: _openUpcomingRenewalDetail,
+                                onViewAllTap: _openClientRenewalsScreen,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _SectionCard(
+                              padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
+                              child: _RenewalSection(
+                                title: 'Vendor Renewals',
+                                emptyMessage: 'No upcoming vendor renewals.',
+                                items: vendorRenewals,
+                                isLoading: _isLoadingRenewals,
+                                errorMessage: _renewalLoadError,
+                                onItemTap: _openUpcomingRenewalDetail,
+                                onViewAllTap: _openVendorRenewalsScreen,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      PermissionGate(
+                        permission: AppPermission.viewProjects,
+                        child: Column(
+                          children: [
+                            _SectionCard(
+                              padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+                              child: _ProjectSummarySection(
+                                projectCount: _projectCount,
+                                taskCount: _taskCount,
+                                projectMonthlySeries: _projectMonthlySeries,
+                                taskMonthlySeries: _taskMonthlySeries,
+                                monthLabels:
+                                    _projectSummaryMonthLabels.isNotEmpty
+                                    ? _projectSummaryMonthLabels
+                                    : _last6MonthLabels(),
+                                onViewAllTap: _openProjectsScreen,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      PermissionGate(
+                        permission: AppPermission.viewTasks,
+                        child: Column(
+                          children: [
+                            _SectionCard(
+                              padding: EdgeInsets.fromLTRB(18, 18, 18, 20),
+                              child: _TaskSummarySection(
+                                taskStatusCounts: _taskStatusCounts,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      PermissionGate(
+                        permission: AppPermission.viewRaiseIssue,
+                        child: Column(
+                          children: [
+                            _SectionCard(
+                              padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
+                              child: _SupportTicketsSection(
+                                issues: _recentIssues,
+                                isLoading: _isLoadingTickets,
+                                errorMessage: _ticketsLoadError,
+                                onIssueTap: _openSupportTicketDetail,
+                                onViewAllTap: _openIssueManagementScreen,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      PermissionGate(
+                        permission: AppPermission.viewCalendar,
+                        child: _CalendarAppointmentsSection(
+                          appointments: _appointments,
+                          displayedMonth: _displayedMonth,
+                          onAddAppointment: _handleCreateAppointment,
+                          onDateTap: _showAppointmentsForDate,
+                          onPreviousMonth: () {
+                            setState(() {
+                              _displayedMonth = DateTime(
+                                _displayedMonth.year,
+                                _displayedMonth.month - 1,
+                              );
+                            });
+                          },
+                          onNextMonth: () {
+                            setState(() {
+                              _displayedMonth = DateTime(
+                                _displayedMonth.year,
+                                _displayedMonth.month + 1,
+                              );
+                            });
+                          },
+                        ),
+                      ),
+                      if (_isLoadingCalendar || _isSavingCalendar) ...[
+                        const SizedBox(height: 12),
+                        const LinearProgressIndicator(minHeight: 2),
+                      ],
+                      if (_isLoadingSummary) ...[
+                        const SizedBox(height: 8),
+                        const LinearProgressIndicator(minHeight: 2),
+                      ],
+                      if (_calendarLoadError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _calendarLoadError!,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFFB42318),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 16),
                       ],
-                    ),
-                  ),
-                  PermissionGate(
-                    permission: AppPermission.viewProjects,
-                    child: Column(
-                      children: [
-                        _SectionCard(
-                          padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
-                          child: _ProjectSummarySection(
-                            projectCount: _projectCount,
-                            taskCount: _taskCount,
-                            projectMonthlySeries: _projectMonthlySeries,
-                            taskMonthlySeries: _taskMonthlySeries,
-                            monthLabels: _projectSummaryMonthLabels.isNotEmpty
-                                ? _projectSummaryMonthLabels
-                                : _last6MonthLabels(),
-                            onViewAllTap: _openProjectsScreen,
+                      if (_summaryLoadError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _summaryLoadError!,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFFB42318),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 16),
                       ],
-                    ),
-                  ),
-                  PermissionGate(
-                    permission: AppPermission.viewTasks,
-                    child: Column(
-                      children: [
-                        _SectionCard(
-                          padding: EdgeInsets.fromLTRB(18, 18, 18, 20),
-                          child: _TaskSummarySection(
-                            taskStatusCounts: _taskStatusCounts,
+                      if (_renewalLoadError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _renewalLoadError!,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFFB42318),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 16),
                       ],
-                    ),
-                  ),
-                  PermissionGate(
-                    permission: AppPermission.viewRaiseIssue,
-                    child: Column(
-                      children: [
-                        _SectionCard(
-                          padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
-                          child: _SupportTicketsSection(
-                            issues: _recentIssues,
-                            isLoading: _isLoadingTickets,
-                            errorMessage: _ticketsLoadError,
-                            onIssueTap: _openSupportTicketDetail,
-                            onViewAllTap: _openIssueManagementScreen,
+                      if (_ticketsLoadError != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _ticketsLoadError!,
+                          style: AppTextStyles.style(
+                            color: const Color(0xFFB42318),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 16),
                       ],
-                    ),
-                  ),
-                  PermissionGate(
-                    permission: AppPermission.viewCalendar,
-                    child: _CalendarAppointmentsSection(
-                      appointments: _appointments,
-                      displayedMonth: _displayedMonth,
-                      onAddAppointment: _handleCreateAppointment,
-                      onDateTap: _showAppointmentsForDate,
-                      onPreviousMonth: () {
-                        setState(() {
-                          _displayedMonth = DateTime(
-                            _displayedMonth.year,
-                            _displayedMonth.month - 1,
-                          );
-                        });
-                      },
-                      onNextMonth: () {
-                        setState(() {
-                          _displayedMonth = DateTime(
-                            _displayedMonth.year,
-                            _displayedMonth.month + 1,
-                          );
-                        });
-                      },
-                    ),
-                  ),
-                  if (_isLoadingCalendar || _isSavingCalendar) ...[
-                    const SizedBox(height: 12),
-                    const LinearProgressIndicator(minHeight: 2),
-                  ],
-                  if (_isLoadingSummary) ...[
-                    const SizedBox(height: 8),
-                    const LinearProgressIndicator(minHeight: 2),
-                  ],
-                  if (_calendarLoadError != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      _calendarLoadError!,
-                      style: AppTextStyles.style(
-                        color: const Color(0xFFB42318),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  if (_summaryLoadError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _summaryLoadError!,
-                      style: AppTextStyles.style(
-                        color: const Color(0xFFB42318),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  if (_renewalLoadError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _renewalLoadError!,
-                      style: AppTextStyles.style(
-                        color: const Color(0xFFB42318),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  if (_ticketsLoadError != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _ticketsLoadError!,
-                      style: AppTextStyles.style(
-                        color: const Color(0xFFB42318),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 10),
-                ],
+                      const SizedBox(height: 10),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -294,6 +331,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
+      _logDashboardApiCall('GET', ApiConstants.calendar);
       final events = await _apiService.getCalendarEvents();
       if (!mounted) {
         return;
@@ -355,6 +393,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     try {
+      _logDashboardApiCall('GET', ApiConstants.dashboard);
       final result = await _apiService.getDashboardData();
       final projectSeries = result.projectMonthlySeries;
       final taskSeries = result.taskMonthlySeries;
@@ -450,6 +489,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Get.toNamed(route, arguments: item.renewal);
   }
 
+  void _openClientRenewalsScreen() {
+    Get.toNamed(AppRoutes.clientRenewal);
+  }
+
+  void _openVendorRenewalsScreen() {
+    Get.toNamed(AppRoutes.vendorRenewal);
+  }
+
   Future<void> _openSupportTicketDetail(ClientIssueModel issue) async {
     await Get.toNamed(
       AppRoutes.issueDetail,
@@ -515,11 +562,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
 
+    final detailEndpoint = ApiConstants.calendarDetail.replaceFirst(
+      '{id}',
+      id,
+    );
+    _logDashboardApiCall('GET', detailEndpoint);
+    final detailFuture = _apiService.getCalendarEventDetail(id);
+
     await showDialog<void>(
       context: context,
       builder: (context) {
         return FutureBuilder<CalendarEventModel>(
-          future: _apiService.getCalendarEventDetail(id),
+          future: detailFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const AlertDialog(
@@ -762,6 +816,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
+      _logDashboardApiCall('POST', ApiConstants.createcalendar);
       await _apiService.createCalendarEvent(
         title: draft.title.trim(),
         description: draft.description.trim(),
@@ -812,6 +867,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
+      final updateEndpoint = ApiConstants.updateCalendar.replaceFirst(
+        '{id}',
+        id,
+      );
+      _logDashboardApiCall('PUT', updateEndpoint);
       await _apiService.updateCalendarEvent(
         id: id,
         title: draft.title.trim(),
@@ -858,6 +918,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
 
     try {
+      final deleteEndpoint = ApiConstants.deleteCalendar.replaceFirst(
+        '{id}',
+        id,
+      );
+      _logDashboardApiCall('DELETE', deleteEndpoint);
       await _apiService.deleteCalendarEvent(id);
       if (!mounted) return;
       await _loadCalendarEvents();
@@ -1739,16 +1804,22 @@ class _SectionCard extends StatelessWidget {
 
 class _RenewalSection extends StatelessWidget {
   const _RenewalSection({
+    required this.title,
+    required this.emptyMessage,
     this.items = const <_UpcomingRenewalItem>[],
     this.isLoading = false,
     this.errorMessage,
     this.onItemTap,
+    this.onViewAllTap,
   });
 
+  final String title;
+  final String emptyMessage;
   final List<_UpcomingRenewalItem> items;
   final bool isLoading;
   final String? errorMessage;
   final ValueChanged<_UpcomingRenewalItem>? onItemTap;
+  final VoidCallback? onViewAllTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1757,9 +1828,11 @@ class _RenewalSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _ResponsiveSectionHeader(
-          title: 'Upcoming Renewals',
+          title: title,
           forceInline: true,
-          trailing: const SizedBox.shrink(),
+          trailing: onViewAllTap == null
+              ? const SizedBox.shrink()
+              : _SectionViewAllButton(onTap: onViewAllTap!),
         ),
         if (isLoading) ...[
           const SizedBox(height: 18),
@@ -1801,7 +1874,7 @@ class _RenewalSection extends StatelessWidget {
             ),
             child: Text(
               errorMessage == null
-                  ? 'No upcoming renewals from today.'
+                  ? emptyMessage
                   : 'Unable to load upcoming renewals.',
               style: AppTextStyles.style(
                 color: const Color(0xFF677A94),

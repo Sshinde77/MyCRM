@@ -89,8 +89,21 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       forceRefresh: true,
       page: 1,
       search: _appliedSearchTerm,
+      status: _selectedStatusQuery,
+      dateFrom: _selectedDateFromQuery,
+      dateTo: _selectedDateToQuery,
     );
   }
+
+  String? get _selectedStatusQuery {
+    return _selectedFilter == _RenewalFilterOption.all
+        ? null
+        : _selectedFilter.name;
+  }
+
+  String? get _selectedDateFromQuery => _formatApiDate(_appliedFromDate);
+
+  String? get _selectedDateToQuery => _formatApiDate(_appliedToDate);
 
   Future<void> _pickDateRange() async {
     final now = DateTime.now();
@@ -167,6 +180,14 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       _appliedFromDate = start;
       _appliedToDate = end;
     });
+    await context.read<RenewalListProvider>().loadRenewals(
+      forceRefresh: true,
+      page: 1,
+      search: _appliedSearchTerm,
+      status: _selectedStatusQuery,
+      dateFrom: _selectedDateFromQuery,
+      dateTo: _selectedDateToQuery,
+    );
   }
 
   Future<void> _clearFilters() async {
@@ -184,6 +205,9 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       forceRefresh: true,
       page: 1,
       search: '',
+      status: null,
+      dateFrom: null,
+      dateTo: null,
     );
   }
 
@@ -201,47 +225,19 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
     return '$day-$month-$year';
   }
 
+  String? _formatApiDate(DateTime? value) {
+    if (value == null) {
+      return null;
+    }
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day';
+  }
+
   DateTime? _effectiveRenewalDate(RenewalModel renewal) {
     return renewal.endDateValue ??
         renewal.startDateValue ??
         renewal.billingDateValue;
-  }
-
-  bool _isUpcoming(RenewalModel renewal) {
-    final status = renewal.status.trim().toLowerCase();
-    return status.contains('upcoming');
-  }
-
-  bool _isActive(RenewalModel renewal) {
-    final status = renewal.status.trim().toLowerCase();
-    return status.contains('active') && !status.contains('inactive');
-  }
-
-  bool _isInactive(RenewalModel renewal) {
-    final status = renewal.status.trim().toLowerCase();
-    return status.contains('inactive') ||
-        status.contains('deactive') ||
-        status.contains('disabled');
-  }
-
-  bool _isExpired(RenewalModel renewal) {
-    final status = renewal.status.trim().toLowerCase();
-    return status.contains('expired') || status.contains('overdue');
-  }
-
-  bool _matchesStatusFilter(RenewalModel renewal, _RenewalFilterOption filter) {
-    switch (filter) {
-      case _RenewalFilterOption.all:
-        return true;
-      case _RenewalFilterOption.upcoming:
-        return _isUpcoming(renewal);
-      case _RenewalFilterOption.active:
-        return _isActive(renewal);
-      case _RenewalFilterOption.inactive:
-        return _isInactive(renewal);
-      case _RenewalFilterOption.expired:
-        return _isExpired(renewal);
-    }
   }
 
   List<RenewalModel> _applyBaseFilters(List<RenewalModel> renewals) {
@@ -264,18 +260,6 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
         .toList(growable: false);
   }
 
-  Map<_RenewalFilterOption, int> _buildStatusCounts(
-    List<RenewalModel> renewals,
-  ) {
-    final counts = <_RenewalFilterOption, int>{};
-    for (final option in _RenewalFilterOption.values) {
-      counts[option] = renewals
-          .where((item) => _matchesStatusFilter(item, option))
-          .length;
-    }
-    return counts;
-  }
-
   bool get _hasActiveFilters {
     return _appliedSearchTerm.isNotEmpty ||
         _selectedFilter != _RenewalFilterOption.all ||
@@ -293,6 +277,26 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       forceRefresh: true,
       page: 1,
       search: search,
+      status: _selectedStatusQuery,
+      dateFrom: _selectedDateFromQuery,
+      dateTo: _selectedDateToQuery,
+    );
+  }
+
+  Future<void> _applyStatusFilter(_RenewalFilterOption value) async {
+    setState(() {
+      _selectedFilter = value;
+    });
+    if (!mounted) {
+      return;
+    }
+    await context.read<RenewalListProvider>().loadRenewals(
+      forceRefresh: true,
+      page: 1,
+      search: _appliedSearchTerm,
+      status: _selectedStatusQuery,
+      dateFrom: _selectedDateFromQuery,
+      dateTo: _selectedDateToQuery,
     );
   }
 
@@ -422,10 +426,7 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
       body: Consumer<RenewalListProvider>(
         builder: (context, provider, _) {
           final baseRenewals = _applyBaseFilters(provider.renewals);
-          final counts = _buildStatusCounts(baseRenewals);
-          final filteredRenewals = baseRenewals
-              .where((item) => _matchesStatusFilter(item, _selectedFilter))
-              .toList(growable: false);
+          final filteredRenewals = baseRenewals;
           final totalPages = provider.lastPage < 1 ? 1 : provider.lastPage;
           final safeCurrentPage = provider.currentPage < 1
               ? 1
@@ -437,69 +438,102 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: _refreshRenewals,
-                    child: SingleChildScrollView(
+                    child: CustomScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.fromLTRB(
-                        side,
-                        compact ? 16 : 18,
-                        side,
-                        18,
-                      ),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 480),
-                          child: Column(
-                            children: [
-                              _FilterCard(
-                                compact: compact,
-                                searchController: _searchController,
-                                selectedFilter: _selectedFilter,
-                                statusCounts: counts,
-                                onDateRangeTap: _pickDateRange,
-                                onClearTap: () => _clearFilters(),
-                                onSearchTap: () => _applySearch(),
-                                onStatusChanged: (value) {
-                                  setState(() {
-                                    _selectedFilter = value;
-                                  });
-                                },
+                      slivers: [
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            side,
+                            compact ? 16 : 18,
+                            side,
+                            18,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 480,
+                                ),
+                                child: Column(
+                                  children: [
+                                    _FilterCard(
+                                      compact: compact,
+                                      searchController: _searchController,
+                                      selectedFilter: _selectedFilter,
+                                      onDateRangeTap: _pickDateRange,
+                                      onClearTap: () => _clearFilters(),
+                                      onSearchTap: () => _applySearch(),
+                                      onStatusChanged: _applyStatusFilter,
+                                    ),
+                                    SizedBox(height: compact ? 16 : 18),
+                                    _AddServiceButton(
+                                      compact: compact,
+                                      onTap: () => _openServiceForm(),
+                                    ),
+                                    SizedBox(height: compact ? 16 : 18),
+                                  ],
+                                ),
                               ),
-                              SizedBox(height: compact ? 16 : 18),
-                              _AddServiceButton(
-                                compact: compact,
-                                onTap: () => _openServiceForm(),
-                              ),
-                              SizedBox(height: compact ? 16 : 18),
-                              _RenewalListSection(
-                                compact: compact,
-                                renewals: filteredRenewals,
-                                isLoading: provider.isLoading,
-                                errorMessage: provider.errorMessage,
-                                hasActiveFilters: _hasActiveFilters,
-                                onRetry: _refreshRenewals,
-                                onView: (renewal) => _openDetail(renewal),
-                                onEdit: (renewal) =>
-                                    _openServiceForm(renewal: renewal),
-                                onDelete: (renewal) => _deleteRenewal(renewal),
-                              ),
-                              _PaginationBar(
-                                compact: compact,
-                                currentPage: safeCurrentPage,
-                                totalPages: totalPages,
-                                onPageTap: (page) {
-                                  context
-                                      .read<RenewalListProvider>()
-                                      .loadRenewals(
-                                        forceRefresh: true,
-                                        page: page,
-                                        search: _appliedSearchTerm,
-                                      );
-                                },
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
+                        _RenewalListSection(
+                          compact: compact,
+                          sidePadding: side,
+                          renewals: filteredRenewals,
+                          isLoading: provider.isLoading,
+                          errorMessage: provider.errorMessage,
+                          hasActiveFilters: _hasActiveFilters,
+                          onRetry: () => context
+                              .read<RenewalListProvider>()
+                              .loadRenewals(
+                                forceRefresh: true,
+                                page: 1,
+                                search: _appliedSearchTerm,
+                                status: _selectedStatusQuery,
+                                dateFrom: _selectedDateFromQuery,
+                                dateTo: _selectedDateToQuery,
+                              ),
+                          onView: (renewal) => _openDetail(renewal),
+                          onEdit: (renewal) =>
+                              _openServiceForm(renewal: renewal),
+                          onDelete: (renewal) => _deleteRenewal(renewal),
+                        ),
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(
+                            side,
+                            0,
+                            side,
+                            compact ? 18 : 22,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 480,
+                                ),
+                                child: _PaginationBar(
+                                  compact: compact,
+                                  currentPage: safeCurrentPage,
+                                  totalPages: totalPages,
+                                  onPageTap: (page) {
+                                    context
+                                        .read<RenewalListProvider>()
+                                        .loadRenewals(
+                                          forceRefresh: true,
+                                          page: page,
+                                          search: _appliedSearchTerm,
+                                          status: _selectedStatusQuery,
+                                          dateFrom: _selectedDateFromQuery,
+                                          dateTo: _selectedDateToQuery,
+                                        );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -515,6 +549,7 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
 class _RenewalListSection extends StatelessWidget {
   const _RenewalListSection({
     required this.compact,
+    required this.sidePadding,
     required this.renewals,
     required this.isLoading,
     required this.errorMessage,
@@ -526,6 +561,7 @@ class _RenewalListSection extends StatelessWidget {
   });
 
   final bool compact;
+  final double sidePadding;
   final List<RenewalModel> renewals;
   final bool isLoading;
   final String? errorMessage;
@@ -538,45 +574,73 @@ class _RenewalListSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading && renewals.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 28),
-        child: Center(child: CircularProgressIndicator()),
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 28),
+          child: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
     if (errorMessage != null && renewals.isEmpty) {
-      return _ErrorCard(
-        compact: compact,
-        message: errorMessage!,
-        onRetry: onRetry,
+      return SliverPadding(
+        padding: EdgeInsets.fromLTRB(sidePadding, 0, sidePadding, 0),
+        sliver: SliverToBoxAdapter(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: _ErrorCard(
+                compact: compact,
+                message: errorMessage!,
+                onRetry: onRetry,
+              ),
+            ),
+          ),
+        ),
       );
     }
 
     if (renewals.isEmpty) {
-      return _EmptyCard(
-        compact: compact,
-        message: hasActiveFilters
-            ? 'No vendor renewals match the current filters.'
-            : 'No vendor renewals available.',
+      return SliverPadding(
+        padding: EdgeInsets.fromLTRB(sidePadding, 0, sidePadding, 0),
+        sliver: SliverToBoxAdapter(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: _EmptyCard(
+                compact: compact,
+                message: hasActiveFilters
+                    ? 'No vendor renewals match the current filters.'
+                    : 'No vendor renewals available.',
+              ),
+            ),
+          ),
+        ),
       );
     }
 
-    return Column(
-      children: renewals
-          .map((renewal) => _ServiceItem.fromRenewal(renewal))
-          .map(
-            (service) => Padding(
-              padding: EdgeInsets.only(bottom: compact ? 14 : 16),
-              child: _ServiceCard(
-                service: service,
-                compact: compact,
-                onView: () => onView(service.renewal),
-                onEdit: () => onEdit(service.renewal),
-                onDelete: () => onDelete(service.renewal),
+    return SliverPadding(
+      padding: EdgeInsets.fromLTRB(sidePadding, 0, sidePadding, 0),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final service = _ServiceItem.fromRenewal(renewals[index]);
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: compact ? 14 : 16),
+                child: _ServiceCard(
+                  service: service,
+                  compact: compact,
+                  onView: () => onView(service.renewal),
+                  onEdit: () => onEdit(service.renewal),
+                  onDelete: () => onDelete(service.renewal),
+                ),
               ),
             ),
-          )
-          .toList(growable: false),
+          );
+        }, childCount: renewals.length),
+      ),
     );
   }
 }
@@ -609,7 +673,6 @@ class _FilterCard extends StatelessWidget {
     required this.compact,
     required this.searchController,
     required this.selectedFilter,
-    required this.statusCounts,
     required this.onDateRangeTap,
     required this.onClearTap,
     required this.onSearchTap,
@@ -619,7 +682,6 @@ class _FilterCard extends StatelessWidget {
   final bool compact;
   final TextEditingController searchController;
   final _RenewalFilterOption selectedFilter;
-  final Map<_RenewalFilterOption, int> statusCounts;
   final VoidCallback onDateRangeTap;
   final VoidCallback onClearTap;
   final VoidCallback onSearchTap;
@@ -685,7 +747,6 @@ class _FilterCard extends StatelessWidget {
                       ),
                       items: _RenewalFilterOption.values
                           .map((option) {
-                            final count = statusCounts[option] ?? 0;
                             final visual = _statusVisualFor(option);
                             return DropdownMenuItem<_RenewalFilterOption>(
                               value: option,
@@ -702,7 +763,7 @@ class _FilterCard extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      '${option.label} ($count)',
+                                      option.label,
                                       style: AppTextStyles.style(
                                         color: visual.foreground,
                                         fontSize: compact ? 13 : 14,
@@ -718,7 +779,6 @@ class _FilterCard extends StatelessWidget {
                       selectedItemBuilder: (context) {
                         return _RenewalFilterOption.values
                             .map((option) {
-                              final count = statusCounts[option] ?? 0;
                               final visual = _statusVisualFor(option);
                               return Row(
                                 children: [
@@ -733,7 +793,7 @@ class _FilterCard extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      '${option.label} ($count)',
+                                      option.label,
                                       overflow: TextOverflow.ellipsis,
                                       style: AppTextStyles.style(
                                         color: visual.foreground,
