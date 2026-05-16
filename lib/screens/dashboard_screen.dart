@@ -1922,9 +1922,13 @@ class _UpcomingRenewalItem {
     RenewalModel renewal, {
     required _RenewalSource source,
   }) {
-    final name = renewal.partyName.trim().isEmpty
-        ? (source == _RenewalSource.client ? renewal.client : renewal.vendor)
-        : renewal.partyName.trim();
+    final name = source == _RenewalSource.client
+        ? _firstNonEmpty([
+            renewal.companyName,
+            renewal.partyName,
+            renewal.client,
+          ])
+        : _firstNonEmpty([renewal.partyName, renewal.vendor]);
     final normalizedName = name.trim().isEmpty ? 'Renewal' : name.trim();
     final initials = _buildInitials(normalizedName);
     final renewalDate = renewal.endDateValue ?? renewal.startDateValue;
@@ -1966,6 +1970,16 @@ class _UpcomingRenewalItem {
       return word.substring(0, word.length >= 2 ? 2 : 1).toUpperCase();
     }
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+  }
+
+  static String _firstNonEmpty(List<String> candidates) {
+    for (final candidate in candidates) {
+      final normalized = candidate.trim();
+      if (normalized.isNotEmpty) {
+        return normalized;
+      }
+    }
+    return '';
   }
 
   static String _buildDaysLeftLabel(DateTime? date) {

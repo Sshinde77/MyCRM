@@ -4,13 +4,13 @@ import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
 import '../routes/app_routes.dart';
-import '../screens/to_do_list.dart' as to_do;
 import '../widgets/app_bottom_navigation.dart';
-import 'package:mycrm/core/utils/app_snackbar.dart';
+import '../widgets/common_screen_app_bar.dart';
 
 /// Projects overview screen inspired by the provided mockup.
 class ProjectsScreen extends StatefulWidget {
@@ -486,7 +486,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const _ProjectsHeader(),
+                            CommonTopBar(
+                              title: 'Projects',
+                              showBackButton: false,
+                              compact: isCompact,
+                            ),
                             const SizedBox(height: 18),
                             _SummaryRow(
                               isCompact: isCompact,
@@ -548,110 +552,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               },
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _ProjectsHeader extends StatelessWidget {
-  const _ProjectsHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final dateText = _formatHeaderDate(now);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Projects',
-                style: AppTextStyles.style(
-                  color: const Color(0xFF1E2A3B),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                dateText,
-                style: AppTextStyles.style(
-                  color: const Color(0xFF64748B),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 10),
-        _HeaderIconButton(
-          icon: Icons.notifications_none_rounded,
-          onTap: () => Get.toNamed(AppRoutes.notifications),
-        ),
-        const SizedBox(width: 10),
-        _HeaderIconButton(
-          icon: Icons.checklist_rounded,
-          onTap: () => Get.to(() => const to_do.ToDoListScreen()),
-        ),
-      ],
-    );
-  }
-
-  String _formatHeaderDate(DateTime date) {
-    const months = <String>[
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    final day = date.day.toString().padLeft(2, '0');
-    final month = months[date.month - 1];
-    return '$day $month ${date.year}';
-  }
-}
-
-class _HeaderIconButton extends StatelessWidget {
-  const _HeaderIconButton({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x120F172A),
-                blurRadius: 12,
-                offset: Offset(0, 6),
-              ),
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Icon(icon, color: const Color(0xFF2D3B52), size: 22),
         ),
       ),
     );

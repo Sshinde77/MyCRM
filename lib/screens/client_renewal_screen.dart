@@ -1474,8 +1474,8 @@ class _ServiceCard extends StatelessWidget {
                 ),
                 SizedBox(height: compact ? 14 : 16),
                 _InfoRow(
-                  icon: Icons.person_outline_rounded,
-                  text: 'Client: ${service.client}',
+                  icon: Icons.business_outlined,
+                  text: 'Company: ${service.client}',
                   compact: compact,
                 ),
                 SizedBox(height: compact ? 10 : 12),
@@ -1801,7 +1801,10 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     _selectedVendorId = renewal.vendorId.trim().isEmpty
         ? null
         : renewal.vendorId.trim();
-    _seedClientName = renewal.client.trim();
+    _seedClientName = _ServiceItem._orFallback(
+      renewal.companyName,
+      renewal.client,
+    );
     _seedVendorName = renewal.vendor.trim();
 
     _serviceNameController.text = renewal.title.trim();
@@ -1898,7 +1901,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
   String? _validate() {
     if ((_selectedClientId ?? '').trim().isEmpty) {
-      return 'Client is required.';
+      return 'Company is required.';
     }
     if ((_selectedVendorId ?? '').trim().isEmpty) {
       return 'Vendor is required.';
@@ -2071,7 +2074,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       if ((_selectedClientId ?? '').trim().isEmpty &&
           _seedClientName.isNotEmpty) {
         final matchedByName = _clients.where((entry) {
-          return _clientDisplayName(entry).trim().toLowerCase() ==
+          return _companyDisplayName(entry).trim().toLowerCase() ==
               _seedClientName.toLowerCase();
         });
         if (matchedByName.isNotEmpty) {
@@ -2105,7 +2108,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     }
   }
 
-  String _clientDisplayName(ClientModel client) {
+  String _companyDisplayName(ClientModel client) {
     final name = client.name.trim();
     if (name.isNotEmpty) {
       return name;
@@ -2115,7 +2118,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     if (contact.isNotEmpty) {
       return contact;
     }
-    return 'Unnamed Client';
+    return 'Unnamed Company';
   }
 
   Future<String?> _showSearchableSelectionSheet({
@@ -2313,27 +2316,27 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    _FormLabel(text: 'Select Client', required: true),
+                    _FormLabel(text: 'Select Company', required: true),
                     const SizedBox(height: 8),
                     _SearchSelectField(
                       text: _clients
                           .where((entry) => entry.id == _selectedClientId)
-                          .map(_clientDisplayName)
+                          .map(_companyDisplayName)
                           .cast<String?>()
                           .firstWhere((_) => true, orElse: () => null),
-                      hint: 'Choose a client...',
+                      hint: 'Choose a company...',
                       onTap: _isSubmitting
                           ? null
                           : () async {
                               final selected =
                                   await _showSearchableSelectionSheet(
-                                    title: 'Select Client',
+                                    title: 'Select Company',
                                     selectedValue: _selectedClientId,
                                     options: _clients
                                         .map(
                                           (entry) => MapEntry(
                                             entry.id,
-                                            _clientDisplayName(entry),
+                                            _companyDisplayName(entry),
                                           ),
                                         )
                                         .toList(growable: false),
@@ -2847,7 +2850,7 @@ class _ServiceItem {
     return _ServiceItem(
       renewal: renewal,
       title: renewal.title,
-      client: renewal.client,
+      client: _orFallback(renewal.companyName, renewal.client),
       vendor: renewal.vendor,
       startDate: _orFallback(renewal.startDate, 'N/A'),
       endDate: _orFallback(renewal.endDate, 'N/A'),

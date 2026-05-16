@@ -12,6 +12,7 @@ class ClientDetailModel {
     required this.contactPerson,
     required this.clientType,
     required this.industry,
+    required this.businessInformation,
     required this.priorityLevel,
     required this.addressLine1,
     required this.addressLine2,
@@ -35,6 +36,7 @@ class ClientDetailModel {
   final String contactPerson;
   final String clientType;
   final String industry;
+  final List<Map<String, String>> businessInformation;
   final String priorityLevel;
   final String addressLine1;
   final String addressLine2;
@@ -127,6 +129,26 @@ class ClientDetailModel {
       _readString(json, const ['country', 'nation']),
       _readString(addressObject, const ['country', 'nation']),
     ]);
+    final resolvedCompanyName = _readString(json, [
+      'company',
+      'companyName',
+      'company_name',
+      'client_name',
+      'title',
+    ]);
+    final resolvedWebsite = _readString(json, [
+      'website',
+      'website_url',
+      'site',
+      'url',
+    ]);
+    final resolvedClientType = _readString(json, ['client_type', 'type']);
+    final resolvedIndustry = _readString(json, [
+      'industry',
+      'industry_name',
+      'sector',
+    ]);
+    final businessInformation = _readBusinessInformation(json);
 
     return ClientDetailModel(
       id: _readString(json, [
@@ -138,13 +160,7 @@ class ClientDetailModel {
         'client_id',
       ]),
       name: resolvedName.isNotEmpty ? resolvedName : fallbackPersonName,
-      companyName: _readString(json, [
-        'company',
-        'companyName',
-        'company_name',
-        'client_name',
-        'title',
-      ]),
+      companyName: resolvedCompanyName,
       email: _readString(json, [
         'email',
         'email_address',
@@ -152,7 +168,7 @@ class ClientDetailModel {
         'primary_email',
       ]),
       phone: _readString(json, ['phone', 'mobile', 'phone_number']),
-      website: _readString(json, ['website', 'website_url', 'site', 'url']),
+      website: resolvedWebsite,
       managerName: _readString(json, [
         'manager',
         'manager_name',
@@ -164,8 +180,16 @@ class ClientDetailModel {
       contactPerson: resolvedContactPerson.isNotEmpty
           ? resolvedContactPerson
           : fallbackPersonName,
-      clientType: _readString(json, ['client_type', 'type']),
-      industry: _readString(json, ['industry', 'industry_name', 'sector']),
+      clientType: resolvedClientType,
+      industry: resolvedIndustry,
+      businessInformation: businessInformation.isNotEmpty
+          ? businessInformation
+          : _fallbackBusinessInformation(
+              clientType: resolvedClientType,
+              companyName: resolvedCompanyName,
+              industry: resolvedIndustry,
+              website: resolvedWebsite,
+            ),
       priorityLevel: _readString(json, ['priority', 'priority_level']),
       addressLine1: resolvedAddressLine1,
       addressLine2: resolvedAddressLine2,
@@ -229,5 +253,75 @@ class ClientDetailModel {
       firstName,
       lastName,
     ].where((entry) => entry.trim().isNotEmpty).join(' ').trim();
+  }
+
+  static List<Map<String, String>> _readBusinessInformation(
+    Map<String, dynamic> json,
+  ) {
+    final value =
+        json['business_information'] ??
+        json['businessInformation'] ??
+        json['businesses'];
+    if (value is! List) {
+      return const [];
+    }
+
+    return value
+        .map((item) {
+          if (item is Map<String, dynamic>) {
+            return item;
+          }
+          if (item is Map) {
+            return item.map(
+              (entryKey, entryValue) =>
+                  MapEntry(entryKey.toString(), entryValue),
+            );
+          }
+          return const <String, dynamic>{};
+        })
+        .map((item) => _normalizeBusinessInformationItem(item))
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  static Map<String, String> _normalizeBusinessInformationItem(
+    Map<String, dynamic> item,
+  ) {
+    final normalized = <String, String>{};
+    void addIfNotEmpty(String key, String value) {
+      if (value.trim().isNotEmpty) {
+        normalized[key] = value.trim();
+      }
+    }
+
+    addIfNotEmpty('client_type', _readString(item, ['client_type', 'type']));
+    addIfNotEmpty(
+      'company_name',
+      _readString(item, ['company_name', 'companyName', 'company', 'name']),
+    );
+    addIfNotEmpty(
+      'industry',
+      _readString(item, ['industry', 'industry_name', 'sector']),
+    );
+    addIfNotEmpty(
+      'website',
+      _readString(item, ['website', 'website_url', 'site', 'url']),
+    );
+    return normalized;
+  }
+
+  static List<Map<String, String>> _fallbackBusinessInformation({
+    required String clientType,
+    required String companyName,
+    required String industry,
+    required String website,
+  }) {
+    final fallback = _normalizeBusinessInformationItem({
+      'client_type': clientType,
+      'company_name': companyName,
+      'industry': industry,
+      'website': website,
+    });
+    return fallback.isEmpty ? const [] : [fallback];
   }
 }

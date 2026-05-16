@@ -242,60 +242,76 @@ class ClientRenewalFormOptionsResult {
 
 class ApiService {
   ApiService._internal() {
+    _dio.interceptors.add(_buildAuthInterceptor());
+
     if (kDebugMode) {
       _dio.interceptors.add(_buildDebugLoggingInterceptor());
     }
-
-    _dio.interceptors.add(
-      InterceptorsWrapper(
-        onError: (error, handler) async {
-          final statusCode = error.response?.statusCode;
-          final requestOptions = error.requestOptions;
-
-          if (statusCode != 401 ||
-              requestOptions.extra['auth_retry'] == true ||
-              _isAuthEndpoint(requestOptions.path)) {
-            handler.next(error);
-            return;
-          }
-
-          final refreshed = await _refreshTokensIfPossible();
-          if (!refreshed) {
-            handler.next(error);
-            return;
-          }
-
-          final token = await _storage.read(
-            SecureStorageService.accessTokenKey,
-          );
-          if (token == null || token.isEmpty) {
-            handler.next(error);
-            return;
-          }
-
-          requestOptions.extra['auth_retry'] = true;
-          requestOptions.headers['Authorization'] = 'Bearer $token';
-
-          try {
-            final response = await _dio.fetch(requestOptions);
-            handler.resolve(response);
-          } catch (retryError) {
-            handler.next(
-              retryError is DioException
-                  ? retryError
-                  : DioException(
-                      requestOptions: requestOptions,
-                      error: retryError,
-                      type: DioExceptionType.unknown,
-                    ),
-            );
-          }
-        },
-      ),
-    );
   }
 
   static final ApiService instance = ApiService._internal();
+
+  Interceptor _buildAuthInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        if (options.extra['skip_auth'] == true ||
+            _isAuthEndpoint(options.path)) {
+          options.headers.remove('Authorization');
+          handler.next(options);
+          return;
+        }
+
+        await _restoreAuthToken();
+        final token = await _currentAccessToken();
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+
+        handler.next(options);
+      },
+      onError: (error, handler) async {
+        final statusCode = error.response?.statusCode;
+        final requestOptions = error.requestOptions;
+
+        if (statusCode != 401 ||
+            requestOptions.extra['auth_retry'] == true ||
+            _isAuthEndpoint(requestOptions.path)) {
+          handler.next(error);
+          return;
+        }
+
+        final refreshed = await _refreshTokensIfPossible();
+        if (!refreshed) {
+          handler.next(error);
+          return;
+        }
+
+        final token = await _currentAccessToken();
+        if (token == null || token.isEmpty) {
+          handler.next(error);
+          return;
+        }
+
+        requestOptions.extra['auth_retry'] = true;
+        requestOptions.headers['Authorization'] = 'Bearer $token';
+
+        try {
+          final response = await _dio.fetch(requestOptions);
+          handler.resolve(response);
+        } catch (retryError) {
+          handler.next(
+            retryError is DioException
+                ? retryError
+                : DioException(
+                    requestOptions: requestOptions,
+                    error: retryError,
+                    type: DioExceptionType.unknown,
+                  ),
+          );
+        }
+      },
+    );
+  }
 
   final Dio _dio = Dio(
     BaseOptions(
@@ -329,6 +345,13 @@ class ApiService {
       onRequest: (options, handler) {
         debugPrint('*** API Calling ***');
         debugPrint('${options.method} ${options.uri}');
+        final authorization = options.headers['Authorization']?.toString();
+        final authState = authorization == null || authorization.trim().isEmpty
+            ? 'missing'
+            : _maskAuthorizationHeader(authorization);
+        debugPrint(
+          'auth: $authState',
+        );
         if (options.queryParameters.isNotEmpty) {
           debugPrint('query: ${_summarizeForLog(options.queryParameters)}');
         }
@@ -352,6 +375,10 @@ class ApiService {
           '${error.requestOptions.method} ${error.requestOptions.uri}',
         );
         debugPrint('status: ${error.response?.statusCode ?? 'N/A'}');
+        final redirectLocation = error.response?.headers.value('location');
+        if (redirectLocation != null && redirectLocation.trim().isNotEmpty) {
+          debugPrint('redirect: $redirectLocation');
+        }
         debugPrint('message: ${error.message ?? error.error}');
         if (error.response?.data != null) {
           debugPrint('response: ${_summarizeForLog(error.response?.data)}');
@@ -464,7 +491,10 @@ class ApiService {
       final response = await _dio.post(
         ApiConstants.refreshToken,
         data: {'refresh_token': refreshToken},
-        options: Options(headers: const {'Authorization': null}),
+        options: Options(
+          headers: const {'Authorization': null},
+          extra: const {'skip_auth': true},
+        ),
       );
 
       final body = _normalizeMap(response.data);
@@ -496,6 +526,7 @@ class ApiService {
       _dio.options.headers['Authorization'] = 'Bearer $accessToken';
       _cachedAccessToken = accessToken;
       _authTokenLoaded = true;
+      _debugAuthState('Token refreshed', accessToken);
       return true;
     } on DioException {
       await _clearAuthData();
@@ -532,7 +563,7 @@ class ApiService {
     String path, {
     Map<String, dynamic>? queryParameters,
   }) async {
-    await _restoreAuthToken();
+    await _prepareAuthForPath(path);
     final requestKey = _buildGetRequestKey(path, queryParameters);
     final inFlight = _inFlightGetRequests[requestKey];
     if (inFlight != null) {
@@ -552,31 +583,31 @@ class ApiService {
 
   /// Basic POST helper for endpoints that send a request body.
   Future<Response> post(String path, {dynamic data}) async {
-    await _restoreAuthToken();
+    await _prepareAuthForPath(path);
     return await _dio.post(path, data: data);
   }
 
   /// Basic PUT helper for endpoints that update an existing record.
   Future<Response> put(String path, {dynamic data}) async {
-    await _restoreAuthToken();
+    await _prepareAuthForPath(path);
     return await _dio.put(path, data: data);
   }
 
   /// Basic DELETE helper for endpoints that remove a record.
   Future<Response> delete(String path, {dynamic data}) async {
-    await _restoreAuthToken();
+    await _prepareAuthForPath(path);
     return await _dio.delete(path, data: data);
   }
 
   /// Basic PATCH helper for endpoints that partially update a record.
   Future<Response> patch(String path, {dynamic data}) async {
-    await _restoreAuthToken();
+    await _prepareAuthForPath(path);
     return await _dio.patch(path, data: data);
   }
 
   /// Multipart POST helper for endpoints that accept form-data payloads.
   Future<Response> postForm(String path, {required FormData data}) async {
-    await _restoreAuthToken();
+    await _prepareAuthForPath(path);
     _debugLogFormData(path: path, data: data);
     return await _dio.post(
       path,
@@ -587,7 +618,7 @@ class ApiService {
 
   /// Multipart PUT helper for endpoints that accept form-data payloads.
   Future<Response> putForm(String path, {required FormData data}) async {
-    await _restoreAuthToken();
+    await _prepareAuthForPath(path);
     return await _dio.put(
       path,
       data: data,
@@ -674,6 +705,7 @@ class ApiService {
       _dio.options.headers['Authorization'] = 'Bearer $normalizedAccessToken';
       _cachedAccessToken = normalizedAccessToken;
       _authTokenLoaded = true;
+      _debugAuthState('Token saved after login', normalizedAccessToken);
     }
 
     final refreshToken = response.refreshToken;
@@ -692,6 +724,15 @@ class ApiService {
 
   Future<void> _persistUser(UserModel user) async {
     await _storage.write(SecureStorageService.currentUserKey, user.toRawJson());
+  }
+
+  Future<void> _prepareAuthForPath(String path) async {
+    if (_isAuthEndpoint(path)) {
+      _dio.options.headers.remove('Authorization');
+      return;
+    }
+
+    await _restoreAuthToken();
   }
 
   Future<void> _restoreAuthToken() async {
@@ -716,6 +757,28 @@ class ApiService {
     if (token != null && token.isNotEmpty) {
       _dio.options.headers['Authorization'] = 'Bearer $token';
     }
+  }
+
+  Future<String?> _currentAccessToken() async {
+    final cached = _cachedAccessToken?.trim();
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    await _storage.migrateLegacyPrefsIfNeeded();
+    final stored = await _storage.read(SecureStorageService.accessTokenKey);
+    final token = stored?.trim();
+    if (token == null || token.isEmpty) {
+      _cachedAccessToken = null;
+      _authTokenLoaded = true;
+      _dio.options.headers.remove('Authorization');
+      return null;
+    }
+
+    _cachedAccessToken = token;
+    _authTokenLoaded = true;
+    _dio.options.headers['Authorization'] = 'Bearer $token';
+    return token;
   }
 
   Future<void> _clearAuthData() async {
@@ -4124,9 +4187,57 @@ class ApiService {
         profileImagePath,
         filename: fileName,
       );
+      await postForm(ApiConstants.clients, data: FormData.fromMap(payload));
+      return;
     }
 
-    await postForm(ApiConstants.clients, data: FormData.fromMap(payload));
+    await _postCreateClientJson(payload);
+  }
+
+  Future<void> _postCreateClientJson(Map<String, dynamic> payload) async {
+    await _restoreAuthToken();
+    await _dio.post(
+      ApiConstants.clients,
+      data: payload,
+      options: Options(
+        contentType: Headers.jsonContentType,
+        headers: const {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        followRedirects: false,
+      ),
+    );
+  }
+
+  String _maskAuthorizationHeader(String header) {
+    const prefix = 'Bearer ';
+    if (!header.startsWith(prefix)) return 'present';
+    final token = header.substring(prefix.length).trim();
+    if (token.isEmpty) return 'missing';
+    if (token.length <= 10) return 'Bearer ***';
+    final start = token.substring(0, 6);
+    final end = token.substring(token.length - 4);
+    return 'Bearer $start...$end';
+  }
+
+  void _debugAuthState(String label, String? token) {
+    if (!kDebugMode) return;
+    final normalized = token?.trim();
+    final authState = normalized == null || normalized.isEmpty
+        ? 'missing'
+        : _maskAuthorizationHeader('Bearer $normalized');
+    debugPrint(
+      '$label: $authState',
+    );
+  }
+
+  bool _isRedirectResponse(int? statusCode) {
+    return statusCode == 301 ||
+        statusCode == 302 ||
+        statusCode == 307 ||
+        statusCode == 308;
   }
 
   /// Updates an existing client.

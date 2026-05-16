@@ -1,10 +1,11 @@
 class CreateClientRequestModel {
   const CreateClientRequestModel({
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-    required this.phone,
-    required this.password,
+    this.firstName,
+    this.lastName,
+    this.email,
+    this.phone,
+    this.password,
+    this.sendMail,
     this.website,
     this.status,
     this.addressLine1,
@@ -16,14 +17,16 @@ class CreateClientRequestModel {
     this.clientType,
     this.companyName,
     this.industry,
+    this.businessInformation = const [],
     this.profileImagePath,
   });
 
-  final String firstName;
-  final String lastName;
-  final String email;
-  final String phone;
-  final String password;
+  final String? firstName;
+  final String? lastName;
+  final String? email;
+  final String? phone;
+  final String? password;
+  final bool? sendMail;
   final String? website;
   final String? status;
   final String? addressLine1;
@@ -35,17 +38,20 @@ class CreateClientRequestModel {
   final String? clientType;
   final String? companyName;
   final String? industry;
+  final List<Map<String, String>> businessInformation;
   final String? profileImagePath;
 
   Map<String, dynamic> toPayload() {
-    final payload = <String, dynamic>{
-      'first_name': firstName.trim(),
-      'last_name': lastName.trim(),
-      'email': email.trim(),
-      'phone': phone.trim(),
-      'password': password.trim(),
-    };
+    final payload = <String, dynamic>{};
 
+    if (_hasValue(firstName)) payload['first_name'] = firstName!.trim();
+    if (_hasValue(lastName)) payload['last_name'] = lastName!.trim();
+    if (_hasValue(email)) payload['email'] = email!.trim();
+    if (_hasValue(phone)) payload['phone'] = phone!.trim();
+    if (_hasValue(password)) payload['password'] = password!.trim();
+    if (sendMail != null) {
+      payload['send_invite_mail'] = sendMail;
+    }
     if (_hasValue(status)) payload['status'] = status!.trim().toLowerCase();
     if (_hasValue(website)) payload['website'] = website!.trim();
     if (_hasValue(addressLine1))
@@ -56,11 +62,39 @@ class CreateClientRequestModel {
     if (_hasValue(state)) payload['state'] = state!.trim();
     if (_hasValue(country)) payload['country'] = country!.trim();
     if (_hasValue(postalCode)) payload['pincode'] = postalCode!.trim();
-    if (_hasValue(clientType)) {
-      payload['client_type'] = clientType!.trim().toLowerCase();
+    final primaryBusiness = businessInformation.isNotEmpty
+        ? businessInformation.first
+        : const <String, String>{};
+    final resolvedClientType = _firstNonEmpty([
+      primaryBusiness['client_type'],
+      clientType,
+    ]);
+    final resolvedCompanyName = _firstNonEmpty([
+      primaryBusiness['company_name'],
+      companyName,
+    ]);
+    final resolvedIndustry = _firstNonEmpty([
+      primaryBusiness['industry'],
+      industry,
+    ]);
+    final resolvedWebsite = _firstNonEmpty([
+      primaryBusiness['website'],
+      website,
+    ]);
+
+    if (_hasValue(resolvedWebsite)) payload['website'] = resolvedWebsite!.trim();
+    if (businessInformation.isNotEmpty) {
+      payload['companies'] = businessInformation;
+    } else {
+      final company = <String, String>{};
+      _addIfNotEmpty(company, 'client_type', resolvedClientType);
+      _addIfNotEmpty(company, 'company_name', resolvedCompanyName);
+      _addIfNotEmpty(company, 'industry', resolvedIndustry);
+      _addIfNotEmpty(company, 'website', resolvedWebsite);
+      if (company.isNotEmpty) {
+        payload['companies'] = [company];
+      }
     }
-    if (_hasValue(companyName)) payload['company_name'] = companyName!.trim();
-    if (_hasValue(industry)) payload['industry'] = industry!.trim();
 
     return payload;
   }
@@ -72,4 +106,19 @@ class CreateClientRequestModel {
       hasProfileImage ? profileImagePath!.trim() : null;
 
   bool _hasValue(String? value) => value != null && value.trim().isNotEmpty;
+
+  void _addIfNotEmpty(Map<String, String> map, String key, String? value) {
+    if (_hasValue(value)) {
+      map[key] = value!.trim();
+    }
+  }
+
+  String? _firstNonEmpty(List<String?> values) {
+    for (final value in values) {
+      if (_hasValue(value)) {
+        return value!.trim();
+      }
+    }
+    return null;
+  }
 }

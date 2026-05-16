@@ -601,36 +601,6 @@ class _QuickStatsCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'This Month',
-                      style: AppTextStyles.style(
-                        color: Colors.white,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 12),

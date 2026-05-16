@@ -5,6 +5,7 @@ class RenewalModel {
     required this.vendorId,
     required this.title,
     required this.client,
+    required this.companyName,
     required this.clientEmail,
     required this.vendor,
     required this.vendorEmail,
@@ -32,6 +33,7 @@ class RenewalModel {
   final String vendorId;
   final String title;
   final String client;
+  final String companyName;
   final String clientEmail;
   final String vendor;
   final String vendorEmail;
@@ -133,6 +135,23 @@ class RenewalModel {
       ]),
     ]);
 
+    final companyName = _firstNonEmpty([
+      _readString(source, const [
+        'company_name',
+        'companyName',
+        'company',
+        'business_name',
+        'businessName',
+      ]),
+      _readString(clientMap, const [
+        'company_name',
+        'companyName',
+        'company',
+        'business_name',
+        'businessName',
+      ]),
+    ]);
+
     final vendor = _firstNonEmpty([
       _readString(vendorMap, const [
         'name',
@@ -169,6 +188,7 @@ class RenewalModel {
       ]),
       title: title.isEmpty ? 'Service' : title,
       client: client.isEmpty ? 'Unknown client' : client,
+      companyName: companyName,
       clientEmail: _readString(source, const [
         'client_email',
         'clientEmail',
