@@ -160,12 +160,13 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
           final itemWidth = (barWidth - 16) / widget.items.length;
           final barHeight = width < 360 ? 60.0 : 64.0;
           final bubbleSize = (itemWidth * 0.7).clamp(40.0, 54.0);
+          final bubbleLift = bubbleSize * 0.35;
           final labelFontSize = width < 360 ? 10.5 : 12.5;
           final activeColor = widget.items[_currentIndex].activeColor;
 
           return SizedBox(
             // ✅ Enough height so bubble doesn't cut
-            height: barHeight + (bubbleSize * 0.01),
+            height: barHeight + bubbleLift + 10,
             child: Stack(
               clipBehavior: Clip.none, // ✅ allow smooth floating
               alignment: Alignment.bottomCenter,
@@ -195,7 +196,7 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
 
                 // 🔵 Floating Bubble
                 Positioned(
-                  top: -bubbleSize * 0.35, // ✅ slight float, not cut
+                  top: 0, // ✅ slight float, not cut
                   left:
                       horizontalMargin +
                       8 +
@@ -287,3 +288,4 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
     );
   }
 }
+

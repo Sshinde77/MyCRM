@@ -2,6 +2,8 @@ class ClientModel {
   const ClientModel({
     required this.id,
     required this.name,
+    this.companyNames = const [],
+    this.companyBusinessDetails = const [],
     required this.email,
     required this.industry,
     required this.website,
@@ -13,6 +15,8 @@ class ClientModel {
 
   final String id;
   final String name;
+  final List<String> companyNames;
+  final List<ClientBusinessDetail> companyBusinessDetails;
   final String email;
   final String industry;
   final String website;
@@ -34,6 +38,8 @@ class ClientModel {
 
   factory ClientModel.fromJson(Map<String, dynamic> json) {
     final source = _extractSource(json);
+    final resolvedCompanyNames = _readCompanyNames(source);
+    final resolvedCompanyBusinessDetails = _readCompanyBusinessDetails(source);
     final resolvedName = _readString(source, [
       'name',
       'cname',
@@ -66,7 +72,13 @@ class ClientModel {
         'client_id',
         'clientID',
       ]),
-      name: resolvedName.isNotEmpty ? resolvedName : fallbackPersonName,
+      name: resolvedName.isNotEmpty
+          ? resolvedName
+          : (resolvedCompanyNames.isNotEmpty
+                ? resolvedCompanyNames.first
+                : fallbackPersonName),
+      companyNames: resolvedCompanyNames,
+      companyBusinessDetails: resolvedCompanyBusinessDetails,
       email: _readString(source, [
         'email',
         'email_address',
@@ -154,4 +166,66 @@ class ClientModel {
     ].where((entry) => entry.trim().isNotEmpty).join(' ').trim();
     return fullName;
   }
+
+  static List<String> _readCompanyNames(Map<String, dynamic> json) {
+    final names = <String>[];
+
+    final fromCompanyNames = json['company_names'];
+    if (fromCompanyNames is Iterable) {
+      for (final entry in fromCompanyNames) {
+        final value = entry?.toString().trim() ?? '';
+        if (value.isNotEmpty && !names.contains(value)) {
+          names.add(value);
+        }
+      }
+    }
+
+    final fromCompanies = json['companies'];
+    if (fromCompanies is Iterable) {
+      for (final item in fromCompanies) {
+        if (item is Map) {
+          final value = item['company_name']?.toString().trim() ?? '';
+          if (value.isNotEmpty && !names.contains(value)) {
+            names.add(value);
+          }
+        }
+      }
+    }
+
+    return List<String>.unmodifiable(names);
+  }
+
+  static List<ClientBusinessDetail> _readCompanyBusinessDetails(
+    Map<String, dynamic> json,
+  ) {
+    final details = <ClientBusinessDetail>[];
+    final companies = json['companies'];
+    if (companies is! Iterable) {
+      return List<ClientBusinessDetail>.unmodifiable(details);
+    }
+
+    for (final item in companies) {
+      if (item is! Map) continue;
+      final id = item['id']?.toString().trim() ?? '';
+      if (id.isEmpty) continue;
+      final companyName = item['company_name']?.toString().trim() ?? '';
+      details.add(
+        ClientBusinessDetail(
+          id: id,
+          companyName: companyName,
+        ),
+      );
+    }
+    return List<ClientBusinessDetail>.unmodifiable(details);
+  }
+}
+
+class ClientBusinessDetail {
+  const ClientBusinessDetail({
+    required this.id,
+    required this.companyName,
+  });
+
+  final String id;
+  final String companyName;
 }

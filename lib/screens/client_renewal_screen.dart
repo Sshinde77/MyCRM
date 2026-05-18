@@ -110,6 +110,8 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       page: 1,
       search: _appliedSearchTerm,
       status: _selectedStatusQuery,
+      dateFrom: _formatApiDate(_appliedFromDate),
+      dateTo: _formatApiDate(_appliedToDate),
     );
   }
 
@@ -194,6 +196,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       _appliedFromDate = start;
       _appliedToDate = end;
     });
+    await _refreshRenewals();
   }
 
   Future<void> _clearFilters() async {
@@ -212,6 +215,8 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       page: 1,
       search: '',
       status: null,
+      dateFrom: null,
+      dateTo: null,
     );
   }
 
@@ -227,6 +232,14 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
     final month = value.month.toString().padLeft(2, '0');
     final year = value.year.toString().padLeft(4, '0');
     return '$day-$month-$year';
+  }
+
+  String? _formatApiDate(DateTime? value) {
+    if (value == null) return null;
+    final year = value.year.toString().padLeft(4, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 
   DateTime? _effectiveRenewalDate(RenewalModel renewal) {
@@ -273,23 +286,9 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   }
 
   List<RenewalModel> _applyBaseFilters(List<RenewalModel> renewals) {
-    final from = _appliedFromDate == null ? null : _dateOnly(_appliedFromDate!);
-    final to = _appliedToDate == null ? null : _dateOnly(_appliedToDate!);
-    return renewals
-        .where((renewal) {
-          final date = _effectiveRenewalDate(renewal);
-          final normalizedDate = date == null ? null : _dateOnly(date);
-          if (from != null &&
-              (normalizedDate == null || normalizedDate.isBefore(from))) {
-            return false;
-          }
-          if (to != null &&
-              (normalizedDate == null || normalizedDate.isAfter(to))) {
-            return false;
-          }
-          return true;
-        })
-        .toList(growable: false);
+    // Date filtering is performed on the backend via from_date/to_date query params.
+    // Keep UI list aligned with backend pagination metadata.
+    return renewals;
   }
 
   bool get _hasActiveFilters {
@@ -310,6 +309,8 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       page: 1,
       search: search,
       status: _selectedStatusQuery,
+      dateFrom: _formatApiDate(_appliedFromDate),
+      dateTo: _formatApiDate(_appliedToDate),
     );
   }
 
@@ -325,6 +326,8 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       page: 1,
       search: _appliedSearchTerm,
       status: _selectedStatusQuery,
+      dateFrom: _formatApiDate(_appliedFromDate),
+      dateTo: _formatApiDate(_appliedToDate),
     );
   }
 
@@ -499,6 +502,8 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                 page: 1,
                                 search: _appliedSearchTerm,
                                 status: _selectedStatusQuery,
+                                dateFrom: _formatApiDate(_appliedFromDate),
+                                dateTo: _formatApiDate(_appliedToDate),
                               ),
                           onView: (renewal) => _openDetail(renewal),
                           onEdit: (renewal) =>
@@ -523,6 +528,10 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                   currentPage: safeCurrentPage,
                                   totalPages: totalPages,
                                   onPageTap: (page) {
+                                    if (provider.isLoading ||
+                                        page == safeCurrentPage) {
+                                      return;
+                                    }
                                     context
                                         .read<RenewalListProvider>()
                                         .loadRenewals(
@@ -530,6 +539,10 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                           page: page,
                                           search: _appliedSearchTerm,
                                           status: _selectedStatusQuery,
+                                          dateFrom: _formatApiDate(
+                                            _appliedFromDate,
+                                          ),
+                                          dateTo: _formatApiDate(_appliedToDate),
                                         );
                                   },
                                 ),
@@ -1759,6 +1772,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
   String? _renewalId;
   String? _selectedClientId;
+  String? _selectedClientOptionKey;
+  String? _selectedClientBusinessDetailId;
   String? _selectedVendorId;
   String _seedClientName = '';
   String _seedVendorName = '';
@@ -1798,6 +1813,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     _selectedClientId = renewal.clientId.trim().isEmpty
         ? null
         : renewal.clientId.trim();
+    _selectedClientBusinessDetailId = null;
     _selectedVendorId = renewal.vendorId.trim().isEmpty
         ? null
         : renewal.vendorId.trim();
@@ -1833,12 +1849,18 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
   Future<void> _loadFormData() async {
     await _loadLookupData();
+    if (!mounted) {
+      return;
+    }
     if (_isEditMode) {
       await _loadRenewalDetail();
     }
   }
 
   Future<void> _loadLookupData() async {
+    if (!mounted) {
+      return;
+    }
     setState(() => _isLoadingOptions = true);
     try {
       final options = await _apiService.getClientRenewalFormOptions();
@@ -1873,6 +1895,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       return;
     }
 
+    if (!mounted) {
+      return;
+    }
     setState(() => _isLoadingDetail = true);
     try {
       final detail = await _apiService.getClientRenewalDetail(id);
@@ -1943,6 +1968,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
         await _apiService.updateClientRenewal(
           id: _renewalId!,
           clientId: _selectedClientId!,
+          clientBusinessDetailId: _selectedClientBusinessDetailId,
           vendorId: _selectedVendorId!,
           serviceName: _serviceNameController.text.trim(),
           serviceDetails: _serviceDetailsController.text.trim(),
@@ -1956,6 +1982,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       } else {
         await _apiService.createClientRenewal(
           clientId: _selectedClientId!,
+          clientBusinessDetailId: _selectedClientBusinessDetailId,
           vendorId: _selectedVendorId!,
           serviceName: _serviceNameController.text.trim(),
           serviceDetails: _serviceDetailsController.text.trim(),
@@ -2074,11 +2101,28 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       if ((_selectedClientId ?? '').trim().isEmpty &&
           _seedClientName.isNotEmpty) {
         final matchedByName = _clients.where((entry) {
-          return _companyDisplayName(entry).trim().toLowerCase() ==
-              _seedClientName.toLowerCase();
+          return _clientNamesForMatching(entry).any(
+            (name) => name.trim().toLowerCase() == _seedClientName.toLowerCase(),
+          );
         });
         if (matchedByName.isNotEmpty) {
           _selectedClientId = matchedByName.first.id;
+        }
+      }
+
+      _selectedClientOptionKey = _resolveClientOptionKey(
+        selectedClientId: _selectedClientId,
+        selectedClientBusinessDetailId: _selectedClientBusinessDetailId,
+        seedClientName: _seedClientName,
+      );
+      if ((_selectedClientOptionKey ?? '').isNotEmpty) {
+        final selectedOption = _findClientOptionByKey(_selectedClientOptionKey!);
+        if (selectedOption != null) {
+          final split = selectedOption.key.split('::');
+          _selectedClientId = split.isNotEmpty ? split.first.trim() : null;
+          _selectedClientBusinessDetailId = split.length > 1
+              ? split[1].trim()
+              : null;
         }
       }
     }
@@ -2109,6 +2153,10 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   }
 
   String _companyDisplayName(ClientModel client) {
+    if (client.companyNames.isNotEmpty) {
+      return client.companyNames.join(', ');
+    }
+
     final name = client.name.trim();
     if (name.isNotEmpty) {
       return name;
@@ -2119,6 +2167,94 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       return contact;
     }
     return 'Unnamed Company';
+  }
+
+  List<String> _clientNamesForMatching(ClientModel client) {
+    if (client.companyNames.isNotEmpty) {
+      return client.companyNames;
+    }
+    return <String>[_companyDisplayName(client)];
+  }
+
+  String _buildClientOptionKey(String clientId, String businessDetailId) {
+    return '${clientId.trim()}::${businessDetailId.trim()}';
+  }
+
+  List<MapEntry<String, String>> _clientOptions() {
+    final options = <MapEntry<String, String>>[];
+    for (final client in _clients) {
+      if (client.companyBusinessDetails.isNotEmpty) {
+        for (final detail in client.companyBusinessDetails) {
+          final businessId = detail.id.trim();
+          if (businessId.isEmpty) continue;
+          final label = detail.companyName.trim().isEmpty
+              ? _companyDisplayName(client)
+              : detail.companyName.trim();
+          options.add(
+            MapEntry(
+              _buildClientOptionKey(client.id, businessId),
+              label,
+            ),
+          );
+        }
+        continue;
+      }
+
+      final fallbackName = _companyDisplayName(client).trim();
+      if (fallbackName.isNotEmpty) {
+        options.add(
+          MapEntry(
+            _buildClientOptionKey(client.id, client.id),
+            fallbackName,
+          ),
+        );
+      }
+    }
+    return options;
+  }
+
+  MapEntry<String, String>? _findClientOptionByKey(String key) {
+    for (final option in _clientOptions()) {
+      if (option.key == key) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String? _resolveClientOptionKey({
+    required String? selectedClientId,
+    required String? selectedClientBusinessDetailId,
+    required String seedClientName,
+  }) {
+    final clientId = (selectedClientId ?? '').trim();
+    if (clientId.isEmpty) return null;
+
+    final businessDetailId = (selectedClientBusinessDetailId ?? '').trim();
+    if (businessDetailId.isNotEmpty) {
+      final exactKey = _buildClientOptionKey(clientId, businessDetailId);
+      if (_findClientOptionByKey(exactKey) != null) {
+        return exactKey;
+      }
+    }
+
+    if (seedClientName.trim().isNotEmpty) {
+      final matched = _clientOptions().where((option) {
+        final parts = option.key.split('::');
+        if (parts.isEmpty || parts.first.trim() != clientId) return false;
+        return option.value.trim().toLowerCase() == seedClientName.toLowerCase();
+      });
+      if (matched.isNotEmpty) {
+        return matched.first.key;
+      }
+    }
+
+    for (final option in _clientOptions()) {
+      if (option.key.startsWith('$clientId::')) {
+        return option.key;
+      }
+    }
+    return null;
   }
 
   Future<String?> _showSearchableSelectionSheet({
@@ -2319,11 +2455,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                     _FormLabel(text: 'Select Company', required: true),
                     const SizedBox(height: 8),
                     _SearchSelectField(
-                      text: _clients
-                          .where((entry) => entry.id == _selectedClientId)
-                          .map(_companyDisplayName)
-                          .cast<String?>()
-                          .firstWhere((_) => true, orElse: () => null),
+                      text: _findClientOptionByKey(
+                        (_selectedClientOptionKey ?? '').trim(),
+                      )?.value,
                       hint: 'Choose a company...',
                       onTap: _isSubmitting
                           ? null
@@ -2331,18 +2465,28 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                               final selected =
                                   await _showSearchableSelectionSheet(
                                     title: 'Select Company',
-                                    selectedValue: _selectedClientId,
-                                    options: _clients
-                                        .map(
-                                          (entry) => MapEntry(
-                                            entry.id,
-                                            _companyDisplayName(entry),
-                                          ),
-                                        )
-                                        .toList(growable: false),
+                                    selectedValue: _selectedClientOptionKey,
+                                    options: _clientOptions(),
                                   );
                               if (selected != null && mounted) {
-                                setState(() => _selectedClientId = selected);
+                                final split = selected.split('::');
+                                final selectedClientId = split.isNotEmpty
+                                    ? split.first.trim()
+                                    : '';
+                                final selectedBusinessDetailId =
+                                    split.length > 1
+                                    ? split[1].trim()
+                                    : '';
+                                setState(() {
+                                  _selectedClientOptionKey = selected;
+                                  _selectedClientId = selectedClientId.isEmpty
+                                      ? null
+                                      : selectedClientId;
+                                  _selectedClientBusinessDetailId =
+                                      selectedBusinessDetailId.isEmpty
+                                      ? null
+                                      : selectedBusinessDetailId;
+                                });
                               }
                             },
                     ),

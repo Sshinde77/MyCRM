@@ -474,7 +474,6 @@ class ApiService {
   bool _isAuthEndpoint(String path) {
     final normalized = path.toLowerCase();
     return normalized.contains('/login') ||
-        normalized.contains('/logout') ||
         normalized.contains('/refresh');
   }
 
@@ -1358,10 +1357,10 @@ class ApiService {
       query['status'] = normalizedStatus;
     }
     if (normalizedDateFrom.isNotEmpty) {
-      query['date_from'] = normalizedDateFrom;
+      query['from_date'] = normalizedDateFrom;
     }
     if (normalizedDateTo.isNotEmpty) {
-      query['date_to'] = normalizedDateTo;
+      query['to_date'] = normalizedDateTo;
     }
     final response = await get(
       ApiConstants.vendorRenewals,
@@ -1396,10 +1395,10 @@ class ApiService {
       query['status'] = normalizedStatus;
     }
     if (normalizedDateFrom.isNotEmpty) {
-      query['date_from'] = normalizedDateFrom;
+      query['from_date'] = normalizedDateFrom;
     }
     if (normalizedDateTo.isNotEmpty) {
-      query['date_to'] = normalizedDateTo;
+      query['to_date'] = normalizedDateTo;
     }
     final response = await get(
       ApiConstants.clientRenewals,
@@ -2322,6 +2321,7 @@ class ApiService {
   /// Creates a client renewal/service record.
   Future<RenewalModel> createClientRenewal({
     required String clientId,
+    String? clientBusinessDetailId,
     required String vendorId,
     required String serviceName,
     required String serviceDetails,
@@ -2334,6 +2334,9 @@ class ApiService {
   }) async {
     final payload = FormData.fromMap({
       'client_id': clientId.trim(),
+      if (clientBusinessDetailId != null &&
+          clientBusinessDetailId.trim().isNotEmpty)
+        'client_business_detail_id': clientBusinessDetailId.trim(),
       'vendor_id': vendorId.trim(),
       'service_name': serviceName.trim(),
       'service_details': serviceDetails.trim(),
@@ -2357,6 +2360,7 @@ class ApiService {
   Future<RenewalModel> updateClientRenewal({
     required String id,
     required String clientId,
+    String? clientBusinessDetailId,
     required String vendorId,
     required String serviceName,
     required String serviceDetails,
@@ -2378,6 +2382,9 @@ class ApiService {
     );
     final payload = FormData.fromMap({
       'client_id': clientId.trim(),
+      if (clientBusinessDetailId != null &&
+          clientBusinessDetailId.trim().isNotEmpty)
+        'client_business_detail_id': clientBusinessDetailId.trim(),
       'vendor_id': vendorId.trim(),
       'service_name': serviceName.trim(),
       'service_details': serviceDetails.trim(),
@@ -4180,35 +4187,49 @@ class ApiService {
   /// Creates a new client.
   Future<void> createClient(CreateClientRequestModel request) async {
     final payload = request.toPayload();
+    final formData = FormData();
+
+    payload.forEach((key, value) {
+      if (value == null || key == 'companies') return;
+      if (key == 'send_invite_mail') {
+        final invite = value is bool
+            ? value
+            : value.toString().trim().toLowerCase() == 'true';
+        formData.fields.add(
+          MapEntry('send_invite_mail', invite ? '1' : '0'),
+        );
+        return;
+      }
+      formData.fields.add(MapEntry(key, value.toString()));
+    });
+
+    final companies = payload['companies'];
+    if (companies is List) {
+      for (var index = 0; index < companies.length; index++) {
+        final company = companies[index];
+        if (company is! Map) continue;
+        for (final entry in company.entries) {
+          final companyValue = entry.value?.toString().trim() ?? '';
+          if (companyValue.isEmpty) continue;
+          formData.fields.add(
+            MapEntry('companies[$index][${entry.key}]', companyValue),
+          );
+        }
+      }
+    }
+
     final profileImagePath = request.normalizedProfileImagePath;
     if (profileImagePath != null) {
       final fileName = profileImagePath.split(RegExp(r'[\\/]')).last;
-      payload['profile_image'] = await MultipartFile.fromFile(
-        profileImagePath,
-        filename: fileName,
+      formData.files.add(
+        MapEntry(
+          'profile_image',
+          await MultipartFile.fromFile(profileImagePath, filename: fileName),
+        ),
       );
-      await postForm(ApiConstants.clients, data: FormData.fromMap(payload));
-      return;
     }
 
-    await _postCreateClientJson(payload);
-  }
-
-  Future<void> _postCreateClientJson(Map<String, dynamic> payload) async {
-    await _restoreAuthToken();
-    await _dio.post(
-      ApiConstants.clients,
-      data: payload,
-      options: Options(
-        contentType: Headers.jsonContentType,
-        headers: const {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        followRedirects: false,
-      ),
-    );
+    await postForm(ApiConstants.clients, data: formData);
   }
 
   String _maskAuthorizationHeader(String header) {

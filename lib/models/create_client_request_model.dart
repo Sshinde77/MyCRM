@@ -5,7 +5,7 @@ class CreateClientRequestModel {
     this.email,
     this.phone,
     this.password,
-    this.sendMail,
+    this.sendMail = false,
     this.website,
     this.status,
     this.addressLine1,
@@ -26,7 +26,7 @@ class CreateClientRequestModel {
   final String? email;
   final String? phone;
   final String? password;
-  final bool? sendMail;
+  final bool sendMail;
   final String? website;
   final String? status;
   final String? addressLine1;
@@ -49,9 +49,7 @@ class CreateClientRequestModel {
     if (_hasValue(email)) payload['email'] = email!.trim();
     if (_hasValue(phone)) payload['phone'] = phone!.trim();
     if (_hasValue(password)) payload['password'] = password!.trim();
-    if (sendMail != null) {
-      payload['send_invite_mail'] = sendMail;
-    }
+    payload['send_invite_mail'] = sendMail;
     if (_hasValue(status)) payload['status'] = status!.trim().toLowerCase();
     if (_hasValue(website)) payload['website'] = website!.trim();
     if (_hasValue(addressLine1))

@@ -1502,71 +1502,84 @@ class _HeaderSection extends StatelessWidget {
         ? user!.role!.trim()
         : 'Team Member';
 
-    return Row(
-      children: [
-        Expanded(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => Get.toNamed(AppRoutes.personalInformation),
-              borderRadius: BorderRadius.circular(14),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
+    final headerProfile = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Get.toNamed(AppRoutes.personalInformation),
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              _HeaderProfileAvatar(user: user, displayName: displayName),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _HeaderProfileAvatar(user: user, displayName: displayName),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF1B2237),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            role,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.style(
-                              color: const Color(0xFF7F90A9),
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF1B2237),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      role,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF7F90A9),
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.1,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
         ),
-        Row(
-          children: [
-            _HeaderCalendarBadge(date: DateTime.now()),
-            const SizedBox(width: 5),
-            _HeaderActionButton(
-              icon: Icons.checklist_rounded,
-              size: 24,
-              onTap: () => Get.to(() => const to_do.ToDoListScreen()),
+      ),
+    );
+
+    final headerActions = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _HeaderCalendarBadge(date: DateTime.now()),
+        const SizedBox(width: 10),
+        _HeaderActionButton(
+          icon: Icons.checklist_rounded,
+          size: 50,
+          onTap: () => Get.to(() => const to_do.ToDoListScreen()),
+        ),
+        const SizedBox(width: 15),
+        _HeaderActionButton(
+          icon: Icons.notifications_none_rounded,
+          size: 50,
+          onTap: () => Get.toNamed(AppRoutes.notifications),
+        ),
+      ],
+    );
+
+    return Row(
+      children: [
+        Expanded(child: headerProfile),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: headerActions,
             ),
-            const SizedBox(width: 5),
-            _HeaderActionButton(
-              icon: Icons.notifications_none_rounded,
-              size: 24,
-              onTap: () => Get.toNamed(AppRoutes.notifications),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -1625,8 +1638,8 @@ class _HeaderCalendarBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: compact ? 22 : 24,
-            height: compact ? 22 : 24,
+            width: compact ? 46 : 48,
+            height: compact ? 46 : 48,
             decoration: BoxDecoration(
               color: const Color(0xFFEDE9FE),
               borderRadius: BorderRadius.circular(8),
@@ -1634,7 +1647,7 @@ class _HeaderCalendarBadge extends StatelessWidget {
             child: const Icon(
               Icons.calendar_month_rounded,
               color: Color(0xFF4F46E5),
-              size: 14,
+              size: 20,
             ),
           ),
           SizedBox(width: compact ? 6 : 8),
@@ -1645,7 +1658,7 @@ class _HeaderCalendarBadge extends StatelessWidget {
                 dateLabel,
                 style: AppTextStyles.style(
                   color: const Color(0xFF4F46E5),
-                  fontSize: compact ? 9.8 : 10.5,
+                  fontSize: compact ? 15.8 : 18.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1653,7 +1666,7 @@ class _HeaderCalendarBadge extends StatelessWidget {
                 weekdayLabel,
                 style: AppTextStyles.style(
                   color: const Color(0xFF64748B),
-                  fontSize: compact ? 9 : 9.8,
+                  fontSize: compact ? 12 : 14,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1765,8 +1778,8 @@ class _HeaderActionButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: SizedBox(
-          width: 50,
-          height: 50,
+          width: 80,
+          height: 80,
           child: Icon(icon, color: const Color(0xFF61728F), size: size),
         ),
       ),

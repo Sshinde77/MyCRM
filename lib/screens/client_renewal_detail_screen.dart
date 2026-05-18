@@ -157,6 +157,10 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
     return <_DetailRowData>[
       _DetailRowData(label: 'Client Name', value: value(item?.client ?? '')),
       _DetailRowData(
+        label: 'Company Name',
+        value: value(item?.companyName ?? ''),
+      ),
+      _DetailRowData(
         label: 'Client Email',
         value: value(item?.clientEmail ?? ''),
       ),
