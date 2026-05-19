@@ -1837,6 +1837,9 @@ String _formatProjectStatusLabel(String statusValue) {
   if (normalized.isEmpty) {
     return 'Not Started';
   }
+  if (normalized.toLowerCase() == 'all') {
+    return 'All';
+  }
 
   final category = _projectStatusCategory(normalized);
   switch (category) {

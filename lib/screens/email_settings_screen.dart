@@ -35,6 +35,7 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isSendingTestEmail = false;
   bool _showPassword = false;
 
   static const List<String> _mailEngineOptions = <String>[
@@ -197,7 +198,9 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
     }
   }
 
-  void _sendTestEmail() {
+  Future<void> _sendTestEmail() async {
+    if (_isSendingTestEmail) return;
+
     final email = _testEmailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       AppSnackbar.show(
@@ -208,10 +211,30 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
       return;
     }
 
-    AppSnackbar.show(
-      'Not integrated',
-      'Send test email API is not provided yet.',
-    );
+    setState(() => _isSendingTestEmail = true);
+    try {
+      await ApiService.instance.sendSettingsTestEmail(email);
+      if (!mounted) return;
+      AppSnackbar.show(
+        'Sent',
+        'Test email sent successfully.',
+        isSuccess: true,
+      );
+    } on DioException catch (error) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        'Send failed',
+        _messageFromError(error, fallback: 'Unable to send test email.'),
+        isError: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.show('Send failed', 'Unable to send test email.', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isSendingTestEmail = false);
+      }
+    }
   }
 
   String _messageFromError(DioException error, {required String fallback}) {
@@ -495,7 +518,7 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
               ),
               const SizedBox(width: 8),
               ElevatedButton.icon(
-                onPressed: _sendTestEmail,
+                onPressed: _isSendingTestEmail ? null : _sendTestEmail,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF16A34A),
                   foregroundColor: Colors.white,
@@ -507,10 +530,19 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.send_outlined, size: 18),
-                label: const Text(
-                  'Send Test',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                icon: _isSendingTestEmail
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.send_outlined, size: 18),
+                label: Text(
+                  _isSendingTestEmail ? 'Sending...' : 'Send Test',
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ],

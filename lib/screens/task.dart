@@ -86,12 +86,8 @@ class _TasksScreenState extends State<TasksScreen> {
       : _tasks.where((task) => task.completed).length;
 
   List<_TaskRecord> get _visibleTasks {
-    if (_selectedStatus == 'all') {
-      return _tasks;
-    }
-    return _tasks
-        .where((task) => _taskStatusCategory(task.status) == _selectedStatus)
-        .toList(growable: false);
+    // Status filtering is handled by backend query params.
+    return _tasks;
   }
 
   @override
@@ -210,6 +206,7 @@ class _TasksScreenState extends State<TasksScreen> {
     try {
       final staffId = _staffFilterId?.trim() ?? '';
       final useStaffEndpoint = staffId.isNotEmpty;
+      final selectedStatus = _apiStatusFromFilter(_selectedStatus);
       TaskListPageResult? pageResult;
       List<Map<String, dynamic>> records = const <Map<String, dynamic>>[];
       var usedFallbackListEndpoint = false;
@@ -220,10 +217,12 @@ class _TasksScreenState extends State<TasksScreen> {
                 staffId: staffId,
                 page: page,
                 search: _appliedSearchTerm,
+                status: selectedStatus,
               )
             : await ApiService.instance.getTasksListPage(
                 page: page,
                 search: _appliedSearchTerm,
+                status: selectedStatus,
               );
         records = pageResult.items;
       } on DioException {
@@ -231,8 +230,11 @@ class _TasksScreenState extends State<TasksScreen> {
         // Fall back to full-list endpoint and paginate locally.
         usedFallbackListEndpoint = true;
         records = useStaffEndpoint
-            ? await ApiService.instance.getStaffTasksList(staffId)
-            : await ApiService.instance.getTasksList();
+            ? await ApiService.instance.getStaffTasksList(
+                staffId,
+                status: selectedStatus,
+              )
+            : await ApiService.instance.getTasksList(status: selectedStatus);
       }
 
       final allTasks = <_TaskRecord>[];
@@ -586,7 +588,6 @@ class _TasksScreenState extends State<TasksScreen> {
 
   Future<void> _openFilterPopup() async {
     var tempStatus = _selectedStatus;
-    final counts = _buildTaskStatusCounts(_tasks);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -617,7 +618,6 @@ class _TasksScreenState extends State<TasksScreen> {
                     const SizedBox(height: 12),
                     _TaskStatusDropdown(
                       value: tempStatus,
-                      statusCounts: counts,
                       onChanged: (value) {
                         setSheetState(() => tempStatus = value);
                       },
@@ -629,6 +629,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           child: OutlinedButton(
                             onPressed: () {
                               setState(() => _selectedStatus = 'all');
+                              _loadTasks(page: 1);
                               Navigator.of(sheetContext).pop();
                             },
                             child: const Text('Reset'),
@@ -639,6 +640,7 @@ class _TasksScreenState extends State<TasksScreen> {
                           child: ElevatedButton(
                             onPressed: () {
                               setState(() => _selectedStatus = tempStatus);
+                              _loadTasks(page: 1);
                               Navigator.of(sheetContext).pop();
                             },
                             child: const Text('Apply'),
@@ -654,6 +656,25 @@ class _TasksScreenState extends State<TasksScreen> {
         );
       },
     );
+  }
+
+  String? _apiStatusFromFilter(String filterValue) {
+    switch (filterValue.trim().toLowerCase()) {
+      case 'all':
+        return null;
+      case 'not started':
+        return 'not_started';
+      case 'in progress':
+        return 'in_progress';
+      case 'on hold':
+        return 'on_hold';
+      case 'completed':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return filterValue.trim().isEmpty ? null : filterValue.trim();
+    }
   }
 }
 
@@ -1664,6 +1685,12 @@ bool _looksCompleted(String value) {
 
 String _taskStatusCategory(String value) {
   final normalized = value.trim().toLowerCase();
+  if (normalized.contains('cancel')) {
+    return 'cancelled';
+  }
+  if (normalized.contains('hold')) {
+    return 'on hold';
+  }
   if (normalized.contains('complete') ||
       normalized.contains('done') ||
       normalized.contains('closed')) {
@@ -1672,7 +1699,13 @@ String _taskStatusCategory(String value) {
   if (normalized.contains('progress') || normalized.contains('active')) {
     return 'in progress';
   }
-  return 'pending';
+  if (normalized.contains('not_started') ||
+      normalized.contains('not started') ||
+      normalized.contains('todo') ||
+      normalized.contains('pending')) {
+    return 'not started';
+  }
+  return 'not started';
 }
 
 String _formatTaskStatusLabel(String value) {
@@ -1684,10 +1717,67 @@ String _formatTaskStatusLabel(String value) {
       return 'Completed';
     case 'in progress':
       return 'In Progress';
-    case 'pending':
-      return 'Pending';
+    case 'not started':
+      return 'Not Started';
+    case 'on hold':
+      return 'On Hold';
+    case 'cancelled':
+      return 'Cancelled';
     default:
       return value;
+  }
+}
+
+class _TaskFilterTabs extends StatelessWidget {
+  const _TaskFilterTabs({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const options = <String>[
+      'all',
+      'not started',
+      'in progress',
+      'on hold',
+      'completed',
+      'cancelled',
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: options.map((option) {
+          final selected = value == option;
+          return Padding(
+            padding: const EdgeInsets.only(right: 14),
+            child: InkWell(
+              onTap: onChanged == null ? null : () => onChanged!(option),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: selected
+                    ? BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                      )
+                    : null,
+                child: Text(
+                  _formatTaskStatusLabel(option),
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF0B63F6),
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(growable: false),
+      ),
+    );
   }
 }
 
@@ -1806,22 +1896,22 @@ class _PillBadge extends StatelessWidget {
 class _TaskStatusDropdown extends StatelessWidget {
   const _TaskStatusDropdown({
     required this.value,
-    required this.statusCounts,
     required this.onChanged,
   });
 
   final String value;
-  final Map<String, int> statusCounts;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    const options = <String>['all', 'completed', 'in progress', 'pending'];
-
-    String labelFor(String option) {
-      final count = statusCounts[option] ?? 0;
-      return '${_formatTaskStatusLabel(option)} ($count)';
-    }
+    const options = <String>[
+      'all',
+      'not started',
+      'in progress',
+      'on hold',
+      'completed',
+      'cancelled',
+    ];
 
     return Container(
       height: 44,
@@ -1854,12 +1944,12 @@ class _TaskStatusDropdown extends StatelessWidget {
                         color: Color(0xFF334155),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          labelFor(option),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        Expanded(
+                          child: Text(
+                            _formatTaskStatusLabel(option),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                       ),
                     ],
                   ),

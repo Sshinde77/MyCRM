@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/project_milestone_model.dart';
@@ -358,7 +359,7 @@ class _BodyState extends State<_Body> {
           onSearchChanged: (value) => setState(() => _employeeQuery = value),
         );
       case _ProjectDetailTab.tasks:
-        return _TasksSection(projectId: project.id);
+        return _TasksSection(taskRecords: project.taskRecords);
       case _ProjectDetailTab.files:
         return _FilesSection(projectId: project.id);
       case _ProjectDetailTab.usage:
@@ -546,88 +547,17 @@ class _EmployeesSection extends StatelessWidget {
   }
 }
 
-class _TasksSection extends StatefulWidget {
-  const _TasksSection({required this.projectId});
+class _TasksSection extends StatelessWidget {
+  const _TasksSection({required this.taskRecords});
 
-  final String projectId;
-
-  @override
-  State<_TasksSection> createState() => _TasksSectionState();
-}
-
-class _TasksSectionState extends State<_TasksSection> {
-  late Future<List<_ProjectTaskListRecord>> _future;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = _load();
-  }
-
-  Future<List<_ProjectTaskListRecord>> _load() async {
-    final records = await ApiService.instance.getTasksList();
-    final projectId = widget.projectId.trim();
-    if (projectId.isEmpty) {
-      return const [];
-    }
-
-    bool matchesProject(Map<String, dynamic> record) {
-      final extracted = _extractProjectId(record);
-      return extracted.isNotEmpty && extracted == projectId;
-    }
-
-    return records
-        .where(matchesProject)
-        .map(_ProjectTaskListRecord.fromJson)
-        .toList();
-  }
-
-  String _extractProjectId(Map<String, dynamic> json) {
-    dynamic tryRead(Map<String, dynamic> source, String key) => source[key];
-
-    String normalize(dynamic value) {
-      if (value == null) return '';
-      if (value is String) return value.trim();
-      if (value is num) return value.toString();
-      if (value is Map) {
-        final mapped = value.map((k, v) => MapEntry(k.toString(), v));
-        for (final nestedKey in const [
-          'id',
-          '_id',
-          'project_id',
-          'projectId',
-        ]) {
-          final nested = normalize(mapped[nestedKey]);
-          if (nested.isNotEmpty) return nested;
-        }
-      }
-      return '';
-    }
-
-    for (final key in const ['project_id', 'projectId', 'project']) {
-      final value = normalize(tryRead(json, key));
-      if (value.isNotEmpty) {
-        return value;
-      }
-    }
-
-    // Occasionally nested under relations.
-    for (final key in const ['project_detail', 'projectDetail', 'relation']) {
-      final value = tryRead(json, key);
-      if (value is Map) {
-        final mapped = value.map((k, v) => MapEntry(k.toString(), v));
-        final nested = _extractProjectId(mapped);
-        if (nested.isNotEmpty) {
-          return nested;
-        }
-      }
-    }
-
-    return '';
-  }
+  final List<ProjectTaskRecord> taskRecords;
 
   @override
   Widget build(BuildContext context) {
+    final tasks = taskRecords
+        .map(_ProjectTaskListRecord.fromProjectTaskRecord)
+        .toList(growable: false);
+
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -666,37 +596,20 @@ class _TasksSectionState extends State<_TasksSection> {
             },
           ),
           const SizedBox(height: 18),
-          FutureBuilder<List<_ProjectTaskListRecord>>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const _EmptySectionState(message: 'Loading tasks...');
-              }
-
-              if (snapshot.hasError) {
-                return _EmptySectionState(
-                  message: 'Unable to load tasks for this project.',
-                );
-              }
-
-              final tasks = snapshot.data ?? const <_ProjectTaskListRecord>[];
-              if (tasks.isEmpty) {
-                return const _EmptySectionState(
-                  message: 'No tasks available for this project.',
-                );
-              }
-
-              return ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: tasks.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  return _ProjectTaskListItem(record: tasks[index]);
-                },
-              );
-            },
-          ),
+          if (tasks.isEmpty)
+            const _EmptySectionState(
+              message: 'No tasks available for this project.',
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: tasks.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                return _ProjectTaskListItem(record: tasks[index]);
+              },
+            ),
         ],
       ),
     );
@@ -783,7 +696,11 @@ class _AssigneeAvatarStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = imageUrls.take(3).toList();
+    final visible = imageUrls
+        .map(_resolveProfileImageUrl)
+        .where((url) => url.isNotEmpty)
+        .take(3)
+        .toList();
     const avatarSize = 28.0;
     const overlap = 18.0;
 
@@ -828,6 +745,16 @@ class _ProjectTaskListRecord {
   final String priority;
   final String status;
   final List<String> assigneeImageUrls;
+
+  factory _ProjectTaskListRecord.fromProjectTaskRecord(ProjectTaskRecord task) {
+    final assigneeAvatar = task.assigneeAvatarUrl.trim();
+    return _ProjectTaskListRecord(
+      title: task.title.trim().isEmpty ? 'Task' : task.title.trim(),
+      priority: task.priority,
+      status: task.status,
+      assigneeImageUrls: assigneeAvatar.isEmpty ? const [] : [assigneeAvatar],
+    );
+  }
 
   factory _ProjectTaskListRecord.fromJson(Map<String, dynamic> json) {
     String readValue(List<String> keys, {String fallback = ''}) {
@@ -2582,7 +2509,7 @@ class _FilesSectionState extends State<_FilesSection> {
                   ),
                 ),
               ),
-              _PrimaryActionButton(label: 'Create', onTap: _showUploadDialog),
+              _PrimaryActionButton(label: 'Upload Files', onTap: _showUploadDialog),
             ],
           ),
           const SizedBox(height: 18),
@@ -3531,12 +3458,13 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initials = _initials(name);
-    final hasImage = imageUrl.trim().isNotEmpty;
+    final resolvedImageUrl = _resolveProfileImageUrl(imageUrl);
+    final hasImage = resolvedImageUrl.isNotEmpty;
 
     return CircleAvatar(
       radius: 22,
       backgroundColor: const Color(0xFFE8EEF8),
-      backgroundImage: hasImage ? NetworkImage(imageUrl) : null,
+      backgroundImage: hasImage ? NetworkImage(resolvedImageUrl) : null,
       child: hasImage
           ? null
           : Text(
@@ -3549,6 +3477,24 @@ class _Avatar extends StatelessWidget {
             ),
     );
   }
+}
+
+String _resolveProfileImageUrl(String? profileImage) {
+  final rawPath = (profileImage ?? '').trim();
+  if (rawPath.isEmpty) {
+    return '';
+  }
+
+  if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+    return rawPath;
+  }
+
+  final base = ApiConstants.appBaseUrl;
+  final normalizedBase = base.endsWith('/') ? base : '$base/';
+  final normalizedPath = rawPath.startsWith('/')
+      ? rawPath.substring(1)
+      : rawPath;
+  return '$normalizedBase$normalizedPath';
 }
 
 class _EmptySectionState extends StatelessWidget {

@@ -241,6 +241,10 @@ class ProjectDetailModel {
     final projectMap = _readMap(json, const ['project']);
     if (projectMap.isEmpty) return json;
 
+    final rootTasks = json['tasks'];
+    final projectTasks = projectMap['tasks'];
+    final mergedTasks = rootTasks ?? projectTasks;
+
     return {
       ...json,
       ...projectMap,
@@ -249,9 +253,7 @@ class ProjectDetailModel {
       'progress': _readMap(json, const ['progress']).isNotEmpty
           ? _readMap(json, const ['progress'])
           : _readMap(projectMap, const ['progress']),
-      'tasks': _readMap(json, const ['tasks']).isNotEmpty
-          ? _readMap(json, const ['tasks'])
-          : _readMap(projectMap, const ['tasks']),
+      if (mergedTasks != null) 'tasks': mergedTasks,
       'customer': _readMap(json, const ['customer']).isNotEmpty
           ? _readMap(json, const ['customer'])
           : _readMap(projectMap, const ['customer', 'client']),

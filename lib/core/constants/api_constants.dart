@@ -143,15 +143,30 @@ class ApiConstants {
       '$baseUrl/client-issues/{issueId}/tasks/{taskId}/status';
 
   //settings
+  static const String settings = '$baseUrl/settings';
+  static const String generalSettings = '$baseUrl/settings/general';
+  static const String appLogoSettings = '$baseUrl/settings/app-logo';
+  static const String loginLogoSettings = '$baseUrl/settings/login-logo';
   static const String companyInformation = '$baseUrl/settings/company';
   static const String emailSettings = '$baseUrl/settings/email';
   static const String renewalSettings = '$baseUrl/settings/renewal';
   static const String teamSettings = '$baseUrl/settings/teams';
   static const String departmentSettings = '$baseUrl/settings/departments';
+  static const String settingsTestEmail = '$baseUrl/settings/test-email';
+  static const String settingsSearchTags = '$baseUrl/settings/search-tags';
 
   //book a call
   static const String bookACall = '$baseUrl/book-a-call';
   static const String deleteBookACall = '$baseUrl/book-a-call/{id}';
+
+  //web enquiry careers
+  static const String webEnquiryCareers = '$baseUrl/web-enquiry/careers';
+  static const String webEnquiryCareerDetail = '$baseUrl/web-enquiry/careers/{id}';
+  static const String webEnquiryCareerDelete = '$baseUrl/web-enquiry/careers/{id}';
+  static const String webEnquiryCareerResumeUrl =
+      '$baseUrl/web-enquiry/careers/{id}/resume-url';
+  static const String webEnquiryContacts = '$baseUrl/web-enquiry/contacts';
+  static const String webEnquiryContactDelete = '$baseUrl/web-enquiry/contacts/{id}';
 
   //google ads leads
   static const String digitalMarketingLeads = '$baseUrl/digital-marketing';

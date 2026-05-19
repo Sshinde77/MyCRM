@@ -22,6 +22,8 @@ import '../models/update_client_request_model.dart';
 import '../models/staff_member_model.dart';
 import '../models/user_model.dart';
 import '../models/calendar_event_model.dart';
+import '../models/career_enquiry_model.dart';
+import '../models/contact_enquiry_model.dart';
 import '../models/client_issue_model.dart';
 import '../models/client_issue_task_model.dart';
 import '../models/company_information_model.dart';
@@ -200,6 +202,42 @@ class NotificationListPageResult {
   final int perPage;
   final bool hasNextPage;
   final int unreadCount;
+}
+
+class CareerEnquiryListPageResult {
+  const CareerEnquiryListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<CareerEnquiryModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
+class ContactEnquiryListPageResult {
+  const ContactEnquiryListPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<ContactEnquiryModel> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
 }
 
 class LeadDashboardCount {
@@ -625,6 +663,45 @@ class ApiService {
     );
   }
 
+  Future<Response> _requestSettingsJson({
+    required String path,
+    required String method,
+    required Map<String, dynamic> payload,
+  }) async {
+    switch (method) {
+      case 'put':
+        return await put(path, data: payload);
+      case 'patch':
+        return await patch(path, data: payload);
+      case 'post':
+      default:
+        return await post(path, data: payload);
+    }
+  }
+
+  Future<Response> _requestSettingsMultipart({
+    required String path,
+    required String method,
+    required FormData formData,
+  }) async {
+    await _prepareAuthForPath(path);
+    switch (method) {
+      case 'put':
+        return await putForm(path, data: formData);
+      case 'patch':
+        return await _dio.patch(
+          path,
+          data: formData,
+          options: Options(
+            contentType: Headers.multipartFormDataContentType,
+          ),
+        );
+      case 'post':
+      default:
+        return await postForm(path, data: formData);
+    }
+  }
+
   /// Authenticates the user against the login endpoint.
   Future<LoginResponseModel> login({
     required String email,
@@ -860,6 +937,202 @@ class ApiService {
     return user;
   }
 
+  /// Loads all settings (merged response from settings module).
+  Future<Map<String, dynamic>> getAllSettings() async {
+    final response = await get(ApiConstants.settings);
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    return _normalizeMap(source);
+  }
+
+  /// Loads general settings from settings endpoint.
+  Future<Map<String, dynamic>> getGeneralSettings() async {
+    final response = await get(ApiConstants.generalSettings);
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    return _normalizeMap(source);
+  }
+
+  /// Updates general settings using JSON or multipart depending on payload.
+  Future<Map<String, dynamic>> updateGeneralSettings({
+    String? companyName,
+    String? crmLogoPath,
+    String? faviconPath,
+    bool removeCrmLogo = false,
+    bool removeFavicon = false,
+    Map<String, dynamic> extra = const <String, dynamic>{},
+  }) async {
+    final normalizedCompanyName = (companyName ?? '').trim();
+    final normalizedCrmLogoPath = (crmLogoPath ?? '').trim();
+    final normalizedFaviconPath = (faviconPath ?? '').trim();
+
+    if (normalizedCrmLogoPath.isNotEmpty || normalizedFaviconPath.isNotEmpty) {
+      final formData = FormData();
+
+      if (normalizedCompanyName.isNotEmpty) {
+        formData.fields.add(MapEntry('company_name', normalizedCompanyName));
+      }
+      if (removeCrmLogo) {
+        formData.fields.add(const MapEntry('remove_crm_logo', '1'));
+      }
+      if (removeFavicon) {
+        formData.fields.add(const MapEntry('remove_favicon', '1'));
+      }
+      for (final entry in extra.entries) {
+        final key = entry.key.trim();
+        if (key.isEmpty || entry.value == null) continue;
+        formData.fields.add(MapEntry(key, '${entry.value}'));
+      }
+
+      if (normalizedCrmLogoPath.isNotEmpty) {
+        final logoName = normalizedCrmLogoPath.split(RegExp(r'[\\/]')).last;
+        formData.files.add(
+          MapEntry(
+            'crm_logo',
+            await MultipartFile.fromFile(
+              normalizedCrmLogoPath,
+              filename: logoName,
+            ),
+          ),
+        );
+      }
+      if (normalizedFaviconPath.isNotEmpty) {
+        final faviconName = normalizedFaviconPath.split(RegExp(r'[\\/]')).last;
+        formData.files.add(
+          MapEntry(
+            'favicon',
+            await MultipartFile.fromFile(
+              normalizedFaviconPath,
+              filename: faviconName,
+            ),
+          ),
+        );
+      }
+
+      final response = await putForm(
+        ApiConstants.generalSettings,
+        data: formData,
+      );
+      final body = _normalizeMap(response.data);
+      final source = _extractDetailSource(body);
+      return _normalizeMap(source);
+    }
+
+    final payload = <String, dynamic>{...extra};
+    if (normalizedCompanyName.isNotEmpty) {
+      payload['company_name'] = normalizedCompanyName;
+    }
+    if (removeCrmLogo) {
+      payload['remove_crm_logo'] = true;
+    }
+    if (removeFavicon) {
+      payload['remove_favicon'] = true;
+    }
+
+    final response = await put(ApiConstants.generalSettings, data: payload);
+    final body = _normalizeMap(response.data);
+    final source = _extractDetailSource(body);
+    return _normalizeMap(source);
+  }
+
+  /// Loads app logo URL from settings endpoint.
+  Future<String> getAppLogoUrl() async {
+    final response = await get(ApiConstants.appLogoSettings);
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractDetailSource(body));
+    return _readNullableString(source, const ['app_logo', 'app_logo_url']) ??
+        '';
+  }
+
+  /// Updates app logo using multipart upload or removal JSON payload.
+  Future<String> updateAppLogo({
+    String? appLogoPath,
+    bool removeAppLogo = false,
+    String method = 'post',
+  }) async {
+    final normalizedPath = (appLogoPath ?? '').trim();
+    final normalizedMethod = method.trim().toLowerCase();
+
+    Response response;
+    if (normalizedPath.isNotEmpty) {
+      final fileName = normalizedPath.split(RegExp(r'[\\/]')).last;
+      final formData = FormData.fromMap({
+        'app_logo': await MultipartFile.fromFile(
+          normalizedPath,
+          filename: fileName,
+        ),
+      });
+      response = await _requestSettingsMultipart(
+        path: ApiConstants.appLogoSettings,
+        method: normalizedMethod,
+        formData: formData,
+      );
+    } else {
+      response = await _requestSettingsJson(
+        path: ApiConstants.appLogoSettings,
+        method: normalizedMethod,
+        payload: {'remove_app_logo': removeAppLogo},
+      );
+    }
+
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractDetailSource(body));
+    return _readNullableString(source, const ['app_logo', 'app_logo_url']) ??
+        '';
+  }
+
+  /// Loads login logo URL from settings endpoint.
+  Future<String> getLoginLogoUrl() async {
+    final response = await get(ApiConstants.loginLogoSettings);
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractDetailSource(body));
+    return _readNullableString(
+          source,
+          const ['login_logo', 'login_logo_url'],
+        ) ??
+        '';
+  }
+
+  /// Updates login logo using multipart upload or removal JSON payload.
+  Future<String> updateLoginLogo({
+    String? loginLogoPath,
+    bool removeLoginLogo = false,
+    String method = 'post',
+  }) async {
+    final normalizedPath = (loginLogoPath ?? '').trim();
+    final normalizedMethod = method.trim().toLowerCase();
+
+    Response response;
+    if (normalizedPath.isNotEmpty) {
+      final fileName = normalizedPath.split(RegExp(r'[\\/]')).last;
+      final formData = FormData.fromMap({
+        'login_logo': await MultipartFile.fromFile(
+          normalizedPath,
+          filename: fileName,
+        ),
+      });
+      response = await _requestSettingsMultipart(
+        path: ApiConstants.loginLogoSettings,
+        method: normalizedMethod,
+        formData: formData,
+      );
+    } else {
+      response = await _requestSettingsJson(
+        path: ApiConstants.loginLogoSettings,
+        method: normalizedMethod,
+        payload: {'remove_login_logo': removeLoginLogo},
+      );
+    }
+
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractDetailSource(body));
+    return _readNullableString(
+          source,
+          const ['login_logo', 'login_logo_url'],
+        ) ??
+        '';
+  }
+
   /// Loads company information from settings endpoint.
   Future<CompanyInformationModel> getCompanyInformation() async {
     final response = await get(ApiConstants.companyInformation);
@@ -1030,6 +1303,229 @@ class ApiService {
     }
 
     return departments;
+  }
+
+  /// Sends a test email using current email settings.
+  Future<void> sendSettingsTestEmail(String testEmail) async {
+    final normalizedEmail = testEmail.trim();
+    if (normalizedEmail.isEmpty) {
+      throw Exception('Test email is required.');
+    }
+    await post(
+      ApiConstants.settingsTestEmail,
+      data: <String, dynamic>{'test_email': normalizedEmail},
+    );
+  }
+
+  /// Searches tags from settings endpoint.
+  Future<List<String>> searchSettingsTags(String query) async {
+    final response = await get(
+      ApiConstants.settingsSearchTags,
+      queryParameters: <String, dynamic>{'q': query.trim()},
+    );
+    final source = _extractListSource(response.data);
+    if (source is! List) return const <String>[];
+    return source
+        .map((entry) => entry?.toString().trim() ?? '')
+        .where((entry) => entry.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<CareerEnquiryListPageResult> getCareerEnquiriesPage({
+    int page = 1,
+    int perPage = 10,
+    String? search,
+    String applicantType = 'all',
+    String sortBy = 'created_at',
+    String sortOrder = 'desc',
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedPerPage = perPage.clamp(1, 100).toInt();
+    final normalizedSearch = (search ?? '').trim();
+    final normalizedApplicantType = _normalizeCareerApplicantType(applicantType);
+    final normalizedSortBy = sortBy.trim().isEmpty ? 'created_at' : sortBy.trim();
+    final normalizedSortOrder = sortOrder.toLowerCase() == 'asc' ? 'asc' : 'desc';
+
+    final query = <String, dynamic>{
+      'page': normalizedPage,
+      'per_page': normalizedPerPage,
+      'applicant_type': normalizedApplicantType,
+      'sort_by': normalizedSortBy,
+      'sort_order': normalizedSortOrder,
+    };
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+
+    final response = await get(
+      ApiConstants.webEnquiryCareers,
+      queryParameters: query,
+    );
+
+    final root = _normalizeMap(response.data);
+    final rawSource = root['data'] ?? response.data;
+    final itemsSource = _extractListSource(rawSource);
+    final records = itemsSource is List ? itemsSource : _normalizeList(rawSource);
+    final items = records
+        .map(_normalizeMap)
+        .map(CareerEnquiryModel.fromJson)
+        .toList(growable: false);
+
+    final paginationSource = rawSource is Map ? _normalizeMap(rawSource) : root;
+    final currentPage =
+        _readInt(
+          paginationSource['current_page'] ?? paginationSource['page'],
+        ) ??
+        normalizedPage;
+    final lastPage =
+        _readInt(
+          paginationSource['last_page'] ??
+              paginationSource['total_pages'] ??
+              paginationSource['pages'],
+        ) ??
+        currentPage;
+    final total =
+        _readInt(paginationSource['total'] ?? paginationSource['total_count']) ??
+        items.length;
+    final effectivePerPage =
+        _readInt(paginationSource['per_page'] ?? paginationSource['limit']) ??
+        normalizedPerPage;
+
+    return CareerEnquiryListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage < 1 ? 1 : lastPage,
+      total: total,
+      perPage: effectivePerPage,
+      hasNextPage: currentPage < (lastPage < 1 ? 1 : lastPage),
+    );
+  }
+
+  Future<CareerEnquiryModel> getCareerEnquiryDetail(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid career enquiry id.');
+    }
+    final path = ApiConstants.webEnquiryCareerDetail.replaceFirst('{id}', normalizedId);
+    final response = await get(path);
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractDetailSource(body));
+    return CareerEnquiryModel.fromJson(source);
+  }
+
+  Future<void> deleteCareerEnquiry(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid career enquiry id.');
+    }
+    final path = ApiConstants.webEnquiryCareerDelete.replaceFirst('{id}', normalizedId);
+    await delete(path);
+  }
+
+  Future<Map<String, String>> getCareerResumeUrl(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid career enquiry id.');
+    }
+    final path = ApiConstants.webEnquiryCareerResumeUrl.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final response = await get(path);
+    final body = _normalizeMap(response.data);
+    final source = _normalizeMap(_extractDetailSource(body));
+    return <String, String>{
+      'resume_file': _readNullableString(source, const ['resume_file', 'resume']) ?? '',
+      'resume_url': _readNullableString(source, const ['resume_url']) ?? '',
+    };
+  }
+
+  Future<ContactEnquiryListPageResult> getContactEnquiriesPage({
+    int page = 1,
+    int perPage = 10,
+    String? search,
+    String sortBy = 'created_at',
+    String sortOrder = 'desc',
+  }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedPerPage = perPage.clamp(1, 100).toInt();
+    final normalizedSearch = (search ?? '').trim();
+    final normalizedSortBy = sortBy.trim().isEmpty ? 'created_at' : sortBy.trim();
+    final normalizedSortOrder = sortOrder.toLowerCase() == 'asc' ? 'asc' : 'desc';
+
+    final query = <String, dynamic>{
+      'page': normalizedPage,
+      'per_page': normalizedPerPage,
+      'sort_by': normalizedSortBy,
+      'sort_order': normalizedSortOrder,
+    };
+    if (normalizedSearch.isNotEmpty) {
+      query['search'] = normalizedSearch;
+    }
+
+    final response = await get(
+      ApiConstants.webEnquiryContacts,
+      queryParameters: query,
+    );
+    final root = _normalizeMap(response.data);
+    final rawSource = root['data'] ?? response.data;
+    final itemsSource = _extractListSource(rawSource);
+    final records = itemsSource is List ? itemsSource : _normalizeList(rawSource);
+    final items = records
+        .map(_normalizeMap)
+        .map(ContactEnquiryModel.fromJson)
+        .toList(growable: false);
+
+    final paginationSource = rawSource is Map ? _normalizeMap(rawSource) : root;
+    final currentPage =
+        _readInt(
+          paginationSource['current_page'] ?? paginationSource['page'],
+        ) ??
+        normalizedPage;
+    final lastPage =
+        _readInt(
+          paginationSource['last_page'] ??
+              paginationSource['total_pages'] ??
+              paginationSource['pages'],
+        ) ??
+        currentPage;
+    final total =
+        _readInt(paginationSource['total'] ?? paginationSource['total_count']) ??
+        items.length;
+    final effectivePerPage =
+        _readInt(paginationSource['per_page'] ?? paginationSource['limit']) ??
+        normalizedPerPage;
+
+    return ContactEnquiryListPageResult(
+      items: items,
+      currentPage: currentPage,
+      lastPage: lastPage < 1 ? 1 : lastPage,
+      total: total,
+      perPage: effectivePerPage,
+      hasNextPage: currentPage < (lastPage < 1 ? 1 : lastPage),
+    );
+  }
+
+  Future<void> deleteContactEnquiry(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      throw Exception('Invalid contact enquiry id.');
+    }
+    final path = ApiConstants.webEnquiryContactDelete.replaceFirst('{id}', normalizedId);
+    await delete(path);
+  }
+
+  String _normalizeCareerApplicantType(String? value) {
+    final normalized = (value ?? '').trim().toLowerCase();
+    switch (normalized) {
+      case 'fresher':
+        return 'fresher';
+      case 'experience':
+        return 'experience';
+      case 'all':
+      default:
+        return 'all';
+    }
   }
 
   /// Loads the staff list for the authenticated user.
@@ -3250,8 +3746,16 @@ class ApiService {
   }
 
   /// Loads task-list records for the authenticated user.
-  Future<List<Map<String, dynamic>>> getTasksList() async {
-    final response = await get(ApiConstants.tasks);
+  Future<List<Map<String, dynamic>>> getTasksList({String? status}) async {
+    final normalizedStatus = _normalizeTaskStatus(status);
+    final query = <String, dynamic>{};
+    if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
+    }
+    final response = await get(
+      ApiConstants.tasks,
+      queryParameters: query.isEmpty ? null : query,
+    );
     return _normalizeList(response.data);
   }
 
@@ -3259,12 +3763,17 @@ class ApiService {
   Future<TaskListPageResult> getTasksListPage({
     int page = 1,
     String? search,
+    String? status,
   }) async {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
+    final normalizedStatus = _normalizeTaskStatus(status);
     final query = <String, dynamic>{'page': normalizedPage, 'per_page': 10};
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
+    }
+    if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
     }
     final response = await get(ApiConstants.tasks, queryParameters: query);
     final parsed = _parseTaskPageResponse(response.data, normalizedPage);
@@ -3564,12 +4073,20 @@ class ApiService {
   }
 
   /// Loads tasks assigned to a specific staff member.
-  Future<List<Map<String, dynamic>>> getStaffTasksList(String staffId) async {
+  Future<List<Map<String, dynamic>>> getStaffTasksList(
+    String staffId, {
+    String? status,
+  }) async {
     final id = staffId.trim();
     if (id.isEmpty) return const <Map<String, dynamic>>[];
 
+    final normalizedStatus = _normalizeTaskStatus(status);
+    final query = <String, dynamic>{};
+    if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
+    }
     final path = ApiConstants.stafftasks.replaceFirst('{id}', id);
-    final response = await get(path);
+    final response = await get(path, queryParameters: query.isEmpty ? null : query);
     return _normalizeList(response.data);
   }
 
@@ -3578,6 +4095,7 @@ class ApiService {
     required String staffId,
     int page = 1,
     String? search,
+    String? status,
   }) async {
     final id = staffId.trim();
     if (id.isEmpty) {
@@ -3593,9 +4111,13 @@ class ApiService {
     }
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
+    final normalizedStatus = _normalizeTaskStatus(status);
     final query = <String, dynamic>{'page': normalizedPage, 'per_page': 10};
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
+    }
+    if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
     }
     final path = ApiConstants.stafftasks.replaceFirst('{id}', id);
     final response = await get(path, queryParameters: query);
