@@ -209,22 +209,14 @@ class ClientModel {
       final id = item['id']?.toString().trim() ?? '';
       if (id.isEmpty) continue;
       final companyName = item['company_name']?.toString().trim() ?? '';
-      details.add(
-        ClientBusinessDetail(
-          id: id,
-          companyName: companyName,
-        ),
-      );
+      details.add(ClientBusinessDetail(id: id, companyName: companyName));
     }
     return List<ClientBusinessDetail>.unmodifiable(details);
   }
 }
 
 class ClientBusinessDetail {
-  const ClientBusinessDetail({
-    required this.id,
-    required this.companyName,
-  });
+  const ClientBusinessDetail({required this.id, required this.companyName});
 
   final String id;
   final String companyName;

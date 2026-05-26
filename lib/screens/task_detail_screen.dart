@@ -315,33 +315,50 @@ class _AttachmentsCard extends StatelessWidget {
                   .map(
                     (attachment) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3E8FF),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.attach_file_rounded,
-                              color: Color(0xFF7C3AED),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              attachment.name,
-                              style: AppTextStyles.style(
-                                color: const Color(0xFF0F172A),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                      child: InkWell(
+                        onTap: (attachment.url == null ||
+                                attachment.url!.trim().isEmpty)
+                            ? null
+                            : () => _showAttachmentPreview(
+                                context,
+                                attachment.name,
+                                attachment.url!.trim(),
                               ),
-                            ),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
                           ),
-                        ],
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E8FF),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                alignment: Alignment.center,
+                                child: const Icon(
+                                  Icons.attach_file_rounded,
+                                  color: Color(0xFF7C3AED),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  attachment.name,
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF0F172A),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   )
@@ -1193,7 +1210,9 @@ class _TaskDetailData {
       projectName: _readProjectName(source),
       priority:
           _readString(source, const ['priority', 'priority_level']) ?? 'Normal',
-      status: _readString(source, const ['status', 'task_status']) ?? 'Pending',
+      status: _humanizeStatusLabel(
+        _readString(source, const ['status', 'task_status']) ?? 'Pending',
+      ),
       description:
           _readString(source, const ['description', 'details']) ??
           'No description available.',
@@ -1231,6 +1250,75 @@ class _AttachmentData {
 
   final String name;
   final String? url;
+}
+
+void _showAttachmentPreview(
+  BuildContext context,
+  String title,
+  String imageUrl,
+) {
+  showDialog<void>(
+    context: context,
+    builder: (context) => Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF0F172A),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1, color: Color(0xFFE2E8F0)),
+            Expanded(
+              child: InteractiveViewer(
+                minScale: 0.8,
+                maxScale: 4,
+                child: Center(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Text(
+                        'Unable to preview this file.',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF64748B),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 List<_PersonData> _readPeople(Map<String, dynamic> source, List<String> keys) {
@@ -1279,7 +1367,13 @@ List<_AttachmentData> _readAttachments(Map<String, dynamic> source) {
       name:
           _readString(item, const ['name', 'file_name', 'filename', 'title']) ??
           'Attachment',
-      url: _readString(item, const ['url', 'file', 'path']),
+      url: _readString(item, const [
+        'file_url',
+        'url',
+        'file',
+        'path',
+        'file_path',
+      ]),
     );
   }).toList();
 }
@@ -1343,6 +1437,20 @@ String _readProjectName(Map<String, dynamic> source) {
   }
   return _readString(source, const ['project_name', 'project']) ??
       'Unassigned Project';
+}
+
+String _humanizeStatusLabel(String value) {
+  final normalized = value.trim();
+  if (normalized.isEmpty) {
+    return 'Pending';
+  }
+
+  return normalized
+      .replaceAll(RegExp(r'[_\-\s]+'), ' ')
+      .split(' ')
+      .where((part) => part.isNotEmpty)
+      .map((part) => part[0].toUpperCase() + part.substring(1).toLowerCase())
+      .join(' ');
 }
 
 DateTime? _tryParseDate(String? value) {

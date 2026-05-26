@@ -288,4 +288,3 @@ class _MagicBottomNavigationState extends State<MagicBottomNavigation> {
     );
   }
 }
-

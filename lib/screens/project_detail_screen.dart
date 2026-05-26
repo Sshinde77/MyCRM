@@ -2509,7 +2509,10 @@ class _FilesSectionState extends State<_FilesSection> {
                   ),
                 ),
               ),
-              _PrimaryActionButton(label: 'Upload Files', onTap: _showUploadDialog),
+              _PrimaryActionButton(
+                label: 'Upload Files',
+                onTap: _showUploadDialog,
+              ),
             ],
           ),
           const SizedBox(height: 18),

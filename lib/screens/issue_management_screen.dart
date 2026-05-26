@@ -30,39 +30,17 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   String? _deletingIssueId;
   int _page = 1;
   static const _pageSize = 10;
+  int _lastPage = 1;
+  int _totalIssueCount = 0;
   bool _canCreateIssue = false;
   bool _canDeleteIssue = false;
   String _selectedStatus = 'all';
   String _appliedSearchTerm = '';
 
-  List<ClientIssueModel> get _filtered {
-    final statusFiltered = _allIssues.where((issue) {
-      if (_selectedStatus == 'all') {
-        return true;
-      }
-      return _issueStatusCategory(issue.status) == _selectedStatus;
-    });
-    return statusFiltered.toList(growable: false);
-  }
-
-  int get _pageCount =>
-      _filtered.isEmpty ? 1 : (_filtered.length / _pageSize).ceil();
-
-  int get _totalIssueCount => _allIssues.length;
-
   int get _completedIssueCount => _allIssues.where((issue) {
     final status = issue.status.trim().toLowerCase();
     return status == 'closed' || status == 'completed';
   }).length;
-
-  List<ClientIssueModel> get _visible {
-    final start = (_page - 1) * _pageSize;
-    if (start >= _filtered.length) return const [];
-    final end = start + _pageSize > _filtered.length
-        ? _filtered.length
-        : start + _pageSize;
-    return _filtered.sublist(start, end);
-  }
 
   @override
   void initState() {
@@ -94,14 +72,15 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
     super.dispose();
   }
 
-  Future<void> _loadIssues({bool forceRefresh = false, String? search}) async {
+  Future<void> _loadIssues({
+    bool forceRefresh = false,
+    String? search,
+    int? page,
+  }) async {
     if (_isLoading) return;
     final normalizedSearch = (search ?? _appliedSearchTerm).trim();
-    if (!forceRefresh &&
-        _allIssues.isNotEmpty &&
-        normalizedSearch == _appliedSearchTerm) {
-      return;
-    }
+    final normalizedPage = page ?? _page;
+    final apiStatus = _selectedStatus == 'all' ? null : _selectedStatus;
 
     setState(() {
       _isLoading = true;
@@ -110,15 +89,20 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
     });
 
     try {
-      final data = await _apiService.getClientIssuesIndexData(
+      final data = await _apiService.getClientIssuesPageData(
         search: normalizedSearch,
+        status: apiStatus,
+        page: normalizedPage,
+        perPage: _pageSize,
       );
       if (!mounted) return;
       setState(() {
         _allIssues = data.issues;
         _projectOptions = data.projects;
         _customerOptions = data.customers;
-        _page = 1;
+        _page = data.currentPage;
+        _lastPage = data.lastPage < 1 ? 1 : data.lastPage;
+        _totalIssueCount = data.total;
       });
     } catch (error) {
       if (!mounted) return;
@@ -131,8 +115,8 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
   }
 
   void _setPage(int value) {
-    if (value < 1 || value > _pageCount) return;
-    setState(() => _page = value);
+    if (value < 1 || value > _lastPage) return;
+    _loadIssues(forceRefresh: true, page: value);
   }
 
   Future<void> _openIssue(ClientIssueModel issue) async {
@@ -289,8 +273,6 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
 
   Future<void> _openFilterPopup() async {
     var tempStatus = _selectedStatus;
-    final counts = _buildIssueStatusCounts(_allIssues);
-
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -316,7 +298,6 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                     const SizedBox(height: 12),
                     _IssueStatusDropdown(
                       value: tempStatus,
-                      statusCounts: counts,
                       onChanged: (value) {
                         setSheetState(() => tempStatus = value);
                       },
@@ -338,6 +319,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                                 _selectedStatus = tempStatus;
                                 _page = 1;
                               });
+                              _loadIssues(forceRefresh: true, page: 1);
                               Navigator.of(sheetContext).pop();
                             },
                             child: const Text('Apply'),
@@ -357,7 +339,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final totalPages = _pageCount < 1 ? 1 : _pageCount;
+    final totalPages = _lastPage < 1 ? 1 : _lastPage;
     final safeCurrentPage = _page > totalPages ? totalPages : _page;
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -427,7 +409,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                       actionLabel: 'Retry',
                       onAction: () => _loadIssues(forceRefresh: true),
                     ),
-                  ] else if (_visible.isEmpty) ...[
+                  ] else if (_allIssues.isEmpty) ...[
                     SizedBox(height: compact ? 12 : 14),
                     _IssueStateCard(
                       message: _appliedSearchTerm.isEmpty
@@ -437,7 +419,7 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                     ),
                   ] else ...[
                     SizedBox(height: compact ? 14 : 16),
-                    ..._visible.map(
+                    ..._allIssues.map(
                       (issue) => _IssueCard(
                         issue: issue,
                         compact: compact,
@@ -448,10 +430,10 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
                       ),
                     ),
                   ],
-                  if (_filtered.isNotEmpty) ...[
+                  if (_totalIssueCount > 0) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'Showing ${_visible.length} of ${_filtered.length} (Page $safeCurrentPage/$totalPages)',
+                      'Showing ${_allIssues.length} of $_totalIssueCount (Page $safeCurrentPage/$totalPages)',
                       style: AppTextStyles.style(
                         color: const Color(0xFF475569),
                         fontSize: compact ? 12 : 12.5,
@@ -1117,17 +1099,21 @@ class _IssueQuickIconAction extends StatelessWidget {
 class _IssueStatusDropdown extends StatelessWidget {
   const _IssueStatusDropdown({
     required this.value,
-    required this.statusCounts,
     required this.onChanged,
   });
 
   final String value;
-  final Map<String, int> statusCounts;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    const options = <String>['all', 'completed', 'in progress', 'open'];
+    const options = <String>[
+      'all',
+      'open',
+      'in_progress',
+      'resolved',
+      'closed',
+    ];
     return Container(
       height: 44,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -1147,9 +1133,7 @@ class _IssueStatusDropdown extends StatelessWidget {
               .map(
                 (option) => DropdownMenuItem<String>(
                   value: option,
-                  child: Text(
-                    '${_formatIssueStatusLabel(option)} (${statusCounts[option] ?? 0})',
-                  ),
+                  child: Text(_formatIssueStatusLabel(option)),
                 ),
               )
               .toList(growable: false),
@@ -1806,46 +1790,21 @@ String _titleCase(String value) {
       .join(' ');
 }
 
-String _issueStatusCategory(String value) {
-  final normalized = value.trim().toLowerCase();
-  if (normalized.contains('closed') ||
-      normalized.contains('complete') ||
-      normalized.contains('resolved')) {
-    return 'completed';
-  }
-  if (normalized.contains('progress') || normalized.contains('active')) {
-    return 'in progress';
-  }
-  return 'open';
-}
-
 String _formatIssueStatusLabel(String value) {
   switch (value) {
     case 'all':
       return 'All';
-    case 'completed':
-      return 'Completed';
-    case 'in progress':
+    case 'in_progress':
       return 'In Progress';
+    case 'resolved':
+      return 'Resolved';
+    case 'closed':
+      return 'Closed';
     case 'open':
       return 'Open';
     default:
       return value;
   }
-}
-
-Map<String, int> _buildIssueStatusCounts(List<ClientIssueModel> issues) {
-  final counts = <String, int>{
-    'all': issues.length,
-    'completed': 0,
-    'in progress': 0,
-    'open': 0,
-  };
-  for (final issue in issues) {
-    final key = _issueStatusCategory(issue.status);
-    counts[key] = (counts[key] ?? 0) + 1;
-  }
-  return counts;
 }
 
 Color _priorityBg(String priority) {

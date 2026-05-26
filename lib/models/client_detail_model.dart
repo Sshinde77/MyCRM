@@ -129,26 +129,31 @@ class ClientDetailModel {
       _readString(json, const ['country', 'nation']),
       _readString(addressObject, const ['country', 'nation']),
     ]);
-    final resolvedCompanyName = _readString(json, [
-      'company',
-      'companyName',
-      'company_name',
-      'client_name',
-      'title',
-    ]);
-    final resolvedWebsite = _readString(json, [
-      'website',
-      'website_url',
-      'site',
-      'url',
-    ]);
-    final resolvedClientType = _readString(json, ['client_type', 'type']);
-    final resolvedIndustry = _readString(json, [
-      'industry',
-      'industry_name',
-      'sector',
-    ]);
     final businessInformation = _readBusinessInformation(json);
+    final primaryBusiness = businessInformation.isNotEmpty
+        ? businessInformation.first
+        : const <String, String>{};
+    final resolvedCompanyName = _firstNonEmpty([
+      primaryBusiness['company_name'] ?? '',
+      _readString(json, [
+        'company',
+        'companyName',
+        'company_name',
+        'title',
+      ]),
+    ]);
+    final resolvedWebsite = _firstNonEmpty([
+      _readString(json, ['website', 'website_url', 'site', 'url']),
+      primaryBusiness['website'] ?? '',
+    ]);
+    final resolvedClientType = _firstNonEmpty([
+      _readString(json, ['client_type', 'type']),
+      primaryBusiness['client_type'] ?? '',
+    ]);
+    final resolvedIndustry = _firstNonEmpty([
+      _readString(json, ['industry', 'industry_name', 'sector']),
+      primaryBusiness['industry'] ?? '',
+    ]);
 
     return ClientDetailModel(
       id: _readString(json, [
@@ -258,28 +263,46 @@ class ClientDetailModel {
   static List<Map<String, String>> _readBusinessInformation(
     Map<String, dynamic> json,
   ) {
-    final value =
-        json['business_information'] ??
-        json['businessInformation'] ??
-        json['businesses'];
-    if (value is! List) {
-      return const [];
-    }
+    final sources = <dynamic>[
+      json['business_information'],
+      json['businessInformation'],
+      json['businesses'],
+      json['companies'],
+      json['business_detail'],
+      json['businessDetail'],
+    ];
 
-    return value
-        .map((item) {
+    final entries = <Map<String, dynamic>>[];
+    for (final source in sources) {
+      if (source is List) {
+        for (final item in source) {
           if (item is Map<String, dynamic>) {
-            return item;
-          }
-          if (item is Map) {
-            return item.map(
-              (entryKey, entryValue) =>
-                  MapEntry(entryKey.toString(), entryValue),
+            entries.add(item);
+          } else if (item is Map) {
+            entries.add(
+              item.map(
+                (entryKey, entryValue) =>
+                    MapEntry(entryKey.toString(), entryValue),
+              ),
             );
           }
-          return const <String, dynamic>{};
-        })
-        .map((item) => _normalizeBusinessInformationItem(item))
+        }
+        continue;
+      }
+
+      if (source is Map<String, dynamic>) {
+        entries.add(source);
+      } else if (source is Map) {
+        entries.add(
+          source.map(
+            (entryKey, entryValue) => MapEntry(entryKey.toString(), entryValue),
+          ),
+        );
+      }
+    }
+
+    return entries
+        .map(_normalizeBusinessInformationItem)
         .where((item) => item.isNotEmpty)
         .toList(growable: false);
   }

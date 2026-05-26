@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../core/constants/app_text_styles.dart';
+import '../core/services/permission_service.dart';
+import '../core/utils/app_snackbar.dart';
 import '../models/renewal_model.dart';
 import '../screens/client_renewal_screen.dart';
 import '../services/api_service.dart';
@@ -21,12 +23,37 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
   final ApiService _apiService = ApiService.instance;
   late Future<RenewalModel?> _detailFuture;
   RenewalModel? _seed;
+  bool _canEditService = false;
 
   @override
   void initState() {
     super.initState();
+    _loadPermissions();
     _seed = _resolveRenewal();
     _detailFuture = _loadDetail();
+  }
+
+  Future<void> _loadPermissions() async {
+    final values = await Future.wait<bool>([
+      PermissionService.has(AppPermission.viewServicesDetail),
+      PermissionService.has(AppPermission.viewServices),
+      PermissionService.has(AppPermission.editServices),
+    ]);
+    if (!mounted) return;
+    _canEditService = values[2];
+    if (!(values[0] || values[1])) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view service details.',
+      );
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(false);
+      } else {
+        Get.back();
+      }
+      return;
+    }
+    setState(() {});
   }
 
   RenewalModel? _resolveRenewal() {
@@ -65,6 +92,13 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
 
   Future<void> _openEditForm(RenewalModel? renewal) async {
     if (renewal == null) {
+      return;
+    }
+    if (!_canEditService) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to edit services.',
+      );
       return;
     }
 
@@ -133,7 +167,7 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
                     title: 'Service Details',
                     compact: compact,
                     rows: _buildRows(current),
-                    onEdit: () => _openEditForm(current),
+                    onEdit: _canEditService ? () => _openEditForm(current) : null,
                   ),
                 ),
               ),
@@ -190,13 +224,13 @@ class _DetailCard extends StatelessWidget {
     required this.title,
     required this.compact,
     required this.rows,
-    required this.onEdit,
+    this.onEdit,
   });
 
   final String title;
   final bool compact;
   final List<_DetailRowData> rows;
-  final VoidCallback onEdit;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -336,13 +370,13 @@ class _HeaderButton extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.filled,
-    required this.onTap,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool filled;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

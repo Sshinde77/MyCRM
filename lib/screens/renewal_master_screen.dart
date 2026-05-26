@@ -1,12 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
 import '../routes/app_routes.dart';
 
-class RenewalMasterScreen extends StatelessWidget {
+class RenewalMasterScreen extends StatefulWidget {
   const RenewalMasterScreen({super.key});
+
+  @override
+  State<RenewalMasterScreen> createState() => _RenewalMasterScreenState();
+}
+
+class _RenewalMasterScreenState extends State<RenewalMasterScreen> {
+  late final Future<List<_RenewalOption>> _visibleOptionsFuture;
 
   static const List<_RenewalOption> _options = [
     _RenewalOption(
@@ -38,6 +46,22 @@ class RenewalMasterScreen extends StatelessWidget {
       accentColor: Color(0xFFEA580C),
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleOptionsFuture = _visibleOptions();
+  }
+
+  Future<List<_RenewalOption>> _visibleOptions() async {
+    final visible = <_RenewalOption>[];
+    for (final option in _options) {
+      if (await PermissionService.canOpenRoute(option.routeName)) {
+        visible.add(option);
+      }
+    }
+    return visible;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,14 +130,34 @@ class RenewalMasterScreen extends StatelessWidget {
                           //   ),
                           // ),
                           const SizedBox(height: 20),
-                          ..._options.map(
-                            (option) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _RenewalOptionCard(
-                                option: option,
-                                compact: compact,
-                              ),
-                            ),
+                          FutureBuilder<List<_RenewalOption>>(
+                            future: _visibleOptionsFuture,
+                            builder: (context, snapshot) {
+                              final visibleOptions = snapshot.data ?? const <_RenewalOption>[];
+                              if (visibleOptions.isEmpty) {
+                                return Text(
+                                  'No renewal sections available for your account.',
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF64748B),
+                                    fontSize: compact ? 13 : 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              }
+                              return Column(
+                                children: visibleOptions
+                                    .map(
+                                      (option) => Padding(
+                                        padding: const EdgeInsets.only(bottom: 12),
+                                        child: _RenewalOptionCard(
+                                          option: option,
+                                          compact: compact,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(growable: false),
+                              );
+                            },
                           ),
                         ],
                       ),

@@ -4,12 +4,20 @@ class RenewalSettingsModel {
     required this.renewalNotificationTime,
     required this.renewalNoticeDays,
     required this.renewalNotificationsEnabled,
+    this.autoCalendarEventEmailEnabled = false,
+    this.autoCalendarEventWhatsappEnabled = false,
+    this.autoTodoReminderEmailEnabled = false,
+    this.autoTodoReminderWhatsappEnabled = false,
   });
 
   final String renewalAdminEmail;
   final String renewalNotificationTime;
   final int renewalNoticeDays;
   final bool renewalNotificationsEnabled;
+  final bool autoCalendarEventEmailEnabled;
+  final bool autoCalendarEventWhatsappEnabled;
+  final bool autoTodoReminderEmailEnabled;
+  final bool autoTodoReminderWhatsappEnabled;
 
   factory RenewalSettingsModel.fromJson(Map<String, dynamic> json) {
     return RenewalSettingsModel(
@@ -31,6 +39,22 @@ class RenewalSettingsModel {
         'renewal_notifications_enabled',
         'renewalNotificationsEnabled',
       ]),
+      autoCalendarEventEmailEnabled: _readBool(json, const [
+        'auto_calendar_event_email_enabled',
+        'autoCalendarEventEmailEnabled',
+      ]),
+      autoCalendarEventWhatsappEnabled: _readBool(json, const [
+        'auto_calendar_event_whatsapp_enabled',
+        'autoCalendarEventWhatsappEnabled',
+      ]),
+      autoTodoReminderEmailEnabled: _readBool(json, const [
+        'auto_todo_reminder_email_enabled',
+        'autoTodoReminderEmailEnabled',
+      ]),
+      autoTodoReminderWhatsappEnabled: _readBool(json, const [
+        'auto_todo_reminder_whatsapp_enabled',
+        'autoTodoReminderWhatsappEnabled',
+      ]),
     );
   }
 
@@ -40,6 +64,10 @@ class RenewalSettingsModel {
       'renewal_notification_time': _normalizeTime(renewalNotificationTime),
       'renewal_notice_days': renewalNoticeDays,
       'renewal_notifications_enabled': renewalNotificationsEnabled,
+      'auto_calendar_event_email_enabled': autoCalendarEventEmailEnabled,
+      'auto_calendar_event_whatsapp_enabled': autoCalendarEventWhatsappEnabled,
+      'auto_todo_reminder_email_enabled': autoTodoReminderEmailEnabled,
+      'auto_todo_reminder_whatsapp_enabled': autoTodoReminderWhatsappEnabled,
     };
   }
 

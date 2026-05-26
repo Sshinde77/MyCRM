@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 
 import '../core/constants/app_text_styles.dart';
+import '../core/services/permission_service.dart';
 import '../models/client_model.dart';
 import '../models/renewal_model.dart';
 import '../models/vendor_model.dart';
@@ -80,11 +81,33 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   DateTime? _appliedFromDate;
   DateTime? _appliedToDate;
   _RenewalFilterOption _selectedFilter = _RenewalFilterOption.all;
+  bool _canCreateService = false;
+  bool _canEditService = false;
+  bool _canDeleteService = false;
+  bool _canViewServiceDetail = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    final values = await Future.wait<bool>([
+      PermissionService.has(AppPermission.createServices),
+      PermissionService.has(AppPermission.editServices),
+      PermissionService.has(AppPermission.deleteServices),
+      PermissionService.has(AppPermission.viewServicesDetail),
+      PermissionService.has(AppPermission.viewServices),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _canCreateService = values[0];
+      _canEditService = values[1];
+      _canDeleteService = values[2];
+      _canViewServiceDetail = values[3] || values[4];
+    });
   }
 
   @override
@@ -332,6 +355,17 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   }
 
   Future<void> _openServiceForm({RenewalModel? renewal}) async {
+    final isEdit = renewal != null;
+    final allowed = isEdit ? _canEditService : _canCreateService;
+    if (!allowed) {
+      AppSnackbar.show(
+        'Access denied',
+        isEdit
+            ? 'You do not have permission to edit services.'
+            : 'You do not have permission to create services.',
+      );
+      return;
+    }
     final shouldRefresh = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => ClientRenewalFormScreen(initialRenewal: renewal),
@@ -344,6 +378,13 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   }
 
   Future<void> _openDetail(RenewalModel renewal) async {
+    if (!_canViewServiceDetail) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view service details.',
+      );
+      return;
+    }
     await Get.toNamed(AppRoutes.clientRenewalDetail, arguments: renewal);
     if (!mounted) {
       return;
@@ -352,6 +393,13 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
   }
 
   Future<void> _deleteRenewal(RenewalModel renewal) async {
+    if (!_canDeleteService) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to delete services.',
+      );
+      return;
+    }
     final renewalId = renewal.id.trim();
     if (renewalId.isEmpty) {
       AppSnackbar.show('Delete failed', 'Invalid service id.');
@@ -479,7 +527,9 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                     SizedBox(height: compact ? 16 : 18),
                                     _AddServiceButton(
                                       compact: compact,
-                                      onTap: () => _openServiceForm(),
+                                      onTap: _canCreateService
+                                          ? () => _openServiceForm()
+                                          : null,
                                     ),
                                     SizedBox(height: compact ? 16 : 18),
                                   ],
@@ -495,9 +545,8 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                           isLoading: provider.isLoading,
                           errorMessage: provider.errorMessage,
                           hasActiveFilters: _hasActiveFilters,
-                          onRetry: () => context
-                              .read<RenewalListProvider>()
-                              .loadRenewals(
+                          onRetry: () =>
+                              context.read<RenewalListProvider>().loadRenewals(
                                 forceRefresh: true,
                                 page: 1,
                                 search: _appliedSearchTerm,
@@ -506,9 +555,12 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                 dateTo: _formatApiDate(_appliedToDate),
                               ),
                           onView: (renewal) => _openDetail(renewal),
-                          onEdit: (renewal) =>
-                              _openServiceForm(renewal: renewal),
-                          onDelete: (renewal) => _deleteRenewal(renewal),
+                          onEdit: _canEditService
+                              ? (renewal) => _openServiceForm(renewal: renewal)
+                              : null,
+                          onDelete: _canDeleteService
+                              ? (renewal) => _deleteRenewal(renewal)
+                              : null,
                         ),
                         SliverPadding(
                           padding: EdgeInsets.fromLTRB(
@@ -542,7 +594,9 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
                                           dateFrom: _formatApiDate(
                                             _appliedFromDate,
                                           ),
-                                          dateTo: _formatApiDate(_appliedToDate),
+                                          dateTo: _formatApiDate(
+                                            _appliedToDate,
+                                          ),
                                         );
                                   },
                                 ),
@@ -573,8 +627,8 @@ class _RenewalListSection extends StatelessWidget {
     required this.hasActiveFilters,
     required this.onRetry,
     required this.onView,
-    required this.onEdit,
-    required this.onDelete,
+    this.onEdit,
+    this.onDelete,
   });
 
   final bool compact;
@@ -585,8 +639,8 @@ class _RenewalListSection extends StatelessWidget {
   final bool hasActiveFilters;
   final VoidCallback onRetry;
   final ValueChanged<RenewalModel> onView;
-  final ValueChanged<RenewalModel> onEdit;
-  final ValueChanged<RenewalModel> onDelete;
+  final ValueChanged<RenewalModel>? onEdit;
+  final ValueChanged<RenewalModel>? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -650,8 +704,10 @@ class _RenewalListSection extends StatelessWidget {
                   service: service,
                   compact: compact,
                   onView: () => onView(service.renewal),
-                  onEdit: () => onEdit(service.renewal),
-                  onDelete: () => onDelete(service.renewal),
+                  onEdit: onEdit == null ? null : () => onEdit!(service.renewal),
+                  onDelete: onDelete == null
+                      ? null
+                      : () => onDelete!(service.renewal),
                 ),
               ),
             ),
@@ -763,9 +819,9 @@ class _FilterCard extends StatelessWidget {
                         color: Color(0xFF64748B),
                       ),
                       items: _RenewalFilterOption.values
-                            .map((option) {
-                              final visual = _statusVisualFor(option);
-                              return DropdownMenuItem<_RenewalFilterOption>(
+                          .map((option) {
+                            final visual = _statusVisualFor(option);
+                            return DropdownMenuItem<_RenewalFilterOption>(
                               value: option,
                               child: Row(
                                 children: [
@@ -1344,10 +1400,10 @@ _StatusVisual _statusVisualForService(String rawStatus) {
 }
 
 class _AddServiceButton extends StatelessWidget {
-  const _AddServiceButton({required this.compact, required this.onTap});
+  const _AddServiceButton({required this.compact, this.onTap});
 
   final bool compact;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1398,15 +1454,15 @@ class _ServiceCard extends StatelessWidget {
     required this.service,
     required this.compact,
     required this.onView,
-    required this.onEdit,
-    required this.onDelete,
+    this.onEdit,
+    this.onDelete,
   });
 
   final _ServiceItem service;
   final bool compact;
   final VoidCallback onView;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1785,6 +1841,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   bool _isLoadingOptions = false;
   bool _isLoadingDetail = false;
   bool _isSubmitting = false;
+  bool _hasSubmitPermission = false;
 
   bool get _isEditMode => (_renewalId ?? '').isNotEmpty;
 
@@ -1794,7 +1851,25 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   void initState() {
     super.initState();
     _applyRenewalSeed(widget.initialRenewal);
+    _loadSubmitPermission();
     _loadFormData();
+  }
+
+  Future<void> _loadSubmitPermission() async {
+    final allowed = await PermissionService.has(
+      _isEditMode ? AppPermission.editServices : AppPermission.createServices,
+    );
+    if (!mounted) return;
+    setState(() => _hasSubmitPermission = allowed);
+    if (!allowed) {
+      _showSnack(
+        title: 'Access denied',
+        message: _isEditMode
+            ? 'You do not have permission to edit services.'
+            : 'You do not have permission to create services.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+    }
   }
 
   @override
@@ -1950,6 +2025,17 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   }
 
   Future<void> _submit() async {
+    if (!_hasSubmitPermission) {
+      _showSnack(
+        title: 'Access denied',
+        message: _isEditMode
+            ? 'You do not have permission to edit services.'
+            : 'You do not have permission to create services.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+      return;
+    }
+
     final validationError = _validate();
     if (validationError != null) {
       _showSnack(
@@ -2102,7 +2188,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
           _seedClientName.isNotEmpty) {
         final matchedByName = _clients.where((entry) {
           return _clientNamesForMatching(entry).any(
-            (name) => name.trim().toLowerCase() == _seedClientName.toLowerCase(),
+            (name) =>
+                name.trim().toLowerCase() == _seedClientName.toLowerCase(),
           );
         });
         if (matchedByName.isNotEmpty) {
@@ -2116,7 +2203,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
         seedClientName: _seedClientName,
       );
       if ((_selectedClientOptionKey ?? '').isNotEmpty) {
-        final selectedOption = _findClientOptionByKey(_selectedClientOptionKey!);
+        final selectedOption = _findClientOptionByKey(
+          _selectedClientOptionKey!,
+        );
         if (selectedOption != null) {
           final split = selectedOption.key.split('::');
           _selectedClientId = split.isNotEmpty ? split.first.trim() : null;
@@ -2191,10 +2280,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
               ? _companyDisplayName(client)
               : detail.companyName.trim();
           options.add(
-            MapEntry(
-              _buildClientOptionKey(client.id, businessId),
-              label,
-            ),
+            MapEntry(_buildClientOptionKey(client.id, businessId), label),
           );
         }
         continue;
@@ -2203,10 +2289,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       final fallbackName = _companyDisplayName(client).trim();
       if (fallbackName.isNotEmpty) {
         options.add(
-          MapEntry(
-            _buildClientOptionKey(client.id, client.id),
-            fallbackName,
-          ),
+          MapEntry(_buildClientOptionKey(client.id, client.id), fallbackName),
         );
       }
     }
@@ -2242,7 +2325,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       final matched = _clientOptions().where((option) {
         final parts = option.key.split('::');
         if (parts.isEmpty || parts.first.trim() != clientId) return false;
-        return option.value.trim().toLowerCase() == seedClientName.toLowerCase();
+        return option.value.trim().toLowerCase() ==
+            seedClientName.toLowerCase();
       });
       if (matched.isNotEmpty) {
         return matched.first.key;
@@ -2474,9 +2558,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                     ? split.first.trim()
                                     : '';
                                 final selectedBusinessDetailId =
-                                    split.length > 1
-                                    ? split[1].trim()
-                                    : '';
+                                    split.length > 1 ? split[1].trim() : '';
                                 setState(() {
                                   _selectedClientOptionKey = selected;
                                   _selectedClientId = selectedClientId.isEmpty
@@ -2739,7 +2821,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                         SizedBox(
                           height: 44,
                           child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submit,
+                            onPressed: _isSubmitting || !_hasSubmitPermission
+                                ? null
+                                : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1D8BFF),
                               foregroundColor: Colors.white,

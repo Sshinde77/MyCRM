@@ -52,6 +52,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     'In Progress',
     'On Hold',
     'Completed',
+    'Cancelled',
   ];
 
   List<ProjectModel> _projects = const [];
@@ -840,12 +841,16 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     }
 
     setState(() => _submitting = true);
-
+      
     try {
       final tags = _tagsController.text
           .split(',')
           .map((tag) => tag.trim())
           .where((tag) => tag.isNotEmpty)
+          .toList();
+      final attachmentPaths = _files
+          .map((file) => (file.path ?? '').trim())
+          .where((path) => path.isNotEmpty)
           .toList();
 
       if (_isEditMode) {
@@ -861,6 +866,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           assigneeIds: _assigneeIds,
           followerIds: _followerIds,
           tags: tags,
+          attachmentPaths: attachmentPaths,
         );
       } else {
         await ApiService.instance.createTaskRecord(
@@ -874,6 +880,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           assigneeIds: _assigneeIds,
           followerIds: _followerIds,
           tags: tags,
+          attachmentPaths: attachmentPaths,
         );
       }
       if (!mounted) return;
@@ -950,6 +957,9 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         return 'On Hold';
       case 'completed':
         return 'Completed';
+      case 'cancelled':
+      case 'canceled':
+        return 'Cancelled';
       default:
         return null;
     }

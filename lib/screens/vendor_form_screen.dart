@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/models/vendor_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -26,6 +27,7 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
   bool _isLoading = false;
   bool _isActive = true;
   String? _vendorId;
+  bool _hasSubmitPermission = false;
 
   bool get _isEditMode => _vendorId != null && _vendorId!.trim().isNotEmpty;
 
@@ -34,8 +36,26 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
     super.initState();
     _vendorId = widget.vendorId?.trim();
     _applyVendor(widget.vendor);
+    _resolvePermission();
     if (_isEditMode) {
       _loadVendorDetail();
+    }
+  }
+
+  Future<void> _resolvePermission() async {
+    final allowed = await PermissionService.has(
+      _isEditMode ? AppPermission.editVendors : AppPermission.createVendors,
+    );
+    if (!mounted) return;
+    setState(() => _hasSubmitPermission = allowed);
+    if (!allowed) {
+      _showSnack(
+        title: 'Access denied',
+        message: _isEditMode
+            ? 'You do not have permission to edit vendors.'
+            : 'You do not have permission to add vendors.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
     }
   }
 
@@ -110,6 +130,17 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
   }
 
   Future<void> _submit() async {
+    if (!_hasSubmitPermission) {
+      _showSnack(
+        title: 'Access denied',
+        message: _isEditMode
+            ? 'You do not have permission to edit vendors.'
+            : 'You do not have permission to add vendors.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+      return;
+    }
+
     final validationError = _validate();
     if (validationError != null) {
       _showSnack(
@@ -312,6 +343,7 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
                           height: 46,
                           child: ElevatedButton(
                             onPressed: _isSubmitting || _isLoading
+                                    || !_hasSubmitPermission
                                 ? null
                                 : _submit,
                             style: ElevatedButton.styleFrom(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -31,6 +32,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   String _selectedProject = 'Oceanic';
   String _selectedPriority = 'Medium';
   String _selectedStatus = 'On Hold';
+  List<PlatformFile> _files = [];
 
   final List<String> _assignees = ['Manish Singh'];
   final List<String> _followers = ['Gopal Giri'];
@@ -193,7 +195,12 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                             const SizedBox(height: 8),
                             _buildDropdown(
                               value: _selectedStatus,
-                              items: ['On Hold', 'In Progress', 'Completed'],
+                              items: [
+                                'On Hold',
+                                'In Progress',
+                                'Completed',
+                                'Cancelled',
+                              ],
                               onChanged: (val) =>
                                   setState(() => _selectedStatus = val!),
                             ),
@@ -211,7 +218,7 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
                           children: [
                             _buildLabel('Attachment'),
                             const SizedBox(height: 8),
-                            _buildAttachmentPlaceholder('Choose File'),
+                            _buildAttachmentPicker(),
                           ],
                         ),
                       ),
@@ -457,5 +464,74 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildAttachmentPicker() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAFC),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          OutlinedButton(
+            onPressed: _pickFiles,
+            child: const Text('Choose Files'),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _files.isEmpty
+                ? 'No file chosen'
+                : '${_files.length} file${_files.length == 1 ? '' : 's'} selected',
+            style: AppTextStyles.style(
+              fontSize: 14,
+              color: const Color(0xFFA0AEC0),
+            ),
+          ),
+          if (_files.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _files
+                  .map(
+                    (file) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        file.name,
+                        style: AppTextStyles.style(
+                          fontSize: 12,
+                          color: const Color(0xFF4A5568),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickFiles() async {
+    final result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+      withData: false,
+    );
+    if (result == null) return;
+    setState(() => _files = result.files);
   }
 }

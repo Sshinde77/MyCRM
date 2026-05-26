@@ -102,6 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       subtitle: 'Manage contact and career inquiries',
       icon: Icons.web_rounded,
       routeName: '',
+      permission: AppPermission.webEnquiry,
       accentColor: Color(0xFF6366F1),
       screenBuilder: WebEnquiryScreen.new,
     ),
@@ -192,6 +193,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<List<_ProfileAction>> _visibleActions() async {
     final visible = <_ProfileAction>[];
     for (final action in _actions) {
+      if (action.routeName == AppRoutes.renewalMaster) {
+        final user = await PermissionService.getCurrentUser();
+        final canOpenRenewal = PermissionService.userHasAny(
+          user,
+          const [
+            AppPermission.viewRenewals,
+            AppPermission.viewServices,
+            AppPermission.viewVendors,
+          ],
+        );
+        if (canOpenRenewal) {
+          visible.add(action);
+        }
+        continue;
+      }
       final permission = action.permission;
       if (permission == null || await PermissionService.has(permission)) {
         visible.add(action);
@@ -645,7 +661,9 @@ class _QuickStatsCard extends StatelessWidget {
                 children: [
                   Row(
                     children: stats
-                        .map((item) => Expanded(child: _QuickStatTile(item: item)))
+                        .map(
+                          (item) => Expanded(child: _QuickStatTile(item: item)),
+                        )
                         .toList(),
                   ),
                   if (snapshot.hasError && !hasApiValues) ...[

@@ -7,6 +7,11 @@ class CreateClientIssueTaskRequest {
     this.assignedTo,
     this.startDate,
     this.dueDate,
+    this.dueTime,
+    this.reminderDate,
+    this.reminderTime,
+    this.checklistData = const [],
+    this.labelsData = const [],
     this.attachmentPaths = const [],
   });
 
@@ -17,6 +22,11 @@ class CreateClientIssueTaskRequest {
   final String? assignedTo;
   final DateTime? startDate;
   final DateTime? dueDate;
+  final String? dueTime;
+  final DateTime? reminderDate;
+  final String? reminderTime;
+  final List<String> checklistData;
+  final List<String> labelsData;
   final List<String> attachmentPaths;
 }
 
@@ -31,6 +41,11 @@ class ClientIssueTaskModel {
     required this.assignedTo,
     required this.startDate,
     required this.dueDate,
+    this.dueTime = '',
+    this.reminderDate = '',
+    this.reminderTime = '',
+    this.checklistData = const [],
+    this.labelsData = const [],
     required this.attachments,
     required this.createdAt,
     required this.updatedAt,
@@ -45,6 +60,11 @@ class ClientIssueTaskModel {
   final String assignedTo;
   final String startDate;
   final String dueDate;
+  final String dueTime;
+  final String reminderDate;
+  final String reminderTime;
+  final List<String> checklistData;
+  final List<String> labelsData;
   final List<ClientIssueTaskAttachment> attachments;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -69,6 +89,17 @@ class ClientIssueTaskModel {
       assignedTo: _readString(json, const ['assigned_to', 'assignee', 'staff']),
       startDate: _readString(json, const ['start_date']),
       dueDate: _readString(json, const ['due_date', 'deadline']),
+      dueTime: _readString(json, const ['due_time']),
+      reminderDate: _readString(json, const ['reminder_date']),
+      reminderTime: _readString(json, const ['reminder_time']),
+      checklistData: _readList(json, const ['checklist_data'])
+          .map((entry) => entry.toString().trim())
+          .where((entry) => entry.isNotEmpty)
+          .toList(growable: false),
+      labelsData: _readList(json, const ['labels_data'])
+          .map((entry) => entry.toString().trim())
+          .where((entry) => entry.isNotEmpty)
+          .toList(growable: false),
       attachments: attachmentValues
           .map((entry) {
             if (entry is String) {
@@ -134,10 +165,21 @@ class ClientIssueTaskModel {
 }
 
 class ClientIssueTaskAttachment {
-  const ClientIssueTaskAttachment({required this.path, required this.name});
+  const ClientIssueTaskAttachment({
+    required this.path,
+    required this.name,
+    this.url,
+  });
 
   final String path;
   final String name;
+  final String? url;
+
+  String get previewUrl {
+    final direct = (url ?? '').trim();
+    if (direct.isNotEmpty) return direct;
+    return path.trim();
+  }
 
   String get displayName {
     final normalizedName = name.trim();
@@ -149,14 +191,14 @@ class ClientIssueTaskAttachment {
   }
 
   factory ClientIssueTaskAttachment.fromJson(Map<String, dynamic> json) {
+    final url = _readString(json, const ['url', 'file_url', 'fileUrl']);
     final path = _readString(json, const [
       'path',
-      'url',
       'file_path',
       'filePath',
     ]);
     final name = _readString(json, const ['name', 'file_name', 'fileName']);
-    return ClientIssueTaskAttachment(path: path, name: name);
+    return ClientIssueTaskAttachment(path: path, name: name, url: url);
   }
 
   static String _readString(Map<String, dynamic> source, List<String> keys) {

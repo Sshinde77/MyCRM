@@ -89,7 +89,11 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
       final uri = Uri.tryParse(url);
       if (uri == null) {
         if (!mounted) return;
-        AppSnackbar.show('Invalid URL', 'Resume link is invalid.', isError: true);
+        AppSnackbar.show(
+          'Invalid URL',
+          'Resume link is invalid.',
+          isError: true,
+        );
         return;
       }
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -108,7 +112,11 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      AppSnackbar.show('Resume failed', 'Unable to fetch resume URL.', isError: true);
+      AppSnackbar.show(
+        'Resume failed',
+        'Unable to fetch resume URL.',
+        isError: true,
+      );
     }
   }
 
@@ -264,7 +272,10 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
                           child: DropdownButton<String>(
                             value: _applicantType,
                             items: const [
-                              DropdownMenuItem(value: 'all', child: Text('All')),
+                              DropdownMenuItem(
+                                value: 'all',
+                                child: Text('All'),
+                              ),
                               DropdownMenuItem(
                                 value: 'fresher',
                                 child: Text('Fresher'),
@@ -292,7 +303,12 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
             ),
             const SizedBox(height: 8),
             if (_isLoading)
-              const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CircularProgressIndicator(),
+                ),
+              )
             else if (_items.isEmpty)
               AppCard(
                 child: Text(
@@ -311,7 +327,8 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
                   onView: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => CareerEnquiryDetailScreen(recordId: item.id),
+                        builder: (_) =>
+                            CareerEnquiryDetailScreen(recordId: item.id),
                       ),
                     );
                   },

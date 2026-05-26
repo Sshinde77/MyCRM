@@ -13,6 +13,7 @@ class ClientIssueModel {
     required this.assignedTeam,
     required this.assignedTo,
     required this.assignedBy,
+    required this.teamAssignments,
     required this.tasks,
   });
 
@@ -27,6 +28,7 @@ class ClientIssueModel {
   final String assignedTeam;
   final String assignedTo;
   final String assignedBy;
+  final List<ClientIssueTeamAssignment> teamAssignments;
   final List<ClientIssueTaskModel> tasks;
 
   String get displayId => id.isEmpty ? '#ISS' : '#ISS-$id';
@@ -230,6 +232,7 @@ class ClientIssueModel {
           'username',
         ]),
       ]),
+      teamAssignments: _readTeamAssignments(source),
       tasks: _readTaskList(source),
     );
   }
@@ -344,6 +347,28 @@ class ClientIssueModel {
         .toList(growable: false);
   }
 
+  static List<ClientIssueTeamAssignment> _readTeamAssignments(
+    Map<String, dynamic> json,
+  ) {
+    final value = json['team_assignments'];
+    if (value is! List) return const <ClientIssueTeamAssignment>[];
+
+    return value
+        .map((entry) {
+          if (entry is Map<String, dynamic>) {
+            return ClientIssueTeamAssignment.fromJson(entry);
+          }
+          if (entry is Map) {
+            return ClientIssueTeamAssignment.fromJson(
+              entry.map((key, value) => MapEntry(key.toString(), value)),
+            );
+          }
+          return null;
+        })
+        .whereType<ClientIssueTeamAssignment>()
+        .toList(growable: false);
+  }
+
   static String _readString(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
@@ -401,11 +426,19 @@ class ClientIssueIndexData {
     required this.issues,
     required this.projects,
     required this.customers,
+    this.currentPage = 1,
+    this.lastPage = 1,
+    this.total = 0,
+    this.perPage = 10,
   });
 
   final List<ClientIssueModel> issues;
   final List<ClientIssueSelectOption> projects;
   final List<ClientIssueSelectOption> customers;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
 }
 
 class ClientIssueSelectOption {
@@ -504,5 +537,62 @@ class ClientIssueTeamOption {
       }
     }
     return '';
+  }
+}
+
+class ClientIssueTeamAssignment {
+  const ClientIssueTeamAssignment({
+    required this.teamName,
+    required this.createdAt,
+  });
+
+  final String teamName;
+  final DateTime? createdAt;
+
+  String get displayTeamName {
+    final normalized = teamName.trim();
+    return normalized.isEmpty ? 'Unassigned' : normalized;
+  }
+
+  String get displayAssignedDate {
+    final date = createdAt;
+    if (date == null) return 'N/A';
+    final local = date.toLocal();
+    final dd = local.day.toString().padLeft(2, '0');
+    final mm = local.month.toString().padLeft(2, '0');
+    final yyyy = local.year.toString();
+    final hh = local.hour.toString().padLeft(2, '0');
+    final min = local.minute.toString().padLeft(2, '0');
+    return '$dd-$mm-$yyyy $hh:$min';
+  }
+
+  factory ClientIssueTeamAssignment.fromJson(Map<String, dynamic> json) {
+    return ClientIssueTeamAssignment(
+      teamName: _readString(json, const ['team_name', 'teamName', 'team']),
+      createdAt: _readDateTime(json, const ['created_at', 'createdAt']),
+    );
+  }
+
+  static String _readString(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null || value is Map || value is List) continue;
+      final normalized = value.toString().trim();
+      if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+        return normalized;
+      }
+    }
+    return '';
+  }
+
+  static DateTime? _readDateTime(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      if (value is DateTime) return value;
+      final parsed = DateTime.tryParse(value.toString().trim());
+      if (parsed != null) return parsed;
+    }
+    return null;
   }
 }

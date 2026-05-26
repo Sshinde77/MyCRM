@@ -134,15 +134,17 @@ class ApiConstants {
   static const String clientissueformdata =
       '$baseUrl/client-issues/form-options';
   static const String createClientIssueTask =
-      '$baseUrl/client-issues/{id}/tasks';
+      '$baseUrl/client-issues/{clientIssue}/tasks';
   static const String assignClientIssueTeam =
       '$baseUrl/client-issues/{id}/assign';
+      
   static const String clientIssueTaskDetail =
       '$baseUrl/client-issues/{issueId}/tasks/{taskId}';
   static const String clientIssueTaskStatus =
       '$baseUrl/client-issues/{issueId}/tasks/{taskId}/status';
 
   //settings
+  
   static const String settings = '$baseUrl/settings';
   static const String generalSettings = '$baseUrl/settings/general';
   static const String appLogoSettings = '$baseUrl/settings/app-logo';
@@ -161,12 +163,15 @@ class ApiConstants {
 
   //web enquiry careers
   static const String webEnquiryCareers = '$baseUrl/web-enquiry/careers';
-  static const String webEnquiryCareerDetail = '$baseUrl/web-enquiry/careers/{id}';
-  static const String webEnquiryCareerDelete = '$baseUrl/web-enquiry/careers/{id}';
+  static const String webEnquiryCareerDetail =
+      '$baseUrl/web-enquiry/careers/{id}';
+  static const String webEnquiryCareerDelete =
+      '$baseUrl/web-enquiry/careers/{id}';
   static const String webEnquiryCareerResumeUrl =
       '$baseUrl/web-enquiry/careers/{id}/resume-url';
   static const String webEnquiryContacts = '$baseUrl/web-enquiry/contacts';
-  static const String webEnquiryContactDelete = '$baseUrl/web-enquiry/contacts/{id}';
+  static const String webEnquiryContactDelete =
+      '$baseUrl/web-enquiry/contacts/{id}';
 
   //google ads leads
   static const String digitalMarketingLeads = '$baseUrl/digital-marketing';

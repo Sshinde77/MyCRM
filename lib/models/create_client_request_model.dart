@@ -80,7 +80,8 @@ class CreateClientRequestModel {
       website,
     ]);
 
-    if (_hasValue(resolvedWebsite)) payload['website'] = resolvedWebsite!.trim();
+    if (_hasValue(resolvedWebsite))
+      payload['website'] = resolvedWebsite!.trim();
     if (businessInformation.isNotEmpty) {
       payload['companies'] = businessInformation;
     } else {

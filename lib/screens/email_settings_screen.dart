@@ -229,7 +229,11 @@ class _EmailSettingsScreenState extends State<EmailSettingsScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      AppSnackbar.show('Send failed', 'Unable to send test email.', isError: true);
+      AppSnackbar.show(
+        'Send failed',
+        'Unable to send test email.',
+        isError: true,
+      );
     } finally {
       if (mounted) {
         setState(() => _isSendingTestEmail = false);

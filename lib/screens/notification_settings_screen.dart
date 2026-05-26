@@ -1,0 +1,407 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+
+import '../core/utils/app_snackbar.dart';
+import '../models/renewal_settings_model.dart';
+import '../services/api_service.dart';
+import '../widgets/common_screen_app_bar.dart';
+
+class NotificationSettingsScreen extends StatefulWidget {
+  const NotificationSettingsScreen({super.key});
+
+  @override
+  State<NotificationSettingsScreen> createState() =>
+      _NotificationSettingsScreenState();
+}
+
+class _NotificationSettingsScreenState extends State<NotificationSettingsScreen> {
+  RenewalSettingsModel? _settings;
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await ApiService.instance.getRenewalSettings();
+      if (!mounted) return;
+      setState(() => _settings = data);
+    } on DioException catch (error) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        'Load failed',
+        _messageFromError(error, fallback: 'Unable to load notification settings.'),
+        isError: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        'Load failed',
+        'Unable to load notification settings.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    final current = _settings;
+    if (_isSaving || current == null) return;
+    setState(() => _isSaving = true);
+    try {
+      final updated = await ApiService.instance.updateRenewalSettings(current);
+      if (!mounted) return;
+      setState(() => _settings = updated);
+      AppSnackbar.show(
+        'Saved',
+        'Notification controls updated successfully.',
+        isSuccess: true,
+      );
+    } on DioException catch (error) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        'Save failed',
+        _messageFromError(error, fallback: 'Unable to save notification controls.'),
+        isError: true,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppSnackbar.show(
+        'Save failed',
+        'Unable to save notification controls.',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  void _patchSettings(RenewalSettingsModel Function(RenewalSettingsModel) patch) {
+    final current = _settings;
+    if (current == null) return;
+    setState(() => _settings = patch(current));
+  }
+
+  String _messageFromError(DioException error, {required String fallback}) {
+    final data = error.response?.data;
+    if (data is Map && data['message'] != null) {
+      return data['message'].toString();
+    }
+    final message = error.message?.trim() ?? '';
+    return message.isEmpty ? fallback : message;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: const CommonScreenAppBar(title: 'Notification'),
+      backgroundColor: const Color(0xFFF4F8FC),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadSettings,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: _buildContent(),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildContent() {
+    final settings = _settings;
+    if (settings == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Notification Controls',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF0F172A),
+              ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Control automatic cron/queue reminders from one place.',
+          style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+        ),
+        const SizedBox(height: 14),
+        _buildMainToggleCard(
+          title: 'Daily Renewal Summary Email',
+          subtitle: 'Sends automatic renewal summary at configured time.',
+          value: settings.renewalNotificationsEnabled,
+          onChanged: (value) => _patchSettings(
+            (current) => RenewalSettingsModel(
+              renewalAdminEmail: current.renewalAdminEmail,
+              renewalNotificationTime: current.renewalNotificationTime,
+              renewalNoticeDays: current.renewalNoticeDays,
+              renewalNotificationsEnabled: value,
+              autoCalendarEventEmailEnabled:
+                  current.autoCalendarEventEmailEnabled,
+              autoCalendarEventWhatsappEnabled:
+                  current.autoCalendarEventWhatsappEnabled,
+              autoTodoReminderEmailEnabled:
+                  current.autoTodoReminderEmailEnabled,
+              autoTodoReminderWhatsappEnabled:
+                  current.autoTodoReminderWhatsappEnabled,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildGroupCard(
+          title: 'Calendar Event Auto Notifications',
+          tint: const Color(0xFFFFF7ED),
+          children: [
+            _buildMiniToggleTile(
+              title: 'Email',
+              subtitle: 'Event-time and 10-min reminder emails',
+              value: settings.autoCalendarEventEmailEnabled,
+              onChanged: (value) => _patchSettings(
+                (current) => RenewalSettingsModel(
+                  renewalAdminEmail: current.renewalAdminEmail,
+                  renewalNotificationTime: current.renewalNotificationTime,
+                  renewalNoticeDays: current.renewalNoticeDays,
+                  renewalNotificationsEnabled: current.renewalNotificationsEnabled,
+                  autoCalendarEventEmailEnabled: value,
+                  autoCalendarEventWhatsappEnabled:
+                      current.autoCalendarEventWhatsappEnabled,
+                  autoTodoReminderEmailEnabled:
+                      current.autoTodoReminderEmailEnabled,
+                  autoTodoReminderWhatsappEnabled:
+                      current.autoTodoReminderWhatsappEnabled,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildMiniToggleTile(
+              title: 'WhatsApp',
+              subtitle: 'Event-time and 10-min reminder WhatsApp',
+              value: settings.autoCalendarEventWhatsappEnabled,
+              onChanged: (value) => _patchSettings(
+                (current) => RenewalSettingsModel(
+                  renewalAdminEmail: current.renewalAdminEmail,
+                  renewalNotificationTime: current.renewalNotificationTime,
+                  renewalNoticeDays: current.renewalNoticeDays,
+                  renewalNotificationsEnabled: current.renewalNotificationsEnabled,
+                  autoCalendarEventEmailEnabled:
+                      current.autoCalendarEventEmailEnabled,
+                  autoCalendarEventWhatsappEnabled: value,
+                  autoTodoReminderEmailEnabled:
+                      current.autoTodoReminderEmailEnabled,
+                  autoTodoReminderWhatsappEnabled:
+                      current.autoTodoReminderWhatsappEnabled,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _buildGroupCard(
+          title: 'Todo Reminder Auto Notifications',
+          tint: const Color(0xFFECFDF3),
+          children: [
+            _buildMiniToggleTile(
+              title: 'Email',
+              subtitle: 'Automatic due todo reminder emails',
+              value: settings.autoTodoReminderEmailEnabled,
+              onChanged: (value) => _patchSettings(
+                (current) => RenewalSettingsModel(
+                  renewalAdminEmail: current.renewalAdminEmail,
+                  renewalNotificationTime: current.renewalNotificationTime,
+                  renewalNoticeDays: current.renewalNoticeDays,
+                  renewalNotificationsEnabled: current.renewalNotificationsEnabled,
+                  autoCalendarEventEmailEnabled:
+                      current.autoCalendarEventEmailEnabled,
+                  autoCalendarEventWhatsappEnabled:
+                      current.autoCalendarEventWhatsappEnabled,
+                  autoTodoReminderEmailEnabled: value,
+                  autoTodoReminderWhatsappEnabled:
+                      current.autoTodoReminderWhatsappEnabled,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            _buildMiniToggleTile(
+              title: 'WhatsApp',
+              subtitle: 'Automatic due todo WhatsApp reminders',
+              value: settings.autoTodoReminderWhatsappEnabled,
+              onChanged: (value) => _patchSettings(
+                (current) => RenewalSettingsModel(
+                  renewalAdminEmail: current.renewalAdminEmail,
+                  renewalNotificationTime: current.renewalNotificationTime,
+                  renewalNoticeDays: current.renewalNoticeDays,
+                  renewalNotificationsEnabled: current.renewalNotificationsEnabled,
+                  autoCalendarEventEmailEnabled:
+                      current.autoCalendarEventEmailEnabled,
+                  autoCalendarEventWhatsappEnabled:
+                      current.autoCalendarEventWhatsappEnabled,
+                  autoTodoReminderEmailEnabled:
+                      current.autoTodoReminderEmailEnabled,
+                  autoTodoReminderWhatsappEnabled: value,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isSaving ? null : _saveSettings,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF178BEB),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    'Save Notification Controls',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMainToggleCard({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD6E2EF)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+          ),
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroupCard({
+    required String title,
+    required Color tint,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: tint,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD6E2EF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniToggleTile({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFD6E2EF)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                ),
+              ],
+            ),
+          ),
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+}

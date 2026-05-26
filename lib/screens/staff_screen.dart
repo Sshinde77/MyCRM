@@ -27,6 +27,7 @@ class _StaffScreenState extends State<StaffScreen> {
   int _lastPage = 1;
   int _totalRecords = 0;
   String? _deletingStaffId;
+  String _selectedStatusFilter = 'all';
 
   @override
   void initState() {
@@ -69,6 +70,7 @@ class _StaffScreenState extends State<StaffScreen> {
       final pageResult = await ApiService.instance.getStaffListPage(
         page: normalizedPage,
         search: _appliedSearchTerm,
+        status: _selectedStatusFilter == 'all' ? null : _selectedStatusFilter,
       );
       if (!mounted) return;
 
@@ -109,6 +111,7 @@ class _StaffScreenState extends State<StaffScreen> {
   }
 
   Future<void> _openFilterPopup() async {
+    var tempStatus = _selectedStatusFilter;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -136,37 +139,91 @@ class _StaffScreenState extends State<StaffScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  height: 44,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFD2DDEA)),
-                  ),
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'All Staff',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF334155),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                StatefulBuilder(
+                  builder: (context, setSheetState) {
+                    Widget buildStatusTile(String value, String label) {
+                      final selected = tempStatus == value;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => setSheetState(() => tempStatus = value),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? const Color(0xFFDBEAFE)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selected
+                                  ? const Color(0xFF60A5FA)
+                                  : const Color(0xFFD2DDEA),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected
+                                    ? Icons.radio_button_checked_rounded
+                                    : Icons.radio_button_unchecked_rounded,
+                                size: 18,
+                                color: selected
+                                    ? const Color(0xFF2563EB)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                label,
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF334155),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        buildStatusTile('all', 'All Staff'),
+                        const SizedBox(height: 8),
+                        buildStatusTile('active', 'Active Staff'),
+                        const SizedBox(height: 8),
+                        buildStatusTile('inactive', 'Inactive Staff'),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        onPressed: () async {
+                          Navigator.of(sheetContext).pop();
+                          if (!mounted) return;
+                          if (_selectedStatusFilter == 'all') return;
+                          setState(() => _selectedStatusFilter = 'all');
+                          await _loadPage(page: 1, showInitialLoader: true);
+                        },
                         child: const Text('Reset'),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        onPressed: () async {
+                          Navigator.of(sheetContext).pop();
+                          if (!mounted) return;
+                          if (_selectedStatusFilter == tempStatus) return;
+                          setState(() => _selectedStatusFilter = tempStatus);
+                          await _loadPage(page: 1, showInitialLoader: true);
+                        },
                         child: const Text('Apply'),
                       ),
                     ),
@@ -735,10 +792,8 @@ class _StaffCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 _StaffCardAction(
                   icon: Icons.remove_red_eye_outlined,
-                  onTap: () => Get.toNamed(
-                    AppRoutes.staffDetail,
-                    arguments: member.id,
-                  ),
+                  onTap: () =>
+                      Get.toNamed(AppRoutes.staffDetail, arguments: member.id),
                 ),
                 const SizedBox(width: 6),
                 PermissionGate(
@@ -960,7 +1015,6 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-
 
 class _LoadingState extends StatelessWidget {
   const _LoadingState({required this.compact});

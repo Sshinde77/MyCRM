@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_text_styles.dart';
+import '../core/services/permission_service.dart';
 import '../models/renewal_model.dart';
 import '../models/vendor_model.dart';
 import '../services/api_service.dart';
@@ -56,6 +57,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
   bool _isLoadingOptions = false;
   bool _isLoadingDetail = false;
   bool _isSubmitting = false;
+  bool _hasSubmitPermission = false;
 
   bool get _isEditMode => (_renewalId ?? '').isNotEmpty;
 
@@ -78,6 +80,32 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
   void initState() {
     super.initState();
     _applyRenewalSeed(widget.initialRenewal);
+    _loadPermissionAndData();
+  }
+
+  Future<void> _loadPermissionAndData() async {
+    final allowed = await PermissionService.has(
+      _isEditMode
+          ? AppPermission.editVendorService
+          : AppPermission.createVendorsService,
+    );
+    if (!mounted) {
+      return;
+    }
+
+    if (!allowed) {
+      _showSnack(
+        title: 'Access denied',
+        message: _isEditMode
+            ? 'You do not have permission to edit vendor services.'
+            : 'You do not have permission to create vendor services.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+      Navigator.of(context).pop(false);
+      return;
+    }
+
+    setState(() => _hasSubmitPermission = true);
     _loadFormData();
   }
 
@@ -233,6 +261,17 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
   }
 
   Future<void> _submit() async {
+    if (!_hasSubmitPermission) {
+      _showSnack(
+        title: 'Access denied',
+        message: _isEditMode
+            ? 'You do not have permission to edit vendor services.'
+            : 'You do not have permission to create vendor services.',
+        backgroundColor: const Color(0xFFB91C1C),
+      );
+      return;
+    }
+
     final validationError = _validate();
     if (validationError != null) {
       _showSnack(
@@ -805,7 +844,9 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
                         SizedBox(
                           height: 44,
                           child: ElevatedButton(
-                            onPressed: _isSubmitting ? null : _submit,
+                            onPressed: _isSubmitting || !_hasSubmitPermission
+                                ? null
+                                : _submit,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF1D8BFF),
                               foregroundColor: Colors.white,

@@ -26,6 +26,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
   int _lastPage = 1;
   int _totalCount = 0;
   String _appliedSearch = '';
+  String _selectedStatusFilter = 'all';
+  static const int _perPage = 10;
 
   @override
   void initState() {
@@ -57,6 +59,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
       final page = await ApiService.instance.getClientsListPage(
         page: pageNumber,
         search: normalizedSearch,
+        status: _selectedStatusFilter == 'all' ? null : _selectedStatusFilter,
+        perPage: _perPage,
       );
       if (!mounted) return;
 
@@ -88,6 +92,133 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   Future<void> _applySearch() async {
     await _loadClientsPage(1, search: _searchController.text.trim());
+  }
+
+  Future<void> _openFilterPopup() async {
+    var tempStatus = _selectedStatusFilter;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset + 16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Filter Clients',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF1E2A3B),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                StatefulBuilder(
+                  builder: (context, setSheetState) {
+                    Widget buildStatusTile(String value, String label) {
+                      final selected = tempStatus == value;
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => setSheetState(() => tempStatus = value),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? const Color(0xFFDBEAFE)
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selected
+                                  ? const Color(0xFF60A5FA)
+                                  : const Color(0xFFD2DDEA),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected
+                                    ? Icons.radio_button_checked_rounded
+                                    : Icons.radio_button_unchecked_rounded,
+                                size: 18,
+                                color: selected
+                                    ? const Color(0xFF2563EB)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                label,
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF334155),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        buildStatusTile('all', 'All Clients'),
+                        const SizedBox(height: 8),
+                        buildStatusTile('active', 'Active Clients'),
+                        const SizedBox(height: 8),
+                        buildStatusTile('inactive', 'Inactive Clients'),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          Navigator.of(sheetContext).pop();
+                          if (!mounted) return;
+                          if (_selectedStatusFilter == 'all') return;
+                          setState(() => _selectedStatusFilter = 'all');
+                          await _loadClientsPage(1, search: _appliedSearch);
+                        },
+                        child: const Text('Reset'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.of(sheetContext).pop();
+                          if (!mounted) return;
+                          if (_selectedStatusFilter == tempStatus) return;
+                          setState(() => _selectedStatusFilter = tempStatus);
+                          await _loadClientsPage(1, search: _appliedSearch);
+                        },
+                        child: const Text('Apply'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -182,7 +313,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _circleIcon(Icons.tune),
+                    _circleIcon(Icons.tune, onTap: _openFilterPopup),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -276,8 +407,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
     );
   }
 
-  static Widget _circleIcon(IconData icon) {
-    return Container(
+  static Widget _circleIcon(IconData icon, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
       height: 40,
       width: 40,
       decoration: const BoxDecoration(
@@ -285,6 +419,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: Colors.grey, size: 20),
+      ),
     );
   }
 }

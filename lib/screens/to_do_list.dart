@@ -1071,6 +1071,15 @@ class _AddTaskDialog extends StatefulWidget {
 
 class _AddTaskDialogState extends State<_AddTaskDialog> {
   static const int _maxAttachmentSizeBytes = 10240 * 1024;
+  static const List<String> _weekDays = <String>[
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -1083,10 +1092,14 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   DateTime _endsOnDate = DateTime.now();
   TimeOfDay? _selectedTime;
   TimeOfDay? _reminderTime;
-  bool _isReminderEnabled = false;
+  bool _reminderEmailEnabled = false;
+  bool _reminderWhatsappEnabled = false;
   String _repeatUnit = 'Day';
+  List<String> _repeatDays = const [];
   _TaskEndType _endType = _TaskEndType.never;
   bool _isSubmitting = false;
+  bool get _hasReminderChannel =>
+      _reminderEmailEnabled || _reminderWhatsappEnabled;
 
   bool get _isEditMode => widget.initialTask != null;
 
@@ -1107,8 +1120,15 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     _endsOnDate = task.endsOn ?? task.date;
     _selectedTime = task.startTime;
     _reminderTime = task.reminderTime;
-    _isReminderEnabled = task.reminderTime != null;
+    _reminderEmailEnabled = task.reminderEmail;
+    _reminderWhatsappEnabled = task.reminderWhatsapp;
+    if (!_reminderEmailEnabled &&
+        !_reminderWhatsappEnabled &&
+        _reminderTime != null) {
+      _reminderEmailEnabled = true;
+    }
     _repeatUnit = _toTitleCase(task.repeatUnit);
+    _repeatDays = List<String>.from(task.repeatDays);
     _endType = task.endType;
     _selectedAttachments = List<_TodoAttachment>.from(task.attachments);
   }
@@ -1233,8 +1253,8 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         //   ),
         // ),
         SizedBox(height: isCompact ? 10 : 12),
-        _buildReminderToggle(),
-        if (_isReminderEnabled) ...[
+        _buildReminderChannels(),
+        if (_hasReminderChannel) ...[
           SizedBox(height: isCompact ? 10 : 12),
           useTwoColumns
               ? Row(
@@ -1252,6 +1272,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                     _buildReminderField(),
                   ],
                 ),
+          if (_repeatUnit.toLowerCase() == 'week') ...[
+            SizedBox(height: isCompact ? 10 : 12),
+            _buildRepeatDaysField(),
+          ],
           SizedBox(height: isCompact ? 10 : 12),
           useTwoColumns
               ? Row(
@@ -1522,7 +1546,14 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             Expanded(
               child: DropdownButtonFormField<String>(
                 initialValue: _repeatUnit,
-                decoration: _taskInputDecoration(),
+                isExpanded: true,
+                iconSize: 18,
+                decoration: _taskInputDecoration().copyWith(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 14,
+                  ),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'Day', child: Text('Day')),
                   DropdownMenuItem(value: 'Week', child: Text('Week')),
@@ -1533,7 +1564,12 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                   if (value == null) {
                     return;
                   }
-                  setState(() => _repeatUnit = value);
+                  setState(() {
+                    _repeatUnit = value;
+                    if (value.toLowerCase() != 'week') {
+                      _repeatDays = const [];
+                    }
+                  });
                 },
               ),
             ),
@@ -1663,7 +1699,7 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             text: _reminderTime == null ? '--:--' : _formatTime(_reminderTime!),
           ),
           validator: (_) {
-            if (_isReminderEnabled && _reminderTime == null) {
+            if (_hasReminderChannel && _reminderTime == null) {
               return 'Please set reminder time';
             }
             return null;
@@ -1680,36 +1716,168 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     );
   }
 
-  Widget _buildReminderToggle() {
+  Widget _buildReminderChannels() {
     return Container(
       width: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFD6E2EF)),
       ),
-      child: CheckboxListTile(
-        value: _isReminderEnabled,
-        onChanged: _isSubmitting
-            ? null
-            : (value) {
-                final enabled = value ?? false;
-                setState(() {
-                  _isReminderEnabled = enabled;
-                  if (!enabled) {
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _FormFieldLabel(label: 'Reminder Channels'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _buildChannelChip(
+                label: 'No reminder',
+                selected: !_hasReminderChannel,
+                onTap: () {
+                  if (_isSubmitting) return;
+                  setState(() {
+                    _reminderEmailEnabled = false;
+                    _reminderWhatsappEnabled = false;
                     _reminderTime = null;
+                  });
+                },
+              ),
+              _buildChannelChip(
+                label: 'Email reminder',
+                selected: _reminderEmailEnabled,
+                onTap: () {
+                  if (_isSubmitting) return;
+                  setState(() {
+                    _reminderEmailEnabled = !_reminderEmailEnabled;
+                    if (_hasReminderChannel && _endType == _TaskEndType.never) {
+                      _endType = _TaskEndType.after;
+                      _afterCountController.text = '1';
+                    }
+                  });
+                },
+              ),
+              _buildChannelChip(
+                label: 'WhatsApp reminder',
+                selected: _reminderWhatsappEnabled,
+                onTap: () {
+                  if (_isSubmitting) return;
+                  setState(
+                    () {
+                      _reminderWhatsappEnabled = !_reminderWhatsappEnabled;
+                      if (_hasReminderChannel &&
+                          _endType == _TaskEndType.never) {
+                        _endType = _TaskEndType.after;
+                        _afterCountController.text = '1';
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Select email, WhatsApp, or both.',
+            style: AppTextStyles.style(
+              color: const Color(0xFF738295),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRepeatDaysField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _FormFieldLabel(label: 'Repeat Days'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _weekDays.map((day) {
+            final selected = _repeatDays.contains(day);
+            return FilterChip(
+              label: Text(
+                _toTitleCase(day),
+                style: AppTextStyles.style(
+                  color: selected
+                      ? const Color(0xFF1C86F2)
+                      : const Color(0xFF3A4B5C),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              selected: selected,
+              onSelected: (value) {
+                if (_isSubmitting) return;
+                setState(() {
+                  final next = List<String>.from(_repeatDays);
+                  if (value) {
+                    if (!next.contains(day)) {
+                      next.add(day);
+                    }
+                  } else {
+                    next.remove(day);
                   }
+                  _repeatDays = next;
                 });
               },
-        controlAffinity: ListTileControlAffinity.leading,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-        title: Text(
-          'Enable task reminder',
-          style: AppTextStyles.style(
-            color: const Color(0xFF2D3846),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+              selectedColor: const Color(0xFFE8F2FF),
+              checkmarkColor: const Color(0xFF1C86F2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+                side: const BorderSide(color: Color(0xFFBFD6F1)),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChannelChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFE8F2FF) : Colors.transparent,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFF8FB9EA) : const Color(0xFFD6E2EF),
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              selected ? Icons.check_box : Icons.check_box_outline_blank,
+              size: 15,
+              color: const Color(0xFF1C86F2),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTextStyles.style(
+                color: const Color(0xFF2D3846),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1917,9 +2085,12 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       description: _descriptionController.text.trim(),
       date: _selectedDate,
       startTime: _selectedTime,
-      reminderTime: _isReminderEnabled ? _reminderTime : null,
+      reminderTime: _hasReminderChannel ? _reminderTime : null,
       repeatEvery: int.parse(_repeatEveryController.text.trim()),
       repeatUnit: _repeatUnit,
+      repeatDays: _repeatDays,
+      reminderEmail: _reminderEmailEnabled,
+      reminderWhatsapp: _reminderWhatsappEnabled,
       startsOn: _startsDate,
       endType: _endType,
       endsOn: _endType == _TaskEndType.on ? _endsOnDate : null,
@@ -1947,7 +2118,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           taskTime: task.startTime,
           repeatInterval: task.repeatEvery,
           repeatUnit: task.repeatUnit,
+          repeatDays: task.repeatDays,
           reminderTime: task.reminderTime,
+          reminderEmail: task.reminderEmail,
+          reminderWhatsapp: task.reminderWhatsapp,
           startsOn: task.startsOn,
           endsType: task.endType.apiValue,
           endsOn: task.endsOn,
@@ -1955,11 +2129,6 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           attachmentPaths: task.attachments
               .where((attachment) => attachment.isLocalFile)
               .map((attachment) => attachment.localPath!)
-              .toList(),
-          existingAttachmentUrls: task.attachments
-              .where((attachment) => !attachment.isLocalFile)
-              .map((attachment) => (attachment.url ?? '').trim())
-              .where((url) => url.isNotEmpty)
               .toList(),
         );
       } else {
@@ -1970,7 +2139,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
           taskTime: task.startTime,
           repeatInterval: task.repeatEvery,
           repeatUnit: task.repeatUnit,
+          repeatDays: task.repeatDays,
           reminderTime: task.reminderTime,
+          reminderEmail: task.reminderEmail,
+          reminderWhatsapp: task.reminderWhatsapp,
           startsOn: task.startsOn,
           endsType: task.endType.apiValue,
           endsOn: task.endsOn,
@@ -2444,6 +2616,9 @@ class _TodoTask {
     required this.date,
     required this.repeatEvery,
     required this.repeatUnit,
+    this.repeatDays = const [],
+    this.reminderEmail = false,
+    this.reminderWhatsapp = false,
     required this.startsOn,
     required this.endType,
     this.endsOn,
@@ -2463,6 +2638,9 @@ class _TodoTask {
     TimeOfDay? reminderTime,
     int? repeatEvery,
     String? repeatUnit,
+    List<String>? repeatDays,
+    bool? reminderEmail,
+    bool? reminderWhatsapp,
     DateTime? startsOn,
     _TaskEndType? endType,
     DateTime? endsOn,
@@ -2479,6 +2657,9 @@ class _TodoTask {
       reminderTime: reminderTime ?? this.reminderTime,
       repeatEvery: repeatEvery ?? this.repeatEvery,
       repeatUnit: repeatUnit ?? this.repeatUnit,
+      repeatDays: repeatDays ?? this.repeatDays,
+      reminderEmail: reminderEmail ?? this.reminderEmail,
+      reminderWhatsapp: reminderWhatsapp ?? this.reminderWhatsapp,
       startsOn: startsOn ?? this.startsOn,
       endType: endType ?? this.endType,
       endsOn: endsOn ?? this.endsOn,
@@ -2524,6 +2705,9 @@ class _TodoTask {
       repeatUnit: _toTitleCase(
         _readString(source, const ['repeat_unit', 'repeat']) ?? 'day',
       ),
+      repeatDays: _readStringList(source, const ['repeat_days']),
+      reminderEmail: _readBool(source, const ['reminder_email']),
+      reminderWhatsapp: _readBool(source, const ['reminder_whatsapp']),
       startsOn: startsOn,
       endType: endType,
       endsOn: _tryParseApiDate(_readString(source, const ['ends_on'])),
@@ -2544,6 +2728,9 @@ class _TodoTask {
   final TimeOfDay? reminderTime;
   final int repeatEvery;
   final String repeatUnit;
+  final List<String> repeatDays;
+  final bool reminderEmail;
+  final bool reminderWhatsapp;
   final DateTime startsOn;
   final _TaskEndType endType;
   final DateTime? endsOn;
@@ -2679,6 +2866,54 @@ int? _readInt(Map<String, dynamic> source, List<String> keys) {
   }
 
   return null;
+}
+
+bool _readBool(Map<String, dynamic> source, List<String> keys) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value is bool) {
+      return value;
+    }
+    if (value is num) {
+      return value != 0;
+    }
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == '1' ||
+          normalized == 'true' ||
+          normalized == 'yes' ||
+          normalized == 'on') {
+        return true;
+      }
+      if (normalized == '0' ||
+          normalized == 'false' ||
+          normalized == 'no' ||
+          normalized == 'off') {
+        return false;
+      }
+    }
+  }
+  return false;
+}
+
+List<String> _readStringList(Map<String, dynamic> source, List<String> keys) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value is List) {
+      return value
+          .map((item) => item?.toString().trim().toLowerCase() ?? '')
+          .where((item) => item.isNotEmpty)
+          .toList(growable: false);
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return value
+          .split(',')
+          .map((item) => item.trim().toLowerCase())
+          .where((item) => item.isNotEmpty)
+          .toList(growable: false);
+    }
+  }
+  return const [];
 }
 
 List<_TodoAttachment> _readAttachments(Map<String, dynamic> source) {

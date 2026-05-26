@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/models/vendor_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -23,15 +24,37 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   late Future<VendorListPageResult> _vendorsFuture;
   int _rowsPerPage = 10;
   int _currentPage = 1;
+  bool _canCreateVendor = false;
+  bool _canEditVendor = false;
+  bool _canDeleteVendor = false;
+  bool _canViewVendorDetail = false;
 
   @override
   void initState() {
     super.initState();
+    _loadPermissions();
     _vendorsFuture = ApiService.instance.getVendorsListPage(
       page: _currentPage,
       perPage: _rowsPerPage,
       search: _appliedSearchTerm,
     );
+  }
+
+  Future<void> _loadPermissions() async {
+    final values = await Future.wait<bool>([
+      PermissionService.has(AppPermission.createVendors),
+      PermissionService.has(AppPermission.editVendors),
+      PermissionService.has(AppPermission.deleteVendors),
+      PermissionService.has(AppPermission.viewVendorDetail),
+    ]);
+
+    if (!mounted) return;
+    setState(() {
+      _canCreateVendor = values[0];
+      _canEditVendor = values[1];
+      _canDeleteVendor = values[2];
+      _canViewVendorDetail = values[3];
+    });
   }
 
   @override
@@ -66,6 +89,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   }
 
   Future<void> _openCreateVendor() async {
+    if (!_canCreateVendor) {
+      AppSnackbar.show('Access denied', 'You do not have permission to add vendors.');
+      return;
+    }
     final created = await Get.to<bool>(() => const VendorFormScreen());
     if (created == true) {
       _reload();
@@ -73,6 +100,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   }
 
   Future<void> _openEditVendor(VendorModel vendor) async {
+    if (!_canEditVendor) {
+      AppSnackbar.show('Access denied', 'You do not have permission to edit vendors.');
+      return;
+    }
     final updated = await Get.to<bool>(
       () => VendorFormScreen(vendorId: vendor.id, vendor: vendor),
     );
@@ -82,6 +113,13 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   }
 
   Future<void> _openVendorDetail(VendorModel vendor) async {
+    if (!_canViewVendorDetail) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view vendor details.',
+      );
+      return;
+    }
     final updated = await Get.to<bool>(
       () => VendorDetailScreen(vendorId: vendor.id),
     );
@@ -91,6 +129,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
   }
 
   Future<void> _deleteVendor(VendorModel vendor) async {
+    if (!_canDeleteVendor) {
+      AppSnackbar.show('Access denied', 'You do not have permission to delete vendors.');
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -202,6 +244,7 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                           searchController: _searchController,
                           onSearchTap: _applySearch,
                           onAddVendor: _openCreateVendor,
+                          canAddVendor: _canCreateVendor,
                           onRowsChanged: (value) {
                             setState(() {
                               _rowsPerPage = value;
@@ -233,6 +276,9 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                                   onViewVendor: _openVendorDetail,
                                   onEditVendor: _openEditVendor,
                                   onDeleteVendor: _deleteVendor,
+                                  canViewVendor: _canViewVendorDetail,
+                                  canEditVendor: _canEditVendor,
+                                  canDeleteVendor: _canDeleteVendor,
                                 )
                               : _VendorTable(
                                   rows: visibleRows,
@@ -240,6 +286,9 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                                   onViewVendor: _openVendorDetail,
                                   onEditVendor: _openEditVendor,
                                   onDeleteVendor: _deleteVendor,
+                                  canViewVendor: _canViewVendorDetail,
+                                  canEditVendor: _canEditVendor,
+                                  canDeleteVendor: _canDeleteVendor,
                                 ),
                           const SizedBox(height: 10),
                           _VendorFooter(
@@ -278,6 +327,7 @@ class _VendorToolbar extends StatelessWidget {
     required this.searchController,
     required this.onSearchTap,
     required this.onAddVendor,
+    required this.canAddVendor,
     required this.onRowsChanged,
   });
 
@@ -286,6 +336,7 @@ class _VendorToolbar extends StatelessWidget {
   final TextEditingController searchController;
   final VoidCallback onSearchTap;
   final VoidCallback onAddVendor;
+  final bool canAddVendor;
   final ValueChanged<int> onRowsChanged;
 
   @override
@@ -349,7 +400,7 @@ class _VendorToolbar extends StatelessWidget {
                 icon: Icons.add_circle_outline_rounded,
                 label: compact ? 'Add Vendor' : 'Add New Vendor',
                 filled: true,
-                onTap: onAddVendor,
+                onTap: canAddVendor ? onAddVendor : null,
               ),
             ),
           ],
@@ -415,12 +466,18 @@ class _VendorMobileList extends StatelessWidget {
     required this.onViewVendor,
     required this.onEditVendor,
     required this.onDeleteVendor,
+    required this.canViewVendor,
+    required this.canEditVendor,
+    required this.canDeleteVendor,
   });
 
   final List<VendorModel> rows;
   final ValueChanged<VendorModel> onViewVendor;
   final ValueChanged<VendorModel> onEditVendor;
   final ValueChanged<VendorModel> onDeleteVendor;
+  final bool canViewVendor;
+  final bool canEditVendor;
+  final bool canDeleteVendor;
 
   @override
   Widget build(BuildContext context) {
@@ -451,9 +508,9 @@ class _VendorMobileList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: _VendorMobileCard(
                 row: row,
-                onViewVendor: () => onViewVendor(row),
-                onEditVendor: () => onEditVendor(row),
-                onDeleteVendor: () => onDeleteVendor(row),
+                onViewVendor: canViewVendor ? () => onViewVendor(row) : null,
+                onEditVendor: canEditVendor ? () => onEditVendor(row) : null,
+                onDeleteVendor: canDeleteVendor ? () => onDeleteVendor(row) : null,
               ),
             ),
           )
@@ -465,15 +522,15 @@ class _VendorMobileList extends StatelessWidget {
 class _VendorMobileCard extends StatelessWidget {
   const _VendorMobileCard({
     required this.row,
-    required this.onViewVendor,
-    required this.onEditVendor,
-    required this.onDeleteVendor,
+    this.onViewVendor,
+    this.onEditVendor,
+    this.onDeleteVendor,
   });
 
   final VendorModel row;
-  final VoidCallback onViewVendor;
-  final VoidCallback onEditVendor;
-  final VoidCallback onDeleteVendor;
+  final VoidCallback? onViewVendor;
+  final VoidCallback? onEditVendor;
+  final VoidCallback? onDeleteVendor;
 
   @override
   Widget build(BuildContext context) {
@@ -589,6 +646,9 @@ class _VendorTable extends StatelessWidget {
     required this.onViewVendor,
     required this.onEditVendor,
     required this.onDeleteVendor,
+    required this.canViewVendor,
+    required this.canEditVendor,
+    required this.canDeleteVendor,
   });
 
   final List<VendorModel> rows;
@@ -596,6 +656,9 @@ class _VendorTable extends StatelessWidget {
   final ValueChanged<VendorModel> onViewVendor;
   final ValueChanged<VendorModel> onEditVendor;
   final ValueChanged<VendorModel> onDeleteVendor;
+  final bool canViewVendor;
+  final bool canEditVendor;
+  final bool canDeleteVendor;
 
   @override
   Widget build(BuildContext context) {
@@ -675,18 +738,18 @@ class _VendorTable extends StatelessWidget {
                         children: [
                           _ActionIcon(
                             icon: Icons.remove_red_eye_outlined,
-                            onTap: () => onViewVendor(row),
+                            onTap: canViewVendor ? () => onViewVendor(row) : null,
                           ),
                           const SizedBox(width: 8),
                           _ActionIcon(
                             icon: Icons.edit_square,
-                            onTap: () => onEditVendor(row),
+                            onTap: canEditVendor ? () => onEditVendor(row) : null,
                           ),
                           const SizedBox(width: 8),
                           _ActionIcon(
                             icon: Icons.delete_outline_rounded,
                             danger: true,
-                            onTap: () => onDeleteVendor(row),
+                            onTap: canDeleteVendor ? () => onDeleteVendor(row) : null,
                           ),
                         ],
                       ),

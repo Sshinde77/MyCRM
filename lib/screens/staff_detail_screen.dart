@@ -836,19 +836,25 @@ class _EditProfileForm extends StatelessWidget {
             _DropdownField(
               label: 'Team',
               value: selectedTeam,
-              items: teamOptions
+              items: <String>{
+                selectedTeam.trim(),
+                ...teamOptions
                   .map((item) => item.name.trim())
                   .where((name) => name.isNotEmpty)
                   .toList(growable: false),
+              }.where((name) => name.isNotEmpty).toList(growable: false),
               onChanged: onTeamChanged,
             ),
             const SizedBox(height: 16),
             _DepartmentCheckboxGroup(
               label: 'Departments',
-              options: departmentOptions
+              options: <String>{
+                ...selectedDepartments.map((value) => value.trim()),
+                ...departmentOptions
                   .map((item) => item.name.trim())
                   .where((name) => name.isNotEmpty)
                   .toList(growable: false),
+              }.where((name) => name.isNotEmpty).toList(growable: false),
               selectedValues: selectedDepartments,
               onToggle: onDepartmentToggle,
             ),
@@ -995,9 +1001,14 @@ class _DropdownField extends StatelessWidget {
     final normalizedItems = items
         .where((item) => item.trim().isNotEmpty)
         .toList();
-    final dropdownValue = normalizedItems.contains(value)
-        ? value
+    final normalizedValue = value.trim();
+    final dropdownValue = normalizedValue.isNotEmpty
+        ? normalizedValue
         : (normalizedItems.isNotEmpty ? normalizedItems.first : null);
+    final allItems = <String>{
+      ...normalizedItems,
+      if (normalizedValue.isNotEmpty) normalizedValue,
+    }.toList(growable: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1029,7 +1040,7 @@ class _DropdownField extends StatelessWidget {
               borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
             ),
           ),
-          items: normalizedItems
+          items: allItems
               .map(
                 (item) => DropdownMenuItem<String>(
                   value: item,

@@ -14,7 +14,8 @@ class CareerEnquiryDetailScreen extends StatefulWidget {
   final String recordId;
 
   @override
-  State<CareerEnquiryDetailScreen> createState() => _CareerEnquiryDetailScreenState();
+  State<CareerEnquiryDetailScreen> createState() =>
+      _CareerEnquiryDetailScreenState();
 }
 
 class _CareerEnquiryDetailScreenState extends State<CareerEnquiryDetailScreen> {
@@ -30,14 +31,19 @@ class _CareerEnquiryDetailScreenState extends State<CareerEnquiryDetailScreen> {
   Future<void> _loadDetail() async {
     setState(() => _isLoading = true);
     try {
-      final item = await ApiService.instance.getCareerEnquiryDetail(widget.recordId);
+      final item = await ApiService.instance.getCareerEnquiryDetail(
+        widget.recordId,
+      );
       if (!mounted) return;
       setState(() => _item = item);
     } on DioException catch (error) {
       if (!mounted) return;
       AppSnackbar.show(
         'Load failed',
-        _messageFromError(error, fallback: 'Unable to load career enquiry detail.'),
+        _messageFromError(
+          error,
+          fallback: 'Unable to load career enquiry detail.',
+        ),
         isError: true,
       );
     } catch (_) {
@@ -68,7 +74,11 @@ class _CareerEnquiryDetailScreenState extends State<CareerEnquiryDetailScreen> {
       final uri = Uri.tryParse(url);
       if (uri == null) {
         if (!mounted) return;
-        AppSnackbar.show('Invalid URL', 'Resume link is invalid.', isError: true);
+        AppSnackbar.show(
+          'Invalid URL',
+          'Resume link is invalid.',
+          isError: true,
+        );
         return;
       }
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -87,7 +97,11 @@ class _CareerEnquiryDetailScreenState extends State<CareerEnquiryDetailScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      AppSnackbar.show('Resume failed', 'Unable to fetch resume URL.', isError: true);
+      AppSnackbar.show(
+        'Resume failed',
+        'Unable to fetch resume URL.',
+        isError: true,
+      );
     }
   }
 
@@ -115,189 +129,238 @@ class _CareerEnquiryDetailScreenState extends State<CareerEnquiryDetailScreen> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : item == null
-                ? Center(
-                    child: Text(
-                      'No detail found.',
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF64748B),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  )
-                : ListView(
-                    padding: EdgeInsets.all(compact ? 10 : 12),
-                    children: [
-                      AppCard(
-                        padding: EdgeInsets.all(compact ? 12 : 14),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: compact ? 38 : 42,
-                              height: compact ? 38 : 42,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE7F0FF),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(
-                                Icons.work_outline_rounded,
-                                color: Color(0xFF1D6FEA),
-                              ),
-                            ),
-                            SizedBox(width: compact ? 8 : 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Career Enquiry Detail',
-                                    style: AppTextStyles.style(
-                                      color: const Color(0xFF1E2A3B),
-                                      fontSize: compact ? 16 : 17,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Record #${item.id}',
-                                    style: AppTextStyles.style(
-                                      color: const Color(0xFF64748B),
-                                      fontSize: compact ? 11 : 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1D6FEA),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                item.sourceLabel.isEmpty ? '-' : item.sourceLabel,
+            ? Center(
+                child: Text(
+                  'No detail found.',
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF64748B),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            : ListView(
+                padding: EdgeInsets.all(compact ? 10 : 12),
+                children: [
+                  AppCard(
+                    padding: EdgeInsets.all(compact ? 12 : 14),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: compact ? 38 : 42,
+                          height: compact ? 38 : 42,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE7F0FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.work_outline_rounded,
+                            color: Color(0xFF1D6FEA),
+                          ),
+                        ),
+                        SizedBox(width: compact ? 8 : 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Career Enquiry Detail',
                                 style: AppTextStyles.style(
-                                  color: Colors.white,
-                                  fontSize: 10,
+                                  color: const Color(0xFF1E2A3B),
+                                  fontSize: compact ? 16 : 17,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: sectionGap),
-                      if (splitLayout)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _SectionCard(
-                                title: 'Candidate Information',
-                                icon: Icons.badge_outlined,
-                                children: [
-                                  _DetailRow(label: 'Name', value: item.name),
-                                  _DetailRow(label: 'Email', value: item.email),
-                                  _DetailRow(label: 'Contact', value: item.contact),
-                                  _DetailRow(label: 'Role', value: item.role),
-                                  _DetailRow(label: 'Applicant Type', value: item.applicantType),
-                                  _DetailRow(label: 'Experience', value: item.experience),
-                                  _DetailRow(label: 'Location', value: item.location),
-                                ],
+                              const SizedBox(height: 2),
+                              Text(
+                                'Record #${item.id}',
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFF64748B),
+                                  fontSize: compact ? 11 : 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: sectionGap),
-                            Expanded(
-                              child: _SectionCard(
-                                title: 'Compensation & Joining',
-                                icon: Icons.payments_outlined,
-                                children: [
-                                  _DetailRow(label: 'Current CTC', value: item.currentCtc),
-                                  _DetailRow(label: 'Expected CTC', value: item.expectedCtc),
-                                  _DetailRow(label: 'Notice Period', value: item.noticePeriod),
-                                  _DetailRow(label: 'Reference Name', value: item.referenceName),
-                                  _DetailRow(label: 'Reference', value: item.reference),
-                                  _DetailRow(label: 'Created At', value: item.createdAt),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      else ...[
-                        _SectionCard(
-                          title: 'Candidate Information',
-                          icon: Icons.badge_outlined,
-                          children: [
-                            _DetailRow(label: 'Name', value: item.name),
-                            _DetailRow(label: 'Email', value: item.email),
-                            _DetailRow(label: 'Contact', value: item.contact),
-                            _DetailRow(label: 'Role', value: item.role),
-                            _DetailRow(label: 'Applicant Type', value: item.applicantType),
-                            _DetailRow(label: 'Experience', value: item.experience),
-                            _DetailRow(label: 'Location', value: item.location),
-                          ],
+                            ],
+                          ),
                         ),
-                        SizedBox(height: sectionGap),
-                        _SectionCard(
-                          title: 'Compensation & Joining',
-                          icon: Icons.payments_outlined,
-                          children: [
-                            _DetailRow(label: 'Current CTC', value: item.currentCtc),
-                            _DetailRow(label: 'Expected CTC', value: item.expectedCtc),
-                            _DetailRow(label: 'Notice Period', value: item.noticePeriod),
-                            _DetailRow(label: 'Reference Name', value: item.referenceName),
-                            _DetailRow(label: 'Reference', value: item.reference),
-                            _DetailRow(label: 'Created At', value: item.createdAt),
-                          ],
-                        ),
-                      ],
-                      SizedBox(height: sectionGap),
-                      _SectionCard(
-                        title: 'Files & Links',
-                        icon: Icons.folder_open_outlined,
-                        children: [
-                          _DetailRow(label: 'Resume File', value: item.resumeFile),
-                          _DetailRow(label: 'Resume URL', value: item.resumeUrl),
-                          const SizedBox(height: 8),
-                          ElevatedButton.icon(
-                            onPressed: _openResume,
-                            icon: const Icon(Icons.download_rounded, size: 18),
-                            label: const Text('Download Resume'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1D6FEA),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1D6FEA),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            item.sourceLabel.isEmpty ? '-' : item.sourceLabel,
+                            style: AppTextStyles.style(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          _DetailRow(label: 'Portfolio', value: item.portfolioLink),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: sectionGap),
+                  if (splitLayout)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _SectionCard(
+                            title: 'Candidate Information',
+                            icon: Icons.badge_outlined,
+                            children: [
+                              _DetailRow(label: 'Name', value: item.name),
+                              _DetailRow(label: 'Email', value: item.email),
+                              _DetailRow(label: 'Contact', value: item.contact),
+                              _DetailRow(label: 'Role', value: item.role),
+                              _DetailRow(
+                                label: 'Applicant Type',
+                                value: item.applicantType,
+                              ),
+                              _DetailRow(
+                                label: 'Experience',
+                                value: item.experience,
+                              ),
+                              _DetailRow(
+                                label: 'Location',
+                                value: item.location,
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: sectionGap),
+                        Expanded(
+                          child: _SectionCard(
+                            title: 'Compensation & Joining',
+                            icon: Icons.payments_outlined,
+                            children: [
+                              _DetailRow(
+                                label: 'Current CTC',
+                                value: item.currentCtc,
+                              ),
+                              _DetailRow(
+                                label: 'Expected CTC',
+                                value: item.expectedCtc,
+                              ),
+                              _DetailRow(
+                                label: 'Notice Period',
+                                value: item.noticePeriod,
+                              ),
+                              _DetailRow(
+                                label: 'Reference Name',
+                                value: item.referenceName,
+                              ),
+                              _DetailRow(
+                                label: 'Reference',
+                                value: item.reference,
+                              ),
+                              _DetailRow(
+                                label: 'Created At',
+                                value: item.createdAt,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    _SectionCard(
+                      title: 'Candidate Information',
+                      icon: Icons.badge_outlined,
+                      children: [
+                        _DetailRow(label: 'Name', value: item.name),
+                        _DetailRow(label: 'Email', value: item.email),
+                        _DetailRow(label: 'Contact', value: item.contact),
+                        _DetailRow(label: 'Role', value: item.role),
+                        _DetailRow(
+                          label: 'Applicant Type',
+                          value: item.applicantType,
+                        ),
+                        _DetailRow(label: 'Experience', value: item.experience),
+                        _DetailRow(label: 'Location', value: item.location),
+                      ],
+                    ),
+                    SizedBox(height: sectionGap),
+                    _SectionCard(
+                      title: 'Compensation & Joining',
+                      icon: Icons.payments_outlined,
+                      children: [
+                        _DetailRow(
+                          label: 'Current CTC',
+                          value: item.currentCtc,
+                        ),
+                        _DetailRow(
+                          label: 'Expected CTC',
+                          value: item.expectedCtc,
+                        ),
+                        _DetailRow(
+                          label: 'Notice Period',
+                          value: item.noticePeriod,
+                        ),
+                        _DetailRow(
+                          label: 'Reference Name',
+                          value: item.referenceName,
+                        ),
+                        _DetailRow(label: 'Reference', value: item.reference),
+                        _DetailRow(label: 'Created At', value: item.createdAt),
+                      ],
+                    ),
+                  ],
+                  SizedBox(height: sectionGap),
+                  _SectionCard(
+                    title: 'Files & Links',
+                    icon: Icons.folder_open_outlined,
+                    children: [
+                      _DetailRow(label: 'Resume File', value: item.resumeFile),
+                      _DetailRow(label: 'Resume URL', value: item.resumeUrl),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        onPressed: _openResume,
+                        icon: const Icon(Icons.download_rounded, size: 18),
+                        label: const Text('Download Resume'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1D6FEA),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       ),
-                      SizedBox(height: sectionGap),
-                      _SectionCard(
-                        title: 'Skills (Text)',
-                        icon: Icons.psychology_alt_outlined,
-                        children: [_PillText(value: item.skillsText)],
-                      ),
-                      SizedBox(height: sectionGap),
-                      _SectionCard(
-                        title: 'AI Tools (Text)',
-                        icon: Icons.auto_awesome_outlined,
-                        children: [_PillText(value: item.aiToolsText)],
-                      ),
+                      const SizedBox(height: 8),
+                      _DetailRow(label: 'Portfolio', value: item.portfolioLink),
                     ],
                   ),
+                  SizedBox(height: sectionGap),
+                  _SectionCard(
+                    title: 'Skills (Text)',
+                    icon: Icons.psychology_alt_outlined,
+                    children: [_PillText(value: item.skillsText)],
+                  ),
+                  SizedBox(height: sectionGap),
+                  _SectionCard(
+                    title: 'AI Tools (Text)',
+                    icon: Icons.auto_awesome_outlined,
+                    children: [_PillText(value: item.aiToolsText)],
+                  ),
+                ],
+              ),
       ),
     );
   }
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.icon, required this.children});
+  const _SectionCard({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
 
   final String title;
   final IconData icon;

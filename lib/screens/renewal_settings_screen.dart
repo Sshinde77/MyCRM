@@ -19,6 +19,10 @@ class _RenewalSettingsScreenState extends State<RenewalSettingsScreen> {
   final _renewalNoticeDaysController = TextEditingController();
 
   bool _renewalNotificationsEnabled = false;
+  bool _autoCalendarEventEmailEnabled = false;
+  bool _autoCalendarEventWhatsappEnabled = false;
+  bool _autoTodoReminderEmailEnabled = false;
+  bool _autoTodoReminderWhatsappEnabled = false;
   TimeOfDay? _renewalNotificationTime;
   bool _isLoading = true;
   bool _isSaving = false;
@@ -41,6 +45,10 @@ class _RenewalSettingsScreenState extends State<RenewalSettingsScreen> {
     try {
       final data = await ApiService.instance.getRenewalSettings();
       _renewalNotificationsEnabled = data.renewalNotificationsEnabled;
+      _autoCalendarEventEmailEnabled = data.autoCalendarEventEmailEnabled;
+      _autoCalendarEventWhatsappEnabled = data.autoCalendarEventWhatsappEnabled;
+      _autoTodoReminderEmailEnabled = data.autoTodoReminderEmailEnabled;
+      _autoTodoReminderWhatsappEnabled = data.autoTodoReminderWhatsappEnabled;
       _renewalAdminEmailController.text = data.renewalAdminEmail;
       _renewalNoticeDaysController.text = data.renewalNoticeDays > 0
           ? '${data.renewalNoticeDays}'
@@ -106,10 +114,19 @@ class _RenewalSettingsScreenState extends State<RenewalSettingsScreen> {
         renewalNotificationTime: _format24Hour(_renewalNotificationTime!),
         renewalNoticeDays: noticeDays,
         renewalNotificationsEnabled: _renewalNotificationsEnabled,
+        autoCalendarEventEmailEnabled: _autoCalendarEventEmailEnabled,
+        autoCalendarEventWhatsappEnabled: _autoCalendarEventWhatsappEnabled,
+        autoTodoReminderEmailEnabled: _autoTodoReminderEmailEnabled,
+        autoTodoReminderWhatsappEnabled: _autoTodoReminderWhatsappEnabled,
       );
 
       final updated = await ApiService.instance.updateRenewalSettings(payload);
       _renewalNotificationsEnabled = updated.renewalNotificationsEnabled;
+      _autoCalendarEventEmailEnabled = updated.autoCalendarEventEmailEnabled;
+      _autoCalendarEventWhatsappEnabled =
+          updated.autoCalendarEventWhatsappEnabled;
+      _autoTodoReminderEmailEnabled = updated.autoTodoReminderEmailEnabled;
+      _autoTodoReminderWhatsappEnabled = updated.autoTodoReminderWhatsappEnabled;
       _renewalNotificationTime =
           _tryParseTime(updated.renewalNotificationTime) ??
           _renewalNotificationTime;

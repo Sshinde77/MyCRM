@@ -382,9 +382,11 @@ class _AddClientScreenState extends State<AddClientScreen> {
                   ),
                   child: Column(
                     children: [
-                      for (var index = 0;
-                          index < _businessInformationForms.length;
-                          index++) ...[
+                      for (
+                        var index = 0;
+                        index < _businessInformationForms.length;
+                        index++
+                      ) ...[
                         _BusinessInformationEditor(
                           form: _businessInformationForms[index],
                           index: index,
@@ -740,11 +742,7 @@ class _AddBusinessInformationButton extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(
-                Icons.add_rounded,
-                color: Color(0xFF1D6FEA),
-                size: 22,
-              ),
+              const Icon(Icons.add_rounded, color: Color(0xFF1D6FEA), size: 22),
             ],
           ),
         ),

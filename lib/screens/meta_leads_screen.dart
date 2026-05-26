@@ -45,9 +45,11 @@ class _MetaLeadsScreenState extends State<MetaLeadsScreen> {
   }
 
   Future<void> _ensureAccessAndLoad() async {
-    final canView = await PermissionService.has(
+    final canViewMeta = await PermissionService.has(AppPermission.viewMetaLead);
+    final canViewMarketing = await PermissionService.has(
       AppPermission.viewDigitalMarketingLeads,
     );
+    final canView = canViewMeta || canViewMarketing;
     if (!mounted) return;
     if (!canView) {
       AppSnackbar.show(

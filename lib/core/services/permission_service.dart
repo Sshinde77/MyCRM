@@ -73,6 +73,7 @@ class AppPermission {
   static const exportData = 'export_data';
   static const importData = 'import_data';
   static const sendNotifications = 'send_notifications';
+  static const webEnquiry = 'web_enquiry';
   static const viewAllProjects = 'view_all_projects';
   static const viewOwnProjects = 'view_own_projects';
   static const assignTasks = 'assign_tasks';
@@ -82,6 +83,20 @@ class AppPermission {
   static const createUsers = 'create_users';
   static const editUsers = 'edit_users';
   static const deleteUsers = 'delete_users';
+  static const viewMetaLead = 'view_meta_lead';
+  static const viewGoogleAdsLeads = 'view_google_ads_leads';
+  static const createVendorsService = 'create_vendors_service';
+  static const deleteVendorServices = 'delete_vendor_services';
+  static const viewVendorsServices = 'view_vendors_services';
+  static const sendMailServices = 'send_mail_services';
+  static const viewVendorsServiceDetail = 'view_vendors_service_detail';
+  static const editVendorService = 'edit_vendor_service';
+  static const sendMailVendorServices = 'send_mail_vendor_services';
+  static const viewServicesDetail = 'view_services_detail';
+  static const viewVendorDetail = 'view_vendor_detail';
+  static const deleteAllVendor = 'delete_all_vendor';
+  static const deleteSeletedServices = 'delete_seleted_services';
+  static const deleteSeletedVendorService = 'delete_seleted_vendor_service';
 }
 
 class PermissionService {
@@ -193,6 +208,22 @@ class PermissionService {
         AppPermission.viewDashboardWelcome,
       ]);
     }
+    if (routeName == AppRoutes.renewalMaster) {
+      return userHasAny(user, const [
+        AppPermission.viewRenewals,
+        AppPermission.viewServices,
+        AppPermission.viewVendors,
+        AppPermission.viewVendorsServices,
+      ]);
+    }
+    if (routeName == AppRoutes.dashboardRenewals) {
+      return userHasAny(user, const [
+        AppPermission.viewRenewals,
+        AppPermission.viewServices,
+        AppPermission.viewVendors,
+        AppPermission.viewVendorsServices,
+      ]);
+    }
 
     final requiredPermission = routePermission(routeName);
     if (requiredPermission == null) {
@@ -277,14 +308,20 @@ class PermissionService {
       case AppRoutes.addProject:
         return AppPermission.createProjects;
       case AppRoutes.renewalMaster:
-      case AppRoutes.clientRenewal:
-      case AppRoutes.vendorRenewal:
-      case AppRoutes.clientRenewalDetail:
-      case AppRoutes.vendorRenewalDetail:
-      case AppRoutes.renewalClient:
-      case AppRoutes.renewalVendor:
-      case AppRoutes.dashboardRenewals:
         return AppPermission.viewRenewals;
+      case AppRoutes.clientRenewal:
+      case AppRoutes.renewalClient:
+        return AppPermission.viewServices;
+      case AppRoutes.clientRenewalDetail:
+        return AppPermission.viewServicesDetail;
+      case AppRoutes.vendorRenewal:
+        return AppPermission.viewVendorsServices;
+      case AppRoutes.vendorRenewalDetail:
+        return AppPermission.viewVendorsServiceDetail;
+      case AppRoutes.renewalVendor:
+        return AppPermission.viewVendors;
+      case AppRoutes.dashboardRenewals:
+        return AppPermission.viewServices;
       case AppRoutes.raiseIssue:
       case AppRoutes.issueDetail:
         return AppPermission.viewRaiseIssue;

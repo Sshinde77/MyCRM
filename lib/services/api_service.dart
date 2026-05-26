@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 import '../core/constants/api_constants.dart';
 import '../models/login_request_model.dart';
@@ -387,9 +388,7 @@ class ApiService {
         final authState = authorization == null || authorization.trim().isEmpty
             ? 'missing'
             : _maskAuthorizationHeader(authorization);
-        debugPrint(
-          'auth: $authState',
-        );
+        debugPrint('auth: $authState');
         if (options.queryParameters.isNotEmpty) {
           debugPrint('query: ${_summarizeForLog(options.queryParameters)}');
         }
@@ -511,8 +510,7 @@ class ApiService {
 
   bool _isAuthEndpoint(String path) {
     final normalized = path.toLowerCase();
-    return normalized.contains('/login') ||
-        normalized.contains('/refresh');
+    return normalized.contains('/login') || normalized.contains('/refresh');
   }
 
   Future<bool> _refreshTokensIfPossible() async {
@@ -692,9 +690,7 @@ class ApiService {
         return await _dio.patch(
           path,
           data: formData,
-          options: Options(
-            contentType: Headers.multipartFormDataContentType,
-          ),
+          options: Options(contentType: Headers.multipartFormDataContentType),
         );
       case 'post':
       default:
@@ -1086,10 +1082,10 @@ class ApiService {
     final response = await get(ApiConstants.loginLogoSettings);
     final body = _normalizeMap(response.data);
     final source = _normalizeMap(_extractDetailSource(body));
-    return _readNullableString(
-          source,
-          const ['login_logo', 'login_logo_url'],
-        ) ??
+    return _readNullableString(source, const [
+          'login_logo',
+          'login_logo_url',
+        ]) ??
         '';
   }
 
@@ -1126,10 +1122,10 @@ class ApiService {
 
     final body = _normalizeMap(response.data);
     final source = _normalizeMap(_extractDetailSource(body));
-    return _readNullableString(
-          source,
-          const ['login_logo', 'login_logo_url'],
-        ) ??
+    return _readNullableString(source, const [
+          'login_logo',
+          'login_logo_url',
+        ]) ??
         '';
   }
 
@@ -1342,9 +1338,15 @@ class ApiService {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedPerPage = perPage.clamp(1, 100).toInt();
     final normalizedSearch = (search ?? '').trim();
-    final normalizedApplicantType = _normalizeCareerApplicantType(applicantType);
-    final normalizedSortBy = sortBy.trim().isEmpty ? 'created_at' : sortBy.trim();
-    final normalizedSortOrder = sortOrder.toLowerCase() == 'asc' ? 'asc' : 'desc';
+    final normalizedApplicantType = _normalizeCareerApplicantType(
+      applicantType,
+    );
+    final normalizedSortBy = sortBy.trim().isEmpty
+        ? 'created_at'
+        : sortBy.trim();
+    final normalizedSortOrder = sortOrder.toLowerCase() == 'asc'
+        ? 'asc'
+        : 'desc';
 
     final query = <String, dynamic>{
       'page': normalizedPage,
@@ -1365,7 +1367,9 @@ class ApiService {
     final root = _normalizeMap(response.data);
     final rawSource = root['data'] ?? response.data;
     final itemsSource = _extractListSource(rawSource);
-    final records = itemsSource is List ? itemsSource : _normalizeList(rawSource);
+    final records = itemsSource is List
+        ? itemsSource
+        : _normalizeList(rawSource);
     final items = records
         .map(_normalizeMap)
         .map(CareerEnquiryModel.fromJson)
@@ -1385,7 +1389,9 @@ class ApiService {
         ) ??
         currentPage;
     final total =
-        _readInt(paginationSource['total'] ?? paginationSource['total_count']) ??
+        _readInt(
+          paginationSource['total'] ?? paginationSource['total_count'],
+        ) ??
         items.length;
     final effectivePerPage =
         _readInt(paginationSource['per_page'] ?? paginationSource['limit']) ??
@@ -1406,7 +1412,10 @@ class ApiService {
     if (normalizedId.isEmpty) {
       throw Exception('Invalid career enquiry id.');
     }
-    final path = ApiConstants.webEnquiryCareerDetail.replaceFirst('{id}', normalizedId);
+    final path = ApiConstants.webEnquiryCareerDetail.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
     final response = await get(path);
     final body = _normalizeMap(response.data);
     final source = _normalizeMap(_extractDetailSource(body));
@@ -1418,7 +1427,10 @@ class ApiService {
     if (normalizedId.isEmpty) {
       throw Exception('Invalid career enquiry id.');
     }
-    final path = ApiConstants.webEnquiryCareerDelete.replaceFirst('{id}', normalizedId);
+    final path = ApiConstants.webEnquiryCareerDelete.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
     await delete(path);
   }
 
@@ -1435,7 +1447,8 @@ class ApiService {
     final body = _normalizeMap(response.data);
     final source = _normalizeMap(_extractDetailSource(body));
     return <String, String>{
-      'resume_file': _readNullableString(source, const ['resume_file', 'resume']) ?? '',
+      'resume_file':
+          _readNullableString(source, const ['resume_file', 'resume']) ?? '',
       'resume_url': _readNullableString(source, const ['resume_url']) ?? '',
     };
   }
@@ -1450,8 +1463,12 @@ class ApiService {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedPerPage = perPage.clamp(1, 100).toInt();
     final normalizedSearch = (search ?? '').trim();
-    final normalizedSortBy = sortBy.trim().isEmpty ? 'created_at' : sortBy.trim();
-    final normalizedSortOrder = sortOrder.toLowerCase() == 'asc' ? 'asc' : 'desc';
+    final normalizedSortBy = sortBy.trim().isEmpty
+        ? 'created_at'
+        : sortBy.trim();
+    final normalizedSortOrder = sortOrder.toLowerCase() == 'asc'
+        ? 'asc'
+        : 'desc';
 
     final query = <String, dynamic>{
       'page': normalizedPage,
@@ -1470,7 +1487,9 @@ class ApiService {
     final root = _normalizeMap(response.data);
     final rawSource = root['data'] ?? response.data;
     final itemsSource = _extractListSource(rawSource);
-    final records = itemsSource is List ? itemsSource : _normalizeList(rawSource);
+    final records = itemsSource is List
+        ? itemsSource
+        : _normalizeList(rawSource);
     final items = records
         .map(_normalizeMap)
         .map(ContactEnquiryModel.fromJson)
@@ -1490,7 +1509,9 @@ class ApiService {
         ) ??
         currentPage;
     final total =
-        _readInt(paginationSource['total'] ?? paginationSource['total_count']) ??
+        _readInt(
+          paginationSource['total'] ?? paginationSource['total_count'],
+        ) ??
         items.length;
     final effectivePerPage =
         _readInt(paginationSource['per_page'] ?? paginationSource['limit']) ??
@@ -1511,7 +1532,10 @@ class ApiService {
     if (normalizedId.isEmpty) {
       throw Exception('Invalid contact enquiry id.');
     }
-    final path = ApiConstants.webEnquiryContactDelete.replaceFirst('{id}', normalizedId);
+    final path = ApiConstants.webEnquiryContactDelete.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
     await delete(path);
   }
 
@@ -1552,12 +1576,17 @@ class ApiService {
   Future<StaffListPageResult> getStaffListPage({
     int page = 1,
     String? search,
+    String? status,
   }) async {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
+    final normalizedStatus = (status ?? '').trim().toLowerCase();
     final query = <String, dynamic>{'page': normalizedPage};
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
+    }
+    if (normalizedStatus == 'active' || normalizedStatus == 'inactive') {
+      query['status'] = normalizedStatus;
     }
     final response = await get(ApiConstants.liststaff, queryParameters: query);
     final root = _normalizeMap(response.data);
@@ -1604,7 +1633,7 @@ class ApiService {
         _readInt(pagePayload?['current_page']) ?? normalizedPage;
     final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
     final total = _readInt(pagePayload?['total']) ?? items.length;
-    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final resolvedPerPage = _readInt(pagePayload?['per_page']) ?? items.length;
     final hasNextPage =
         pagePayload?['next_page_url'] != null || currentPage < lastPage;
 
@@ -1613,7 +1642,7 @@ class ApiService {
       currentPage: currentPage,
       lastPage: lastPage,
       total: total,
-      perPage: perPage,
+      perPage: resolvedPerPage,
       hasNextPage: hasNextPage,
     );
   }
@@ -1686,12 +1715,22 @@ class ApiService {
   Future<ClientListPageResult> getClientsListPage({
     int page = 1,
     String? search,
+    String? status,
+    int perPage = 25,
   }) async {
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedSearch = (search ?? '').trim();
-    final query = <String, dynamic>{'page': normalizedPage};
+    final normalizedStatus = (status ?? '').trim().toLowerCase();
+    final normalizedPerPage = perPage < 1 ? 25 : perPage;
+    final query = <String, dynamic>{
+      'page': normalizedPage,
+      'per_page': normalizedPerPage,
+    };
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
+    }
+    if (normalizedStatus == 'active' || normalizedStatus == 'inactive') {
+      query['status'] = normalizedStatus;
     }
     final response = await get(ApiConstants.clients, queryParameters: query);
     final root = _normalizeMap(response.data);
@@ -1736,7 +1775,7 @@ class ApiService {
         _readInt(pagePayload?['current_page']) ?? normalizedPage;
     final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
     final total = _readInt(pagePayload?['total']) ?? items.length;
-    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final resolvedPerPage = _readInt(pagePayload?['per_page']) ?? items.length;
     final hasNextPage =
         pagePayload?['next_page_url'] != null || currentPage < lastPage;
 
@@ -1745,7 +1784,7 @@ class ApiService {
       currentPage: currentPage,
       lastPage: lastPage,
       total: total,
-      perPage: perPage,
+      perPage: resolvedPerPage,
       hasNextPage: hasNextPage,
     );
   }
@@ -2279,12 +2318,23 @@ class ApiService {
   /// Loads client issues and form option data from the index endpoint.
   Future<ClientIssueIndexData> getClientIssuesIndexData({
     String? search,
+    String? status,
+    int page = 1,
+    int perPage = 10,
   }) async {
+    final normalizedPage = page < 1 ? 1 : page;
+    final normalizedPerPage = perPage.clamp(1, 100);
     final query = await _resolveClientIssueQueryParameters();
     final normalizedSearch = (search ?? '').trim();
+    final normalizedStatus = (status ?? '').trim().toLowerCase();
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
     }
+    if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
+    }
+    query['page'] = normalizedPage;
+    query['per_page'] = normalizedPerPage;
     Response response;
     try {
       response = await get(
@@ -2338,6 +2388,26 @@ class ApiService {
       }
     }
 
+    final root = _normalizeMap(response.data);
+    final nestedData = _normalizeLooseMap(root['data']);
+    final paginationSource = nestedData.isNotEmpty ? nestedData : root;
+    final currentPage =
+        _readInt(paginationSource['current_page'] ?? paginationSource['page']) ??
+        normalizedPage;
+    final lastPage =
+        _readInt(
+          paginationSource['last_page'] ??
+              paginationSource['total_pages'] ??
+              paginationSource['pages'],
+        ) ??
+        currentPage;
+    final total =
+        _readInt(paginationSource['total'] ?? paginationSource['total_count']) ??
+        records.length;
+    final resolvedPerPage =
+        _readInt(paginationSource['per_page'] ?? paginationSource['limit']) ??
+        normalizedPerPage;
+
     return ClientIssueIndexData(
       issues: records.map(ClientIssueModel.fromJson).toList(),
       projects: projects
@@ -2348,6 +2418,25 @@ class ApiService {
           .map(ClientIssueSelectOption.customerFromJson)
           .where((entry) => entry.id.trim().isNotEmpty)
           .toList(),
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: resolvedPerPage,
+    );
+  }
+
+  /// Loads paginated client issues with API-side filters.
+  Future<ClientIssueIndexData> getClientIssuesPageData({
+    String? search,
+    String? status,
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    return getClientIssuesIndexData(
+      search: search,
+      status: status,
+      page: page,
+      perPage: perPage,
     );
   }
 
@@ -2455,9 +2544,80 @@ class ApiService {
     }
 
     final path = ApiConstants.createClientIssueTask.replaceFirst(
-      '{id}',
+      '{clientIssue}',
       normalizedIssueId,
     );
+
+    final formData = await _buildClientIssueTaskFormData(request);
+
+    final response = await postForm(path, data: formData);
+    final source = _extractClientIssueTaskSource(response.data);
+    if (source is Map) {
+      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
+    }
+    return null;
+  }
+
+  /// Loads a task detail under a specific client issue.
+  Future<ClientIssueTaskModel> getClientIssueTaskDetail({
+    required String issueId,
+    required String taskId,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    final normalizedTaskId = taskId.trim();
+    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
+      throw Exception('Invalid issue/task id.');
+    }
+
+    final path = ApiConstants.clientIssueTaskDetail
+        .replaceFirst('{issueId}', normalizedIssueId)
+        .replaceFirst('{taskId}', normalizedTaskId);
+    final response = await get(path);
+    final source = _extractClientIssueTaskSource(response.data);
+    if (source is Map) {
+      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
+    }
+    throw Exception('Unexpected task detail response format.');
+  }
+
+  /// Updates a task under a specific client issue.
+  Future<ClientIssueTaskModel> updateClientIssueTask({
+    required String issueId,
+    required String taskId,
+    required CreateClientIssueTaskRequest request,
+  }) async {
+    final normalizedIssueId = issueId.trim();
+    final normalizedTaskId = taskId.trim();
+    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
+      throw Exception('Invalid issue/task id.');
+    }
+
+    final normalizedTitle = request.title.trim();
+    if (normalizedTitle.isEmpty) {
+      throw Exception('Task title is required.');
+    }
+
+    final path = ApiConstants.clientIssueTaskDetail
+        .replaceFirst('{issueId}', normalizedIssueId)
+        .replaceFirst('{taskId}', normalizedTaskId);
+
+    final formData = await _buildClientIssueTaskFormData(request);
+    formData.fields.add(const MapEntry('_method', 'PUT'));
+    final response = await postForm(path, data: formData);
+    final source = _extractClientIssueTaskSource(response.data);
+    if (source is Map) {
+      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
+    }
+    throw Exception('Unexpected task update response format.');
+  }
+
+  Future<FormData> _buildClientIssueTaskFormData(
+    CreateClientIssueTaskRequest request,
+  ) async {
+    final normalizedTitle = request.title.trim();
+    if (normalizedTitle.isEmpty) {
+      throw Exception('Task title is required.');
+    }
 
     final formData = FormData();
     formData.fields.add(MapEntry('title', normalizedTitle));
@@ -2496,6 +2656,42 @@ class ApiService {
       );
     }
 
+    final normalizedDueTime = request.dueTime?.trim() ?? '';
+    if (normalizedDueTime.isNotEmpty) {
+      formData.fields.add(MapEntry('due_time', normalizedDueTime));
+    }
+
+    if (request.reminderDate != null) {
+      formData.fields.add(
+        MapEntry('reminder_date', _formatApiDate(request.reminderDate!)),
+      );
+    }
+
+    final normalizedReminderTime = request.reminderTime?.trim() ?? '';
+    if (normalizedReminderTime.isNotEmpty) {
+      formData.fields.add(MapEntry('reminder_time', normalizedReminderTime));
+    }
+
+    if (request.checklistData.isNotEmpty) {
+      final checklist = request.checklistData
+          .map((entry) => entry.trim())
+          .where((entry) => entry.isNotEmpty)
+          .toList(growable: false);
+      if (checklist.isNotEmpty) {
+        formData.fields.add(MapEntry('checklist_data', jsonEncode(checklist)));
+      }
+    }
+
+    if (request.labelsData.isNotEmpty) {
+      final labels = request.labelsData
+          .map((entry) => entry.trim())
+          .where((entry) => entry.isNotEmpty)
+          .toList(growable: false);
+      if (labels.isNotEmpty) {
+        formData.fields.add(MapEntry('labels_data', jsonEncode(labels)));
+      }
+    }
+
     for (final rawPath in request.attachmentPaths) {
       final filePath = rawPath.trim();
       if (filePath.isEmpty) continue;
@@ -2508,75 +2704,7 @@ class ApiService {
       );
     }
 
-    final response = await postForm(path, data: formData);
-    final source = _extractClientIssueTaskSource(response.data);
-    if (source is Map) {
-      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
-    }
-    return null;
-  }
-
-  /// Loads a task detail under a specific client issue.
-  Future<ClientIssueTaskModel> getClientIssueTaskDetail({
-    required String issueId,
-    required String taskId,
-  }) async {
-    final normalizedIssueId = issueId.trim();
-    final normalizedTaskId = taskId.trim();
-    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
-      throw Exception('Invalid issue/task id.');
-    }
-
-    final path = ApiConstants.clientIssueTaskDetail
-        .replaceFirst('{issueId}', normalizedIssueId)
-        .replaceFirst('{taskId}', normalizedTaskId);
-    final response = await get(path);
-    final source = _extractClientIssueTaskSource(response.data);
-    if (source is Map) {
-      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
-    }
-    throw Exception('Unexpected task detail response format.');
-  }
-
-  /// Updates a task under a specific client issue.
-  Future<ClientIssueTaskModel> updateClientIssueTask({
-    required String issueId,
-    required String taskId,
-    required String title,
-    String? description,
-    String? status,
-    String? priority,
-    String? assignedTo,
-  }) async {
-    final normalizedIssueId = issueId.trim();
-    final normalizedTaskId = taskId.trim();
-    if (normalizedIssueId.isEmpty || normalizedTaskId.isEmpty) {
-      throw Exception('Invalid issue/task id.');
-    }
-
-    final normalizedTitle = title.trim();
-    if (normalizedTitle.isEmpty) {
-      throw Exception('Task title is required.');
-    }
-
-    final path = ApiConstants.clientIssueTaskDetail
-        .replaceFirst('{issueId}', normalizedIssueId)
-        .replaceFirst('{taskId}', normalizedTaskId);
-
-    final payload = <String, dynamic>{
-      'title': normalizedTitle,
-      'description': (description ?? '').trim(),
-      'status': _normalizeClientIssueTaskStatus(status),
-      'priority': _normalizeClientIssueTaskPriority(priority),
-      'assigned_to': (assignedTo ?? '').trim(),
-    };
-
-    final response = await put(path, data: payload);
-    final source = _extractClientIssueTaskSource(response.data);
-    if (source is Map) {
-      return ClientIssueTaskModel.fromJson(_normalizeMap(source));
-    }
-    throw Exception('Unexpected task update response format.');
+    return formData;
   }
 
   /// Deletes a task under a specific client issue.
@@ -4086,7 +4214,10 @@ class ApiService {
       query['status'] = normalizedStatus;
     }
     final path = ApiConstants.stafftasks.replaceFirst('{id}', id);
-    final response = await get(path, queryParameters: query.isEmpty ? null : query);
+    final response = await get(
+      path,
+      queryParameters: query.isEmpty ? null : query,
+    );
     return _normalizeList(response.data);
   }
 
@@ -4259,6 +4390,7 @@ class ApiService {
     List<String> assigneeIds = const [],
     List<String> followerIds = const [],
     List<String> tags = const [],
+    List<String> attachmentPaths = const [],
   }) async {
     final payload = _buildCreateTaskPayload(
       title: title,
@@ -4272,7 +4404,11 @@ class ApiService {
       followerIds: followerIds,
       tags: tags,
     );
-    final response = await post(ApiConstants.createTask, data: payload);
+    final formData = await _buildTaskFormData(
+      payload: payload,
+      attachmentPaths: attachmentPaths,
+    );
+    final response = await postForm(ApiConstants.createTask, data: formData);
     final data = response.data;
 
     if (data == null) {
@@ -4295,23 +4431,27 @@ class ApiService {
     List<String> assigneeIds = const [],
     List<String> followerIds = const [],
     List<String> tags = const [],
+    List<String> attachmentPaths = const [],
   }) async {
     final path = ApiConstants.updateTask.replaceFirst('{id}', id);
-    await put(
-      path,
-      data: _buildUpdateTaskPayload(
-        title: title,
-        description: description,
-        status: status,
-        priority: priority,
-        projectId: projectId,
-        startDate: startDate,
-        deadline: deadline,
-        assigneeIds: assigneeIds,
-        followerIds: followerIds,
-        tags: tags,
-      ),
+    final payload = _buildUpdateTaskPayload(
+      title: title,
+      description: description,
+      status: status,
+      priority: priority,
+      projectId: projectId,
+      startDate: startDate,
+      deadline: deadline,
+      assigneeIds: assigneeIds,
+      followerIds: followerIds,
+      tags: tags,
     );
+    final updatePayload = <String, dynamic>{...payload, '_method': 'PUT'};
+    final formData = await _buildTaskFormData(
+      payload: updatePayload,
+      attachmentPaths: attachmentPaths,
+    );
+    await postForm(path, data: formData);
   }
 
   /// Deletes a task record by id.
@@ -4328,7 +4468,10 @@ class ApiService {
     TimeOfDay? taskTime,
     required int repeatInterval,
     required String repeatUnit,
+    List<String> repeatDays = const [],
     TimeOfDay? reminderTime,
+    bool reminderEmail = false,
+    bool reminderWhatsapp = false,
     required DateTime startsOn,
     required String endsType,
     DateTime? endsOn,
@@ -4342,7 +4485,10 @@ class ApiService {
       taskTime: taskTime,
       repeatInterval: repeatInterval,
       repeatUnit: repeatUnit,
+      repeatDays: repeatDays,
       reminderTime: reminderTime,
+      reminderEmail: reminderEmail,
+      reminderWhatsapp: reminderWhatsapp,
       startsOn: startsOn,
       endsType: endsType,
       endsOn: endsOn,
@@ -4370,13 +4516,15 @@ class ApiService {
     TimeOfDay? taskTime,
     required int repeatInterval,
     required String repeatUnit,
+    List<String> repeatDays = const [],
     TimeOfDay? reminderTime,
+    bool reminderEmail = false,
+    bool reminderWhatsapp = false,
     required DateTime startsOn,
     required String endsType,
     DateTime? endsOn,
     int? endsAfter,
     List<String> attachmentPaths = const [],
-    List<String> existingAttachmentUrls = const [],
   }) async {
     final path = ApiConstants.edittodo.replaceFirst('{id}', id);
     final payload = _buildTodoPayload(
@@ -4386,23 +4534,21 @@ class ApiService {
       taskTime: taskTime,
       repeatInterval: repeatInterval,
       repeatUnit: repeatUnit,
+      repeatDays: repeatDays,
       reminderTime: reminderTime,
+      reminderEmail: reminderEmail,
+      reminderWhatsapp: reminderWhatsapp,
       startsOn: startsOn,
       endsType: endsType,
       endsOn: endsOn,
       endsAfter: endsAfter,
     );
-    final normalizedExistingUrls = existingAttachmentUrls
-        .map((url) => url.trim())
-        .where((url) => url.isNotEmpty)
-        .toList();
     final updatePayload = <String, dynamic>{...payload, '_method': 'PUT'};
     await postForm(
       path,
       data: await _buildTodoFormData(
         payload: updatePayload,
         attachmentPaths: attachmentPaths,
-        existingAttachmentUrls: normalizedExistingUrls,
       ),
     );
   }
@@ -4717,9 +4863,7 @@ class ApiService {
         final invite = value is bool
             ? value
             : value.toString().trim().toLowerCase() == 'true';
-        formData.fields.add(
-          MapEntry('send_invite_mail', invite ? '1' : '0'),
-        );
+        formData.fields.add(MapEntry('send_invite_mail', invite ? '1' : '0'));
         return;
       }
       formData.fields.add(MapEntry(key, value.toString()));
@@ -4771,9 +4915,7 @@ class ApiService {
     final authState = normalized == null || normalized.isEmpty
         ? 'missing'
         : _maskAuthorizationHeader('Bearer $normalized');
-    debugPrint(
-      '$label: $authState',
-    );
+    debugPrint('$label: $authState');
   }
 
   bool _isRedirectResponse(int? statusCode) {
@@ -5645,7 +5787,10 @@ class ApiService {
     TimeOfDay? taskTime,
     required int repeatInterval,
     required String repeatUnit,
+    List<String> repeatDays = const [],
     TimeOfDay? reminderTime,
+    bool reminderEmail = false,
+    bool reminderWhatsapp = false,
     required DateTime startsOn,
     required String endsType,
     DateTime? endsOn,
@@ -5657,6 +5802,12 @@ class ApiService {
       'task_date': _formatApiDate(taskDate),
       'repeat_interval': repeatInterval,
       'repeat_unit': repeatUnit.trim().toLowerCase(),
+      'repeat_days': repeatDays
+          .map((day) => day.trim().toLowerCase())
+          .where((day) => day.isNotEmpty)
+          .toList(growable: false),
+      'reminder_email': reminderEmail ? 1 : 0,
+      'reminder_whatsapp': reminderWhatsapp ? 1 : 0,
       'starts_on': _formatApiDate(startsOn),
       'ends_type': normalizedEndsType,
     };
@@ -5689,7 +5840,6 @@ class ApiService {
   Future<FormData> _buildTodoFormData({
     required Map<String, dynamic> payload,
     required List<String> attachmentPaths,
-    List<String>? existingAttachmentUrls,
   }) async {
     final formData = FormData();
 
@@ -5709,22 +5859,6 @@ class ApiService {
 
       formData.fields.add(MapEntry(key, value.toString()));
     });
-
-    if (existingAttachmentUrls != null) {
-      if (existingAttachmentUrls.isEmpty) {
-        formData.fields.add(const MapEntry('existing_attachments', ''));
-        formData.fields.add(const MapEntry('existing_attachment_urls', ''));
-        formData.fields.add(const MapEntry('existing_attachments[]', ''));
-        formData.fields.add(const MapEntry('existing_attachment_urls[]', ''));
-      } else {
-        for (final url in existingAttachmentUrls) {
-          formData.fields.add(MapEntry('existing_attachments', url));
-          formData.fields.add(MapEntry('existing_attachment_urls', url));
-          formData.fields.add(MapEntry('existing_attachments[]', url));
-          formData.fields.add(MapEntry('existing_attachment_urls[]', url));
-        }
-      }
-    }
 
     for (final path in attachmentPaths) {
       final fileName = path.split(RegExp(r'[\\/]')).last;
@@ -5864,6 +5998,46 @@ class ApiService {
     );
   }
 
+  Future<FormData> _buildTaskFormData({
+    required Map<String, dynamic> payload,
+    required List<String> attachmentPaths,
+  }) async {
+    final formData = FormData();
+
+    payload.forEach((key, value) {
+      if (value == null) {
+        return;
+      }
+
+      if (value is Iterable) {
+        for (final item in value) {
+          if (item != null) {
+            formData.fields.add(MapEntry('$key[]', item.toString()));
+          }
+        }
+        return;
+      }
+
+      formData.fields.add(MapEntry(key, value.toString()));
+    });
+
+    for (final path in attachmentPaths) {
+      final normalizedPath = path.trim();
+      if (normalizedPath.isEmpty) {
+        continue;
+      }
+      final fileName = normalizedPath.split(RegExp(r'[\\/]')).last;
+      formData.files.add(
+        MapEntry(
+          'attach_files[]',
+          await MultipartFile.fromFile(normalizedPath, filename: fileName),
+        ),
+      );
+    }
+
+    return formData;
+  }
+
   String _normalizeTaskStatus(String? status) {
     final normalizedStatus = status?.trim() ?? '';
     if (normalizedStatus.isEmpty) return '';
@@ -5880,6 +6054,9 @@ class ApiService {
         return 'on_hold';
       case 'completed':
         return 'completed';
+      case 'cancelled':
+      case 'canceled':
+        return 'cancelled';
       default:
         return normalizedStatus.toLowerCase().replaceAll(' ', '_');
     }

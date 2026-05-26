@@ -82,7 +82,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
     if (PermissionService.userHas(user, AppPermission.viewProjects) ||
         PermissionService.userHas(user, AppPermission.viewTasks) ||
-        PermissionService.userHas(user, AppPermission.viewRenewals) ||
+        PermissionService.userHasAny(user, const [
+          AppPermission.viewRenewals,
+          AppPermission.viewServices,
+          AppPermission.viewVendorsServices,
+        ]) ||
         PermissionService.userHas(user, AppPermission.viewRaiseIssue)) {
       _loadDashboardSummary();
     }
@@ -149,7 +153,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       _HeaderSection(user: _currentUser),
                       const SizedBox(height: 18),
                       PermissionGate(
-                        permission: AppPermission.viewRenewals,
+                        permission: AppPermission.viewServices,
                         child: Column(
                           children: [
                             _SectionCard(
@@ -165,6 +169,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                      PermissionGate(
+                        permission: AppPermission.viewVendorsServices,
+                        child: Column(
+                          children: [
                             _SectionCard(
                               padding: EdgeInsets.fromLTRB(18, 20, 18, 16),
                               child: _RenewalSection(
@@ -562,10 +573,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return;
     }
 
-    final detailEndpoint = ApiConstants.calendarDetail.replaceFirst(
-      '{id}',
-      id,
-    );
+    final detailEndpoint = ApiConstants.calendarDetail.replaceFirst('{id}', id);
     _logDashboardApiCall('GET', detailEndpoint);
     final detailFuture = _apiService.getCalendarEventDetail(id);
 

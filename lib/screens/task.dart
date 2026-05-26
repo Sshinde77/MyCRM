@@ -1748,34 +1748,39 @@ class _TaskFilterTabs extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: options.map((option) {
-          final selected = value == option;
-          return Padding(
-            padding: const EdgeInsets.only(right: 14),
-            child: InkWell(
-              onTap: onChanged == null ? null : () => onChanged!(option),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: selected
-                    ? BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
-                      )
-                    : null,
-                child: Text(
-                  _formatTaskStatusLabel(option),
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF0B63F6),
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
+        children: options
+            .map((option) {
+              final selected = value == option;
+              return Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: InkWell(
+                  onTap: onChanged == null ? null : () => onChanged!(option),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: selected
+                        ? BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                          )
+                        : null,
+                    child: Text(
+                      _formatTaskStatusLabel(option),
+                      style: AppTextStyles.style(
+                        color: const Color(0xFF0B63F6),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(growable: false),
+              );
+            })
+            .toList(growable: false),
       ),
     );
   }
@@ -1894,10 +1899,7 @@ class _PillBadge extends StatelessWidget {
 }
 
 class _TaskStatusDropdown extends StatelessWidget {
-  const _TaskStatusDropdown({
-    required this.value,
-    required this.onChanged,
-  });
+  const _TaskStatusDropdown({required this.value, required this.onChanged});
 
   final String value;
   final ValueChanged<String> onChanged;
@@ -1944,12 +1946,12 @@ class _TaskStatusDropdown extends StatelessWidget {
                         color: Color(0xFF334155),
                       ),
                       const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _formatTaskStatusLabel(option),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      Expanded(
+                        child: Text(
+                          _formatTaskStatusLabel(option),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),

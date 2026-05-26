@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/vendor_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -24,14 +26,38 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
   late Future<VendorModel> _detailFuture;
   String? _vendorId;
   bool _hasChanges = false;
+  bool _canEditVendor = false;
 
   @override
   void initState() {
     super.initState();
+    _loadPermissions();
     _vendorId =
         widget.vendorId ?? _extractVendorId(widget.vendor ?? Get.arguments);
     _detailFuture = _loadVendorDetail();
     _serviceSearchController.addListener(() => setState(() {}));
+  }
+
+  Future<void> _loadPermissions() async {
+    final values = await Future.wait<bool>([
+      PermissionService.has(AppPermission.viewVendorDetail),
+      PermissionService.has(AppPermission.editVendors),
+    ]);
+    if (!mounted) return;
+    _canEditVendor = values[1];
+    if (!values[0]) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view vendor details.',
+      );
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(false);
+      } else {
+        Get.back();
+      }
+      return;
+    }
+    setState(() {});
   }
 
   Future<VendorModel> _loadVendorDetail() async {
@@ -53,6 +79,10 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
   }
 
   Future<void> _openEditVendor(VendorModel detail) async {
+    if (!_canEditVendor) {
+      AppSnackbar.show('Access denied', 'You do not have permission to edit vendors.');
+      return;
+    }
     final updated = await Get.to<bool>(
       () => VendorFormScreen(vendorId: detail.id, vendor: detail),
     );
@@ -180,7 +210,9 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
                               _PrimaryActionButton(
                                 label: 'Edit',
                                 icon: Icons.edit_outlined,
-                                onTap: () => _openEditVendor(detail),
+                                onTap: _canEditVendor
+                                    ? () => _openEditVendor(detail)
+                                    : null,
                               ),
                               _SecondaryActionButton(
                                 label: 'Back to List',
@@ -301,12 +333,12 @@ class _PrimaryActionButton extends StatelessWidget {
   const _PrimaryActionButton({
     required this.label,
     required this.icon,
-    required this.onTap,
+    this.onTap,
   });
 
   final String label;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

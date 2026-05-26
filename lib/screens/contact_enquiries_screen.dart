@@ -156,7 +156,10 @@ class _ContactEnquiriesScreenState extends State<ContactEnquiriesScreen> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1D6FEA),
                           borderRadius: BorderRadius.circular(10),
@@ -256,7 +259,12 @@ class _ContactEnquiriesScreenState extends State<ContactEnquiriesScreen> {
             ),
             const SizedBox(height: 8),
             if (_isLoading)
-              const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()))
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CircularProgressIndicator(),
+                ),
+              )
             else if (_items.isEmpty)
               AppCard(
                 child: Text(

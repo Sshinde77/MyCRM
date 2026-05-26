@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/app_text_styles.dart';
+import '../core/services/permission_service.dart';
 import '../models/renewal_model.dart';
 import '../providers/renewal_list_provider.dart';
 import '../routes/app_routes.dart';
@@ -60,11 +61,33 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
   DateTime? _appliedFromDate;
   DateTime? _appliedToDate;
   _RenewalFilterOption _selectedFilter = _RenewalFilterOption.all;
+  bool _canCreateService = false;
+  bool _canEditService = false;
+  bool _canDeleteService = false;
+  bool _canViewServiceDetail = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    final values = await Future.wait<bool>([
+      PermissionService.has(AppPermission.createVendorsService),
+      PermissionService.has(AppPermission.editVendorService),
+      PermissionService.has(AppPermission.deleteVendorServices),
+      PermissionService.has(AppPermission.viewVendorsServiceDetail),
+      PermissionService.has(AppPermission.viewVendorsServices),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _canCreateService = values[0];
+      _canEditService = values[1];
+      _canDeleteService = values[2];
+      _canViewServiceDetail = values[3] || values[4];
+    });
   }
 
   @override
@@ -301,6 +324,13 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
   }
 
   Future<void> _openDetail(RenewalModel renewal) async {
+    if (!_canViewServiceDetail) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view vendor service details.',
+      );
+      return;
+    }
     await Get.toNamed(AppRoutes.vendorRenewalDetail, arguments: renewal);
     if (!mounted) {
       return;
@@ -309,6 +339,17 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
   }
 
   Future<void> _openServiceForm({RenewalModel? renewal}) async {
+    final isEdit = renewal != null;
+    final allowed = isEdit ? _canEditService : _canCreateService;
+    if (!allowed) {
+      AppSnackbar.show(
+        'Access denied',
+        isEdit
+            ? 'You do not have permission to edit vendor services.'
+            : 'You do not have permission to create vendor services.',
+      );
+      return;
+    }
     final shouldRefresh = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => VendorRenewalFormScreen(initialRenewal: renewal),
@@ -321,6 +362,13 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
   }
 
   Future<void> _deleteRenewal(RenewalModel renewal) async {
+    if (!_canDeleteService) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to delete vendor services.',
+      );
+      return;
+    }
     final renewalId = renewal.id.trim();
     if (kDebugMode) {
       debugPrint('Vendor renewal delete tapped: id=$renewalId');
@@ -468,7 +516,9 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
                                     SizedBox(height: compact ? 16 : 18),
                                     _AddServiceButton(
                                       compact: compact,
-                                      onTap: () => _openServiceForm(),
+                                      onTap: _canCreateService
+                                          ? () => _openServiceForm()
+                                          : null,
                                     ),
                                     SizedBox(height: compact ? 16 : 18),
                                   ],
@@ -484,9 +534,8 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
                           isLoading: provider.isLoading,
                           errorMessage: provider.errorMessage,
                           hasActiveFilters: _hasActiveFilters,
-                          onRetry: () => context
-                              .read<RenewalListProvider>()
-                              .loadRenewals(
+                          onRetry: () =>
+                              context.read<RenewalListProvider>().loadRenewals(
                                 forceRefresh: true,
                                 page: 1,
                                 search: _appliedSearchTerm,
@@ -495,9 +544,19 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
                                 dateTo: _selectedDateToQuery,
                               ),
                           onView: (renewal) => _openDetail(renewal),
-                          onEdit: (renewal) =>
-                              _openServiceForm(renewal: renewal),
-                          onDelete: (renewal) => _deleteRenewal(renewal),
+                          onEdit: _canEditService
+                              ? (renewal) =>
+                                    _openServiceForm(renewal: renewal)
+                              : (renewal) => AppSnackbar.show(
+                                  'Access denied',
+                                  'You do not have permission to edit vendor services.',
+                                ),
+                          onDelete: _canDeleteService
+                              ? (renewal) => _deleteRenewal(renewal)
+                              : (renewal) => AppSnackbar.show(
+                                  'Access denied',
+                                  'You do not have permission to delete vendor services.',
+                                ),
                         ),
                         SliverPadding(
                           padding: EdgeInsets.fromLTRB(
@@ -1330,7 +1389,7 @@ class _AddServiceButton extends StatelessWidget {
   const _AddServiceButton({required this.compact, required this.onTap});
 
   final bool compact;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

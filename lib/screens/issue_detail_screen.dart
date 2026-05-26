@@ -7,6 +7,7 @@ import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/client_issue_model.dart';
 import 'package:mycrm/models/client_issue_task_model.dart';
+import 'package:mycrm/screens/document_preview_screen.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 
@@ -663,8 +664,9 @@ class _AssignmentsCompactCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final team = _valueOrFallback(issue.assignedTeam, 'Unassigned');
-    final date = issue.displayDate;
+    final assignments = issue.teamAssignments;
+    final fallbackTeam = _valueOrFallback(issue.assignedTeam, 'Unassigned');
+    final fallbackDate = issue.displayDate;
     final compact = MediaQuery.of(context).size.width < 360;
 
     return Column(
@@ -679,47 +681,83 @@ class _AssignmentsCompactCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F1FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFD1E0F7)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A0F172A),
-                blurRadius: 10,
-                offset: Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: _AssignmentHeroChip(
-                  icon: Icons.groups_rounded,
-                  label: 'Assigned Team',
-                  value: team,
-                  iconColor: const Color(0xFF1D6FEA),
-                  iconBg: const Color(0xFFE8F1FF),
-                  compact: compact,
+        if (assignments.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F1FF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFD1E0F7)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _AssignmentHeroChip(
+                    icon: Icons.groups_rounded,
+                    label: 'Team Name',
+                    value: fallbackTeam,
+                    iconColor: const Color(0xFF1D6FEA),
+                    iconBg: const Color(0xFFE8F1FF),
+                    compact: compact,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _AssignmentHeroChip(
-                  icon: Icons.event_rounded,
-                  label: 'Assigned Date',
-                  value: date,
-                  iconColor: const Color(0xFF0F766E),
-                  iconBg: const Color(0xFFE8F7F2),
-                  compact: compact,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _AssignmentHeroChip(
+                    icon: Icons.event_rounded,
+                    label: 'Assigned Date',
+                    value: fallbackDate,
+                    iconColor: const Color(0xFF0F766E),
+                    iconBg: const Color(0xFFE8F7F2),
+                    compact: compact,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          )
+        else
+          Column(
+            children: assignments
+                .map(
+                  (entry) => Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F1FF),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFD1E0F7)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _AssignmentHeroChip(
+                            icon: Icons.groups_rounded,
+                            label: 'Team Name',
+                            value: entry.displayTeamName,
+                            iconColor: const Color(0xFF1D6FEA),
+                            iconBg: const Color(0xFFE8F1FF),
+                            compact: compact,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _AssignmentHeroChip(
+                            icon: Icons.event_rounded,
+                            label: 'Assigned Date',
+                            value: entry.displayAssignedDate,
+                            iconColor: const Color(0xFF0F766E),
+                            iconBg: const Color(0xFFE8F7F2),
+                            compact: compact,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(growable: false),
           ),
-        ),
       ],
     );
   }
@@ -1382,44 +1420,66 @@ class _TaskDetailDialogState extends State<_TaskDetailDialog> {
                     )
                   else
                     ...task.attachments.map((attachment) {
+                      final previewUrl = attachment.previewUrl;
+                      final canPreview = previewUrl.isNotEmpty;
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 6),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE6ECF5)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                attachment.displayName,
-                                style: AppTextStyles.style(
-                                  color: textMain,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              if (attachment.path.trim().isNotEmpty &&
-                                  attachment.path.trim() !=
-                                      attachment.displayName) ...[
-                                const SizedBox(height: 2),
+                        child: InkWell(
+                          onTap: canPreview
+                              ? () => _openTaskAttachment(
+                                    attachment.displayName,
+                                    previewUrl,
+                                  )
+                              : null,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFE6ECF5)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  attachment.path.trim(),
+                                  attachment.displayName,
                                   style: AppTextStyles.style(
-                                    color: textSec,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
+                                    color: textMain,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
+                                if (attachment.path.trim().isNotEmpty &&
+                                    attachment.path.trim() !=
+                                        attachment.displayName) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    attachment.path.trim(),
+                                    style: AppTextStyles.style(
+                                      color: textSec,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                                if (canPreview) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Tap to preview',
+                                    style: AppTextStyles.style(
+                                      color: const Color(0xFF475569),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
                       );
@@ -1448,6 +1508,106 @@ class _TaskDetailDialogState extends State<_TaskDetailDialog> {
       return raw.substring('Exception: '.length);
     }
     return raw.isEmpty ? 'Please try again.' : raw;
+  }
+
+  Future<void> _openTaskAttachment(String title, String source) async {
+    final normalized = source.trim();
+    if (normalized.isEmpty) {
+      AppSnackbar.show('Notice', 'Attachment URL is missing.');
+      return;
+    }
+
+    if (_looksLikeImage(normalized)) {
+      _showImagePreview(title, normalized);
+      return;
+    }
+
+    await DocumentPreviewScreen.openDocument(context, fileUrl: normalized);
+  }
+
+  bool _looksLikeImage(String value) {
+    final uri = Uri.tryParse(value);
+    final source = (uri?.path ?? value).split('?').first.split('#').first;
+    final dot = source.lastIndexOf('.');
+    if (dot < 0 || dot == source.length - 1) return false;
+    final extension = source.substring(dot + 1).toLowerCase();
+    const imageExtensions = {
+      'jpg',
+      'jpeg',
+      'png',
+      'gif',
+      'webp',
+      'bmp',
+      'heic',
+      'heif',
+      'svg',
+    };
+    return imageExtensions.contains(extension);
+  }
+
+  void _showImagePreview(String title, String imageUrl) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 900, maxHeight: 700),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 8, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF0F172A),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              Expanded(
+                child: InteractiveViewer(
+                  minScale: 0.8,
+                  maxScale: 4,
+                  child: Center(
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Text(
+                          'Unable to preview this image.',
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF64748B),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   String _formatDateTime(DateTime? value) {
@@ -1513,14 +1673,20 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
   final ApiService _apiService = ApiService.instance;
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _assignedToController = TextEditingController();
   final _checklistController = TextEditingController();
+  final _labelsController = TextEditingController();
+  final List<String> _checklistItems = <String>[];
+  final List<String> _labelItems = <String>[];
   List<PlatformFile> _attachments = const [];
   String _status = 'todo';
   String _priority = 'medium';
   String? _inlineError;
   DateTime? _startDate;
   DateTime? _dueDate;
+  DateTime? _reminderDate;
+  TimeOfDay? _dueTime;
+  TimeOfDay? _reminderTime;
+  bool _isLoadingInitialData = false;
   bool _isSaving = false;
   static const int _maxAttachmentBytes = 10 * 1024 * 1024;
 
@@ -1529,22 +1695,16 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     super.initState();
     final initialTask = widget.initialTask;
     if (initialTask == null) return;
-
-    _titleController.text = initialTask.title;
-    _descriptionController.text = initialTask.description;
-    _assignedToController.text = initialTask.assignedTo;
-    _status = _normalizeDialogStatus(initialTask.status);
-    _priority = _normalizeDialogPriority(initialTask.priority);
-    _startDate = _tryParseDate(initialTask.startDate);
-    _dueDate = _tryParseDate(initialTask.dueDate);
+    _applyTaskToForm(initialTask);
+    _loadInitialTaskDetail(initialTask.id);
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _assignedToController.dispose();
     _checklistController.dispose();
+    _labelsController.dispose();
     super.dispose();
   }
 
@@ -1553,6 +1713,15 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       setState(() => _inlineError = 'Please enter task title.');
       return;
     }
+
+    _addMultipleValuesFromInput(
+      controller: _checklistController,
+      values: _checklistItems,
+    );
+    _addMultipleValuesFromInput(
+      controller: _labelsController,
+      values: _labelItems,
+    );
 
     if (_isSaving) return;
     setState(() {
@@ -1570,9 +1739,13 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
             description: _descriptionController.text.trim(),
             status: _status,
             priority: _priority,
-            assignedTo: _assignedToController.text.trim(),
             startDate: _startDate,
             dueDate: _dueDate,
+            dueTime: _formatApiTime(_dueTime),
+            reminderDate: _reminderDate,
+            reminderTime: _formatApiTime(_reminderTime),
+            checklistData: List<String>.from(_checklistItems),
+            labelsData: List<String>.from(_labelItems),
             attachmentPaths: _attachments
                 .map((entry) => entry.path?.trim() ?? '')
                 .where((entry) => entry.isNotEmpty)
@@ -1583,11 +1756,23 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
         await _apiService.updateClientIssueTask(
           issueId: widget.issueId,
           taskId: initialTask.id,
-          title: _titleController.text.trim(),
-          description: _descriptionController.text.trim(),
-          status: _status,
-          priority: _priority,
-          assignedTo: _assignedToController.text.trim(),
+          request: CreateClientIssueTaskRequest(
+            title: _titleController.text.trim(),
+            description: _descriptionController.text.trim(),
+            status: _status,
+            priority: _priority,
+            startDate: _startDate,
+            dueDate: _dueDate,
+            dueTime: _formatApiTime(_dueTime),
+            reminderDate: _reminderDate,
+            reminderTime: _formatApiTime(_reminderTime),
+            checklistData: List<String>.from(_checklistItems),
+            labelsData: List<String>.from(_labelItems),
+            attachmentPaths: _attachments
+                .map((entry) => entry.path?.trim() ?? '')
+                .where((entry) => entry.isNotEmpty)
+                .toList(growable: false),
+          ),
         );
       }
       if (!mounted) return;
@@ -1638,16 +1823,179 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
     onPicked(picked);
   }
 
+  Future<void> _loadInitialTaskDetail(String taskId) async {
+    final normalizedTaskId = taskId.trim();
+    if (normalizedTaskId.isEmpty) return;
+
+    setState(() {
+      _isLoadingInitialData = true;
+    });
+    try {
+      final detail = await _apiService.getClientIssueTaskDetail(
+        issueId: widget.issueId,
+        taskId: normalizedTaskId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _applyTaskToForm(detail);
+      });
+    } catch (_) {
+      // Keep fallback values from initial task list item.
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingInitialData = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickTime({
+    required TimeOfDay? currentValue,
+    required ValueChanged<TimeOfDay> onPicked,
+  }) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: currentValue ?? TimeOfDay.now(),
+    );
+    if (picked == null || !mounted) return;
+    onPicked(picked);
+  }
+
   String _displayDate(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day-$month-${date.year}';
   }
 
+  String _displayTime(TimeOfDay value) {
+    final hh = value.hour.toString().padLeft(2, '0');
+    final mm = value.minute.toString().padLeft(2, '0');
+    return '$hh:$mm';
+  }
+
+  String? _formatApiTime(TimeOfDay? value) {
+    if (value == null) return null;
+    final hh = value.hour.toString().padLeft(2, '0');
+    final mm = value.minute.toString().padLeft(2, '0');
+    return '$hh:$mm:00';
+  }
+
+  List<String> _splitCsvOrLines(String value) {
+    return value
+        .split(RegExp(r'[\n,]'))
+        .map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  void _addChecklistItems() {
+    _addItems(
+      controller: _checklistController,
+      values: _checklistItems,
+      duplicateText: 'Checklist item already added.',
+    );
+  }
+
+  void _addLabelItems() {
+    _addItems(
+      controller: _labelsController,
+      values: _labelItems,
+      duplicateText: 'Label already added.',
+    );
+  }
+
+  void _addItems({
+    required TextEditingController controller,
+    required List<String> values,
+    required String duplicateText,
+  }) {
+    final newItems = _splitCsvOrLines(controller.text);
+    if (newItems.isEmpty) return;
+
+    final existing = values.map((value) => value.toLowerCase()).toSet();
+    var duplicateFound = false;
+
+    for (final item in newItems) {
+      final normalized = item.toLowerCase();
+      if (existing.contains(normalized)) {
+        duplicateFound = true;
+        continue;
+      }
+      values.add(item);
+      existing.add(normalized);
+    }
+
+    controller.clear();
+    setState(() {
+      _inlineError = duplicateFound ? duplicateText : null;
+    });
+  }
+
+  void _addMultipleValuesFromInput({
+    required TextEditingController controller,
+    required List<String> values,
+  }) {
+    final newItems = _splitCsvOrLines(controller.text);
+    if (newItems.isEmpty) return;
+
+    final existing = values.map((value) => value.toLowerCase()).toSet();
+    for (final item in newItems) {
+      final normalized = item.toLowerCase();
+      if (existing.contains(normalized)) continue;
+      values.add(item);
+      existing.add(normalized);
+    }
+    controller.clear();
+  }
+
+  void _removeChecklistItem(String value) {
+    setState(() {
+      _checklistItems.remove(value);
+    });
+  }
+
+  void _removeLabelItem(String value) {
+    setState(() {
+      _labelItems.remove(value);
+    });
+  }
+
+  void _applyTaskToForm(ClientIssueTaskModel task) {
+    _titleController.text = task.title;
+    _descriptionController.text = task.description;
+    _status = _normalizeDialogStatus(task.status);
+    _priority = _normalizeDialogPriority(task.priority);
+    _startDate = _tryParseDate(task.startDate);
+    _dueDate = _tryParseDate(task.dueDate);
+    _dueTime = _parseApiTime(task.dueTime);
+    _reminderDate = _tryParseDate(task.reminderDate);
+    _reminderTime = _parseApiTime(task.reminderTime);
+
+    _checklistItems
+      ..clear()
+      ..addAll(task.checklistData);
+    _labelItems
+      ..clear()
+      ..addAll(task.labelsData);
+  }
+
   DateTime? _tryParseDate(String value) {
     final normalized = value.trim();
     if (normalized.isEmpty) return null;
     return DateTime.tryParse(normalized);
+  }
+
+  TimeOfDay? _parseApiTime(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return null;
+    final segments = normalized.split(':');
+    if (segments.length < 2) return null;
+    final hh = int.tryParse(segments[0]);
+    final mm = int.tryParse(segments[1]);
+    if (hh == null || mm == null) return null;
+    if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+    return TimeOfDay(hour: hh, minute: mm);
   }
 
   String _normalizeDialogStatus(String value) {
@@ -1770,6 +2118,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_isLoadingInitialData) ...[
+                      const LinearProgressIndicator(minHeight: 2),
+                      const SizedBox(height: 10),
+                    ],
                     _TaskFormLabel('Title', required: true),
                     const SizedBox(height: 6),
                     _TaskTextField(
@@ -1800,13 +2152,6 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                         items: const ['low', 'medium', 'high', 'critical'],
                         onChanged: (value) => setState(() => _priority = value),
                       ),
-                    ),
-                    SizedBox(height: compact ? 14 : 16),
-                    const _TaskFormLabel('Assigned To'),
-                    const SizedBox(height: 6),
-                    _TaskTextField(
-                      controller: _assignedToController,
-                      hint: 'Enter staff id',
                     ),
                     SizedBox(height: compact ? 16 : 18),
                     _TaskPanel(
@@ -1843,7 +2188,59 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                               );
                             },
                           ),
-                          _TaskDateInput(label: 'Time', hint: '--:--'),
+                          _TaskDateInput(
+                            label: 'Due Time',
+                            hint: _dueTime == null
+                                ? '--:--'
+                                : _displayTime(_dueTime!),
+                            onTap: () {
+                              _pickTime(
+                                currentValue: _dueTime,
+                                onPicked: (value) => setState(() {
+                                  _dueTime = value;
+                                }),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: compact ? 12 : 14),
+                    _TaskPanel(
+                      icon: Icons.alarm_rounded,
+                      title: 'Reminder',
+                      child: _ResponsiveTriple(
+                        compact: compact,
+                        children: [
+                          _TaskDateInput(
+                            label: 'Reminder Date',
+                            hint: _reminderDate == null
+                                ? 'dd-mm-yyyy'
+                                : _displayDate(_reminderDate!),
+                            onTap: () {
+                              _pickDate(
+                                currentValue: _reminderDate,
+                                onPicked: (value) => setState(() {
+                                  _reminderDate = value;
+                                }),
+                              );
+                            },
+                          ),
+                          _TaskDateInput(
+                            label: 'Reminder Time',
+                            hint: _reminderTime == null
+                                ? '--:--'
+                                : _displayTime(_reminderTime!),
+                            onTap: () {
+                              _pickTime(
+                                currentValue: _reminderTime,
+                                onPicked: (value) => setState(() {
+                                  _reminderTime = value;
+                                }),
+                              );
+                            },
+                          ),
+                          const SizedBox.shrink(),
                         ],
                       ),
                     ),
@@ -1853,7 +2250,22 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                       title: 'Checklist',
                       child: _TaskInlineAddField(
                         controller: _checklistController,
-                        hint: 'Add a checklist item',
+                        hint: 'Add checklist item',
+                        values: _checklistItems,
+                        onAdd: _addChecklistItems,
+                        onRemove: _removeChecklistItem,
+                      ),
+                    ),
+                    SizedBox(height: compact ? 12 : 14),
+                    _TaskPanel(
+                      icon: Icons.label_outline_rounded,
+                      title: 'Labels',
+                      child: _TaskInlineAddField(
+                        controller: _labelsController,
+                        hint: 'Add label',
+                        values: _labelItems,
+                        onAdd: _addLabelItems,
+                        onRemove: _removeLabelItem,
                       ),
                     ),
                     SizedBox(height: compact ? 12 : 14),
@@ -2280,11 +2692,17 @@ class _TaskInlineAddField extends StatelessWidget {
   const _TaskInlineAddField({
     required this.controller,
     required this.hint,
+    required this.values,
+    required this.onAdd,
+    required this.onRemove,
     this.label,
   });
 
   final TextEditingController controller;
   final String hint;
+  final List<String> values;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
   final String? label;
 
   @override
@@ -2299,7 +2717,7 @@ class _TaskInlineAddField extends StatelessWidget {
         SizedBox(
           height: 38,
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: onAdd,
             icon: const Icon(Icons.add_rounded, size: 16),
             label: const Text('Add'),
             style: OutlinedButton.styleFrom(
@@ -2315,16 +2733,49 @@ class _TaskInlineAddField extends StatelessWidget {
       ],
     );
 
+    final chips = values.isEmpty
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: values
+                  .map(
+                    (value) => Chip(
+                      label: Text(value),
+                      deleteIcon: const Icon(Icons.close_rounded, size: 16),
+                      onDeleted: () => onRemove(value),
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: const Color(0xFFEAF2FF),
+                      side: const BorderSide(color: Color(0xFFD3E2FD)),
+                      labelStyle: AppTextStyles.style(
+                        color: const Color(0xFF0F2F6B),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          );
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [input, chips],
+    );
+
     if (label == null) {
-      return input;
+      return content;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [_TaskFormLabel(label!), const SizedBox(height: 6), input],
+      children: [_TaskFormLabel(label!), const SizedBox(height: 6), content],
     );
   }
 }
+
 
 InputDecoration _taskInputDecoration(String hint) {
   return InputDecoration(

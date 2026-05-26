@@ -8,7 +8,6 @@ import '../core/services/permission_service.dart';
 import '../core/utils/app_snackbar.dart';
 import '../services/api_service.dart';
 
-
 class GoogleLeadsScreen extends StatefulWidget {
   const GoogleLeadsScreen({super.key});
 
@@ -47,9 +46,13 @@ class _GoogleLeadsScreenState extends State<GoogleLeadsScreen> {
   }
 
   Future<void> _ensureAccessAndLoad() async {
-    final canView = await PermissionService.has(
+    final canViewGoogle = await PermissionService.has(
+      AppPermission.viewGoogleAdsLeads,
+    );
+    final canViewMarketing = await PermissionService.has(
       AppPermission.viewDigitalMarketingLeads,
     );
+    final canView = canViewGoogle || canViewMarketing;
     if (!mounted) return;
     if (!canView) {
       AppSnackbar.show(
@@ -322,7 +325,8 @@ class _GoogleLeadsScreenState extends State<GoogleLeadsScreen> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _loadGoogleLeads(page: currentPage, search: _appliedSearch),
+          onRefresh: () =>
+              _loadGoogleLeads(page: currentPage, search: _appliedSearch),
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 14),
             children: [
@@ -361,9 +365,9 @@ class _GoogleLeadsScreenState extends State<GoogleLeadsScreen> {
                     child: OutlinedButton(
                       onPressed: currentPage > 1
                           ? () => _loadGoogleLeads(
-                                page: currentPage - 1,
-                                search: _appliedSearch,
-                              )
+                              page: currentPage - 1,
+                              search: _appliedSearch,
+                            )
                           : null,
                       child: const Text('Previous'),
                     ),
@@ -376,9 +380,9 @@ class _GoogleLeadsScreenState extends State<GoogleLeadsScreen> {
                     child: OutlinedButton(
                       onPressed: currentPage < safeLastPage
                           ? () => _loadGoogleLeads(
-                                page: currentPage + 1,
-                                search: _appliedSearch,
-                              )
+                              page: currentPage + 1,
+                              search: _appliedSearch,
+                            )
                           : null,
                       child: const Text('Next'),
                     ),

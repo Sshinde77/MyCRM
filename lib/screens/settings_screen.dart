@@ -8,6 +8,7 @@ import 'email_settings_screen.dart';
 import 'general_settings_screen.dart';
 import 'department_settings_screen.dart';
 import 'renewal_settings_screen.dart';
+import 'notification_settings_screen.dart';
 import 'team_settings_screen.dart';
 import '../widgets/common_screen_app_bar.dart';
 
@@ -21,6 +22,10 @@ class SettingsScreen extends StatelessWidget {
     _SettingItem(
       title: 'Renewal Setting',
       icon: Icons.notifications_none_rounded,
+    ),
+    _SettingItem(
+      title: 'Notification',
+      icon: Icons.notifications_active_outlined,
     ),
     _SettingItem(title: 'Teams', icon: Icons.group_outlined),
     _SettingItem(title: 'Departments', icon: Icons.work_outline_rounded),
@@ -77,7 +82,7 @@ class SettingsScreen extends StatelessWidget {
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const TeamSettingsScreen(),
+                          builder: (_) => const NotificationSettingsScreen(),
                         ),
                       );
                     }
@@ -85,11 +90,19 @@ class SettingsScreen extends StatelessWidget {
                   ? () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => const DepartmentSettingsScreen(),
+                          builder: (_) => const TeamSettingsScreen(),
                         ),
                       );
                     }
                   : index == 5
+                  ? () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const DepartmentSettingsScreen(),
+                        ),
+                      );
+                    }
+                  : index == 6
                   ? () => _openPrivacyPolicy(context)
                   : null,
             );
