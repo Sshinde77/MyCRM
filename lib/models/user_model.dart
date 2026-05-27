@@ -156,7 +156,7 @@ class UserModel {
   static List<String> _extractPermissionNames(Map<String, dynamic> json) {
     final permissions = <String>{};
 
-    bool _isTruthy(dynamic value) {
+    bool isTruthy(dynamic value) {
       if (value == null) return false;
       if (value is bool) return value;
       final normalized = value.toString().trim().toLowerCase();
@@ -216,7 +216,7 @@ class UserModel {
           continue;
         }
 
-        if (_isTruthy(item)) {
+        if (isTruthy(item)) {
           permissions.add(key);
         } else if (item is String) {
           final itemText = item.trim().toLowerCase();

@@ -815,7 +815,7 @@ class _DropdownTile extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: items.any((item) => item.value == value) ? value : null,
+          initialValue: items.any((item) => item.value == value) ? value : null,
           onChanged: enabled ? onChanged : null,
           validator: validator,
           hint: Text(hintText),

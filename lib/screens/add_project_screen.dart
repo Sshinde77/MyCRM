@@ -648,7 +648,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Customer',
                                     child: DropdownButtonFormField<String>(
-                                      value:
+                                      initialValue:
                                           _customerOptions.any(
                                             (option) =>
                                                 option.id == _selectedCustomer,
@@ -685,7 +685,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Status',
                                     child: DropdownButtonFormField<String>(
-                                      value:
+                                      initialValue:
                                           _statusOptions.contains(
                                             _selectedStatus,
                                           )
@@ -714,7 +714,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Priority',
                                     child: DropdownButtonFormField<String>(
-                                      value:
+                                      initialValue:
                                           _priorityOptions.contains(
                                             _selectedPriority,
                                           )
@@ -787,7 +787,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                   _TextFieldBlock(
                                     label: 'Billing Type',
                                     child: DropdownButtonFormField<String>(
-                                      value:
+                                      initialValue:
                                           _billingOptions.contains(
                                             _selectedBillingType,
                                           )
@@ -1191,11 +1191,13 @@ class _SelectedFileTile extends StatelessWidget {
     if (_isImage) return Icons.image_outlined;
     if (extension == 'pdf') return Icons.picture_as_pdf_outlined;
     if ({'doc', 'docx'}.contains(extension)) return Icons.description_outlined;
-    if ({'xls', 'xlsx', 'csv'}.contains(extension))
+    if ({'xls', 'xlsx', 'csv'}.contains(extension)) {
       return Icons.table_chart_outlined;
+    }
     if ({'ppt', 'pptx'}.contains(extension)) return Icons.slideshow_outlined;
-    if ({'zip', 'rar', '7z'}.contains(extension))
+    if ({'zip', 'rar', '7z'}.contains(extension)) {
       return Icons.folder_zip_outlined;
+    }
     return Icons.insert_drive_file_outlined;
   }
 
@@ -1204,8 +1206,9 @@ class _SelectedFileTile extends StatelessWidget {
     if (_isImage) return const Color(0xFF1D6FEA);
     if (extension == 'pdf') return const Color(0xFFDC2626);
     if ({'doc', 'docx'}.contains(extension)) return const Color(0xFF2563EB);
-    if ({'xls', 'xlsx', 'csv'}.contains(extension))
+    if ({'xls', 'xlsx', 'csv'}.contains(extension)) {
       return const Color(0xFF15803D);
+    }
     if ({'ppt', 'pptx'}.contains(extension)) return const Color(0xFFEA580C);
     return const Color(0xFF475569);
   }
@@ -1213,7 +1216,7 @@ class _SelectedFileTile extends StatelessWidget {
   String get _fileSizeLabel {
     final size = file.size;
     if (size <= 0) return '';
-    if (size < 1024) return '${size} B';
+    if (size < 1024) return '$size B';
     if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
     return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
   }

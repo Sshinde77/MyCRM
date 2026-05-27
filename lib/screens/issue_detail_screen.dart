@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -1144,8 +1144,9 @@ class _TaskBoardCard extends StatelessWidget {
                                           return;
                                         }
 
-                                        if (!deleted || !context.mounted)
+                                        if (!deleted || !context.mounted) {
                                           return;
+                                        }
 
                                         if (onTaskCreated != null) {
                                           try {
@@ -2505,7 +2506,7 @@ class _TaskSelectField extends StatelessWidget {
         _TaskFormLabel(label),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           isExpanded: true,
           style: AppTextStyles.style(
             color: const Color(0xFF141C33),

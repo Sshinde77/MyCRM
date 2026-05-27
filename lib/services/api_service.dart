@@ -3611,7 +3611,9 @@ class ApiService {
   /// Loads a single paginated leads page.
   Future<LeadListPageResult> getLeadsListPage({
     int page = 1,
+    int? perPage,
     String? search,
+    String? status,
     String? userId,
     String? roleId,
   }) async {
@@ -3620,12 +3622,20 @@ class ApiService {
       roleId: roleId,
     );
     final normalizedPage = page < 1 ? 1 : page;
+    final normalizedPerPage = perPage != null && perPage > 0 ? perPage : null;
     final normalizedSearch = (search ?? '').trim();
+    final normalizedStatus = (status ?? '').trim();
     query['page'] = normalizedPage;
+    if (normalizedPerPage != null) {
+      query['per_page'] = normalizedPerPage;
+    }
     if (normalizedSearch.isNotEmpty) {
       query['search'] = normalizedSearch;
     }
-    final response = await get(ApiConstants.leads, queryParameters: query);
+    if (normalizedStatus.isNotEmpty) {
+      query['status'] = normalizedStatus;
+    }
+    final response = await get(ApiConstants.leadManagement, queryParameters: query);
     return _parseLeadPageResponse(response.data, normalizedPage);
   }
 

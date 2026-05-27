@@ -431,7 +431,7 @@ class _BookACallSection extends StatelessWidget {
                       horizontalMargin: 10,
                       columnSpacing: 18,
                       dividerThickness: 0.6,
-                      headingRowColor: MaterialStateProperty.all(
+                      headingRowColor: WidgetStateProperty.all(
                         const Color(0xFFF8FAFC),
                       ),
                       columns: const [

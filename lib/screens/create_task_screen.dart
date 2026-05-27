@@ -384,7 +384,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         _label('Project Related To'),
         const SizedBox(height: 8),
         DropdownButtonFormField<String?>(
-          value: selectedProjectId,
+          initialValue: selectedProjectId,
           items: [
             DropdownMenuItem<String?>(
               value: null,
@@ -440,7 +440,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
         _label(label),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           items: items
               .map(
                 (item) =>

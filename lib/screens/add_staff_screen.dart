@@ -33,7 +33,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   List<DepartmentSettingModel> _departmentOptions =
       const <DepartmentSettingModel>[];
   String? _selectedTeamValue;
-  Set<String> _selectedDepartmentValues = <String>{};
+  final Set<String> _selectedDepartmentValues = <String>{};
   bool _loadingFormOptions = false;
   bool _isActive = true;
   bool _sendInvite = true;
@@ -283,8 +283,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
                           ),
                         ),
                     validator: (value) {
-                      if (value == null || value.trim().length < 6)
+                      if (value == null || value.trim().length < 6) {
                         return 'Use at least 6 characters';
+                      }
                       return null;
                     },
                   ),
@@ -744,7 +745,7 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
 
   Widget _teamDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedTeamValue,
+      initialValue: _selectedTeamValue,
       decoration: _decoration('Select team', Icons.groups_2_outlined),
       items: _teamOptions
           .map(

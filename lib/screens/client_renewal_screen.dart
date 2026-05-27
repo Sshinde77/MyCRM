@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -172,26 +172,26 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
             ),
             datePickerTheme: base.datePickerTheme.copyWith(
               rangeSelectionBackgroundColor: const Color(0x1A156CF1),
-              rangeSelectionOverlayColor: MaterialStateProperty.all(
+              rangeSelectionOverlayColor: WidgetStateProperty.all(
                 const Color(0x1A156CF1),
               ),
-              dayOverlayColor: MaterialStateProperty.all(
+              dayOverlayColor: WidgetStateProperty.all(
                 const Color(0x1A156CF1),
               ),
-              dayBackgroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return Colors.white;
                 }
                 return null;
               }),
-              dayForegroundColor: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return const Color(0xFF156CF1);
                 }
                 return null;
               }),
-              dayShape: MaterialStateProperty.resolveWith((states) {
-                if (states.contains(MaterialState.selected)) {
+              dayShape: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
                   return const CircleBorder(
                     side: BorderSide(color: Color(0xFF156CF1), width: 1.4),
                   );
@@ -2777,7 +2777,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                       child: DropdownButtonFormField<String>(
                                         isExpanded: true,
                                         menuMaxHeight: 300,
-                                        value: _selectedStatus,
+                                        initialValue: _selectedStatus,
                                         items: _statusValues
                                             .map(
                                               (entry) =>

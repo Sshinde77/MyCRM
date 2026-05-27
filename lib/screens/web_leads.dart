@@ -611,7 +611,7 @@ class _LeadTable extends StatelessWidget {
           horizontalMargin: 8,
           columnSpacing: 16,
           dividerThickness: 0.5,
-          headingRowColor: MaterialStateProperty.all(const Color(0xFFF8FAFC)),
+          headingRowColor: WidgetStateProperty.all(const Color(0xFFF8FAFC)),
           columns: const [
             DataColumn(label: _Th('ID')),
             DataColumn(label: _Th('Name')),

@@ -587,7 +587,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: Text('Event Detail'),
                 content: SizedBox(
                   height: 90,
-                  child: const ScreenSkeleton(),
+                  child: ScreenSkeleton(),
                 ),
               );
             }
@@ -2038,8 +2038,9 @@ class _UpcomingRenewalItem {
   }
 
   static Color _buildTagColor(String tag) {
-    if (tag.contains('OVERDUE') || tag == 'TODAY')
+    if (tag.contains('OVERDUE') || tag == 'TODAY') {
       return const Color(0xFFEF4444);
+    }
     if (tag == 'N/A') return const Color(0xFF6B7280);
     return const Color(0xFFF5A623);
   }

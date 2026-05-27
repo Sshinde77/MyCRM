@@ -2565,7 +2565,7 @@ class _FilesSectionState extends State<_FilesSection> {
                         if (file != files.last) const SizedBox(height: 14),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               );
             },
@@ -4151,13 +4151,16 @@ String _timeAgo(String raw) {
 
 Color _accent(String status) {
   final s = status.toLowerCase();
-  if (s.contains('progress') || s.contains('active'))
+  if (s.contains('progress') || s.contains('active')) {
     return const Color(0xFF1D6FEA);
+  }
   if (s.contains('planning')) return const Color(0xFF8B5CF6);
-  if (s.contains('hold') || s.contains('pending'))
+  if (s.contains('hold') || s.contains('pending')) {
     return const Color(0xFFF59E0B);
-  if (s.contains('complete') || s.contains('done'))
+  }
+  if (s.contains('complete') || s.contains('done')) {
     return const Color(0xFF10B981);
+  }
   return const Color(0xFF4F5D74);
 }
 

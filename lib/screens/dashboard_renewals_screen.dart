@@ -320,7 +320,7 @@ class _FilterAndSearchCard extends StatelessWidget {
               border: Border.all(color: const Color(0xFFDCE6F2)),
             ),
             child: DropdownButtonFormField<String>(
-              value: selectedFilter,
+              initialValue: selectedFilter,
               icon: const Icon(
                 Icons.keyboard_arrow_down_rounded,
                 color: Color(0xFF64748B),

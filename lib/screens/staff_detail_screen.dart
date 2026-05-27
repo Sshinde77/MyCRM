@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/api_constants.dart';
@@ -841,7 +841,7 @@ class _EditProfileForm extends StatelessWidget {
                 ...teamOptions
                   .map((item) => item.name.trim())
                   .where((name) => name.isNotEmpty)
-                  .toList(growable: false),
+                  ,
               }.where((name) => name.isNotEmpty).toList(growable: false),
               onChanged: onTeamChanged,
             ),
@@ -853,7 +853,7 @@ class _EditProfileForm extends StatelessWidget {
                 ...departmentOptions
                   .map((item) => item.name.trim())
                   .where((name) => name.isNotEmpty)
-                  .toList(growable: false),
+                  ,
               }.where((name) => name.isNotEmpty).toList(growable: false),
               selectedValues: selectedDepartments,
               onToggle: onDepartmentToggle,
@@ -1023,7 +1023,7 @@ class _DropdownField extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          value: dropdownValue,
+          initialValue: dropdownValue,
           decoration: InputDecoration(
             filled: true,
             fillColor: const Color(0xFFF8FAFC),

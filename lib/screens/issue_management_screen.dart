@@ -1511,7 +1511,7 @@ class _CreateIssueDialogState extends State<_CreateIssueDialog> {
                                 label: 'Project',
                                 required: true,
                                 child: DropdownButtonFormField<String>(
-                                  value: _projectId,
+                                  initialValue: _projectId,
                                   isExpanded: true,
                                   items: widget.projects
                                       .map(
@@ -1539,7 +1539,7 @@ class _CreateIssueDialogState extends State<_CreateIssueDialog> {
                                 label: 'Client Name',
                                 required: true,
                                 child: DropdownButtonFormField<String>(
-                                  value: _customerId,
+                                  initialValue: _customerId,
                                   isExpanded: true,
                                   items: widget.customers
                                       .map(
@@ -1598,7 +1598,7 @@ class _CreateIssueDialogState extends State<_CreateIssueDialog> {
                               child: _DialogField(
                                 label: 'Priority',
                                 child: DropdownButtonFormField<String>(
-                                  value: _priority,
+                                  initialValue: _priority,
                                   isExpanded: true,
                                   items: _priorities
                                       .map(
@@ -1621,7 +1621,7 @@ class _CreateIssueDialogState extends State<_CreateIssueDialog> {
                               child: _DialogField(
                                 label: 'Status',
                                 child: DropdownButtonFormField<String>(
-                                  value: _status,
+                                  initialValue: _status,
                                   isExpanded: true,
                                   items: _statuses
                                       .map(

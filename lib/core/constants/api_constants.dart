@@ -42,6 +42,7 @@ class ApiConstants {
 
   //Leads Api
   static const String leads = '$baseUrl/leads';
+  static const String leadManagement = '$baseUrl/lead-management';
   static const String leadsDashboard = '$baseUrl/leads/dashboard';
   static const String leadDetail = '$baseUrl/leads/{id}';
   static const String leadDelete = '$baseUrl/leads/{id}';

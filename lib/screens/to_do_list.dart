@@ -2918,9 +2918,7 @@ List<String> _readStringList(Map<String, dynamic> source, List<String> keys) {
 
 List<_TodoAttachment> _readAttachments(Map<String, dynamic> source) {
   dynamic raw = source['attachments'];
-  if (raw == null) {
-    raw = source['attachment'];
-  }
+  raw ??= source['attachment'];
   if (raw is! List) {
     return const [];
   }

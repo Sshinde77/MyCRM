@@ -52,10 +52,12 @@ class CreateClientRequestModel {
     payload['send_invite_mail'] = sendMail;
     if (_hasValue(status)) payload['status'] = status!.trim().toLowerCase();
     if (_hasValue(website)) payload['website'] = website!.trim();
-    if (_hasValue(addressLine1))
+    if (_hasValue(addressLine1)) {
       payload['address_line_1'] = addressLine1!.trim();
-    if (_hasValue(addressLine2))
+    }
+    if (_hasValue(addressLine2)) {
       payload['address_line_2'] = addressLine2!.trim();
+    }
     if (_hasValue(city)) payload['city'] = city!.trim();
     if (_hasValue(state)) payload['state'] = state!.trim();
     if (_hasValue(country)) payload['country'] = country!.trim();
@@ -80,8 +82,9 @@ class CreateClientRequestModel {
       website,
     ]);
 
-    if (_hasValue(resolvedWebsite))
+    if (_hasValue(resolvedWebsite)) {
       payload['website'] = resolvedWebsite!.trim();
+    }
     if (businessInformation.isNotEmpty) {
       payload['companies'] = businessInformation;
     } else {

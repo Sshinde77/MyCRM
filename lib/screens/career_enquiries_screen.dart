@@ -18,7 +18,7 @@ class CareerEnquiriesScreen extends StatefulWidget {
 
 class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
   final TextEditingController _searchController = TextEditingController();
-  int _rowsPerPage = 10;
+  final int _rowsPerPage = 10;
   int _currentPage = 1;
   int _lastPage = 1;
   int _total = 0;
