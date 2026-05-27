@@ -16,6 +16,7 @@ import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
 import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
+import '../widgets/skeletons/app_skeletons.dart';
 
 /// Main CRM dashboard shown after a successful login.
 class DashboardScreen extends StatefulWidget {
@@ -199,6 +200,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _SectionCard(
                               padding: EdgeInsets.fromLTRB(18, 18, 18, 18),
                               child: _ProjectSummarySection(
+                                isLoading: _isLoadingSummary,
                                 projectCount: _projectCount,
                                 taskCount: _taskCount,
                                 projectMonthlySeries: _projectMonthlySeries,
@@ -221,6 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             _SectionCard(
                               padding: EdgeInsets.fromLTRB(18, 18, 18, 20),
                               child: _TaskSummarySection(
+                                isLoading: _isLoadingSummary,
                                 taskStatusCounts: _taskStatusCounts,
                               ),
                             ),
@@ -273,10 +276,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       if (_isLoadingCalendar || _isSavingCalendar) ...[
                         const SizedBox(height: 12),
-                        const LinearProgressIndicator(minHeight: 2),
-                      ],
-                      if (_isLoadingSummary) ...[
-                        const SizedBox(height: 8),
                         const LinearProgressIndicator(minHeight: 2),
                       ],
                       if (_calendarLoadError != null) ...[
@@ -588,7 +587,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 title: Text('Event Detail'),
                 content: SizedBox(
                   height: 90,
-                  child: Center(child: CircularProgressIndicator()),
+                  child: const ScreenSkeleton(),
                 ),
               );
             }
@@ -1857,9 +1856,31 @@ class _RenewalSection extends StatelessWidget {
         ),
         if (isLoading) ...[
           const SizedBox(height: 18),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: LinearProgressIndicator(minHeight: 2),
+          SkeletonList(
+            itemCount: 3,
+            separatorHeight: 12,
+            useShimmer: true,
+            itemBuilder: (context, index) => AppSkeletonizer(
+              enabled: true,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFE9EEF6)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBlock(height: 14, width: 180),
+                    SizedBox(height: 8),
+                    SkeletonBlock(height: 12, width: 140),
+                    SizedBox(height: 10),
+                    SkeletonBlock(height: 12),
+                  ],
+                ),
+              ),
+            ),
           ),
         ] else if (visibleItems.isNotEmpty) ...[
           const SizedBox(height: 18),
@@ -2270,6 +2291,7 @@ class _RenewalTile extends StatelessWidget {
 
 class _ProjectSummarySection extends StatelessWidget {
   const _ProjectSummarySection({
+    required this.isLoading,
     required this.projectCount,
     required this.taskCount,
     required this.projectMonthlySeries,
@@ -2278,6 +2300,7 @@ class _ProjectSummarySection extends StatelessWidget {
     required this.onViewAllTap,
   });
 
+  final bool isLoading;
   final int projectCount;
   final int taskCount;
   final List<int> projectMonthlySeries;
@@ -2287,6 +2310,28 @@ class _ProjectSummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return AppSkeletonizer(
+        enabled: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            SkeletonBlock(height: 16, width: 170),
+            SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(child: SkeletonBlock(height: 56)),
+                SizedBox(width: 10),
+                Expanded(child: SkeletonBlock(height: 56)),
+              ],
+            ),
+            SizedBox(height: 16),
+            SkeletonBlock(height: 180),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2522,12 +2567,38 @@ class _ProjectSummaryBarsPainter extends CustomPainter {
 }
 
 class _TaskSummarySection extends StatelessWidget {
-  const _TaskSummarySection({required this.taskStatusCounts});
+  const _TaskSummarySection({
+    required this.isLoading,
+    required this.taskStatusCounts,
+  });
 
+  final bool isLoading;
   final Map<String, int> taskStatusCounts;
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return AppSkeletonizer(
+        enabled: true,
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SkeletonBlock(height: 16, width: 130),
+            SizedBox(height: 18),
+            SkeletonBlock(
+              height: 140,
+              width: 140,
+              borderRadius: BorderRadius.all(Radius.circular(70)),
+            ),
+            SizedBox(height: 16),
+            SkeletonBlock(height: 34),
+            SizedBox(height: 8),
+            SkeletonBlock(height: 34),
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2690,9 +2761,30 @@ class _SupportTicketsSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (isLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          SkeletonList(
+            itemCount: 3,
+            separatorHeight: 10,
+            useShimmer: true,
+            itemBuilder: (context, index) => AppSkeletonizer(
+              enabled: true,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFDFEFF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFDCE6F2)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBlock(height: 14, width: 180),
+                    SizedBox(height: 8),
+                    SkeletonBlock(height: 12),
+                  ],
+                ),
+              ),
+            ),
           )
         else if (issues.isEmpty)
           Text(
@@ -4050,3 +4142,4 @@ class _TaskDonutPainter extends CustomPainter {
         oldDelegate.backgroundColor != backgroundColor;
   }
 }
+

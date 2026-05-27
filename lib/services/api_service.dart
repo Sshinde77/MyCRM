@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -1622,7 +1623,7 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(response.data);
@@ -1630,12 +1631,12 @@ class ApiService {
         .map(StaffMemberModel.fromJson)
         .toList(growable: false);
     final currentPage =
-        _readInt(pagePayload?['current_page']) ?? normalizedPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? items.length;
-    final resolvedPerPage = _readInt(pagePayload?['per_page']) ?? items.length;
+        _readInt(pagePayload['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload['total']) ?? items.length;
+    final resolvedPerPage = _readInt(pagePayload['per_page']) ?? items.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload['next_page_url'] != null || currentPage < lastPage;
 
     return StaffListPageResult(
       items: items,
@@ -1766,18 +1767,18 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(response.data);
     final items = records.map(ClientModel.fromJson).toList(growable: false);
     final currentPage =
-        _readInt(pagePayload?['current_page']) ?? normalizedPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? items.length;
-    final resolvedPerPage = _readInt(pagePayload?['per_page']) ?? items.length;
+        _readInt(pagePayload['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload['total']) ?? items.length;
+    final resolvedPerPage = _readInt(pagePayload['per_page']) ?? items.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload['next_page_url'] != null || currentPage < lastPage;
 
     return ClientListPageResult(
       items: items,
@@ -1843,18 +1844,18 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(response.data);
     final items = records.map(VendorModel.fromJson).toList(growable: false);
     final currentPage =
-        _readInt(pagePayload?['current_page']) ?? normalizedPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? items.length;
-    final resolvedPerPage = _readInt(pagePayload?['per_page']) ?? items.length;
+        _readInt(pagePayload['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload['total']) ?? items.length;
+    final resolvedPerPage = _readInt(pagePayload['per_page']) ?? items.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload['next_page_url'] != null || currentPage < lastPage;
 
     return VendorListPageResult(
       items: items,
@@ -1993,17 +1994,17 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(responseData);
     final items = records.map(RenewalModel.fromJson).toList(growable: false);
-    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? items.length;
-    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final currentPage = _readInt(pagePayload['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload['total']) ?? items.length;
+    final perPage = _readInt(pagePayload['per_page']) ?? items.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload['next_page_url'] != null || currentPage < lastPage;
 
     return RenewalListPageResult(
       items: items,
@@ -2041,17 +2042,17 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(responseData);
     final items = records.map(LeadModel.fromJson).toList(growable: false);
-    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? items.length;
-    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final currentPage = _readInt(pagePayload['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload['total']) ?? items.length;
+    final perPage = _readInt(pagePayload['per_page']) ?? items.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload['next_page_url'] != null || currentPage < lastPage;
 
     return LeadListPageResult(
       items: items,
@@ -2089,17 +2090,17 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(responseData);
     final items = records.map(ProjectModel.fromJson).toList(growable: false);
-    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? items.length;
-    final perPage = _readInt(pagePayload?['per_page']) ?? items.length;
+    final currentPage = _readInt(pagePayload['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload['total']) ?? items.length;
+    final perPage = _readInt(pagePayload['per_page']) ?? items.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload['next_page_url'] != null || currentPage < lastPage;
 
     return ProjectListPageResult(
       items: items,
@@ -2141,14 +2142,14 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(responseData);
     final currentPage =
-        _readInt(pagePayload?['current_page']) ??
-        _readInt(pagePayload?['page']) ??
-        _readInt(pagePayload?['currentPage']) ??
+        _readInt(pagePayload['current_page']) ??
+        _readInt(pagePayload['page']) ??
+        _readInt(pagePayload['currentPage']) ??
         _readInt(meta['current_page']) ??
         _readInt(meta['page']) ??
         _readInt(meta['currentPage']) ??
@@ -2162,10 +2163,10 @@ class ApiService {
         _readInt(pageMeta['page']) ??
         fallbackPage;
     final lastPage =
-        _readInt(pagePayload?['last_page']) ??
-        _readInt(pagePayload?['lastPage']) ??
-        _readInt(pagePayload?['total_pages']) ??
-        _readInt(pagePayload?['totalPages']) ??
+        _readInt(pagePayload['last_page']) ??
+        _readInt(pagePayload['lastPage']) ??
+        _readInt(pagePayload['total_pages']) ??
+        _readInt(pagePayload['totalPages']) ??
         _readInt(meta['last_page']) ??
         _readInt(meta['lastPage']) ??
         _readInt(meta['total_pages']) ??
@@ -2184,10 +2185,10 @@ class ApiService {
         _readInt(pageMeta['totalPages']) ??
         currentPage;
     final total =
-        _readInt(pagePayload?['total']) ??
-        _readInt(pagePayload?['total_records']) ??
-        _readInt(pagePayload?['totalRecords']) ??
-        _readInt(pagePayload?['count']) ??
+        _readInt(pagePayload['total']) ??
+        _readInt(pagePayload['total_records']) ??
+        _readInt(pagePayload['totalRecords']) ??
+        _readInt(pagePayload['count']) ??
         _readInt(meta['total']) ??
         _readInt(meta['total_records']) ??
         _readInt(meta['totalRecords']) ??
@@ -2206,11 +2207,11 @@ class ApiService {
         _readInt(pageMeta['count']) ??
         records.length;
     final perPage =
-        _readInt(pagePayload?['per_page']) ??
-        _readInt(pagePayload?['perPage']) ??
-        _readInt(pagePayload?['page_size']) ??
-        _readInt(pagePayload?['pageSize']) ??
-        _readInt(pagePayload?['limit']) ??
+        _readInt(pagePayload['per_page']) ??
+        _readInt(pagePayload['perPage']) ??
+        _readInt(pagePayload['page_size']) ??
+        _readInt(pagePayload['pageSize']) ??
+        _readInt(pagePayload['limit']) ??
         _readInt(meta['per_page']) ??
         _readInt(meta['perPage']) ??
         _readInt(meta['page_size']) ??
@@ -2233,8 +2234,8 @@ class ApiService {
         _readInt(pageMeta['limit']) ??
         records.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null ||
-        pagePayload?['nextPageUrl'] != null ||
+        pagePayload['next_page_url'] != null ||
+        pagePayload['nextPageUrl'] != null ||
         metaPagination['next_page_url'] != null ||
         metaPagination['nextPageUrl'] != null ||
         metaPagination['has_more_pages'] == true ||
@@ -2288,16 +2289,16 @@ class ApiService {
       pagePayload = root;
     }
 
-    final source = pagePayload?['data'];
+    final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(responseData);
-    final currentPage = _readInt(pagePayload?['current_page']) ?? fallbackPage;
-    final lastPage = _readInt(pagePayload?['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload?['total']) ?? records.length;
-    final perPage = _readInt(pagePayload?['per_page']) ?? records.length;
+    final currentPage = _readInt(pagePayload['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
+    final total = _readInt(pagePayload['total']) ?? records.length;
+    final perPage = _readInt(pagePayload['per_page']) ?? records.length;
     final hasNextPage =
-        pagePayload?['next_page_url'] != null || currentPage < lastPage;
+        pagePayload['next_page_url'] != null || currentPage < lastPage;
 
     return MapListPageResult(
       items: records,
@@ -6126,3 +6127,4 @@ class ApiService {
         .toList();
   }
 }
+

@@ -11,6 +11,7 @@ import '../widgets/common_screen_app_bar.dart';
 import 'web_leads.dart';
 import 'google_leads_list_screen.dart';
 import 'meta_leads_screen.dart';
+import '../widgets/skeletons/app_skeletons.dart';
 
 class AllLeadsScreen extends StatefulWidget {
   const AllLeadsScreen({super.key});
@@ -140,7 +141,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               if (_isLoading)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 50),
-                  child: Center(child: CircularProgressIndicator()),
+                  child: const ScreenSkeleton(),
                 )
               else if (_error != null)
                 _ErrorBox(message: _error!, onRetry: _loadData)
@@ -470,3 +471,4 @@ class _ErrorBox extends StatelessWidget {
     );
   }
 }
+

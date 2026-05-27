@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
 import '../core/constants/app_text_styles.dart';
+import '../core/models/load_state.dart';
 import '../core/services/permission_service.dart';
 import '../models/lead_model.dart';
 import '../providers/lead_provider.dart';
 import '../routes/app_routes.dart';
+import '../widgets/skeletons/app_skeletons.dart';
 import '../widgets/common_screen_app_bar.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 
@@ -64,6 +66,15 @@ class _LeadsScreenState extends State<LeadsScreen> {
                   final safeCurrentPage = leadProvider.currentPage < 1
                       ? 1
                       : leadProvider.currentPage;
+                  final loadState = leadProvider.isLoading &&
+                          leadProvider.totalLeads == 0
+                      ? LoadState.loading
+                      : leadProvider.errorMessage != null &&
+                            leadProvider.totalLeads == 0
+                      ? LoadState.error
+                      : leadProvider.leads.isEmpty
+                      ? LoadState.empty
+                      : LoadState.success;
 
                   return ListView(
                     padding: EdgeInsets.symmetric(
@@ -285,11 +296,9 @@ class _LeadsScreenState extends State<LeadsScreen> {
                         ],
                       ),
                       const SizedBox(height: 6),
-                      if (leadProvider.isLoading &&
-                          leadProvider.totalLeads == 0)
+                      if (loadState.isLoading)
                         const _LeadListLoading()
-                      else if (leadProvider.errorMessage != null &&
-                          leadProvider.totalLeads == 0)
+                      else if (loadState.isError)
                         _LeadListError(
                           message: leadProvider.errorMessage!,
                           onRetry: () => leadProvider.loadLeads(
@@ -298,7 +307,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
                             search: leadProvider.searchQuery,
                           ),
                         )
-                      else if (leadProvider.leads.isEmpty)
+                      else if (loadState.isEmpty)
                         _LeadListEmpty(
                           hasQuery: leadProvider.searchQuery.trim().isNotEmpty,
                         )
@@ -1068,8 +1077,11 @@ class _LeadListLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: const [_LoadingCard(), SizedBox(height: 16), _LoadingCard()],
+    return SkeletonList(
+      itemCount: 3,
+      separatorHeight: 16,
+      useShimmer: true,
+      itemBuilder: (context, index) => const _LoadingCard(),
     );
   }
 }
@@ -1079,15 +1091,33 @@ class _LoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 220,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+    return AppSkeletonizer(
+      enabled: true,
+      child: Container(
+        height: 220,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            SkeletonBlock(height: 16, width: 160),
+            SizedBox(height: 10),
+            SkeletonBlock(height: 12, width: 120),
+            SizedBox(height: 14),
+            SkeletonBlock(height: 12),
+            SizedBox(height: 8),
+            SkeletonBlock(height: 12),
+            SizedBox(height: 16),
+            SkeletonBlock(height: 28),
+            SizedBox(height: 10),
+            SkeletonBlock(height: 28),
+          ],
+        ),
       ),
-      alignment: Alignment.center,
-      child: const CircularProgressIndicator(),
     );
   }
 }
@@ -1100,54 +1130,10 @@ class _LeadListError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            size: 36,
-            color: Color(0xFFB3261E),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Unable to load leads',
-            style: AppTextStyles.style(
-              color: const Color(0xFF1E2A3B),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.style(
-              color: const Color(0xFF64748B),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onRetry,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2CB1FF),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
+    return ErrorStateView(
+      title: 'Unable to load leads',
+      message: message,
+      onRetry: onRetry,
     );
   }
 }
@@ -1159,44 +1145,12 @@ class _LeadListEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        children: [
-          const Icon(
-            Icons.person_search_rounded,
-            size: 36,
-            color: Color(0xFF2CB1FF),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            hasQuery ? 'No matching leads' : 'No leads found',
-            style: AppTextStyles.style(
-              color: const Color(0xFF1E2A3B),
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            hasQuery
-                ? 'Try a different name, id, or company search.'
-                : 'The API returned an empty lead list for this account.',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.style(
-              color: const Color(0xFF64748B),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
+    return EmptyStateView(
+      icon: Icons.person_search_rounded,
+      title: hasQuery ? 'No matching leads' : 'No leads found',
+      message: hasQuery
+          ? 'Try a different name, id, or company search.'
+          : 'The API returned an empty lead list for this account.',
     );
   }
 }

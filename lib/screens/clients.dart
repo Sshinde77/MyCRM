@@ -2,11 +2,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/models/load_state.dart';
 
 import '../models/client_model.dart';
 import '../core/services/permission_service.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
+import '../widgets/skeletons/app_skeletons.dart';
 import '../widgets/common_screen_app_bar.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 
@@ -228,6 +230,13 @@ class _ClientsScreenState extends State<ClientsScreen> {
     final clients = _clients;
     final totalClients = _totalCount > 0 ? _totalCount : clients.length;
     final activeClients = clients.where((client) => client.isActive).length;
+    final loadState = _isLoading && clients.isEmpty
+        ? LoadState.loading
+        : _errorMessage != null && clients.isEmpty
+        ? LoadState.error
+        : clients.isEmpty
+        ? LoadState.empty
+        : LoadState.success;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
@@ -356,23 +365,19 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                if (_isLoading && clients.isEmpty)
-                  const Center(child: CircularProgressIndicator())
-                else if (_errorMessage != null && clients.isEmpty)
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.cloud_off, color: Colors.grey),
-                        const SizedBox(height: 8),
-                        Text(_errorMessage!),
-                        const SizedBox(height: 8),
-                        TextButton(
-                          onPressed: _reload,
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
+                if (loadState.isLoading)
+                  const _ClientsLoading()
+                else if (loadState.isError)
+                  ErrorStateView(
+                    title: 'Unable to load clients',
+                    message: _errorMessage!,
+                    onRetry: _reload,
+                  )
+                else if (loadState.isEmpty)
+                  const EmptyStateView(
+                    title: 'No clients available',
+                    message: 'The API returned no client records.',
+                    icon: Icons.people_outline_rounded,
                   )
                 else
                   _ClientsList(
@@ -683,6 +688,55 @@ class _ClientsList extends StatelessWidget {
             onDelete: () => handleDelete(client.id),
           ),
       ],
+    );
+  }
+}
+
+class _ClientsLoading extends StatelessWidget {
+  const _ClientsLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return SkeletonList(
+      itemCount: 4,
+      separatorHeight: 12,
+      useShimmer: true,
+      itemBuilder: (context, index) {
+        return AppSkeletonizer(
+          enabled: true,
+          child: Container(
+            height: 168,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Row(
+                  children: [
+                    SkeletonBlock(
+                      height: 36,
+                      width: 36,
+                      borderRadius: BorderRadius.all(Radius.circular(18)),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(child: SkeletonBlock(height: 14)),
+                  ],
+                ),
+                SizedBox(height: 12),
+                SkeletonBlock(height: 12),
+                SizedBox(height: 8),
+                SkeletonBlock(height: 12, width: 170),
+                SizedBox(height: 12),
+                SkeletonBlock(height: 28),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
