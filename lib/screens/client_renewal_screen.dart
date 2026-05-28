@@ -175,9 +175,7 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
               rangeSelectionOverlayColor: WidgetStateProperty.all(
                 const Color(0x1A156CF1),
               ),
-              dayOverlayColor: WidgetStateProperty.all(
-                const Color(0x1A156CF1),
-              ),
+              dayOverlayColor: WidgetStateProperty.all(const Color(0x1A156CF1)),
               dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
                 if (states.contains(WidgetState.selected)) {
                   return Colors.white;
@@ -704,7 +702,9 @@ class _RenewalListSection extends StatelessWidget {
                   service: service,
                   compact: compact,
                   onView: () => onView(service.renewal),
-                  onEdit: onEdit == null ? null : () => onEdit!(service.renewal),
+                  onEdit: onEdit == null
+                      ? null
+                      : () => onEdit!(service.renewal),
                   onDelete: onDelete == null
                       ? null
                       : () => onDelete!(service.renewal),

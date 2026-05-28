@@ -66,8 +66,8 @@ class _LeadsScreenState extends State<LeadsScreen> {
                   final safeCurrentPage = leadProvider.currentPage < 1
                       ? 1
                       : leadProvider.currentPage;
-                  final loadState = leadProvider.isLoading &&
-                          leadProvider.totalLeads == 0
+                  final loadState =
+                      leadProvider.isLoading && leadProvider.totalLeads == 0
                       ? LoadState.loading
                       : leadProvider.errorMessage != null &&
                             leadProvider.totalLeads == 0

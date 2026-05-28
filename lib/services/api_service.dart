@@ -1630,8 +1630,7 @@ class ApiService {
     final items = records
         .map(StaffMemberModel.fromJson)
         .toList(growable: false);
-    final currentPage =
-        _readInt(pagePayload['current_page']) ?? normalizedPage;
+    final currentPage = _readInt(pagePayload['current_page']) ?? normalizedPage;
     final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
     final total = _readInt(pagePayload['total']) ?? items.length;
     final resolvedPerPage = _readInt(pagePayload['per_page']) ?? items.length;
@@ -1772,8 +1771,7 @@ class ApiService {
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(response.data);
     final items = records.map(ClientModel.fromJson).toList(growable: false);
-    final currentPage =
-        _readInt(pagePayload['current_page']) ?? normalizedPage;
+    final currentPage = _readInt(pagePayload['current_page']) ?? normalizedPage;
     final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
     final total = _readInt(pagePayload['total']) ?? items.length;
     final resolvedPerPage = _readInt(pagePayload['per_page']) ?? items.length;
@@ -1849,8 +1847,7 @@ class ApiService {
         ? source.map(_normalizeMap).toList(growable: false)
         : _normalizeList(response.data);
     final items = records.map(VendorModel.fromJson).toList(growable: false);
-    final currentPage =
-        _readInt(pagePayload['current_page']) ?? normalizedPage;
+    final currentPage = _readInt(pagePayload['current_page']) ?? normalizedPage;
     final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
     final total = _readInt(pagePayload['total']) ?? items.length;
     final resolvedPerPage = _readInt(pagePayload['per_page']) ?? items.length;
@@ -2393,7 +2390,9 @@ class ApiService {
     final nestedData = _normalizeLooseMap(root['data']);
     final paginationSource = nestedData.isNotEmpty ? nestedData : root;
     final currentPage =
-        _readInt(paginationSource['current_page'] ?? paginationSource['page']) ??
+        _readInt(
+          paginationSource['current_page'] ?? paginationSource['page'],
+        ) ??
         normalizedPage;
     final lastPage =
         _readInt(
@@ -2403,7 +2402,9 @@ class ApiService {
         ) ??
         currentPage;
     final total =
-        _readInt(paginationSource['total'] ?? paginationSource['total_count']) ??
+        _readInt(
+          paginationSource['total'] ?? paginationSource['total_count'],
+        ) ??
         records.length;
     final resolvedPerPage =
         _readInt(paginationSource['per_page'] ?? paginationSource['limit']) ??
@@ -3635,7 +3636,10 @@ class ApiService {
     if (normalizedStatus.isNotEmpty) {
       query['status'] = normalizedStatus;
     }
-    final response = await get(ApiConstants.leadManagement, queryParameters: query);
+    final response = await get(
+      ApiConstants.leadManagement,
+      queryParameters: query,
+    );
     return _parseLeadPageResponse(response.data, normalizedPage);
   }
 
@@ -3876,6 +3880,128 @@ class ApiService {
       description: description,
     );
     await put(path, data: payload);
+  }
+
+  /// Assigns one lead to one or more staff members.
+  Future<void> assignLead({
+    required String sourceType,
+    required String leadId,
+    required List<String> assignedUserIds,
+    String? assignmentNote,
+  }) async {
+    final normalizedSourceType = sourceType.trim();
+    final normalizedLeadId = leadId.trim();
+    if (normalizedSourceType.isEmpty || normalizedLeadId.isEmpty) return;
+
+    final normalizedIds = assignedUserIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (normalizedIds.isEmpty) return;
+
+    final payload = <String, dynamic>{
+      'assigned_user_ids': normalizedIds
+          .map((id) => int.tryParse(id) ?? id)
+          .toList(growable: false),
+      // Compatibility aliases for API variants.
+      'assigned_staff_ids': normalizedIds
+          .map((id) => int.tryParse(id) ?? id)
+          .toList(growable: false),
+      'assigned_to': normalizedIds
+          .map((id) => int.tryParse(id) ?? id)
+          .toList(growable: false),
+    };
+
+    final note = (assignmentNote ?? '').trim();
+    if (note.isNotEmpty) {
+      payload['assignment_note'] = note;
+      payload['notes'] = note;
+    }
+
+    final path = ApiConstants.leadAssign
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{id}', normalizedLeadId);
+    await post(path, data: payload);
+  }
+
+  /// Assigns multiple leads to one or more staff members in one request.
+  Future<void> bulkAssignLeads({
+    required List<String> assignedUserIds,
+    required List<Map<String, dynamic>> selectedLeads,
+  }) async {
+    final normalizedIds = assignedUserIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (normalizedIds.isEmpty || selectedLeads.isEmpty) return;
+
+    final normalizedLeads = selectedLeads
+        .map((entry) {
+          final sourceType = (entry['source_type'] ?? entry['source'] ?? '')
+              .toString()
+              .trim();
+          final rawId = (entry['id'] ?? '').toString().trim();
+          if (sourceType.isEmpty || rawId.isEmpty) return null;
+          return <String, dynamic>{
+            'source_type': sourceType,
+            'id': int.tryParse(rawId) ?? rawId,
+          };
+        })
+        .whereType<Map<String, dynamic>>()
+        .toList(growable: false);
+    if (normalizedLeads.isEmpty) return;
+
+    final payload = <String, dynamic>{
+      'assigned_user_ids': normalizedIds
+          .map((id) => int.tryParse(id) ?? id)
+          .toList(growable: false),
+      // Compatibility aliases for API variants.
+      'assigned_staff_ids': normalizedIds
+          .map((id) => int.tryParse(id) ?? id)
+          .toList(growable: false),
+      'assigned_to': normalizedIds
+          .map((id) => int.tryParse(id) ?? id)
+          .toList(growable: false),
+      'selected_leads': normalizedLeads,
+      'leads': normalizedLeads,
+    };
+
+    await post(ApiConstants.leadBulkAssign, data: payload);
+  }
+
+  /// Updates status fields for a single lead.
+  Future<void> updateLeadStatus({
+    required String sourceType,
+    required String leadId,
+    required String status,
+    String? remarks,
+    String? lostReason,
+    double? wonValue,
+  }) async {
+    final normalizedSourceType = sourceType.trim();
+    final normalizedLeadId = leadId.trim();
+    final normalizedStatus = status.trim().toLowerCase();
+    if (normalizedSourceType.isEmpty ||
+        normalizedLeadId.isEmpty ||
+        normalizedStatus.isEmpty) {
+      return;
+    }
+
+    final payload = <String, dynamic>{
+      'status': normalizedStatus,
+      'remarks': (remarks ?? '').trim(),
+      'lost_reason': (lostReason ?? '').trim().isEmpty
+          ? null
+          : (lostReason ?? '').trim(),
+      'won_value': wonValue,
+    };
+
+    final path = ApiConstants.leadStatusUpdate
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{id}', normalizedLeadId);
+    await patch(path, data: payload);
   }
 
   /// Creates a new todo for the authenticated user.
@@ -6137,4 +6263,3 @@ class ApiService {
         .toList();
   }
 }
-

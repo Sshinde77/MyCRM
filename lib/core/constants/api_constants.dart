@@ -9,7 +9,7 @@ class ApiConstants {
   //Authentication Api
   static const String login = '$baseUrl/login';
   static const String user = '$baseUrl/me';
-  static const String logout = '$baseUrl/logout';
+  static const String logout = '$baseUrl/logout';   
   static const String refreshToken = '$baseUrl/refresh';
   static const String testFcm = '$baseUrl/fcm-token';
   static const String dashboard = '$baseUrl/dashboard';
@@ -49,6 +49,11 @@ class ApiConstants {
   static const String leadformdata = '$baseUrl/leads/form-options';
   static const String createleads = '$baseUrl/leads';
   static const String editleads = '$baseUrl/leads/{id}';
+  static const String leadAssign =
+      '$baseUrl/lead-management/{sourceType}/{id}/assign';
+  static const String leadStatusUpdate =
+      '$baseUrl/lead-management/{sourceType}/{id}/status';
+  static const String leadBulkAssign = '$baseUrl/lead-management/bulk-assign';
 
   //Todo Api
   static const String createtodo = '$baseUrl/todos';
@@ -138,14 +143,14 @@ class ApiConstants {
       '$baseUrl/client-issues/{clientIssue}/tasks';
   static const String assignClientIssueTeam =
       '$baseUrl/client-issues/{id}/assign';
-      
+
   static const String clientIssueTaskDetail =
       '$baseUrl/client-issues/{issueId}/tasks/{taskId}';
   static const String clientIssueTaskStatus =
       '$baseUrl/client-issues/{issueId}/tasks/{taskId}/status';
 
   //settings
-  
+
   static const String settings = '$baseUrl/settings';
   static const String generalSettings = '$baseUrl/settings/general';
   static const String appLogoSettings = '$baseUrl/settings/app-logo';

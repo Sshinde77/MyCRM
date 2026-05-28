@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
 import '../core/constants/app_text_styles.dart';
 import '../models/lead_model.dart';
+import '../models/staff_member_model.dart';
 import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/app_card.dart';
 import '../widgets/common_screen_app_bar.dart';
 import '../widgets/skeletons/app_skeletons.dart';
-import 'add_lead_screen.dart';
 
 class AllLeadsScreen extends StatefulWidget {
   const AllLeadsScreen({super.key});
@@ -19,10 +20,32 @@ class AllLeadsScreen extends StatefulWidget {
 }
 
 class _AllLeadsScreenState extends State<AllLeadsScreen> {
+  static const List<String> _fixedStatusOptions = <String>[
+    'New',
+    'Attempted Contact',
+    'Contacted',  
+    'Qualified',
+    'Demo Scheduled',
+    'Proposal Sent',    
+    'Negotiation',
+    'Won',
+    'Lost',
+    'Junk',
+  ];
+
+  static const List<_SourceOption> _fixedSourceOptions = <_SourceOption>[
+    _SourceOption(label: 'All', iconData: Icons.apps_rounded),
+    _SourceOption(label: 'Leads', iconData: Icons.leaderboard_outlined),
+    _SourceOption(label: 'Digital Marketing', iconData: Icons.campaign_outlined),
+    _SourceOption(label: 'Web App', iconData: Icons.language_outlined),
+    _SourceOption(label: 'Meta', iconData: FontAwesomeIcons.meta, useFaIcon: true),
+    _SourceOption(label: 'Google', iconData: FontAwesomeIcons.google, useFaIcon: true),
+    _SourceOption(label: 'IndiaMart', iconData: Icons.storefront_outlined),
+    _SourceOption(label: 'JustDial', iconData: Icons.phone_in_talk_outlined),
+  ];
+
   final ApiService _apiService = ApiService.instance;
   final TextEditingController _searchController = TextEditingController();
-
-  static const List<int> _entryOptions = <int>[10, 25, 50, 100];
 
   bool _isLoading = true;
   String? _error;
@@ -34,6 +57,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
 
   String _appliedSearch = '';
   String _selectedStatus = '';
+  String _selectedSource = '';
+  final Set<String> _selectedLeadKeys = <String>{};
+  bool _isBulkSelectionMode = false;
 
   @override
   void initState() {
@@ -71,6 +97,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         _total = result.total;
         _perPage = result.perPage > 0 ? result.perPage : _perPage;
         _appliedSearch = normalizedSearch;
+        _selectedLeadKeys.removeWhere(
+          (key) => !_items.any((lead) => _leadSelectionKey(lead) == key),
+        );
         _isLoading = false;
       });
     } catch (_) {
@@ -82,41 +111,514 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     }
   }
 
-  List<String> _statusOptions() {
-    final statuses = _items
-        .map((lead) => (lead.status ?? '').trim())
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-    return statuses;
+  List<LeadModel> _visibleItems() {
+    if (_selectedSource.isEmpty) return _items;
+    return _items
+        .where(
+          (lead) => _normalizeSourceLabel((lead.source ?? '').trim()) == _selectedSource,
+        )
+        .toList(growable: false);
   }
 
-  Map<String, int> _sourceCounts() {
-    final counts = <String, int>{};
-    for (final lead in _items) {
-      final source = (lead.source ?? '').trim();
-      if (source.isEmpty) continue;
-      counts[source] = (counts[source] ?? 0) + 1;
+  String _leadSelectionKey(LeadModel lead) {
+    return '${_buildLeadAssignSource(lead)}::${lead.id}';
+  }
+
+  bool _isLeadSelected(LeadModel lead) => _selectedLeadKeys.contains(_leadSelectionKey(lead));
+
+  void _toggleLeadSelection(LeadModel lead, bool selected) {
+    final key = _leadSelectionKey(lead);
+    setState(() {
+      if (selected) {
+        _selectedLeadKeys.add(key);
+      } else {
+        _selectedLeadKeys.remove(key);
+      }
+    });
+  }
+
+  List<Map<String, dynamic>> _selectedLeadPayload() {
+    final selected = <Map<String, dynamic>>[];
+    final seen = <String>{};
+    for (final key in _selectedLeadKeys) {
+      if (seen.contains(key)) {
+        continue;
+      }
+      seen.add(key);
+      final separatorIndex = key.indexOf('::');
+      if (separatorIndex <= 0 || separatorIndex >= key.length - 2) {
+        continue;
+      }
+      final sourceType = key.substring(0, separatorIndex).trim();
+      final leadId = key.substring(separatorIndex + 2).trim();
+      if (sourceType.isEmpty || leadId.isEmpty) {
+        continue;
+      }
+      selected.add(<String, dynamic>{
+        'source_type': sourceType,
+        'id': leadId,
+      });
     }
-    return counts;
+    return selected;
   }
 
-  int get _startEntry {
-    if (_items.isEmpty) return 0;
-    return ((_currentPage - 1) * _perPage) + 1;
+  String _buildLeadAssignSource(LeadModel lead) {
+    final raw =
+        (lead.sourceType ?? lead.source ?? '').trim().toLowerCase().replaceAll(
+          RegExp(r'[^a-z0-9]'),
+          '',
+        );
+    switch (raw) {
+      case 'lead':
+      case 'leads':
+        return 'lead';
+      case 'digitalmarketing':
+        return 'digital_marketing';
+      case 'webapp':
+      case 'webapps':
+      case 'webapplication':
+        return 'web_app';
+      case 'meta':
+      case 'facebook':
+        return 'meta';
+      case 'google':
+      case 'googleads':
+        return 'google';
+      case 'indiamart':
+        return 'indiamart';
+      case 'justdial':
+        return 'justdial';
+      default:
+        return raw.isEmpty ? 'lead' : raw;
+    }
   }
 
-  int get _endEntry {
-    if (_items.isEmpty) return 0;
-    final end = _startEntry + _items.length - 1;
-    return end > _total ? _total : end;
+  Future<void> _showAssignDialog({
+    required List<Map<String, dynamic>> selectedLeads,
+    String? singleLeadId,
+    String? singleLeadSourceType,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final noteController = TextEditingController();
+    final selectedStaffIds = <String>{};
+    bool submitting = false;
+
+    List<StaffMemberModel> staffList = const <StaffMemberModel>[];
+    try {
+      staffList = await _apiService.getStaffList(forceRefresh: true);
+    } catch (_) {}
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            Future<void> submitAssign() async {
+              if (submitting) return;
+              if (selectedStaffIds.isEmpty) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Please select at least one staff member.')),
+                );
+                return;
+              }
+              setLocalState(() => submitting = true);
+              try {
+                if (singleLeadId != null) {
+                  await _apiService.assignLead(
+                    sourceType: singleLeadSourceType ?? 'lead',
+                    leadId: singleLeadId,
+                    assignedUserIds: selectedStaffIds.toList(growable: false),
+                    assignmentNote: noteController.text,
+                  );
+                } else {
+                  await _apiService.bulkAssignLeads(
+                    assignedUserIds: selectedStaffIds.toList(growable: false),
+                    selectedLeads: selectedLeads,
+                  );
+                }
+                if (!mounted) return;
+                Navigator.of(dialogContext).pop();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      singleLeadId != null
+                          ? 'Lead assigned successfully.'
+                          : 'Selected leads assigned successfully.',
+                    ),
+                  ),
+                );
+                setState(() => _selectedLeadKeys.clear());
+                setState(() => _isBulkSelectionMode = false);
+                await _loadLeads(page: _currentPage, search: _appliedSearch);
+              } catch (_) {
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Failed to assign lead(s). Please try again.')),
+                );
+                setLocalState(() => submitting = false);
+              }
+            }
+
+            return AlertDialog(
+              scrollable: true,
+              title: Text(singleLeadId != null ? 'Assign Lead' : 'Bulk Assign Leads'),
+              content: SizedBox(
+                width: 420,
+                child: staffList.isEmpty
+                    ? const Text('No staff members found.')
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Select Staff'),
+                          const SizedBox(height: 8),
+                          Container(
+                            constraints: const BoxConstraints(maxHeight: 220),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: staffList.map((staff) {
+                                  final checked = selectedStaffIds.contains(staff.id);
+                                  return CheckboxListTile(
+                                    dense: true,
+                                    value: checked,
+                                    title: Text(staff.name.isEmpty ? staff.email : staff.name),
+                                    subtitle: staff.email.isEmpty ? null : Text(staff.email),
+                                    controlAffinity: ListTileControlAffinity.leading,
+                                    onChanged: (value) {
+                                      setLocalState(() {
+                                        if (value == true) {
+                                          selectedStaffIds.add(staff.id);
+                                        } else {
+                                          selectedStaffIds.remove(staff.id);
+                                        }
+                                      });
+                                    },
+                                  );
+                                }).toList(growable: false),
+                              ),
+                            ),
+                          ),
+                          if (singleLeadId != null) ...[
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: noteController,
+                              minLines: 2,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'Assignment Note (optional)',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: submitting ? null : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: submitting || staffList.isEmpty ? null : submitAssign,
+                  child: Text(submitting ? 'Assigning...' : 'Assign'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openAssignSingleLead(LeadModel lead) async {
+    await _showAssignDialog(
+      selectedLeads: const <Map<String, dynamic>>[],
+      singleLeadId: lead.id,
+      singleLeadSourceType: _buildLeadAssignSource(lead),
+    );
+  }
+
+  Future<void> _openStatusUpdateDialog(LeadModel lead) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final remarksController = TextEditingController();
+    final lostReasonController = TextEditingController();
+    final wonValueController = TextEditingController();
+    String selectedStatus = _fixedStatusOptions.firstWhere(
+      (status) => status.toLowerCase() == lead.displayStatus.toLowerCase(),
+      orElse: () => 'New',
+    );
+    bool isSubmitting = false;
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: !isSubmitting,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            final isLost = selectedStatus.toLowerCase() == 'lost';
+            final isWon = selectedStatus.toLowerCase() == 'won';
+
+            Future<void> onUpdate() async {
+              if (isSubmitting) return;
+              if (isLost && lostReasonController.text.trim().isEmpty) {
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Lost reason is required for lost status.')),
+                );
+                return;
+              }
+              if (isWon && wonValueController.text.trim().isNotEmpty) {
+                final parsed = double.tryParse(wonValueController.text.trim());
+                if (parsed == null) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Won value must be a valid number.')),
+                  );
+                  return;
+                }
+              }
+
+              setLocalState(() => isSubmitting = true);
+              try {
+                await _apiService.updateLeadStatus(
+                  sourceType: _buildLeadAssignSource(lead),
+                  leadId: lead.id,
+                  status: _normalizeStatusForApi(selectedStatus),
+                  remarks: remarksController.text.trim(),
+                  lostReason: isLost ? lostReasonController.text.trim() : null,
+                  wonValue: isWon && wonValueController.text.trim().isNotEmpty
+                      ? double.tryParse(wonValueController.text.trim())
+                      : null,
+                );
+                if (!mounted) return;
+                Navigator.of(dialogContext).pop();
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Lead status updated successfully.')),
+                );
+                await _loadLeads(page: _currentPage, search: _appliedSearch);
+              } catch (_) {
+                if (!mounted) return;
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Failed to update lead status. Please try again.')),
+                );
+                setLocalState(() => isSubmitting = false);
+              }
+            }
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Change Lead Status',
+                              style: AppTextStyles.style(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF374151),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.of(dialogContext).pop(),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lead.displayName,
+                            style: AppTextStyles.style(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF374151),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Status',
+                            style: AppTextStyles.style(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF4B5563),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          DropdownButtonFormField<String>(
+                            value: selectedStatus,
+                            items: _fixedStatusOptions
+                                .map(
+                                  (status) => DropdownMenuItem<String>(
+                                    value: status,
+                                    child: Text(status),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: isSubmitting
+                                ? null
+                                : (value) {
+                                    if (value == null) return;
+                                    setLocalState(() => selectedStatus = value);
+                                  },
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              border: OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: wonValueController,
+                            enabled: !isSubmitting,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(
+                              labelText: 'Won Value (if won)',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: lostReasonController,
+                            enabled: !isSubmitting,
+                            minLines: 2,
+                            maxLines: 3,
+                            decoration: InputDecoration(
+                              labelText: 'Lost Reason (required if lost)',
+                              border: const OutlineInputBorder(),
+                              isDense: true,
+                              errorText: isLost && lostReasonController.text.trim().isEmpty
+                                  ? 'Required for Lost status'
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: remarksController,
+                            enabled: !isSubmitting,
+                            minLines: 2,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              labelText: 'Remarks',
+                              border: OutlineInputBorder(),
+                              isDense: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () => Navigator.of(dialogContext).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 10),
+                          ElevatedButton(
+                            onPressed: isSubmitting ? null : onUpdate,
+                            child: Text(isSubmitting ? 'Updating...' : 'Update'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+  }
+
+  Future<void> _openBulkAssign() async {
+    if (!_isBulkSelectionMode) {
+      setState(() {
+        _isBulkSelectionMode = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selection mode enabled. Select leads, then tap Bulk Assign again.')),
+      );
+      return;
+    }
+
+    final selectedLeads = _selectedLeadPayload();
+    if (selectedLeads.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least one lead for bulk assign.')),
+      );
+      return;
+    }
+    await _showAssignDialog(selectedLeads: selectedLeads);
+  }
+
+  String _normalizeStatusForApi(String status) {
+    return status.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  }
+
+  String _normalizeSourceLabel(String source) {
+    final normalized = source.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    switch (normalized) {
+      case 'lead':
+      case 'leads':
+        return 'Leads';
+      case 'digitalmarketing':
+        return 'Digital Marketing';
+      case 'webapp':
+      case 'webapps':
+      case 'webapplication':
+        return 'Web App';
+      case 'meta':
+      case 'facebook':
+        return 'Meta';
+      case 'google':
+      case 'googleads':
+        return 'Google';
+      case 'indiamart':
+        return 'IndiaMart';
+      case 'justdial':
+        return 'JustDial';
+      default:
+        return source;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final sourceCounts = _sourceCounts();
-    final statusOptions = _statusOptions();
+    final statusOptions = _fixedStatusOptions;
+    final sourceOptions = _fixedSourceOptions;
+    final visibleItems = _visibleItems();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isNarrow = screenWidth < 420;
+    final isVeryNarrow = screenWidth <= 380;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F5F9),
@@ -126,244 +628,74 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 14),
             children: [
-              const CommonTopBar(title: 'Lead Management', showBackButton: false),
+              const CommonTopBar(
+                title: 'Lead Management',
+                showBackButton: false,
+              ),
               const SizedBox(height: 10),
-              AppCard(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Lead Management',
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF0F172A),
-                            fontSize: 24,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const Spacer(),
-                        ElevatedButton.icon(
-                          onPressed: () => Get.toNamed(AppRoutes.addLead),
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text('Add New Lead'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1D7CE8),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _CountChip(
-                          label: 'All',
-                          value: _total,
-                          foreground: Colors.white,
-                          background: const Color(0xFF111827),
-                        ),
-                        _CountChip(
-                          label: 'Leads',
-                          value: _total,
-                          foreground: const Color(0xFFCA8A04),
-                          background: const Color(0xFFFFFBEB),
-                          border: const Color(0xFFFACC15),
-                        ),
-                        ...sourceCounts.entries.map(
-                          (entry) => _CountChip(
-                            label: entry.key,
-                            value: entry.value,
-                            foreground: const Color(0xFF2563EB),
-                            background: const Color(0xFFF8FAFC),
-                            border: const Color(0xFF60A5FA),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Showing $_startEntry to $_endEntry of $_total leads',
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF64748B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Text(
-                          'Show',
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF0F172A),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFCBD5E1)),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: DropdownButton<int>(
-                            value: _entryOptions.contains(_perPage)
-                                ? _perPage
-                                : _entryOptions.first,
-                            underline: const SizedBox.shrink(),
-                            onChanged: (value) {
-                              if (value == null) return;
-                              setState(() => _perPage = value);
-                              _loadLeads(page: 1, search: _appliedSearch);
-                            },
-                            items: _entryOptions
-                                .map(
-                                  (value) => DropdownMenuItem<int>(
-                                    value: value,
-                                    child: Text('$value'),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'entries',
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF0F172A),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-                        SizedBox(
-                          width: 170,
-                          child: DropdownButtonFormField<String>(
-                            value: _selectedStatus.isEmpty ? null : _selectedStatus,
-                            decoration: InputDecoration(
-                              hintText: 'All Statuses',
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                            ),
-                            items: statusOptions
-                                .map(
-                                  (status) => DropdownMenuItem<String>(
-                                    value: status,
-                                    child: Text(status),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() => _selectedStatus = value ?? '');
-                              _loadLeads(page: 1, search: _appliedSearch);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Search:',
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF0F172A),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 180,
-                          child: TextField(
-                            controller: _searchController,
-                            onSubmitted: (_) =>
-                                _loadLeads(page: 1, search: _searchController.text),
-                            decoration: InputDecoration(
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 10,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFCBD5E1),
-                                ),
-                              ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatusDropdown(
+                              statusOptions,
+                              isCompact: isNarrow,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () =>
-                              _loadLeads(page: 1, search: _searchController.text),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1D7CE8),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
+                          SizedBox(width: isNarrow ? 6 : 8),
+                          Expanded(
+                            child: _buildSourceDropdown(
+                              sourceOptions,
+                              isCompact: isNarrow,
+                            ),
                           ),
-                          child: const Text('Go'),
+                        ],
+                      ),
+                      SizedBox(height: isNarrow ? 6 : 8),
+                      Row(
+                        children: [
+                          Expanded(child: _buildSearchField(isCompact: isNarrow)),
+                          SizedBox(width: isNarrow ? 6 : 8),
+                          _buildGoButton(isCompact: isNarrow),
+                          SizedBox(width: isNarrow ? 6 : 8),
+                          _buildBulkAssignButton(isCompact: isNarrow),
+                          SizedBox(width: isNarrow ? 6 : 8),
+                          _buildAddLeadButton(
+                            compact: true,
+                            isCompact: isNarrow,
+                            iconOnly: isVeryNarrow,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (_isLoading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: ScreenSkeleton(),
+                        )
+                      else if (_error != null)
+                        _ErrorBox(
+                          message: _error!,
+                          onRetry: () => _loadLeads(page: 1),
+                        )
+                      else
+                        _buildLeadCards(visibleItems),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: _Pagination(
+                          currentPage: _currentPage,
+                          lastPage: _lastPage,
+                          onPageTap: (page) => _loadLeads(page: page),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (_isLoading)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: ScreenSkeleton(),
-                      )
-                    else if (_error != null)
-                      _ErrorBox(message: _error!, onRetry: () => _loadLeads(page: 1))
-                    else
-                      _buildTable(),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Showing $_startEntry to $_endEntry of $_total entries',
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF0F172A),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _Pagination(
-                        currentPage: _currentPage,
-                        lastPage: _lastPage,
-                        onPageTap: (page) => _loadLeads(page: page),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -375,8 +707,8 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     );
   }
 
-  Widget _buildTable() {
-    if (_items.isEmpty) {
+  Widget _buildLeadCards(List<LeadModel> leads) {
+    if (leads.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
@@ -396,133 +728,400 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       );
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        headingRowColor: WidgetStateProperty.all(const Color(0xFFF1F5F9)),
-        dataRowMinHeight: 52,
-        dataRowMaxHeight: 62,
-        columns: const [
-          DataColumn(label: Text('Sr No')),
-          DataColumn(label: Text('Name')),
-          DataColumn(label: Text('Email')),
-          DataColumn(label: Text('Number')),
-          DataColumn(label: Text('Company')),
-          DataColumn(label: Text('Source')),
-          DataColumn(label: Text('Status')),
-          DataColumn(label: Text('Assigned To')),
-          DataColumn(label: Text('Created Date')),
-          DataColumn(label: Text('Actions')),
-        ],
-        rows: List<DataRow>.generate(_items.length, (index) {
-          final lead = _items[index];
-          final serialNumber = ((_currentPage - 1) * _perPage) + index + 1;
-          return DataRow(
-            cells: [
-              DataCell(Text('$serialNumber')),
-              DataCell(
-                SizedBox(
-                  width: 160,
-                  child: Text(lead.displayName, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-              DataCell(
-                SizedBox(
-                  width: 210,
-                  child: Text(lead.displayEmail, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-              DataCell(
-                SizedBox(
-                  width: 130,
-                  child: Text(lead.displayPhone, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-              DataCell(
-                SizedBox(
-                  width: 140,
-                  child:
-                      Text(lead.displayCompany, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-              DataCell(
-                SizedBox(
-                  width: 140,
-                  child: Text(lead.displaySource, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-              DataCell(_StatusBadge(status: lead.displayStatus)),
-              DataCell(
-                SizedBox(
-                  width: 130,
-                  child:
-                      Text(lead.displayAssignedTo, overflow: TextOverflow.ellipsis),
-                ),
-              ),
-              DataCell(
-                SizedBox(
-                  width: 150,
-                  child: Text(
-                    _formatDateTime(lead.createdAt),
-                    overflow: TextOverflow.ellipsis,
+    return Column(
+      children: List<Widget>.generate(leads.length, (index) {
+        final lead = leads[index];
+        final serialNumber = ((_currentPage - 1) * _perPage) + index + 1;
+
+        return Padding(
+          padding: EdgeInsets.only(bottom: index == leads.length - 1 ? 0 : 10),
+          child: GestureDetector(
+            onLongPress: () {
+              setState(() {
+                _isBulkSelectionMode = true;
+              });
+              _toggleLeadSelection(lead, true);
+            },
+            onTap: _isBulkSelectionMode
+                ? () => _toggleLeadSelection(lead, !_isLeadSelected(lead))
+                : null,
+            child: AppCard(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (_isBulkSelectionMode)
+                        Checkbox(
+                          value: _isLeadSelected(lead),
+                          onChanged: (value) => _toggleLeadSelection(lead, value ?? false),
+                        ),
+                      Expanded(
+                        child: Text(
+                          '#$serialNumber ${lead.displayName}',
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF0F172A),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _TypeBadge(type: lead.displaySourceType),
+                      const SizedBox(width: 6),
+                      _StatusBadge(status: lead.displayStatus),
+                    ],
                   ),
-                ),
-              ),
-              DataCell(
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_red_eye_outlined, size: 18),
-                      color: const Color(0xFF1D7CE8),
-                      onPressed: () =>
-                          Get.toNamed(AppRoutes.leadDetail, arguments: lead.id),
+                  const SizedBox(height: 4),
+                  Text(
+                    lead.displayCompany == '-' ? 'Unknown Client' : lead.displayCompany,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF64748B),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      color: const Color(0xFF0EA5E9),
-                      onPressed: () =>
-                          Get.to(() => AddLeadScreen(leadId: lead.id)),
+                  ),
+                  const SizedBox(height: 12),
+                  Column(
+                    children: [
+                      _buildLeadFieldRow(
+                        left: _LeadApiField(label: 'source_id', value: lead.displaySourceId),
+                        right: _LeadApiField(label: 'email', value: lead.displayEmail),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildLeadFieldRow(
+                        left: _LeadApiField(label: 'number', value: lead.displayPhone),
+                        right: _LeadApiField(label: 'source', value: lead.displaySource),
+                      ),
+                      const SizedBox(height: 10),
+                      _LeadApiField(
+                        label: 'assigned_to',
+                        value: lead.displayAssignedTo,
+                      trailing: _LeadActions(
+                        leadId: lead.id,
+                        onAssign: () => _openAssignSingleLead(lead),
+                        onEditStatus: () => _openStatusUpdateDialog(lead),
+                      ),
                     ),
                   ],
                 ),
+                ],
               ),
-            ],
-          );
-        }),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildLeadFieldRow({required Widget left, required Widget right}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 12),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  Widget _buildStatusDropdown(List<String> statusOptions, {bool isCompact = false}) {
+    return DropdownButtonFormField<String>(
+      isExpanded: true,
+      value: _selectedStatus.isEmpty ? null : _selectedStatus,
+      decoration: InputDecoration(
+        hintText: 'All Statuses',
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 8 : 10,
+          vertical: isCompact ? 6 : 8,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+      ),
+      style: AppTextStyles.style(
+        color: const Color(0xFF334155),
+        fontSize: isCompact ? 11 : 12,
+        fontWeight: FontWeight.w600,
+      ),
+      items: statusOptions
+          .map(
+            (status) => DropdownMenuItem<String>(value: status, child: Text(status)),
+          )
+          .toList(),
+      onChanged: (value) {
+        setState(() => _selectedStatus = value ?? '');
+        _loadLeads(page: 1, search: _appliedSearch);
+      },
+    );
+  }
+
+  Widget _buildSourceDropdown(List<_SourceOption> sourceOptions, {bool isCompact = false}) {
+    return DropdownButtonFormField<String>(
+      isExpanded: true,
+      value: _selectedSource.isEmpty ? null : _selectedSource,
+      decoration: InputDecoration(
+        hintText: 'All Sources',
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 8 : 10,
+          vertical: isCompact ? 6 : 8,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+      ),
+      style: AppTextStyles.style(
+        color: const Color(0xFF334155),
+        fontSize: isCompact ? 11 : 12,
+        fontWeight: FontWeight.w600,
+      ),
+      items: sourceOptions
+          .map(
+            (source) => DropdownMenuItem<String>(
+              value: source.label == 'All' ? '' : source.label,
+              child: Row(
+                children: [
+                  IconTheme(
+                    data: IconThemeData(size: isCompact ? 14 : 16, color: const Color(0xFF334155)),
+                    child: source.buildIcon(),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(source.label)),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (value) {
+        setState(() => _selectedSource = value ?? '');
+      },
+    );
+  }
+
+  Widget _buildSearchField({bool isCompact = false}) {
+    return TextField(
+      controller: _searchController,
+      onSubmitted: (_) => _loadLeads(page: 1, search: _searchController.text),
+      decoration: InputDecoration(
+        hintText: 'Search',
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: isCompact ? 8 : 10,
+          vertical: isCompact ? 8 : 10,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
       ),
     );
   }
 
-  String _formatDateTime(DateTime? date) {
-    if (date == null) return '-';
-
-    const months = <String>[
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-
-    final day = date.day.toString().padLeft(2, '0');
-    final month = months[date.month - 1];
-    final year = date.year;
-    final hourRaw = date.hour;
-    final minute = date.minute.toString().padLeft(2, '0');
-    final amPm = hourRaw >= 12 ? 'PM' : 'AM';
-    final hour = (hourRaw % 12 == 0 ? 12 : hourRaw % 12).toString().padLeft(
-      2,
-      '0',
+  Widget _buildAddLeadButton({
+    bool compact = false,
+    bool isCompact = false,
+    bool iconOnly = false,
+  }) {
+    final buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF1D7CE8),
+      foregroundColor: Colors.white,
+      elevation: 0,
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : (compact ? 12 : 14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
 
-    return '$day $month $year $hour:$minute $amPm';
+    return SizedBox(
+      height: isCompact ? 34 : 38,
+      width: iconOnly ? (isCompact ? 36 : 40) : null,
+      child: iconOnly
+          ? ElevatedButton(
+              onPressed: () => Get.toNamed(AppRoutes.addLead),
+              style: buttonStyle,
+              child: Icon(Icons.add, size: isCompact ? 14 : 16),
+            )
+          : ElevatedButton.icon(
+              onPressed: () => Get.toNamed(AppRoutes.addLead),
+              icon: Icon(Icons.add, size: isCompact ? 14 : 16),
+              label: Text(
+                compact ? 'Add Lead' : 'Add New Lead',
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: isCompact ? 12 : 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              style: buttonStyle,
+            ),
+    );
+  }
+
+  Widget _buildGoButton({bool isCompact = false}) {
+    return SizedBox(
+      height: isCompact ? 34 : 38,
+      child: ElevatedButton(
+        onPressed: () => _loadLeads(page: 1, search: _searchController.text),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF1D7CE8),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        child: Text(
+          'Go',
+          style: AppTextStyles.style(
+            color: Colors.white,
+            fontSize: isCompact ? 13 : 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBulkAssignButton({bool isCompact = false}) {
+    final hasSelectedVisibleLeads = _selectedLeadPayload().isNotEmpty;
+    return SizedBox(
+      height: isCompact ? 34 : 38,
+      child: OutlinedButton.icon(
+        onPressed: _openBulkAssign,
+        icon: Icon(Icons.group_add_outlined, size: isCompact ? 14 : 16),
+        label: Text(
+          _isBulkSelectionMode
+              ? (hasSelectedVisibleLeads
+                    ? 'Bulk Assign (${_selectedLeadKeys.length})'
+                    : 'Select Leads')
+              : 'Bulk Assign',
+          style: AppTextStyles.style(
+            fontSize: isCompact ? 12 : 13,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1D4ED8),
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Color(0xFF93C5FD)),
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      ),
+    );
+  }
+
+}
+
+class _SourceOption {
+  const _SourceOption({
+    required this.label,
+    required this.iconData,
+    this.useFaIcon = false,
+  });
+
+  final String label;
+  final Object iconData;
+  final bool useFaIcon;
+
+  Widget buildIcon() {
+    if (useFaIcon && iconData is FaIconData) {
+      return FaIcon(iconData as FaIconData);
+    }
+    if (iconData is IconData) {
+      return Icon(iconData as IconData);
+    }
+    return const Icon(Icons.help_outline);
+  }
+}
+
+class _LeadApiField extends StatelessWidget {
+  const _LeadApiField({
+    required this.label,
+    required this.value,
+    this.trailing,
+  });
+
+  final String label;
+  final String value;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              text: '$label: ',
+              style: AppTextStyles.style(
+                color: const Color(0xFF64748B),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              children: [
+                TextSpan(
+                  text: value,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF334155),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: 10),
+          trailing!,
+        ],
+      ],
+    );
+  }
+}
+
+class _ActionCircleButton extends StatelessWidget {
+  const _ActionCircleButton({
+    required this.icon,
+    required this.iconColor,
+    required this.background,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color background;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: background,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 18, color: iconColor),
+      ),
+    );
   }
 }
 
@@ -533,20 +1132,17 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final normalized = status.trim().toLowerCase();
-    final isNew = normalized.contains('new');
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isNew ? const Color(0xFF64748B) : const Color(0xFFE2E8F0),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFE8F0FE),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        status.toUpperCase(),
+        status,
         style: AppTextStyles.style(
-          color: isNew ? Colors.white : const Color(0xFF334155),
-          fontSize: 10,
+          color: const Color(0xFF2563EB),
+          fontSize: 14,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -554,58 +1150,105 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _CountChip extends StatelessWidget {
-  const _CountChip({
-    required this.label,
-    required this.value,
-    required this.foreground,
-    required this.background,
-    this.border,
-  });
+class _TypeBadge extends StatelessWidget {
+  const _TypeBadge({required this.type});
 
-  final String label;
-  final int value;
-  final Color foreground;
-  final Color background;
-  final Color? border;
+  final String type;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: border ?? background),
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(999),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: AppTextStyles.style(
-              color: foreground,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      child: Text(
+        type,
+        style: AppTextStyles.style(
+          color: const Color(0xFF334155),
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _LeadActions extends StatelessWidget {
+  const _LeadActions({
+    required this.leadId,
+    required this.onAssign,
+    required this.onEditStatus,
+  });
+
+  final String leadId;
+  final VoidCallback onAssign;
+  final VoidCallback onEditStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => Get.toNamed(AppRoutes.leadDetail, arguments: leadId),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
             decoration: BoxDecoration(
-              color: foreground,
-              borderRadius: BorderRadius.circular(999),
+              color: const Color(0xFFDBEAFE),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(
-              '$value',
-              style: AppTextStyles.style(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+            child: const Icon(
+              Icons.remove_red_eye_outlined,
+              size: 18,
+              color: Color(0xFF2563EB),
             ),
           ),
-        ],
+        ),
+        const SizedBox(width: 10),
+        _ActionIconButton(
+          icon: Icons.person_add_alt_1_outlined,
+          color: Color(0xFFF59E0B),
+          onTap: onAssign,
+        ),
+        const SizedBox(width: 10),
+        _ActionIconButton(
+          icon: Icons.edit_outlined,
+          color: Color(0xFF0EA5E9),
+          onTap: onEditStatus,
+        ),
+        const SizedBox(width: 10),
+        _ActionIconButton(
+          icon: Icons.delete_outline,
+          color: Color(0xFFEF4444),
+          onTap: () {},
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionIconButton extends StatelessWidget {
+  const _ActionIconButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Icon(icon, size: 18, color: color),
       ),
     );
   }
@@ -628,15 +1271,6 @@ class _Pagination extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final pages = <int>{
-      1,
-      lastPage,
-      currentPage - 1,
-      currentPage,
-      currentPage + 1,
-    }.where((page) => page >= 1 && page <= lastPage).toList()
-      ..sort();
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -644,36 +1278,6 @@ class _Pagination extends StatelessWidget {
           onPressed: currentPage > 1 ? () => onPageTap(currentPage - 1) : null,
           child: const Text('Prev'),
         ),
-        ...pages.map((page) {
-          final selected = page == currentPage;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            child: InkWell(
-              onTap: () => onPageTap(page),
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                width: 30,
-                height: 30,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? const Color(0xFF1D7CE8)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFFCBD5E1)),
-                ),
-                child: Text(
-                  '$page',
-                  style: AppTextStyles.style(
-                    color: selected ? Colors.white : const Color(0xFF1E293B),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }),
         TextButton(
           onPressed: currentPage < lastPage
               ? () => onPageTap(currentPage + 1)

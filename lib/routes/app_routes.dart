@@ -13,7 +13,7 @@ class AppRoutes {
   static const String projects = '/projects';
   static const String addProject = '/projects/add';
   static const String projectDetail = '/projects/detail';
- 
+
   static const String profile = '/profile';
   static const String personalInformation = '/profile/personal-information';
   static const String renewalMaster = '/profile/renewal-master';

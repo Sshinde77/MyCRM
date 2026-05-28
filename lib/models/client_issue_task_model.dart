@@ -192,11 +192,7 @@ class ClientIssueTaskAttachment {
 
   factory ClientIssueTaskAttachment.fromJson(Map<String, dynamic> json) {
     final url = _readString(json, const ['url', 'file_url', 'fileUrl']);
-    final path = _readString(json, const [
-      'path',
-      'file_path',
-      'filePath',
-    ]);
+    final path = _readString(json, const ['path', 'file_path', 'filePath']);
     final name = _readString(json, const ['name', 'file_name', 'fileName']);
     return ClientIssueTaskAttachment(path: path, name: name, url: url);
   }

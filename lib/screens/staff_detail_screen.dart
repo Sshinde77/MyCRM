@@ -839,9 +839,8 @@ class _EditProfileForm extends StatelessWidget {
               items: <String>{
                 selectedTeam.trim(),
                 ...teamOptions
-                  .map((item) => item.name.trim())
-                  .where((name) => name.isNotEmpty)
-                  ,
+                    .map((item) => item.name.trim())
+                    .where((name) => name.isNotEmpty),
               }.where((name) => name.isNotEmpty).toList(growable: false),
               onChanged: onTeamChanged,
             ),
@@ -851,9 +850,8 @@ class _EditProfileForm extends StatelessWidget {
               options: <String>{
                 ...selectedDepartments.map((value) => value.trim()),
                 ...departmentOptions
-                  .map((item) => item.name.trim())
-                  .where((name) => name.isNotEmpty)
-                  ,
+                    .map((item) => item.name.trim())
+                    .where((name) => name.isNotEmpty),
               }.where((name) => name.isNotEmpty).toList(growable: false),
               selectedValues: selectedDepartments,
               onToggle: onDepartmentToggle,

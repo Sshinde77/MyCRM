@@ -8,6 +8,8 @@ class LeadModel {
     this.status,
     this.email,
     this.phone,
+    this.sourceType,
+    this.sourceId,
     this.leadType,
     this.createdAt,
     this.assignedTo,
@@ -33,6 +35,8 @@ class LeadModel {
   final String? status;
   final String? email;
   final String? phone;
+  final String? sourceType;
+  final String? sourceId;
   final String? leadType;
   final DateTime? createdAt;
   final String? assignedTo;
@@ -114,10 +118,13 @@ class LeadModel {
       ]),
       phone: _readNullableString(source, [
         'phone',
+        'number',
         'mobile',
         'phone_number',
         'contact_number',
       ]),
+      sourceType: _readNullableString(source, ['source_type', 'sourceType']),
+      sourceId: _readNullableString(source, ['source_id', 'sourceId']),
       leadType: _readNullableString(source, ['lead_type', 'leadType', 'type']),
       createdAt: _readNullableDateTime(source, [
         'created_at',
@@ -129,6 +136,7 @@ class LeadModel {
           _readAssignedStaffNames(assignedStaff) ??
           _readNullableString(assignedSource, ['first_name']) ??
           _readNullableString(source, [
+            'assigned_to',
             'assigned_to_name',
             'assigned_name',
             'owner_name',
@@ -218,6 +226,16 @@ class LeadModel {
 
   String get displayLeadType {
     final value = leadType?.trim();
+    return value == null || value.isEmpty ? 'N/A' : value;
+  }
+
+  String get displaySourceType {
+    final value = sourceType?.trim();
+    return value == null || value.isEmpty ? 'N/A' : value;
+  }
+
+  String get displaySourceId {
+    final value = sourceId?.trim();
     return value == null || value.isEmpty ? 'N/A' : value;
   }
 

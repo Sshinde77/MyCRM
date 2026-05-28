@@ -585,10 +585,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const AlertDialog(
                 title: Text('Event Detail'),
-                content: SizedBox(
-                  height: 90,
-                  child: ScreenSkeleton(),
-                ),
+                content: SizedBox(height: 90, child: ScreenSkeleton()),
               );
             }
 
@@ -4143,4 +4140,3 @@ class _TaskDonutPainter extends CustomPainter {
         oldDelegate.backgroundColor != backgroundColor;
   }
 }
-

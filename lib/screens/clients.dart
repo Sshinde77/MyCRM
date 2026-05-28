@@ -417,13 +417,13 @@ class _ClientsScreenState extends State<ClientsScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-      height: 40,
-      width: 40,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: Colors.grey, size: 20),
+        height: 40,
+        width: 40,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.grey, size: 20),
       ),
     );
   }

@@ -342,8 +342,10 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
                         SizedBox(
                           height: 46,
                           child: ElevatedButton(
-                            onPressed: _isSubmitting || _isLoading
-                                    || !_hasSubmitPermission
+                            onPressed:
+                                _isSubmitting ||
+                                    _isLoading ||
+                                    !_hasSubmitPermission
                                 ? null
                                 : _submit,
                             style: ElevatedButton.styleFrom(

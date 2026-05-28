@@ -1,9 +1,4 @@
-enum LoadState {
-  loading,
-  success,
-  empty,
-  error,
-}
+enum LoadState { loading, success, empty, error }
 
 extension LoadStateX on LoadState {
   bool get isLoading => this == LoadState.loading;

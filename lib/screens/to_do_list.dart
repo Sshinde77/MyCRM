@@ -1765,16 +1765,13 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
                 selected: _reminderWhatsappEnabled,
                 onTap: () {
                   if (_isSubmitting) return;
-                  setState(
-                    () {
-                      _reminderWhatsappEnabled = !_reminderWhatsappEnabled;
-                      if (_hasReminderChannel &&
-                          _endType == _TaskEndType.never) {
-                        _endType = _TaskEndType.after;
-                        _afterCountController.text = '1';
-                      }
-                    },
-                  );
+                  setState(() {
+                    _reminderWhatsappEnabled = !_reminderWhatsappEnabled;
+                    if (_hasReminderChannel && _endType == _TaskEndType.never) {
+                      _endType = _TaskEndType.after;
+                      _afterCountController.text = '1';
+                    }
+                  });
                 },
               ),
             ],

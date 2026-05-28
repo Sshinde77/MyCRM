@@ -1,4 +1,4 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
@@ -80,7 +80,10 @@ class _VendorDetailScreenState extends State<VendorDetailScreen> {
 
   Future<void> _openEditVendor(VendorModel detail) async {
     if (!_canEditVendor) {
-      AppSnackbar.show('Access denied', 'You do not have permission to edit vendors.');
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to edit vendors.',
+      );
       return;
     }
     final updated = await Get.to<bool>(

@@ -68,11 +68,7 @@ class SkeletonBlock extends StatelessWidget {
 }
 
 class ShimmerSkeleton extends StatelessWidget {
-  const ShimmerSkeleton({
-    super.key,
-    required this.child,
-    this.enabled = true,
-  });
+  const ShimmerSkeleton({super.key, required this.child, this.enabled = true});
 
   final Widget child;
   final bool enabled;

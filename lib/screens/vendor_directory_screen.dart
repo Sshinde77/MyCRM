@@ -90,7 +90,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
 
   Future<void> _openCreateVendor() async {
     if (!_canCreateVendor) {
-      AppSnackbar.show('Access denied', 'You do not have permission to add vendors.');
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to add vendors.',
+      );
       return;
     }
     final created = await Get.to<bool>(() => const VendorFormScreen());
@@ -101,7 +104,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
 
   Future<void> _openEditVendor(VendorModel vendor) async {
     if (!_canEditVendor) {
-      AppSnackbar.show('Access denied', 'You do not have permission to edit vendors.');
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to edit vendors.',
+      );
       return;
     }
     final updated = await Get.to<bool>(
@@ -130,7 +136,10 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
 
   Future<void> _deleteVendor(VendorModel vendor) async {
     if (!_canDeleteVendor) {
-      AppSnackbar.show('Access denied', 'You do not have permission to delete vendors.');
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to delete vendors.',
+      );
       return;
     }
     final confirmed = await showDialog<bool>(
@@ -510,7 +519,9 @@ class _VendorMobileList extends StatelessWidget {
                 row: row,
                 onViewVendor: canViewVendor ? () => onViewVendor(row) : null,
                 onEditVendor: canEditVendor ? () => onEditVendor(row) : null,
-                onDeleteVendor: canDeleteVendor ? () => onDeleteVendor(row) : null,
+                onDeleteVendor: canDeleteVendor
+                    ? () => onDeleteVendor(row)
+                    : null,
               ),
             ),
           )
@@ -738,18 +749,24 @@ class _VendorTable extends StatelessWidget {
                         children: [
                           _ActionIcon(
                             icon: Icons.remove_red_eye_outlined,
-                            onTap: canViewVendor ? () => onViewVendor(row) : null,
+                            onTap: canViewVendor
+                                ? () => onViewVendor(row)
+                                : null,
                           ),
                           const SizedBox(width: 8),
                           _ActionIcon(
                             icon: Icons.edit_square,
-                            onTap: canEditVendor ? () => onEditVendor(row) : null,
+                            onTap: canEditVendor
+                                ? () => onEditVendor(row)
+                                : null,
                           ),
                           const SizedBox(width: 8),
                           _ActionIcon(
                             icon: Icons.delete_outline_rounded,
                             danger: true,
-                            onTap: canDeleteVendor ? () => onDeleteVendor(row) : null,
+                            onTap: canDeleteVendor
+                                ? () => onDeleteVendor(row)
+                                : null,
                           ),
                         ],
                       ),

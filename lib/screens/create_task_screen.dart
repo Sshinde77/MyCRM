@@ -841,7 +841,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     }
 
     setState(() => _submitting = true);
-      
+
     try {
       final tags = _tagsController.text
           .split(',')

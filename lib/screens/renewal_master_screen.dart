@@ -133,7 +133,8 @@ class _RenewalMasterScreenState extends State<RenewalMasterScreen> {
                           FutureBuilder<List<_RenewalOption>>(
                             future: _visibleOptionsFuture,
                             builder: (context, snapshot) {
-                              final visibleOptions = snapshot.data ?? const <_RenewalOption>[];
+                              final visibleOptions =
+                                  snapshot.data ?? const <_RenewalOption>[];
                               if (visibleOptions.isEmpty) {
                                 return Text(
                                   'No renewal sections available for your account.',
@@ -148,7 +149,9 @@ class _RenewalMasterScreenState extends State<RenewalMasterScreen> {
                                 children: visibleOptions
                                     .map(
                                       (option) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 12,
+                                        ),
                                         child: _RenewalOptionCard(
                                           option: option,
                                           compact: compact,

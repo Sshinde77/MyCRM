@@ -1097,10 +1097,7 @@ class _IssueQuickIconAction extends StatelessWidget {
 }
 
 class _IssueStatusDropdown extends StatelessWidget {
-  const _IssueStatusDropdown({
-    required this.value,
-    required this.onChanged,
-  });
+  const _IssueStatusDropdown({required this.value, required this.onChanged});
 
   final String value;
   final ValueChanged<String> onChanged;

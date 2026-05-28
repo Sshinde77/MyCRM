@@ -135,12 +135,7 @@ class ClientDetailModel {
         : const <String, String>{};
     final resolvedCompanyName = _firstNonEmpty([
       primaryBusiness['company_name'] ?? '',
-      _readString(json, [
-        'company',
-        'companyName',
-        'company_name',
-        'title',
-      ]),
+      _readString(json, ['company', 'companyName', 'company_name', 'title']),
     ]);
     final resolvedWebsite = _firstNonEmpty([
       _readString(json, ['website', 'website_url', 'site', 'url']),

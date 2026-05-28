@@ -22,6 +22,10 @@ val hasGoogleServicesConfig = listOf(
     "src/release/google-services.json",
 ).any { file(it).exists() }
 
+val isReleaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("Release", ignoreCase = true)
+}
+
 if (hasGoogleServicesConfig) {
     apply(plugin = "com.google.gms.google-services")
 } else {
@@ -72,12 +76,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            if (!keystorePropertiesFile.exists()) {
+            if (isReleaseBuildRequested && !keystorePropertiesFile.exists()) {
                 throw GradleException(
                     "Missing android/key.properties. Configure release keystore before building release APK/AAB.",
                 )
             }
-            signingConfig = signingConfigs.getByName("release")
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

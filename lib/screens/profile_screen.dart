@@ -195,14 +195,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     for (final action in _actions) {
       if (action.routeName == AppRoutes.renewalMaster) {
         final user = await PermissionService.getCurrentUser();
-        final canOpenRenewal = PermissionService.userHasAny(
-          user,
-          const [
-            AppPermission.viewRenewals,
-            AppPermission.viewServices,
-            AppPermission.viewVendors,
-          ],
-        );
+        final canOpenRenewal = PermissionService.userHasAny(user, const [
+          AppPermission.viewRenewals,
+          AppPermission.viewServices,
+          AppPermission.viewVendors,
+        ]);
         if (canOpenRenewal) {
           visible.add(action);
         }

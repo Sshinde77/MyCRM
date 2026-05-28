@@ -1428,9 +1428,9 @@ class _TaskDetailDialogState extends State<_TaskDetailDialog> {
                         child: InkWell(
                           onTap: canPreview
                               ? () => _openTaskAttachment(
-                                    attachment.displayName,
-                                    previewUrl,
-                                  )
+                                  attachment.displayName,
+                                  previewUrl,
+                                )
                               : null,
                           borderRadius: BorderRadius.circular(10),
                           child: Container(
@@ -1442,7 +1442,9 @@ class _TaskDetailDialogState extends State<_TaskDetailDialog> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFE6ECF5)),
+                              border: Border.all(
+                                color: const Color(0xFFE6ECF5),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2776,7 +2778,6 @@ class _TaskInlineAddField extends StatelessWidget {
     );
   }
 }
-
 
 InputDecoration _taskInputDecoration(String hint) {
   return InputDecoration(
