@@ -12,7 +12,10 @@ class LeadModel {
     this.sourceId,
     this.leadType,
     this.createdAt,
+    this.convertedAt,
     this.assignedTo,
+    this.previousStatus,
+    this.lostReason,
     this.source,
     this.website,
     this.avatarUrl,
@@ -39,7 +42,10 @@ class LeadModel {
   final String? sourceId;
   final String? leadType;
   final DateTime? createdAt;
+  final DateTime? convertedAt;
   final String? assignedTo;
+  final String? previousStatus;
+  final String? lostReason;
   final String? source;
   final String? website;
   final String? avatarUrl;
@@ -74,7 +80,14 @@ class LeadModel {
         .join(' ');
 
     return LeadModel(
-      id: _readString(source, ['id', '_id', 'lead_id', 'leadId']),
+      id: _readString(source, [
+        'id',
+        '_id',
+        'lead_id',
+        'leadId',
+        'source_id',
+        'sourceId',
+      ]),
       name: combinedName.isNotEmpty
           ? combinedName
           : _readString(source, [
@@ -132,6 +145,12 @@ class LeadModel {
         'date',
         'lead_date',
       ]),
+      convertedAt: _readNullableDateTime(source, [
+        'converted_at',
+        'convertedAt',
+        'conversion_date',
+        'converted_date',
+      ]),
       assignedTo:
           _readAssignedStaffNames(assignedStaff) ??
           _readNullableString(assignedSource, ['first_name']) ??
@@ -146,6 +165,16 @@ class LeadModel {
             'full_name',
             'username',
           ]),
+      previousStatus: _readNullableString(source, [
+        'previous_status',
+        'previousStatus',
+        'old_status',
+      ]),
+      lostReason: _readNullableString(source, [
+        'lost_reason',
+        'lostReason',
+        'reason',
+      ]),
       source: _readNullableString(source, ['source', 'lead_source']),
       website: _readNullableString(source, ['website', 'website_url', 'url']),
       position: _readNullableString(source, [

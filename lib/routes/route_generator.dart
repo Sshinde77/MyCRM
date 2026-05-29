@@ -23,6 +23,7 @@ import '../screens/add_lead_screen.dart';
 import '../screens/leads_screen.dart';
 import '../screens/all_leads.dart';
 import '../screens/lead_detail_screen.dart';
+import '../screens/lead_management_detail_screen.dart';
 import '../screens/issue_management_screen.dart';
 import '../screens/issue_detail_screen.dart';
 import '../screens/renewal_master_screen.dart';
@@ -131,6 +132,15 @@ class RouteGenerator {
           ChangeNotifierProvider(
             create: (_) => LeadDetailProvider(leadId: leadId)..loadLead(),
             child: const LeadDetailScreen(),
+          ),
+        );
+      case AppRoutes.leadManagementDetail:
+        final leadId = _extractLeadId(settings.arguments);
+        return _protectedRoute(
+          AppRoutes.leadManagementDetail,
+          ChangeNotifierProvider(
+            create: (_) => LeadDetailProvider(leadId: leadId)..loadLead(),
+            child: const LeadManagementDetailScreen(),
           ),
         );
       case AppRoutes.projects:
@@ -316,7 +326,12 @@ class RouteGenerator {
     if (args is String) return args;
     if (args is int) return args.toString();
     if (args is Map) {
-      final raw = args['id'] ?? args['leadId'] ?? args['lead_id'];
+      final raw =
+          args['id'] ??
+          args['leadId'] ??
+          args['lead_id'] ??
+          args['source_id'] ??
+          args['sourceId'];
       if (raw != null && raw.toString().trim().isNotEmpty) {
         return raw.toString();
       }

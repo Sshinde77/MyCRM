@@ -23,12 +23,12 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   static const List<String> _fixedStatusOptions = <String>[
     'New',
     'Attempted Contact',
-    'Contacted',  
+    'Contacted',
     'Qualified',
     'Demo Scheduled',
-    'Proposal Sent',    
+    'Proposal Sent',
     'Negotiation',
-    'Won',
+    'Converted',
     'Lost',
     'Junk',
   ];
@@ -359,10 +359,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     final remarksController = TextEditingController();
     final lostReasonController = TextEditingController();
     final wonValueController = TextEditingController();
-    String selectedStatus = _fixedStatusOptions.firstWhere(
-      (status) => status.toLowerCase() == lead.displayStatus.toLowerCase(),
-      orElse: () => 'New',
-    );
+    String selectedStatus = _resolveCurrentStatusOption(lead.displayStatus);
     bool isSubmitting = false;
 
     if (!mounted) return;
@@ -373,7 +370,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         return StatefulBuilder(
           builder: (context, setLocalState) {
             final isLost = selectedStatus.toLowerCase() == 'lost';
-            final isWon = selectedStatus.toLowerCase() == 'won';
+            final isConverted = selectedStatus.toLowerCase() == 'converted';
 
             Future<void> onUpdate() async {
               if (isSubmitting) return;
@@ -383,11 +380,11 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                 );
                 return;
               }
-              if (isWon && wonValueController.text.trim().isNotEmpty) {
+              if (isConverted && wonValueController.text.trim().isNotEmpty) {
                 final parsed = double.tryParse(wonValueController.text.trim());
                 if (parsed == null) {
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Won value must be a valid number.')),
+                    const SnackBar(content: Text('Converted value must be a valid number.')),
                   );
                   return;
                 }
@@ -401,7 +398,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                   status: _normalizeStatusForApi(selectedStatus),
                   remarks: remarksController.text.trim(),
                   lostReason: isLost ? lostReasonController.text.trim() : null,
-                  wonValue: isWon && wonValueController.text.trim().isNotEmpty
+                  wonValue: isConverted && wonValueController.text.trim().isNotEmpty
                       ? double.tryParse(wonValueController.text.trim())
                       : null,
                 );
@@ -503,7 +500,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                             enabled: !isSubmitting,
                             keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             decoration: const InputDecoration(
-                              labelText: 'Won Value (if won)',
+                              labelText: 'Converted Value (if converted)',
                               border: OutlineInputBorder(),
                               isDense: true,
                             ),
@@ -592,6 +589,20 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
 
   String _normalizeStatusForApi(String status) {
     return status.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  }
+
+  String _resolveCurrentStatusOption(String currentStatus) {
+    final normalizedCurrent = _normalizeStatusForApi(currentStatus);
+    for (final option in _fixedStatusOptions) {
+      final normalizedOption = _normalizeStatusForApi(option);
+      if (normalizedOption == normalizedCurrent) {
+        return option;
+      }
+      if (normalizedCurrent == 'won' && normalizedOption == 'converted') {
+        return option;
+      }
+    }
+    return _fixedStatusOptions.first;
   }
 
   String _normalizeSourceLabel(String source) {
@@ -1274,7 +1285,7 @@ class _LeadActions extends StatelessWidget {
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () => Get.toNamed(AppRoutes.leadDetail, arguments: leadId),
+          onTap: () => Get.toNamed(AppRoutes.leadManagementDetail, arguments: leadId),
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
             decoration: BoxDecoration(
