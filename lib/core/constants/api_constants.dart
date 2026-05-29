@@ -33,7 +33,7 @@ class ApiConstants {
   static const String stafftasks = '$baseUrl/staff/{id}/tasks';
 
   //Clients Api
-  static const String clients = '$baseUrl/clients';
+  static const String clients = '$baseUrl/clients'; 
   static const String clientDetail = '$baseUrl/clients/{id}';
   static const String updateClient = '$baseUrl/clients/{id}';
   static const String deleteClient = '$baseUrl/clients/{id}';
@@ -54,6 +54,18 @@ class ApiConstants {
   static const String leadStatusUpdate =
       '$baseUrl/lead-management/{sourceType}/{source_id}/status';
   static const String leadBulkAssign = '$baseUrl/lead-management/bulk-assign';
+  static const String leadFollowupCreate =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/followup';
+  static const String leadManagementDetailView =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/view';
+  static const String leadTimeline =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/timeline';
+  static const String leadFollowups =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/followups';
+  static const String leadNoteCreate =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/note';
+  static const String leadReminderCreate =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/reminder';
 
   //Todo Api
   static const String createtodo = '$baseUrl/todos';

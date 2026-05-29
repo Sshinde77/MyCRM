@@ -136,10 +136,16 @@ class RouteGenerator {
         );
       case AppRoutes.leadManagementDetail:
         final leadId = _extractLeadId(settings.arguments);
+        final leadSourceType = _extractLeadSourceType(settings.arguments);
+        final leadSourceId = _extractLeadSourceId(settings.arguments);
         return _protectedRoute(
           AppRoutes.leadManagementDetail,
           ChangeNotifierProvider(
-            create: (_) => LeadDetailProvider(leadId: leadId)..loadLead(),
+            create: (_) => LeadDetailProvider(
+              leadId: leadId,
+              sourceType: leadSourceType,
+              sourceId: leadSourceId,
+            )..loadLead(),
             child: const LeadManagementDetailScreen(),
           ),
         );
@@ -337,6 +343,32 @@ class RouteGenerator {
       }
     }
     return '';
+  }
+
+  static String _extractLeadSourceType(dynamic args) {
+    if (args is Map) {
+      final value = args['sourceType'] ?? args['source_type'];
+      if (value != null) {
+        final normalized = value.toString().trim();
+        if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+          return normalized;
+        }
+      }
+    }
+    return 'lead';
+  }
+
+  static String _extractLeadSourceId(dynamic args) {
+    if (args is Map) {
+      final value = args['sourceId'] ?? args['source_id'] ?? args['id'];
+      if (value != null) {
+        final normalized = value.toString().trim();
+        if (normalized.isNotEmpty && normalized.toLowerCase() != 'null') {
+          return normalized;
+        }
+      }
+    }
+    return _extractLeadId(args);
   }
 
   static String? _extractProjectId(dynamic args) {

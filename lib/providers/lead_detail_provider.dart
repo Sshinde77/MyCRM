@@ -4,10 +4,17 @@ import '../models/lead_model.dart';
 import '../services/api_service.dart';
 
 class LeadDetailProvider extends ChangeNotifier {
-  LeadDetailProvider({required this.leadId, ApiService? apiService})
+  LeadDetailProvider({
+    required this.leadId,
+    this.sourceType,
+    this.sourceId,
+    ApiService? apiService,
+  })
     : _apiService = apiService ?? ApiService.instance;
 
   final String leadId;
+  final String? sourceType;
+  final String? sourceId;
   final ApiService _apiService;
 
   LeadModel? _lead;
@@ -38,7 +45,16 @@ class LeadDetailProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _lead = await _apiService.getLeadDetail(leadId);
+      final normalizedSourceType = (sourceType ?? '').trim();
+      final normalizedSourceId = (sourceId ?? '').trim();
+      if (normalizedSourceType.isNotEmpty && normalizedSourceId.isNotEmpty) {
+        _lead = await _apiService.getLeadManagementDetailView(
+          sourceType: normalizedSourceType,
+          sourceId: normalizedSourceId,
+        );
+      } else {
+        _lead = await _apiService.getLeadDetail(leadId);
+      }
     } catch (error) {
       _errorMessage = _toMessage(error);
     } finally {

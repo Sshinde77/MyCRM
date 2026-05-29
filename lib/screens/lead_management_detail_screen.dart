@@ -21,21 +21,30 @@ class LeadManagementDetailScreen extends StatefulWidget {
 class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     with SingleTickerProviderStateMixin {
   static const List<String> _fixedStatusOptions = <String>[
-    'New',
-    'Attempted Contact',
-    'Contacted',
-    'Qualified',
-    'Demo Scheduled',
-    'Proposal Sent',
-    'Negotiation',
-    'Converted',
-    'Lost',
-    'Junk',
+    'new',
+    'attempted_contact',
+    'contacted',
+    'qualified',
+    'demo_scheduled',
+    'proposal_sent',
+    'negotiation',
+    'converted',
+    'lost',
+    'junk',
   ];
 
   final ApiService _apiService = ApiService.instance;
   late TabController _tabController;
   int _selectedLeadTab = 0;
+  List<Map<String, dynamic>> _timelineItems = const <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _followupItems = const <Map<String, dynamic>>[];
+  bool _isTimelineLoading = false;
+  bool _isFollowupsLoading = false;
+  String _loadedTimelineKey = '';
+  String _loadedFollowupsKey = '';
+  String _activeLeadKey = '';
+  String _activeSourceType = '';
+  String _activeSourceId = '';
 
   @override
   void initState() {
@@ -45,8 +54,24 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
       if (_tabController.indexIsChanging) return;
       if (_selectedLeadTab != _tabController.index) {
         setState(() => _selectedLeadTab = _tabController.index);
+        _triggerTabLoad();
       }
     });
+  }
+
+  void _triggerTabLoad() {
+    if (!mounted || _activeSourceType.isEmpty || _activeSourceId.isEmpty) return;
+    if (_selectedLeadTab == 0) {
+      _loadTimelineByKey(
+        sourceType: _activeSourceType,
+        sourceId: _activeSourceId,
+      );
+    } else if (_selectedLeadTab == 1) {
+      _loadFollowupsByKey(
+        sourceType: _activeSourceType,
+        sourceId: _activeSourceId,
+      );
+    }
   }
 
   @override
@@ -57,6 +82,56 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
 
   static const Color background = Color(0xFFF8FAFC);
   static const Color primary = Color(0xFF3F51B5);
+
+  Future<void> _loadTimelineByKey({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final requestKey = '$sourceType::$sourceId';
+    if (_isTimelineLoading || _loadedTimelineKey == requestKey) return;
+
+    setState(() => _isTimelineLoading = true);
+    try {
+      final results = await _apiService.getLeadTimeline(
+        sourceType: sourceType,
+        sourceId: sourceId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _timelineItems = results;
+        _loadedTimelineKey = requestKey;
+        _isTimelineLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isTimelineLoading = false);
+    }
+  }
+
+  Future<void> _loadFollowupsByKey({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final requestKey = '$sourceType::$sourceId';
+    if (_isFollowupsLoading || _loadedFollowupsKey == requestKey) return;
+
+    setState(() => _isFollowupsLoading = true);
+    try {
+      final results = await _apiService.getLeadFollowups(
+        sourceType: sourceType,
+        sourceId: sourceId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _followupItems = results;
+        _loadedFollowupsKey = requestKey;
+        _isFollowupsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isFollowupsLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +159,31 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                 onRetry: () => provider.loadLead(forceRefresh: true),
               );
             }
+            final currentLeadKey =
+                '${_buildLeadAssignSource(lead)}::${_resolveLeadSourceId(lead)}';
+            if (_activeLeadKey != currentLeadKey) {
+              _activeLeadKey = currentLeadKey;
+              _activeSourceType = _buildLeadAssignSource(lead);
+              _activeSourceId = _resolveLeadSourceId(lead);
+              _loadedTimelineKey = '';
+              _loadedFollowupsKey = '';
+              _timelineItems = const <Map<String, dynamic>>[];
+              _followupItems = const <Map<String, dynamic>>[];
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                if (_selectedLeadTab == 0) {
+                  _loadTimelineByKey(
+                    sourceType: _activeSourceType,
+                    sourceId: _activeSourceId,
+                  );
+                } else if (_selectedLeadTab == 1) {
+                  _loadFollowupsByKey(
+                    sourceType: _activeSourceType,
+                    sourceId: _activeSourceId,
+                  );
+                }
+              });
+            }
 
             return Column(
               children: [
@@ -103,7 +203,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                           _HeaderSection(lead: lead),
                           const SizedBox(height: 16),
                           _ActionButtons(
-                            onAddFollowup: _openAddFollowupDialog,
+                            onAddFollowup: () => _openAddFollowupDialog(lead),
                             onUpdateStatus: () => _openStatusUpdateDialog(lead),
                           ),
                           const SizedBox(height: 16),
@@ -113,7 +213,43 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                           const SizedBox(height: 20),
                           _TimelineTabs(tabController: _tabController),
                           const SizedBox(height: 12),
-                          _LeadTabContent(tabIndex: _selectedLeadTab),
+                          _LeadTabContent(
+                            tabIndex: _selectedLeadTab,
+                            timelineItems: _timelineItems,
+                            followupItems: _followupItems,
+                            isTimelineLoading: _isTimelineLoading,
+                            isFollowupsLoading: _isFollowupsLoading,
+                            onAddNote: (note, isPrivate) async {
+                              await _apiService.createLeadNote(
+                                sourceType: _buildLeadAssignSource(lead),
+                                sourceId: _resolveLeadSourceId(lead),
+                                note: note,
+                                isPrivate: isPrivate,
+                              );
+                              if (_selectedLeadTab == 0) {
+                                _loadedTimelineKey = '';
+                                await _loadTimelineByKey(
+                                  sourceType: _buildLeadAssignSource(lead),
+                                  sourceId: _resolveLeadSourceId(lead),
+                                );
+                              }
+                            },
+                            onAddReminder: (remindAt, reminderType) async {
+                              await _apiService.createLeadReminder(
+                                sourceType: _buildLeadAssignSource(lead),
+                                sourceId: _resolveLeadSourceId(lead),
+                                remindAt: remindAt,
+                                reminderType: reminderType,
+                              );
+                              if (_selectedLeadTab == 1) {
+                                _loadedFollowupsKey = '';
+                                await _loadFollowupsByKey(
+                                  sourceType: _buildLeadAssignSource(lead),
+                                  sourceId: _resolveLeadSourceId(lead),
+                                );
+                              }
+                            },
+                          ),
                           const SizedBox(height: 20),
                         ],
                       ),
@@ -169,6 +305,15 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
 
   String _normalizeStatusForApi(String status) {
     return status.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  }
+
+  String _statusLabel(String status) {
+    final normalized = _normalizeStatusForApi(status);
+    return normalized
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 
   String _resolveCurrentStatusOption(String currentStatus) {
@@ -333,7 +478,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                               ),
                             ),
                             child: Text(
-                              lead.displayStatus,
+                              _statusLabel(lead.displayStatus),
                               style: AppTextStyles.style(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -357,7 +502,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                 .map(
                                   (status) => DropdownMenuItem<String>(
                                     value: status,
-                                    child: Text(status),
+                                    child: Text(_statusLabel(status)),
                                   ),
                                 )
                                 .toList(),
@@ -453,19 +598,21 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     );
   }
 
-  Future<void> _openAddFollowupDialog() async {
+  Future<void> _openAddFollowupDialog(LeadModel lead) async {
+    final messenger = ScaffoldMessenger.of(context);
     final notesController = TextEditingController();
-    String followupType = 'Call';
-    String outcome = 'Select';
-    String leadStatus = 'No Change';
+    String followupType = 'call';
+    String outcome = '';
+    String leadStatus = 'no_change';
     String reminderType = 'Dashboard';
     bool createReminder = false;
+    bool isSubmitting = false;
     DateTime? followupDate;
     DateTime? nextFollowupDate;
 
     String formatDate(DateTime? date) {
       if (date == null) return 'dd-mm-yyyy --:--';
-      return '${DateFormat('dd-MM-yyyy').format(date)} --:--';
+      return DateFormat('dd-MM-yyyy hh:mm a').format(date);
     }
 
     Future<void> pickDate(
@@ -483,6 +630,32 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
       if (picked != null) onPicked(picked);
     }
 
+    Future<void> pickDateTime(
+      BuildContext context,
+      DateTime? currentValue,
+      ValueChanged<DateTime> onPicked,
+    ) async {
+      await pickDate(context, currentValue, (pickedDate) async {
+        if (!context.mounted) return;
+        final pickedTime = await showTimePicker(
+          context: context,
+          initialTime: currentValue == null
+              ? const TimeOfDay(hour: 0, minute: 0)
+              : TimeOfDay.fromDateTime(currentValue),
+        );
+        if (pickedTime == null) return;
+        onPicked(
+          DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          ),
+        );
+      });
+    }
+
     if (!mounted) return;
     await showDialog<void>(
       context: context,
@@ -491,6 +664,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
           builder: (context, setLocalState) {
             final screenWidth = MediaQuery.of(context).size.width;
             final isNarrow = screenWidth < 560;
+            String toApiDateTime(DateTime date) {
+              return DateFormat('yyyy-MM-dd HH:mm:ss').format(date);
+            }
 
             InputDecoration inputDecoration({Widget? suffixIcon}) {
               return InputDecoration(
@@ -520,6 +696,14 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                   color: const Color(0xFF4B5563),
                 ),
               );
+            }
+
+            String dropdownLabel(String value) {
+              return value
+                  .split('_')
+                  .where((part) => part.isNotEmpty)
+                  .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+                  .join(' ');
             }
 
             Widget buildDateField({
@@ -611,39 +795,39 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                       value: followupType,
                                       items: const [
                                         DropdownMenuItem(
-                                          value: 'Call',
+                                          value: 'call',
                                           child: Text('Call'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Whatsapp',
+                                          value: 'whatsapp',
                                           child: Text('Whatsapp'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Email',
+                                          value: 'email',
                                           child: Text('Email'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Meeting',
+                                          value: 'meeting',
                                           child: Text('Meeting'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Demo',
+                                          value: 'demo',
                                           child: Text('Demo'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Video Call',
+                                          value: 'video_call',
                                           child: Text('Video Call'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Site Visit',
+                                          value: 'site_visit',
                                           child: Text('Site Visit'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Proposal Sent',
+                                          value: 'proposal_sent',
                                           child: Text('Proposal Sent'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Quotation Sent',
+                                          value: 'quotation_sent',
                                           child: Text('Quotation Sent'),
                                         ),
                                       ],
@@ -651,6 +835,19 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                         if (value == null) return;
                                         setLocalState(() => followupType = value);
                                       },
+                                      selectedItemBuilder: (context) => const [
+                                        'call',
+                                        'whatsapp',
+                                        'email',
+                                        'meeting',
+                                        'demo',
+                                        'video_call',
+                                        'site_visit',
+                                        'proposal_sent',
+                                        'quotation_sent',
+                                      ]
+                                          .map((value) => Text(dropdownLabel(value)))
+                                          .toList(),
                                       decoration: inputDecoration(),
                                     ),
                                   ],
@@ -664,43 +861,43 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                       value: outcome,
                                       items: const [
                                         DropdownMenuItem(
-                                          value: 'Select',
+                                          value: '',
                                           child: Text('Select'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Interested',
+                                          value: 'interested',
                                           child: Text('Interested'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Not Interested',
+                                          value: 'not_interested',
                                           child: Text('Not Interested'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Callback Later',
+                                          value: 'callback_later',
                                           child: Text('Callback Later'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Converted',
+                                          value: 'converted',
                                           child: Text('Converted'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'No Response',
+                                          value: 'no_response',
                                           child: Text('No Response'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Meeting Scheduled',
+                                          value: 'meeting_scheduled',
                                           child: Text('Meeting Scheduled'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Proposal Requested',
+                                          value: 'proposal_requested',
                                           child: Text('Proposal Requested'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Negotiation',
+                                          value: 'negotiation',
                                           child: Text('Negotiation'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Lost',
+                                          value: 'lost',
                                           child: Text('Lost'),
                                         ),
                                       ],
@@ -708,6 +905,26 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                         if (value == null) return;
                                         setLocalState(() => outcome = value);
                                       },
+                                      selectedItemBuilder: (context) => const [
+                                        '',
+                                        'interested',
+                                        'not_interested',
+                                        'callback_later',
+                                        'converted',
+                                        'no_response',
+                                        'meeting_scheduled',
+                                        'proposal_requested',
+                                        'negotiation',
+                                        'lost',
+                                      ]
+                                          .map(
+                                            (value) => Text(
+                                              value.isEmpty
+                                                  ? 'Select'
+                                                  : dropdownLabel(value),
+                                            ),
+                                          )
+                                          .toList(),
                                       decoration: inputDecoration(),
                                     ),
                                   ],
@@ -722,7 +939,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                     const SizedBox(height: 4),
                                     buildDateField(
                                       value: followupDate,
-                                      onTap: () => pickDate(
+                                      onTap: () => pickDateTime(
                                         context,
                                         followupDate,
                                         (picked) => setLocalState(
@@ -739,7 +956,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                     const SizedBox(height: 4),
                                     buildDateField(
                                       value: nextFollowupDate,
-                                      onTap: () => pickDate(
+                                      onTap: () => pickDateTime(
                                         context,
                                         nextFollowupDate,
                                         (picked) => setLocalState(
@@ -761,47 +978,47 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                       value: leadStatus,
                                       items: const [
                                         DropdownMenuItem(
-                                          value: 'No Change',
+                                          value: 'no_change',
                                           child: Text('No Change'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'New',
+                                          value: 'new',
                                           child: Text('New'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Attempted Contact',
+                                          value: 'attempted_contact',
                                           child: Text('Attempted Contact'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Contacted',
+                                          value: 'contacted',
                                           child: Text('Contacted'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Qualified',
+                                          value: 'qualified',
                                           child: Text('Qualified'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Demo Scheduled',
+                                          value: 'demo_scheduled',
                                           child: Text('Demo Scheduled'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Proposal Sent',
+                                          value: 'proposal_sent',
                                           child: Text('Proposal Sent'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Negotiation',
+                                          value: 'negotiation',
                                           child: Text('Negotiation'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Converted',
+                                          value: 'converted',
                                           child: Text('Converted'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Lost',
+                                          value: 'lost',
                                           child: Text('Lost'),
                                         ),
                                         DropdownMenuItem(
-                                          value: 'Junk',
+                                          value: 'junk',
                                           child: Text('Junk'),
                                         ),
                                       ],
@@ -890,7 +1107,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             ElevatedButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => Navigator.of(dialogContext).pop(),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF6B7280),
                                 foregroundColor: Colors.white,
@@ -911,7 +1130,106 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                             ),
                             const SizedBox(width: 10),
                             ElevatedButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () async {
+                                      debugPrint(
+                                        '[followup] Save tapped: followupType=$followupType, outcome=$outcome',
+                                      );
+                                      if (followupDate == null) {
+                                        debugPrint(
+                                          '[followup] Validation failed: followup_date missing',
+                                        );
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Followup date is required.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      if (outcome.isEmpty) {
+                                        debugPrint(
+                                          '[followup] Validation failed: outcome not selected',
+                                        );
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Please select outcome.',
+                                            ),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      final normalizedLeadStatus = leadStatus
+                                                  .trim()
+                                                  .toLowerCase() ==
+                                              'no_change'
+                                          ? ''
+                                          : _normalizeStatusForApi(leadStatus);
+                                      final normalizedReminderType = createReminder
+                                          ? reminderType.trim()
+                                          : '';
+                                      debugPrint(
+                                        '[followup] Prepared payload values: followup_date=${toApiDateTime(followupDate!)}, next_followup_date=${nextFollowupDate == null ? 'null' : toApiDateTime(nextFollowupDate!)}, lead_status_after_followup=$normalizedLeadStatus, create_reminder=$createReminder, reminder_type=$normalizedReminderType',
+                                      );
+
+                                      setLocalState(() => isSubmitting = true);
+                                      try {
+                                        debugPrint(
+                                          '[followup] API call start for leadId=${_resolveLeadSourceId(lead)} sourceType=${_buildLeadAssignSource(lead)}',
+                                        );
+                                        await _apiService.createLeadFollowup(
+                                          sourceType: _buildLeadAssignSource(
+                                            lead,
+                                          ),
+                                          leadId: _resolveLeadSourceId(lead),
+                                          followupDate: toApiDateTime(
+                                            followupDate!,
+                                          ),
+                                          followupType: followupType,
+                                          outcome: outcome,
+                                          discussionNotes: notesController.text,
+                                          nextFollowupDate: nextFollowupDate == null
+                                              ? null
+                                              : toApiDateTime(nextFollowupDate!),
+                                          leadStatusAfterFollowup:
+                                              normalizedLeadStatus,
+                                          createReminder: createReminder,
+                                          reminderType: normalizedReminderType,
+                                        );
+                                        debugPrint(
+                                          '[followup] API call success',
+                                        );
+                                        if (!mounted) return;
+                                        Navigator.of(dialogContext).pop();
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Followup saved successfully.',
+                                            ),
+                                          ),
+                                        );
+                                        await context
+                                            .read<LeadDetailProvider>()
+                                            .loadLead(forceRefresh: true);
+                                      } catch (_) {
+                                        debugPrint(
+                                          '[followup] API call failed',
+                                        );
+                                        if (!mounted) return;
+                                        messenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Failed to save followup. Please try again.',
+                                            ),
+                                          ),
+                                        );
+                                        setLocalState(() => isSubmitting = false);
+                                      }
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF1E88E5),
                                 foregroundColor: Colors.white,
@@ -922,7 +1240,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                 ),
                               ),
                               child: Text(
-                                'Save Followup',
+                                isSubmitting
+                                    ? 'Saving...'
+                                    : 'Save Followup',
                                 style: AppTextStyles.style(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -996,7 +1316,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        status,
+        _statusLabel(status),
         style: AppTextStyles.style(
           fontSize: 12,
           fontWeight: FontWeight.w600,
@@ -1004,6 +1324,18 @@ class _StatusBadge extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _statusLabel(String value) {
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return normalized
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 }
 
@@ -1361,20 +1693,35 @@ class _TimelineTabs extends StatelessWidget {
 }
 
 class _LeadTabContent extends StatelessWidget {
-  const _LeadTabContent({required this.tabIndex});
+  const _LeadTabContent({
+    required this.tabIndex,
+    required this.timelineItems,
+    required this.followupItems,
+    required this.isTimelineLoading,
+    required this.isFollowupsLoading,
+    required this.onAddNote,
+    required this.onAddReminder,
+  });
   final int tabIndex;
+  final List<Map<String, dynamic>> timelineItems;
+  final List<Map<String, dynamic>> followupItems;
+  final bool isTimelineLoading;
+  final bool isFollowupsLoading;
+  final Future<void> Function(String note, bool isPrivate) onAddNote;
+  final Future<void> Function(String remindAt, String reminderType)
+  onAddReminder;
 
   @override
   Widget build(BuildContext context) {
     switch (tabIndex) {
       case 0:
-        return _TimelineList();
+        return _TimelineList(items: timelineItems, isLoading: isTimelineLoading);
       case 1:
-        return _FollowupList();
+        return _FollowupList(items: followupItems, isLoading: isFollowupsLoading);
       case 2:
-        return _NotesSection();
+        return _NotesSection(onAddNote: onAddNote);
       case 3:
-        return _ReminderSection();
+        return _ReminderSection(onAddReminder: onAddReminder);
       case 4:
         return _AssignmentList();
       case 5:
@@ -1385,45 +1732,50 @@ class _LeadTabContent extends StatelessWidget {
 }
 
 class _TimelineList extends StatelessWidget {
+  const _TimelineList({required this.items, required this.isLoading});
+  final List<Map<String, dynamic>> items;
+  final bool isLoading;
+
   @override
   Widget build(BuildContext context) {
-    final timelineItems = [
-      _TimelineItemData(
-        title: 'Status Changed',
-        description: 'Lead status changed from converted to converted',
-        time: '28 May 2026 03:58 PM',
-      ),
-      _TimelineItemData(
-        title: 'Status Changed',
-        description: 'Lead status changed from new to won',
-        time: '28 May 2026 02:56 PM',
-      ),
-      _TimelineItemData(
-        title: 'Lead Assigned',
-        description: 'Lead assignment updated.',
-        time: '27 May 2026 05:45 PM',
-      ),
-      _TimelineItemData(
-        title: 'Lead Assigned',
-        description: 'Lead assignment updated.',
-        time: '26 May 2026 05:58 PM',
-      ),
-      _TimelineItemData(
-        title: 'Note Added',
-        description: 'Lead note added.',
-        time: '26 May 2026 05:56 PM',
-      ),
-      _TimelineItemData(
-        title: 'Status Changed',
-        description: 'Lead status changed from new to new',
-        time: '26 May 2026 05:52 PM',
-      ),
-      _TimelineItemData(
-        title: 'Followup Added',
-        description: 'Followup added for lead.',
-        time: '26 May 2026 05:52 PM',
-      ),
-    ];
+    if (isLoading) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(),
+      ));
+    }
+    final timelineItems = items
+        .map(
+          (item) => _TimelineItemData(
+            title: (item['title'] ??
+                    item['event'] ??
+                    item['type'] ??
+                    item['action'] ??
+                    'Activity')
+                .toString(),
+            description: (item['description'] ??
+                    item['message'] ??
+                    item['notes'] ??
+                    item['details'] ??
+                    '-')
+                .toString(),
+            time: (item['created_at'] ??
+                    item['date'] ??
+                    item['time'] ??
+                    item['updated_at'] ??
+                    '-')
+                .toString(),
+          ),
+        )
+        .toList(growable: false);
+
+    if (timelineItems.isEmpty) {
+      return const _SimpleInfoCard(
+        title: 'No Timeline Found',
+        subtitle: '',
+        description: 'No activity available for this lead.',
+      );
+    }
 
     return Column(
       children: timelineItems.map((item) => _TimelineTile(data: item)).toList(),
@@ -1499,54 +1851,117 @@ class _TimelineTile extends StatelessWidget {
 }
 
 class _FollowupList extends StatelessWidget {
+  const _FollowupList({required this.items, required this.isLoading});
+  final List<Map<String, dynamic>> items;
+  final bool isLoading;
+
   @override
   Widget build(BuildContext context) {
-    return const _SimpleInfoCard(
-      title: 'Whatsapp',
-      subtitle: '26 May 2026 05:51 PM | Outcome: interested',
-      description: 'This is testing.',
+    if (isLoading) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(),
+      ));
+    }
+    if (items.isEmpty) {
+      return const _SimpleInfoCard(
+        title: 'No Followups Found',
+        subtitle: '',
+        description: 'No followups available for this lead.',
+      );
+    }
+    return Column(
+      children: items.map((item) {
+        final type = (item['followup_type'] ?? item['type'] ?? '-').toString();
+        final outcome = (item['outcome'] ?? '-').toString();
+        final time = (item['followup_date'] ??
+                item['created_at'] ??
+                item['date'] ??
+                '-')
+            .toString();
+        final notes = (item['discussion_notes'] ??
+                item['notes'] ??
+                item['description'] ??
+                '-')
+            .toString();
+        return _SimpleInfoCard(
+          title: type,
+          subtitle: '$time | Outcome: $outcome',
+          description: notes,
+        );
+      }).toList(growable: false),
     );
   }
 }
 
 class _NotesSection extends StatelessWidget {
+  const _NotesSection({required this.onAddNote});
+  final Future<void> Function(String note, bool isPrivate) onAddNote;
+
   @override
   Widget build(BuildContext context) {
+    final noteController = TextEditingController();
+    bool isPrivate = false;
     return Column(
       children: [
-        TextField(
-          minLines: 3,
-          maxLines: 4,
-          decoration: InputDecoration(
-            hintText: 'Add note',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
-            ),
+        StatefulBuilder(
+          builder: (context, setLocalState) => Column(
+            children: [
+              TextField(
+                controller: noteController,
+                minLines: 3,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Add note',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: Checkbox(
+                      value: isPrivate,
+                      onChanged: (value) =>
+                          setLocalState(() => isPrivate = value ?? false),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Private',
+                    style: AppTextStyles.style(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final note = noteController.text.trim();
+                      if (note.isEmpty) return;
+                      await onAddNote(note, isPrivate);
+                      if (!context.mounted) return;
+                      noteController.clear();
+                      setLocalState(() => isPrivate = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Note added successfully.')),
+                      );
+                    },
+                    child: const Text('Add Note'),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const SizedBox(width: 20, height: 20, child: Checkbox(value: false, onChanged: null)),
-            const SizedBox(width: 8),
-            Text('Private', style: AppTextStyles.style(fontSize: 13, fontWeight: FontWeight.w600)),
-            const Spacer(),
-            ElevatedButton(
-              onPressed: () {},
-              child: const Text('Add Note'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        const _SimpleInfoCard(
-          title: 'Personal Notes',
-          subtitle: '26 May 2026 05:56 PM',
-          description: '',
         ),
       ],
     );
@@ -1554,71 +1969,109 @@ class _NotesSection extends StatelessWidget {
 }
 
 class _ReminderSection extends StatelessWidget {
+  const _ReminderSection({required this.onAddReminder});
+  final Future<void> Function(String remindAt, String reminderType)
+  onAddReminder;
+
   @override
   Widget build(BuildContext context) {
+    DateTime? remindAt;
+    String reminderType = 'dashboard';
+
+    Future<void> pickReminderDateTime(
+      BuildContext context,
+      ValueChanged<DateTime> onPicked,
+    ) async {
+      final now = DateTime.now();
+      final date = await showDatePicker(
+        context: context,
+        initialDate: now,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2100),
+      );
+      if (date == null || !context.mounted) return;
+      final time = await showTimePicker(
+        context: context,
+        initialTime: const TimeOfDay(hour: 9, minute: 0),
+      );
+      if (time == null) return;
+      onPicked(
+        DateTime(date.year, date.month, date.day, time.hour, time.minute),
+      );
+    }
+
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                readOnly: true,
-                decoration: const InputDecoration(
-                  hintText: 'dd-mm-yyyy --:--',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: DropdownButtonFormField<String>(
-                value: 'Dashboard',
-                items: const [
-                  DropdownMenuItem(value: 'Dashboard', child: Text('Dashboard')),
-                  DropdownMenuItem(value: 'Email', child: Text('Email')),
-                  DropdownMenuItem(value: 'WhatsApp', child: Text('WhatsApp')),
-                ],
-                onChanged: (_) {},
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(onPressed: () {}, child: const Text('Add Reminder')),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
-          ),
-          child: Row(
+        StatefulBuilder(
+          builder: (context, setLocalState) => Column(
             children: [
-              Expanded(
-                child: Text(
-                  '29 May 2026 03:10 PM (DASHBOARD)',
-                  style: AppTextStyles.style(fontSize: 14, fontWeight: FontWeight.w600),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      readOnly: true,
+                      controller: TextEditingController(
+                        text: remindAt == null
+                            ? 'dd-mm-yyyy --:--'
+                            : DateFormat(
+                                'dd-MM-yyyy hh:mm a',
+                              ).format(remindAt!),
+                      ),
+                      onTap: () => pickReminderDateTime(
+                        context,
+                        (picked) => setLocalState(() => remindAt = picked),
+                      ),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: reminderType,
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'dashboard',
+                          child: Text('Dashboard'),
+                        ),
+                        DropdownMenuItem(value: 'email', child: Text('Email')),
+                        DropdownMenuItem(
+                          value: 'whatsapp',
+                          child: Text('WhatsApp'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setLocalState(() => reminderType = value);
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6B7280),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'PENDING',
-                  style: AppTextStyles.style(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (remindAt == null) return;
+                    await onAddReminder(
+                      DateFormat('yyyy-MM-dd HH:mm:ss').format(remindAt!),
+                      reminderType,
+                    );
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Reminder added successfully.'),
+                      ),
+                    );
+                  },
+                  child: const Text('Add Reminder'),
                 ),
               ),
             ],

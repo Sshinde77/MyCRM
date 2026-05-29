@@ -3651,6 +3651,125 @@ class ApiService {
     return LeadModel.fromJson(body);
   }
 
+  /// Loads a lead detail from lead-management source endpoint.
+  Future<LeadModel> getLeadManagementDetailView({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    if (normalizedSourceType.isEmpty || normalizedSourceId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
+
+    final path = ApiConstants.leadManagementDetailView
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    final response = await get(path);
+    final body = _normalizeMap(_extractDetailSource(response.data));
+    return LeadModel.fromJson(body);
+  }
+
+  Future<List<Map<String, dynamic>>> getLeadTimeline({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    if (normalizedSourceType.isEmpty || normalizedSourceId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
+    final path = ApiConstants.leadTimeline
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    final response = await get(path);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    final list =
+        source['activities']?['data'] ??
+        source['activities'] ??
+        source['timeline']?['data'] ??
+        source['timeline'] ??
+        source['data'] ??
+        source['items'];
+    return _normalizeList(list);
+  }
+
+  Future<List<Map<String, dynamic>>> getLeadFollowups({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    if (normalizedSourceType.isEmpty || normalizedSourceId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
+    final path = ApiConstants.leadFollowups
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    final response = await get(path);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    final list =
+        source['followups']?['data'] ??
+        source['followups'] ??
+        source['data'] ??
+        source['items'];
+    return _normalizeList(list);
+  }
+
+  Future<void> createLeadNote({
+    required String sourceType,
+    required String sourceId,
+    required String note,
+    required bool isPrivate,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    final normalizedNote = note.trim();
+    if (normalizedSourceType.isEmpty ||
+        normalizedSourceId.isEmpty ||
+        normalizedNote.isEmpty) {
+      throw Exception('Invalid note request.');
+    }
+    final path = ApiConstants.leadNoteCreate
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    await post(
+      path,
+      data: <String, dynamic>{
+        'note': normalizedNote,
+        'is_private': isPrivate,
+      },
+    );
+  }
+
+  Future<void> createLeadReminder({
+    required String sourceType,
+    required String sourceId,
+    required String remindAt,
+    required String reminderType,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    final normalizedRemindAt = remindAt.trim();
+    final normalizedReminderType = reminderType.trim().toLowerCase();
+    if (normalizedSourceType.isEmpty ||
+        normalizedSourceId.isEmpty ||
+        normalizedRemindAt.isEmpty ||
+        normalizedReminderType.isEmpty) {
+      throw Exception('Invalid reminder request.');
+    }
+    final path = ApiConstants.leadReminderCreate
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    await post(
+      path,
+      data: <String, dynamic>{
+        'remind_at': normalizedRemindAt,
+        'reminder_type': normalizedReminderType,
+      },
+    );
+  }
+
   /// Loads form option data required by the add lead screen.
   Future<LeadFormOptionsModel> getLeadFormOptions() async {
     final response = await get(ApiConstants.leadformdata);
@@ -4057,7 +4176,67 @@ class ApiService {
       rethrow;
     }
   }
+  /// Creates a followup record for a single lead-management source entry.
+  Future<void> createLeadFollowup({
+    required String sourceType,
+    required String leadId,
+    required String followupDate,
+    required String followupType,
+    required String outcome,
+    String? discussionNotes,
+    String? nextFollowupDate,
+    String? leadStatusAfterFollowup,
+    bool createReminder = false,
+    String? reminderType,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedLeadId = leadId.trim();
+    if (normalizedSourceType.isEmpty || normalizedLeadId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
 
+    final payload = <String, dynamic>{
+      'followup_date': followupDate.trim(),
+      'followup_type': followupType.trim().toLowerCase(),
+      'outcome': outcome.trim().toLowerCase(),
+      'discussion_notes': (discussionNotes ?? '').trim(),
+      'next_followup_date': (nextFollowupDate ?? '').trim().isEmpty
+          ? null
+          : nextFollowupDate!.trim(),
+      'lead_status_after_followup':
+          (leadStatusAfterFollowup ?? '').trim().toLowerCase(),
+      'create_reminder': createReminder,
+      'reminder_type': (reminderType ?? '').trim().toLowerCase(),
+    };
+
+    final path = ApiConstants.leadFollowupCreate
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedLeadId);
+
+    try {
+      if (kDebugMode) {
+        debugPrint('[leadFollowupCreate] URL: $path');
+        debugPrint(
+          '[leadFollowupCreate] Payload: ${_summarizeForLog(payload)}',
+        );
+      }
+      final response = await post(path, data: payload);
+      if (kDebugMode) {
+        debugPrint(
+          '[leadFollowupCreate] Response: ${_summarizeForLog(response.data)}',
+        );
+      }
+    } on DioException catch (error) {
+      debugPrint('[leadFollowupCreate] URL: $path');
+      debugPrint('[leadFollowupCreate] Error: ${error.message ?? error.error}');
+      if (error.response?.data != null) {
+        debugPrint(
+          '[leadFollowupCreate] Error Response: ${_summarizeForLog(error.response?.data)}',
+        );
+      }
+      rethrow;
+    }
+  }
   String _normalizeLeadSourceTypeForPath(String sourceType) {
     return sourceType
         .trim()

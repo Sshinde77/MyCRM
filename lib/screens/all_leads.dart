@@ -21,16 +21,16 @@ class AllLeadsScreen extends StatefulWidget {
 
 class _AllLeadsScreenState extends State<AllLeadsScreen> {
   static const List<String> _fixedStatusOptions = <String>[
-    'New',
-    'Attempted Contact',
-    'Contacted',
-    'Qualified',
-    'Demo Scheduled',
-    'Proposal Sent',
-    'Negotiation',
-    'Converted',
-    'Lost',
-    'Junk',
+    'new',
+    'attempted_contact',
+    'contacted',
+    'qualified',
+    'demo_scheduled',
+    'proposal_sent',
+    'negotiation',
+    'converted',
+    'lost',
+    'junk',
   ];
 
   static const List<_SourceOption> _fixedSourceOptions = <_SourceOption>[
@@ -530,7 +530,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                                 .map(
                                   (status) => DropdownMenuItem<String>(
                                     value: status,
-                                    child: Text(status),
+                                    child: Text(_statusLabel(status)),
                                   ),
                                 )
                                 .toList(),
@@ -655,6 +655,15 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
 
   String _normalizeStatusForApi(String status) {
     return status.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+  }
+
+  String _statusLabel(String status) {
+    final normalized = _normalizeStatusForApi(status);
+    return normalized
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 
   String _resolveCurrentStatusOption(String currentStatus) {
@@ -952,7 +961,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                         label: 'assigned_to',
                         value: lead.displayAssignedTo,
                         trailing: _LeadActions(
-                          leadId: lead.id,
+                          leadId: _resolveLeadSourceId(lead),
+                          sourceType: _buildLeadAssignSource(lead),
+                          sourceId: _resolveLeadSourceId(lead),
                           onAssign: () => _openAssignSingleLead(lead),
                           onEditStatus: () => _openStatusUpdateDialog(lead),
                         ),
@@ -1008,8 +1019,10 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       ),
       items: statusOptions
           .map(
-            (status) =>
-                DropdownMenuItem<String>(value: status, child: Text(status)),
+            (status) => DropdownMenuItem<String>(
+              value: status,
+              child: Text(_statusLabel(status)),
+            ),
           )
           .toList(),
       onChanged: (value) {
@@ -1299,8 +1312,9 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = compact || status.length > 12;
-    final isVeryCompact = veryCompact || status.length > 18;
+    final displayStatus = _statusLabel(status);
+    final isCompact = compact || displayStatus.length > 12;
+    final isVeryCompact = veryCompact || displayStatus.length > 18;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isVeryCompact ? 4 : (isCompact ? 6 : 8),
@@ -1311,7 +1325,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
-        status,
+        displayStatus,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: AppTextStyles.style(
@@ -1321,6 +1335,18 @@ class _StatusBadge extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _statusLabel(String value) {
+    final normalized = value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return normalized
+        .split('_')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 }
 
@@ -1365,11 +1391,15 @@ class _TypeBadge extends StatelessWidget {
 class _LeadActions extends StatelessWidget {
   const _LeadActions({
     required this.leadId,
+    required this.sourceType,
+    required this.sourceId,
     required this.onAssign,
     required this.onEditStatus,
   });
 
   final String leadId;
+  final String sourceType;
+  final String sourceId;
   final VoidCallback onAssign;
   final VoidCallback onEditStatus;
 
@@ -1380,8 +1410,15 @@ class _LeadActions extends StatelessWidget {
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () =>
-              Get.toNamed(AppRoutes.leadManagementDetail, arguments: leadId),
+          onTap: () => Get.toNamed(
+            AppRoutes.leadManagementDetail,
+            arguments: <String, dynamic>{
+              'leadId': leadId,
+              'sourceType': sourceType,
+              'sourceId': sourceId,
+              'source_id': sourceId,
+            },
+          ),
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
             decoration: BoxDecoration(
