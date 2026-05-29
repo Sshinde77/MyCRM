@@ -36,10 +36,21 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   static const List<_SourceOption> _fixedSourceOptions = <_SourceOption>[
     _SourceOption(label: 'All', iconData: Icons.apps_rounded),
     _SourceOption(label: 'Leads', iconData: Icons.leaderboard_outlined),
-    _SourceOption(label: 'Digital Marketing', iconData: Icons.campaign_outlined),
+    _SourceOption(
+      label: 'Digital Marketing',
+      iconData: Icons.campaign_outlined,
+    ),
     _SourceOption(label: 'Web App', iconData: Icons.language_outlined),
-    _SourceOption(label: 'Meta', iconData: FontAwesomeIcons.meta, useFaIcon: true),
-    _SourceOption(label: 'Google', iconData: FontAwesomeIcons.google, useFaIcon: true),
+    _SourceOption(
+      label: 'Meta',
+      iconData: FontAwesomeIcons.meta,
+      useFaIcon: true,
+    ),
+    _SourceOption(
+      label: 'Google',
+      iconData: FontAwesomeIcons.google,
+      useFaIcon: true,
+    ),
     _SourceOption(label: 'IndiaMart', iconData: Icons.storefront_outlined),
     _SourceOption(label: 'JustDial', iconData: Icons.phone_in_talk_outlined),
   ];
@@ -115,7 +126,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     if (_selectedSource.isEmpty) return _items;
     return _items
         .where(
-          (lead) => _normalizeSourceLabel((lead.source ?? '').trim()) == _selectedSource,
+          (lead) =>
+              _normalizeSourceLabel((lead.source ?? '').trim()) ==
+              _selectedSource,
         )
         .toList(growable: false);
   }
@@ -124,7 +137,8 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     return '${_buildLeadAssignSource(lead)}::${_resolveLeadSourceId(lead)}';
   }
 
-  bool _isLeadSelected(LeadModel lead) => _selectedLeadKeys.contains(_leadSelectionKey(lead));
+  bool _isLeadSelected(LeadModel lead) =>
+      _selectedLeadKeys.contains(_leadSelectionKey(lead));
 
   void _toggleLeadSelection(LeadModel lead, bool selected) {
     final key = _leadSelectionKey(lead);
@@ -164,11 +178,10 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   }
 
   String _buildLeadAssignSource(LeadModel lead) {
-    final raw =
-        (lead.sourceType ?? lead.source ?? '').trim().toLowerCase().replaceAll(
-          RegExp(r'[^a-z0-9]'),
-          '',
-        );
+    final raw = (lead.sourceType ?? lead.source ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
     switch (raw) {
       case 'lead':
       case 'leads':
@@ -225,7 +238,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               if (submitting) return;
               if (selectedStaffIds.isEmpty) {
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Please select at least one staff member.')),
+                  const SnackBar(
+                    content: Text('Please select at least one staff member.'),
+                  ),
                 );
                 return;
               }
@@ -264,7 +279,11 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               } catch (_) {
                 if (!mounted) return;
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Failed to assign lead(s). Please try again.')),
+                  const SnackBar(
+                    content: Text(
+                      'Failed to assign lead(s). Please try again.',
+                    ),
+                  ),
                 );
                 setLocalState(() => submitting = false);
               }
@@ -272,7 +291,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
 
             return AlertDialog(
               scrollable: true,
-              title: Text(singleLeadId != null ? 'Assign Lead' : 'Bulk Assign Leads'),
+              title: Text(
+                singleLeadId != null ? 'Assign Lead' : 'Bulk Assign Leads',
+              ),
               content: SizedBox(
                 width: 420,
                 child: staffList.isEmpty
@@ -286,31 +307,44 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                           Container(
                             constraints: const BoxConstraints(maxHeight: 220),
                             decoration: BoxDecoration(
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: SingleChildScrollView(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                children: staffList.map((staff) {
-                                  final checked = selectedStaffIds.contains(staff.id);
-                                  return CheckboxListTile(
-                                    dense: true,
-                                    value: checked,
-                                    title: Text(staff.name.isEmpty ? staff.email : staff.name),
-                                    subtitle: staff.email.isEmpty ? null : Text(staff.email),
-                                    controlAffinity: ListTileControlAffinity.leading,
-                                    onChanged: (value) {
-                                      setLocalState(() {
-                                        if (value == true) {
-                                          selectedStaffIds.add(staff.id);
-                                        } else {
-                                          selectedStaffIds.remove(staff.id);
-                                        }
-                                      });
-                                    },
-                                  );
-                                }).toList(growable: false),
+                                children: staffList
+                                    .map((staff) {
+                                      final checked = selectedStaffIds.contains(
+                                        staff.id,
+                                      );
+                                      return CheckboxListTile(
+                                        dense: true,
+                                        value: checked,
+                                        title: Text(
+                                          staff.name.isEmpty
+                                              ? staff.email
+                                              : staff.name,
+                                        ),
+                                        subtitle: staff.email.isEmpty
+                                            ? null
+                                            : Text(staff.email),
+                                        controlAffinity:
+                                            ListTileControlAffinity.leading,
+                                        onChanged: (value) {
+                                          setLocalState(() {
+                                            if (value == true) {
+                                              selectedStaffIds.add(staff.id);
+                                            } else {
+                                              selectedStaffIds.remove(staff.id);
+                                            }
+                                          });
+                                        },
+                                      );
+                                    })
+                                    .toList(growable: false),
                               ),
                             ),
                           ),
@@ -331,11 +365,15 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               ),
               actions: [
                 TextButton(
-                  onPressed: submitting ? null : () => Navigator.of(dialogContext).pop(),
+                  onPressed: submitting
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: submitting || staffList.isEmpty ? null : submitAssign,
+                  onPressed: submitting || staffList.isEmpty
+                      ? null
+                      : submitAssign,
                   child: Text(submitting ? 'Assigning...' : 'Assign'),
                 ),
               ],
@@ -376,7 +414,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               if (isSubmitting) return;
               if (isLost && lostReasonController.text.trim().isEmpty) {
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Lost reason is required for lost status.')),
+                  const SnackBar(
+                    content: Text('Lost reason is required for lost status.'),
+                  ),
                 );
                 return;
               }
@@ -384,7 +424,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                 final parsed = double.tryParse(wonValueController.text.trim());
                 if (parsed == null) {
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Converted value must be a valid number.')),
+                    const SnackBar(
+                      content: Text('Converted value must be a valid number.'),
+                    ),
                   );
                   return;
                 }
@@ -398,27 +440,37 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                   status: _normalizeStatusForApi(selectedStatus),
                   remarks: remarksController.text.trim(),
                   lostReason: isLost ? lostReasonController.text.trim() : null,
-                  wonValue: isConverted && wonValueController.text.trim().isNotEmpty
+                  wonValue:
+                      isConverted && wonValueController.text.trim().isNotEmpty
                       ? double.tryParse(wonValueController.text.trim())
                       : null,
                 );
                 if (!mounted) return;
                 Navigator.of(dialogContext).pop();
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Lead status updated successfully.')),
+                  const SnackBar(
+                    content: Text('Lead status updated successfully.'),
+                  ),
                 );
                 await _loadLeads(page: _currentPage, search: _appliedSearch);
               } catch (_) {
                 if (!mounted) return;
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Failed to update lead status. Please try again.')),
+                  const SnackBar(
+                    content: Text(
+                      'Failed to update lead status. Please try again.',
+                    ),
+                  ),
                 );
                 setLocalState(() => isSubmitting = false);
               }
             }
 
             return Dialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 20,
+              ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Column(
@@ -490,7 +542,10 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                                   },
                             decoration: const InputDecoration(
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
                               border: OutlineInputBorder(),
                             ),
                           ),
@@ -498,7 +553,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                           TextField(
                             controller: wonValueController,
                             enabled: !isSubmitting,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             decoration: const InputDecoration(
                               labelText: 'Converted Value (if converted)',
                               border: OutlineInputBorder(),
@@ -515,7 +572,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                               labelText: 'Lost Reason (required if lost)',
                               border: const OutlineInputBorder(),
                               isDense: true,
-                              errorText: isLost && lostReasonController.text.trim().isEmpty
+                              errorText:
+                                  isLost &&
+                                      lostReasonController.text.trim().isEmpty
                                   ? 'Required for Lost status'
                                   : null,
                             ),
@@ -550,7 +609,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: isSubmitting ? null : onUpdate,
-                            child: Text(isSubmitting ? 'Updating...' : 'Update'),
+                            child: Text(
+                              isSubmitting ? 'Updating...' : 'Update',
+                            ),
                           ),
                         ],
                       ),
@@ -563,7 +624,6 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         );
       },
     );
-
   }
 
   Future<void> _openBulkAssign() async {
@@ -572,7 +632,11 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         _isBulkSelectionMode = true;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selection mode enabled. Select leads, then tap Bulk Assign again.')),
+        const SnackBar(
+          content: Text(
+            'Selection mode enabled. Select leads, then tap Bulk Assign again.',
+          ),
+        ),
       );
       return;
     }
@@ -580,7 +644,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     final selectedLeads = _selectedLeadPayload();
     if (selectedLeads.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Select at least one lead for bulk assign.')),
+        const SnackBar(
+          content: Text('Select at least one lead for bulk assign.'),
+        ),
       );
       return;
     }
@@ -606,7 +672,10 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   }
 
   String _normalizeSourceLabel(String source) {
-    final normalized = source.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final normalized = source.toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]'),
+      '',
+    );
     switch (normalized) {
       case 'lead':
       case 'leads':
@@ -679,7 +748,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                       SizedBox(height: isNarrow ? 6 : 8),
                       Row(
                         children: [
-                          Expanded(child: _buildSearchField(isCompact: isNarrow)),
+                          Expanded(
+                            child: _buildSearchField(isCompact: isNarrow),
+                          ),
                           SizedBox(width: isNarrow ? 6 : 8),
                           _buildGoButton(isCompact: isNarrow),
                           SizedBox(width: isNarrow ? 6 : 8),
@@ -777,7 +848,8 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                       if (_isBulkSelectionMode)
                         Checkbox(
                           value: _isLeadSelected(lead),
-                          onChanged: (value) => _toggleLeadSelection(lead, value ?? false),
+                          onChanged: (value) =>
+                              _toggleLeadSelection(lead, value ?? false),
                         ),
                       Expanded(
                         child: Column(
@@ -840,7 +912,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    lead.displayCompany == '-' ? 'Unknown Client' : lead.displayCompany,
+                    lead.displayCompany == '-'
+                        ? 'Unknown Client'
+                        : lead.displayCompany,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.style(
@@ -853,26 +927,38 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                   Column(
                     children: [
                       _buildLeadFieldRow(
-                        left: _LeadApiField(label: 'source_id', value: lead.displaySourceId),
-                        right: _LeadApiField(label: 'email', value: lead.displayEmail),
+                        left: _LeadApiField(
+                          label: 'source_id',
+                          value: lead.displaySourceId,
+                        ),
+                        right: _LeadApiField(
+                          label: 'email',
+                          value: lead.displayEmail,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       _buildLeadFieldRow(
-                        left: _LeadApiField(label: 'number', value: lead.displayPhone),
-                        right: _LeadApiField(label: 'source', value: lead.displaySource),
+                        left: _LeadApiField(
+                          label: 'number',
+                          value: lead.displayPhone,
+                        ),
+                        right: _LeadApiField(
+                          label: 'source',
+                          value: lead.displaySource,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       _LeadApiField(
                         label: 'assigned_to',
                         value: lead.displayAssignedTo,
-                      trailing: _LeadActions(
-                        leadId: lead.id,
-                        onAssign: () => _openAssignSingleLead(lead),
-                        onEditStatus: () => _openStatusUpdateDialog(lead),
+                        trailing: _LeadActions(
+                          leadId: lead.id,
+                          onAssign: () => _openAssignSingleLead(lead),
+                          onEditStatus: () => _openStatusUpdateDialog(lead),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -893,7 +979,10 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     );
   }
 
-  Widget _buildStatusDropdown(List<String> statusOptions, {bool isCompact = false}) {
+  Widget _buildStatusDropdown(
+    List<String> statusOptions, {
+    bool isCompact = false,
+  }) {
     return DropdownButtonFormField<String>(
       isExpanded: true,
       value: _selectedStatus.isEmpty ? null : _selectedStatus,
@@ -919,7 +1008,8 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       ),
       items: statusOptions
           .map(
-            (status) => DropdownMenuItem<String>(value: status, child: Text(status)),
+            (status) =>
+                DropdownMenuItem<String>(value: status, child: Text(status)),
           )
           .toList(),
       onChanged: (value) {
@@ -929,7 +1019,10 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     );
   }
 
-  Widget _buildSourceDropdown(List<_SourceOption> sourceOptions, {bool isCompact = false}) {
+  Widget _buildSourceDropdown(
+    List<_SourceOption> sourceOptions, {
+    bool isCompact = false,
+  }) {
     return DropdownButtonFormField<String>(
       isExpanded: true,
       value: _selectedSource.isEmpty ? null : _selectedSource,
@@ -960,7 +1053,10 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               child: Row(
                 children: [
                   IconTheme(
-                    data: IconThemeData(size: isCompact ? 14 : 16, color: const Color(0xFF334155)),
+                    data: IconThemeData(
+                      size: isCompact ? 14 : 16,
+                      color: const Color(0xFF334155),
+                    ),
                     child: source.buildIcon(),
                   ),
                   const SizedBox(width: 8),
@@ -1008,7 +1104,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       backgroundColor: const Color(0xFF1D7CE8),
       foregroundColor: Colors.white,
       elevation: 0,
-      padding: EdgeInsets.symmetric(horizontal: isCompact ? 10 : (compact ? 12 : 14)),
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 10 : (compact ? 12 : 14),
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
 
@@ -1047,7 +1145,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           foregroundColor: Colors.white,
           elevation: 0,
           padding: EdgeInsets.symmetric(horizontal: isCompact ? 12 : 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Text(
           'Go',
@@ -1083,12 +1183,13 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFF93C5FD)),
           padding: EdgeInsets.symmetric(horizontal: isCompact ? 8 : 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
     );
   }
-
 }
 
 class _SourceOption {
@@ -1151,10 +1252,7 @@ class _LeadApiField extends StatelessWidget {
             ),
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 10),
-          trailing!,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 10), trailing!],
       ],
     );
   }
@@ -1181,10 +1279,7 @@ class _ActionCircleButton extends StatelessWidget {
       child: Container(
         width: 32,
         height: 32,
-        decoration: BoxDecoration(
-          color: background,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: background, shape: BoxShape.circle),
         child: Icon(icon, size: 18, color: iconColor),
       ),
     );
@@ -1285,7 +1380,8 @@ class _LeadActions extends StatelessWidget {
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () => Get.toNamed(AppRoutes.leadManagementDetail, arguments: leadId),
+          onTap: () =>
+              Get.toNamed(AppRoutes.leadManagementDetail, arguments: leadId),
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
             decoration: BoxDecoration(

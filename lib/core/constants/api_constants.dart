@@ -9,7 +9,7 @@ class ApiConstants {
   //Authentication Api
   static const String login = '$baseUrl/login';
   static const String user = '$baseUrl/me';
-  static const String logout = '$baseUrl/logout';   
+  static const String logout = '$baseUrl/logout';
   static const String refreshToken = '$baseUrl/refresh';
   static const String testFcm = '$baseUrl/fcm-token';
   static const String dashboard = '$baseUrl/dashboard';
@@ -55,7 +55,7 @@ class ApiConstants {
       '$baseUrl/lead-management/{sourceType}/{source_id}/status';
   static const String leadBulkAssign = '$baseUrl/lead-management/bulk-assign';
 
-      //Todo Api
+  //Todo Api
   static const String createtodo = '$baseUrl/todos';
   static const String listtodo = '$baseUrl/todos';
   static const String tododetail = '$baseUrl/todos/{id}';

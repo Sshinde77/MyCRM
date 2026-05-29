@@ -14,10 +14,12 @@ class LeadManagementDetailScreen extends StatefulWidget {
   const LeadManagementDetailScreen({super.key});
 
   @override
-  State<LeadManagementDetailScreen> createState() => _LeadManagementDetailScreenState();
+  State<LeadManagementDetailScreen> createState() =>
+      _LeadManagementDetailScreenState();
 }
 
-class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen> with SingleTickerProviderStateMixin {
+class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
+    with SingleTickerProviderStateMixin {
   static const List<String> _fixedStatusOptions = <String>[
     'New',
     'Attempted Contact',
@@ -33,11 +35,18 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
 
   final ApiService _apiService = ApiService.instance;
   late TabController _tabController;
+  int _selectedLeadTab = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      if (_selectedLeadTab != _tabController.index) {
+        setState(() => _selectedLeadTab = _tabController.index);
+      }
+    });
   }
 
   @override
@@ -78,32 +87,33 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
 
             return Column(
               children: [
-                const CommonTopBar(
-                  title: 'Lead Profile',
-                  showBackButton: true,
-                ),
+                const CommonTopBar(title: 'Lead Profile', showBackButton: true),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () => provider.loadLead(forceRefresh: true),
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _HeaderSection(lead: lead),
                           const SizedBox(height: 16),
                           _ActionButtons(
+                            onAddFollowup: _openAddFollowupDialog,
                             onUpdateStatus: () => _openStatusUpdateDialog(lead),
                           ),
                           const SizedBox(height: 16),
                           _LeadInformationCard(lead: lead),
-                          const SizedBox(height: 16),
-                          _UpdateStatusCard(lead: lead),
+                          // const SizedBox(height: 16),
+                          // _UpdateStatusCard(lead: lead),
                           const SizedBox(height: 20),
                           _TimelineTabs(tabController: _tabController),
                           const SizedBox(height: 12),
-                          _TimelineList(),
+                          _LeadTabContent(tabIndex: _selectedLeadTab),
                           const SizedBox(height: 20),
                         ],
                       ),
@@ -120,12 +130,12 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
       ),
     );
   }
+
   String _buildLeadAssignSource(LeadModel lead) {
-    final raw =
-        (lead.sourceType ?? lead.source ?? '').trim().toLowerCase().replaceAll(
-          RegExp(r'[^a-z0-9]'),
-          '',
-        );
+    final raw = (lead.sourceType ?? lead.source ?? '')
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
     switch (raw) {
       case 'lead':
       case 'leads':
@@ -197,7 +207,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
               if (isSubmitting) return;
               if (isLost && lostReasonController.text.trim().isEmpty) {
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Lost reason is required for lost status.')),
+                  const SnackBar(
+                    content: Text('Lost reason is required for lost status.'),
+                  ),
                 );
                 return;
               }
@@ -205,7 +217,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                 final parsed = double.tryParse(wonValueController.text.trim());
                 if (parsed == null) {
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Converted value must be a valid number.')),
+                    const SnackBar(
+                      content: Text('Converted value must be a valid number.'),
+                    ),
                   );
                   return;
                 }
@@ -219,27 +233,39 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                   status: _normalizeStatusForApi(selectedStatus),
                   remarks: remarksController.text.trim(),
                   lostReason: isLost ? lostReasonController.text.trim() : null,
-                  wonValue: isConverted && wonValueController.text.trim().isNotEmpty
+                  wonValue:
+                      isConverted && wonValueController.text.trim().isNotEmpty
                       ? double.tryParse(wonValueController.text.trim())
                       : null,
                 );
                 if (!mounted) return;
                 Navigator.of(dialogContext).pop();
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Lead status updated successfully.')),
+                  const SnackBar(
+                    content: Text('Lead status updated successfully.'),
+                  ),
                 );
-                await context.read<LeadDetailProvider>().loadLead(forceRefresh: true);
+                await context.read<LeadDetailProvider>().loadLead(
+                  forceRefresh: true,
+                );
               } catch (_) {
                 if (!mounted) return;
                 messenger.showSnackBar(
-                  const SnackBar(content: Text('Failed to update lead status. Please try again.')),
+                  const SnackBar(
+                    content: Text(
+                      'Failed to update lead status. Please try again.',
+                    ),
+                  ),
                 );
                 setLocalState(() => isSubmitting = false);
               }
             }
 
             return Dialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 20,
+              ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Column(
@@ -295,11 +321,16 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                           const SizedBox(height: 6),
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Text(
                               lead.displayStatus,
@@ -338,7 +369,10 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                   },
                             decoration: const InputDecoration(
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
                               border: OutlineInputBorder(),
                             ),
                           ),
@@ -346,7 +380,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                           TextField(
                             controller: wonValueController,
                             enabled: !isSubmitting,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
                             decoration: const InputDecoration(
                               labelText: 'Converted Value (if converted)',
                               border: OutlineInputBorder(),
@@ -363,7 +399,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                               labelText: 'Lost Reason (required if lost)',
                               border: const OutlineInputBorder(),
                               isDense: true,
-                              errorText: isLost && lostReasonController.text.trim().isEmpty
+                              errorText:
+                                  isLost &&
+                                      lostReasonController.text.trim().isEmpty
                                   ? 'Required for Lost status'
                                   : null,
                             ),
@@ -398,12 +436,505 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                           const SizedBox(width: 10),
                           ElevatedButton(
                             onPressed: isSubmitting ? null : onUpdate,
-                            child: Text(isSubmitting ? 'Updating...' : 'Update'),
+                            child: Text(
+                              isSubmitting ? 'Updating...' : 'Update',
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _openAddFollowupDialog() async {
+    final notesController = TextEditingController();
+    String followupType = 'Call';
+    String outcome = 'Select';
+    String leadStatus = 'No Change';
+    String reminderType = 'Dashboard';
+    bool createReminder = false;
+    DateTime? followupDate;
+    DateTime? nextFollowupDate;
+
+    String formatDate(DateTime? date) {
+      if (date == null) return 'dd-mm-yyyy --:--';
+      return '${DateFormat('dd-MM-yyyy').format(date)} --:--';
+    }
+
+    Future<void> pickDate(
+      BuildContext context,
+      DateTime? currentValue,
+      ValueChanged<DateTime> onPicked,
+    ) async {
+      final now = DateTime.now();
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: currentValue ?? now,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2100),
+      );
+      if (picked != null) onPicked(picked);
+    }
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isNarrow = screenWidth < 560;
+
+            InputDecoration inputDecoration({Widget? suffixIcon}) {
+              return InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+                ),
+                suffixIcon: suffixIcon,
+              );
+            }
+
+            Widget buildLabel(String text) {
+              return Text(
+                text,
+                style: AppTextStyles.style(
+                  fontSize: isNarrow ? 12 : 13,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF4B5563),
+                ),
+              );
+            }
+
+            Widget buildDateField({
+              required DateTime? value,
+              required VoidCallback onTap,
+            }) {
+              return TextFormField(
+                readOnly: true,
+                controller: TextEditingController(text: formatDate(value)),
+                onTap: onTap,
+                decoration: inputDecoration(
+                  suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                ),
+              );
+            }
+
+            Widget buildPair({
+              required Widget left,
+              required Widget right,
+            }) {
+              if (isNarrow) {
+                return Column(
+                  children: [
+                    left,
+                    const SizedBox(height: 8),
+                    right,
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: left),
+                  const SizedBox(width: 8),
+                  Expanded(child: right),
+                ],
+              );
+            }
+
+            return Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.88,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 6, 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Add Followup',
+                                style: AppTextStyles.style(
+                                  fontSize: isNarrow ? 20 : 24,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF374151),
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(Icons.close, size: 24),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                          child: Column(
+                            children: [
+                              buildPair(
+                                left: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildLabel('Followup Type'),
+                                    const SizedBox(height: 4),
+                                    DropdownButtonFormField<String>(
+                                      value: followupType,
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'Call',
+                                          child: Text('Call'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Whatsapp',
+                                          child: Text('Whatsapp'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Email',
+                                          child: Text('Email'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Meeting',
+                                          child: Text('Meeting'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Demo',
+                                          child: Text('Demo'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Video Call',
+                                          child: Text('Video Call'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Site Visit',
+                                          child: Text('Site Visit'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Proposal Sent',
+                                          child: Text('Proposal Sent'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Quotation Sent',
+                                          child: Text('Quotation Sent'),
+                                        ),
+                                      ],
+                                      onChanged: (value) {
+                                        if (value == null) return;
+                                        setLocalState(() => followupType = value);
+                                      },
+                                      decoration: inputDecoration(),
+                                    ),
+                                  ],
+                                ),
+                                right: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildLabel('Outcome'),
+                                    const SizedBox(height: 4),
+                                    DropdownButtonFormField<String>(
+                                      value: outcome,
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'Select',
+                                          child: Text('Select'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Interested',
+                                          child: Text('Interested'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Not Interested',
+                                          child: Text('Not Interested'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Callback Later',
+                                          child: Text('Callback Later'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Converted',
+                                          child: Text('Converted'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'No Response',
+                                          child: Text('No Response'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Meeting Scheduled',
+                                          child: Text('Meeting Scheduled'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Proposal Requested',
+                                          child: Text('Proposal Requested'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Negotiation',
+                                          child: Text('Negotiation'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Lost',
+                                          child: Text('Lost'),
+                                        ),
+                                      ],
+                                      onChanged: (value) {
+                                        if (value == null) return;
+                                        setLocalState(() => outcome = value);
+                                      },
+                                      decoration: inputDecoration(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              buildPair(
+                                left: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildLabel('Followup Date'),
+                                    const SizedBox(height: 4),
+                                    buildDateField(
+                                      value: followupDate,
+                                      onTap: () => pickDate(
+                                        context,
+                                        followupDate,
+                                        (picked) => setLocalState(
+                                          () => followupDate = picked,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                right: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildLabel('Next Followup'),
+                                    const SizedBox(height: 4),
+                                    buildDateField(
+                                      value: nextFollowupDate,
+                                      onTap: () => pickDate(
+                                        context,
+                                        nextFollowupDate,
+                                        (picked) => setLocalState(
+                                          () => nextFollowupDate = picked,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              buildPair(
+                                left: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildLabel('Lead Status'),
+                                    const SizedBox(height: 4),
+                                    DropdownButtonFormField<String>(
+                                      value: leadStatus,
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'No Change',
+                                          child: Text('No Change'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'New',
+                                          child: Text('New'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Attempted Contact',
+                                          child: Text('Attempted Contact'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Contacted',
+                                          child: Text('Contacted'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Qualified',
+                                          child: Text('Qualified'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Demo Scheduled',
+                                          child: Text('Demo Scheduled'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Proposal Sent',
+                                          child: Text('Proposal Sent'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Negotiation',
+                                          child: Text('Negotiation'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Converted',
+                                          child: Text('Converted'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Lost',
+                                          child: Text('Lost'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Junk',
+                                          child: Text('Junk'),
+                                        ),
+                                      ],
+                                      onChanged: (value) {
+                                        if (value == null) return;
+                                        setLocalState(() => leadStatus = value);
+                                      },
+                                      decoration: inputDecoration(),
+                                    ),
+                                  ],
+                                ),
+                                right: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildLabel('Reminder Type'),
+                                    const SizedBox(height: 4),
+                                    DropdownButtonFormField<String>(
+                                      value: reminderType,
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'Dashboard',
+                                          child: Text('Dashboard'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'Email',
+                                          child: Text('Email'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'WhatsApp',
+                                          child: Text('WhatsApp'),
+                                        ),
+                                      ],
+                                      onChanged: (value) {
+                                        if (value == null) return;
+                                        setLocalState(() => reminderType = value);
+                                      },
+                                      decoration: inputDecoration(),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: Checkbox(
+                                      value: createReminder,
+                                      onChanged: (value) => setLocalState(
+                                        () => createReminder = value ?? false,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Create Reminder',
+                                    style: AppTextStyles.style(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: const Color(0xFF4B5563),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: buildLabel('Discussion Notes'),
+                              ),
+                              const SizedBox(height: 4),
+                              TextField(
+                                controller: notesController,
+                                minLines: isNarrow ? 3 : 4,
+                                maxLines: isNarrow ? 3 : 4,
+                                decoration: inputDecoration(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF6B7280),
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(80, 38),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: AppTextStyles.style(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1E88E5),
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(118, 38),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                              ),
+                              child: Text(
+                                'Save Followup',
+                                style: AppTextStyles.style(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -477,8 +1008,12 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.onUpdateStatus});
+  const _ActionButtons({
+    required this.onAddFollowup,
+    required this.onUpdateStatus,
+  });
 
+  final VoidCallback onAddFollowup;
   final VoidCallback onUpdateStatus;
 
   @override
@@ -492,6 +1027,7 @@ class _ActionButtons extends StatelessWidget {
             icon: Icons.add_circle_outline,
             backgroundColor: const Color(0xFF3F51B5),
             foregroundColor: Colors.white,
+            onTap: onAddFollowup,
           ),
           const SizedBox(width: 8),
           _ActionButton(
@@ -506,7 +1042,6 @@ class _ActionButtons extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _ActionButton extends StatelessWidget {
@@ -538,7 +1073,9 @@ class _ActionButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(10),
-            border: borderColor != null ? Border.all(color: borderColor!) : null,
+            border: borderColor != null
+                ? Border.all(color: borderColor!)
+                : null,
           ),
           child: Row(
             children: [
@@ -587,7 +1124,11 @@ class _LeadInformationCard extends StatelessWidget {
                   color: const Color(0xFF1E293B),
                 ),
               ),
-              const Icon(Icons.info_outline, size: 20, color: Color(0xFF64748B)),
+              const Icon(
+                Icons.info_outline,
+                size: 20,
+                color: Color(0xFF64748B),
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -602,9 +1143,15 @@ class _LeadInformationCard extends StatelessWidget {
                     const SizedBox(height: 16),
                     _InfoItem(label: 'COMPANY', value: lead.displayCompany),
                     const SizedBox(height: 16),
-                    _InfoItem(label: 'CREATED DATE', value: _formatDate(lead.createdAt)),
+                    _InfoItem(
+                      label: 'CREATED DATE',
+                      value: _formatDate(lead.createdAt),
+                    ),
                     const SizedBox(height: 16),
-                    _InfoItem(label: 'CONVERTED AT', value: _formatDate(lead.convertedAt)),
+                    _InfoItem(
+                      label: 'CONVERTED AT',
+                      value: _formatDate(lead.convertedAt),
+                    ),
                   ],
                 ),
               ),
@@ -616,9 +1163,15 @@ class _LeadInformationCard extends StatelessWidget {
                     const SizedBox(height: 16),
                     _InfoItem(label: 'SOURCE', value: lead.displaySource),
                     const SizedBox(height: 16),
-                    _InfoItem(label: 'PREVIOUS STATUS', value: lead.previousStatus ?? 'N/A'),
+                    _InfoItem(
+                      label: 'PREVIOUS STATUS',
+                      value: lead.previousStatus ?? 'N/A',
+                    ),
                     const SizedBox(height: 16),
-                    _InfoItem(label: 'LOST REASON', value: lead.lostReason ?? '-'),
+                    _InfoItem(
+                      label: 'LOST REASON',
+                      value: lead.lostReason ?? '-',
+                    ),
                   ],
                 ),
               ),
@@ -696,16 +1249,16 @@ class _UpdateStatusCard extends StatelessWidget {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: lead.displayStatus,
-            items: [lead.displayStatus].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+            items: [
+              lead.displayStatus,
+            ].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
             onChanged: (v) {},
             decoration: _inputDecoration(),
           ),
           const SizedBox(height: 16),
           _InputFieldLabel(label: 'Conversion Value'),
           const SizedBox(height: 8),
-          TextFormField(
-            decoration: _inputDecoration(hint: 'Optional'),
-          ),
+          TextFormField(decoration: _inputDecoration(hint: 'Optional')),
           const SizedBox(height: 16),
           _InputFieldLabel(label: 'Remarks'),
           const SizedBox(height: 8),
@@ -721,7 +1274,9 @@ class _UpdateStatusCard extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF3F51B5),
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: Text(
                 'Save Status',
@@ -781,18 +1336,51 @@ class _TimelineTabs extends StatelessWidget {
     return TabBar(
       controller: tabController,
       isScrollable: true,
+      tabAlignment: TabAlignment.start,
       labelColor: const Color(0xFF3F51B5),
       unselectedLabelColor: const Color(0xFF64748B),
       indicatorColor: const Color(0xFF3F51B5),
-      labelStyle: AppTextStyles.style(fontSize: 13, fontWeight: FontWeight.w700),
-      unselectedLabelStyle: AppTextStyles.style(fontSize: 13, fontWeight: FontWeight.w500),
+      labelStyle: AppTextStyles.style(
+        fontSize: 13,
+        fontWeight: FontWeight.w700,
+      ),
+      unselectedLabelStyle: AppTextStyles.style(
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
       tabs: const [
         Tab(text: 'Timeline'),
         Tab(text: 'Followups'),
         Tab(text: 'Notes'),
         Tab(text: 'Reminders'),
+        Tab(text: 'Assignments'),
+        Tab(text: 'Status History'),
       ],
     );
+  }
+}
+
+class _LeadTabContent extends StatelessWidget {
+  const _LeadTabContent({required this.tabIndex});
+  final int tabIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (tabIndex) {
+      case 0:
+        return _TimelineList();
+      case 1:
+        return _FollowupList();
+      case 2:
+        return _NotesSection();
+      case 3:
+        return _ReminderSection();
+      case 4:
+        return _AssignmentList();
+      case 5:
+      default:
+        return _StatusHistoryList();
+    }
   }
 }
 
@@ -804,19 +1392,36 @@ class _TimelineList extends StatelessWidget {
         title: 'Status Changed',
         description: 'Lead status changed from converted to converted',
         time: '28 May 2026 03:58 PM',
-        icon: Icons.sync,
+      ),
+      _TimelineItemData(
+        title: 'Status Changed',
+        description: 'Lead status changed from new to won',
+        time: '28 May 2026 02:56 PM',
       ),
       _TimelineItemData(
         title: 'Lead Assigned',
-        description: 'Lead successfully assigned to Sales Representative.',
+        description: 'Lead assignment updated.',
         time: '27 May 2026 05:45 PM',
-        icon: Icons.person_add_alt_1,
+      ),
+      _TimelineItemData(
+        title: 'Lead Assigned',
+        description: 'Lead assignment updated.',
+        time: '26 May 2026 05:58 PM',
       ),
       _TimelineItemData(
         title: 'Note Added',
-        description: 'Customer requested a call back regarding enterprise pricing.',
+        description: 'Lead note added.',
         time: '26 May 2026 05:56 PM',
-        icon: Icons.note_add_outlined,
+      ),
+      _TimelineItemData(
+        title: 'Status Changed',
+        description: 'Lead status changed from new to new',
+        time: '26 May 2026 05:52 PM',
+      ),
+      _TimelineItemData(
+        title: 'Followup Added',
+        description: 'Followup added for lead.',
+        time: '26 May 2026 05:52 PM',
       ),
     ];
 
@@ -831,12 +1436,10 @@ class _TimelineItemData {
     required this.title,
     required this.description,
     required this.time,
-    required this.icon,
   });
   final String title;
   final String description;
   final String time;
-  final IconData icon;
 }
 
 class _TimelineTile extends StatelessWidget {
@@ -845,75 +1448,285 @@ class _TimelineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  shape: BoxShape.circle,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.title,
+                  style: AppTextStyles.style(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF0F172A),
+                  ),
                 ),
-                child: Icon(data.icon, size: 20, color: const Color(0xFF3F51B5)),
+                const SizedBox(height: 4),
+                Text(
+                  data.description,
+                  style: AppTextStyles.style(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            data.time,
+            style: AppTextStyles.style(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FollowupList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const _SimpleInfoCard(
+      title: 'Whatsapp',
+      subtitle: '26 May 2026 05:51 PM | Outcome: interested',
+      description: 'This is testing.',
+    );
+  }
+}
+
+class _NotesSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(
+          minLines: 3,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: 'Add note',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            const SizedBox(width: 20, height: 20, child: Checkbox(value: false, onChanged: null)),
+            const SizedBox(width: 8),
+            Text('Private', style: AppTextStyles.style(fontSize: 13, fontWeight: FontWeight.w600)),
+            const Spacer(),
+            ElevatedButton(
+              onPressed: () {},
+              child: const Text('Add Note'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        const _SimpleInfoCard(
+          title: 'Personal Notes',
+          subtitle: '26 May 2026 05:56 PM',
+          description: '',
+        ),
+      ],
+    );
+  }
+}
+
+class _ReminderSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                readOnly: true,
+                decoration: const InputDecoration(
+                  hintText: 'dd-mm-yyyy --:--',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
               ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: 'Dashboard',
+                items: const [
+                  DropdownMenuItem(value: 'Dashboard', child: Text('Dashboard')),
+                  DropdownMenuItem(value: 'Email', child: Text('Email')),
+                  DropdownMenuItem(value: 'WhatsApp', child: Text('WhatsApp')),
+                ],
+                onChanged: (_) {},
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(onPressed: () {}, child: const Text('Add Reminder')),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
               Expanded(
-                child: Container(
-                  width: 2,
-                  color: const Color(0xFFE2E8F0),
+                child: Text(
+                  '29 May 2026 03:10 PM (DASHBOARD)',
+                  style: AppTextStyles.style(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6B7280),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'PENDING',
+                  style: AppTextStyles.style(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
                 ),
               ),
             ],
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE2E8F0)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        data.title,
-                        style: AppTextStyles.style(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF1E293B),
-                        ),
-                      ),
-                      Text(
-                        data.time,
-                        style: AppTextStyles.style(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    data.description,
-                    style: AppTextStyles.style(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: const Color(0xFF475569),
-                    ),
-                  ),
-                ],
-              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AssignmentList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _SimpleInfoCard(
+          title: 'Saurabh Damale',
+          subtitle: 'Assigned at: 27 May 2026 05:45 PM',
+          description: 'Bulk assignment',
+        ),
+        _SimpleInfoCard(
+          title: 'Saurabh Damale',
+          subtitle: 'Assigned at: 26 May 2026 05:58 PM',
+          description: '-',
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusHistoryList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        _SimpleInfoCard(
+          title: 'converted -> new',
+          subtitle: '29 May 2026 03:10 PM',
+          description: 'Updated via followup',
+        ),
+        _SimpleInfoCard(
+          title: 'converted -> converted',
+          subtitle: '28 May 2026 03:58 PM',
+          description: '-',
+        ),
+        _SimpleInfoCard(
+          title: 'new -> won',
+          subtitle: '28 May 2026 02:56 PM',
+          description: '-',
+        ),
+      ],
+    );
+  }
+}
+
+class _SimpleInfoCard extends StatelessWidget {
+  const _SimpleInfoCard({
+    required this.title,
+    required this.subtitle,
+    required this.description,
+  });
+
+  final String title;
+  final String subtitle;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTextStyles.style(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F172A),
             ),
           ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: AppTextStyles.style(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          if (description.trim().isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: AppTextStyles.style(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFF334155),
+              ),
+            ),
+          ],
         ],
       ),
     );
