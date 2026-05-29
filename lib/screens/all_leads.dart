@@ -121,7 +121,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   }
 
   String _leadSelectionKey(LeadModel lead) {
-    return '${_buildLeadAssignSource(lead)}::${lead.id}';
+    return '${_buildLeadAssignSource(lead)}::${_resolveLeadSourceId(lead)}';
   }
 
   bool _isLeadSelected(LeadModel lead) => _selectedLeadKeys.contains(_leadSelectionKey(lead));
@@ -156,6 +156,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       }
       selected.add(<String, dynamic>{
         'source_type': sourceType,
+        'source_id': leadId,
         'id': leadId,
       });
     }
@@ -177,7 +178,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       case 'webapp':
       case 'webapps':
       case 'webapplication':
-        return 'web_app';
+        return 'webapp';
       case 'meta':
       case 'facebook':
         return 'meta';
@@ -191,6 +192,12 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       default:
         return raw.isEmpty ? 'lead' : raw;
     }
+  }
+
+  String _resolveLeadSourceId(LeadModel lead) {
+    final sourceId = (lead.sourceId ?? '').trim();
+    if (sourceId.isNotEmpty) return sourceId;
+    return lead.id.trim();
   }
 
   Future<void> _showAssignDialog({
@@ -224,6 +231,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               }
               setLocalState(() => submitting = true);
               try {
+                debugPrint(
+                  '[AllLeads.submitAssign] singleLeadId=$singleLeadId sourceType=${singleLeadSourceType ?? 'lead'} selectedStaffIds=${selectedStaffIds.toList()} selectedLeadsCount=${selectedLeads.length}',
+                );
                 if (singleLeadId != null) {
                   await _apiService.assignLead(
                     sourceType: singleLeadSourceType ?? 'lead',
@@ -339,7 +349,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   Future<void> _openAssignSingleLead(LeadModel lead) async {
     await _showAssignDialog(
       selectedLeads: const <Map<String, dynamic>>[],
-      singleLeadId: lead.id,
+      singleLeadId: _resolveLeadSourceId(lead),
       singleLeadSourceType: _buildLeadAssignSource(lead),
     );
   }
@@ -387,7 +397,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               try {
                 await _apiService.updateLeadStatus(
                   sourceType: _buildLeadAssignSource(lead),
-                  leadId: lead.id,
+                  leadId: _resolveLeadSourceId(lead),
                   status: _normalizeStatusForApi(selectedStatus),
                   remarks: remarksController.text.trim(),
                   lostReason: isLost ? lostReasonController.text.trim() : null,
@@ -746,12 +756,12 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                 ? () => _toggleLeadSelection(lead, !_isLeadSelected(lead))
                 : null,
             child: AppCard(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (_isBulkSelectionMode)
                         Checkbox(
@@ -759,31 +769,76 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                           onChanged: (value) => _toggleLeadSelection(lead, value ?? false),
                         ),
                       Expanded(
-                        child: Text(
-                          '#$serialNumber ${lead.displayName}',
-                          style: AppTextStyles.style(
-                            color: const Color(0xFF0F172A),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final veryCompact = constraints.maxWidth < 220;
+                                final compact = constraints.maxWidth < 280;
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        '#$serialNumber ${lead.displayName}',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.style(
+                                          color: const Color(0xFF0F172A),
+                                          fontSize: veryCompact ? 12 : 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: veryCompact ? 4 : 6),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxWidth: veryCompact ? 72 : 96,
+                                          ),
+                                          child: _TypeBadge(
+                                            type: lead.displaySourceType,
+                                            compact: compact,
+                                            veryCompact: veryCompact,
+                                          ),
+                                        ),
+                                        SizedBox(width: veryCompact ? 4 : 6),
+                                        ConstrainedBox(
+                                          constraints: BoxConstraints(
+                                            maxWidth: veryCompact ? 84 : 112,
+                                          ),
+                                          child: _StatusBadge(
+                                            status: lead.displayStatus,
+                                            compact: compact,
+                                            veryCompact: veryCompact,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      _TypeBadge(type: lead.displaySourceType),
-                      const SizedBox(width: 6),
-                      _StatusBadge(status: lead.displayStatus),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     lead.displayCompany == '-' ? 'Unknown Client' : lead.displayCompany,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.style(
                       color: const Color(0xFF64748B),
-                      fontSize: 14,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Column(
                     children: [
                       _buildLeadFieldRow(
@@ -1126,23 +1181,36 @@ class _ActionCircleButton extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
+  const _StatusBadge({
+    required this.status,
+    this.compact = false,
+    this.veryCompact = false,
+  });
 
   final String status;
+  final bool compact;
+  final bool veryCompact;
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = compact || status.length > 12;
+    final isVeryCompact = veryCompact || status.length > 18;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: isVeryCompact ? 4 : (isCompact ? 6 : 8),
+        vertical: isVeryCompact ? 2 : (isCompact ? 3 : 4),
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFE8F0FE),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         status,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: AppTextStyles.style(
           color: const Color(0xFF2563EB),
-          fontSize: 14,
+          fontSize: isVeryCompact ? 10 : (isCompact ? 11 : 12),
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -1151,23 +1219,36 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _TypeBadge extends StatelessWidget {
-  const _TypeBadge({required this.type});
+  const _TypeBadge({
+    required this.type,
+    this.compact = false,
+    this.veryCompact = false,
+  });
 
   final String type;
+  final bool compact;
+  final bool veryCompact;
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = compact || type.length > 12;
+    final isVeryCompact = veryCompact || type.length > 18;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: isVeryCompact ? 4 : (isCompact ? 6 : 8),
+        vertical: isVeryCompact ? 2 : (isCompact ? 3 : 4),
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         type,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: AppTextStyles.style(
           color: const Color(0xFF334155),
-          fontSize: 12,
+          fontSize: isVeryCompact ? 9 : (isCompact ? 10 : 11),
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -1202,24 +1283,24 @@ class _LeadActions extends StatelessWidget {
             ),
             child: const Icon(
               Icons.remove_red_eye_outlined,
-              size: 18,
+              size: 16,
               color: Color(0xFF2563EB),
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         _ActionIconButton(
           icon: Icons.person_add_alt_1_outlined,
           color: Color(0xFFF59E0B),
           onTap: onAssign,
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         _ActionIconButton(
           icon: Icons.edit_outlined,
           color: Color(0xFF0EA5E9),
           onTap: onEditStatus,
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         _ActionIconButton(
           icon: Icons.delete_outline,
           color: Color(0xFFEF4444),
@@ -1248,7 +1329,7 @@ class _ActionIconButton extends StatelessWidget {
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.all(2),
-        child: Icon(icon, size: 18, color: color),
+        child: Icon(icon, size: 16, color: color),
       ),
     );
   }

@@ -50,9 +50,9 @@ class ApiConstants {
   static const String createleads = '$baseUrl/leads';
   static const String editleads = '$baseUrl/leads/{id}';
   static const String leadAssign =
-      '$baseUrl/lead-management/{sourceType}/{id}/assign';
+      '$baseUrl/lead-management/{sourceType}/{source_id}/assign';
   static const String leadStatusUpdate =
-      '$baseUrl/lead-management/{sourceType}/{id}/status';
+      '$baseUrl/lead-management/{sourceType}/{source_id}/status';
   static const String leadBulkAssign = '$baseUrl/lead-management/bulk-assign';
 
   //Todo Api

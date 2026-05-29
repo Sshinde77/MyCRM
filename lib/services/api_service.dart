@@ -3889,7 +3889,7 @@ class ApiService {
     required List<String> assignedUserIds,
     String? assignmentNote,
   }) async {
-    final normalizedSourceType = sourceType.trim();
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
     final normalizedLeadId = leadId.trim();
     if (normalizedSourceType.isEmpty || normalizedLeadId.isEmpty) return;
 
@@ -3904,25 +3904,32 @@ class ApiService {
       'assigned_user_ids': normalizedIds
           .map((id) => int.tryParse(id) ?? id)
           .toList(growable: false),
-      // Compatibility aliases for API variants.
-      'assigned_staff_ids': normalizedIds
-          .map((id) => int.tryParse(id) ?? id)
-          .toList(growable: false),
-      'assigned_to': normalizedIds
-          .map((id) => int.tryParse(id) ?? id)
-          .toList(growable: false),
     };
 
     final note = (assignmentNote ?? '').trim();
     if (note.isNotEmpty) {
       payload['assignment_note'] = note;
-      payload['notes'] = note;
     }
 
     final path = ApiConstants.leadAssign
         .replaceFirst('{sourceType}', normalizedSourceType)
-        .replaceFirst('{id}', normalizedLeadId);
-    await post(path, data: payload);
+        .replaceFirst('{source_id}', normalizedLeadId);
+    try {
+      final response = await post(path, data: payload);
+      debugPrint('[leadAssign] URL: $path');
+      debugPrint('[leadAssign] Payload: ${_summarizeForLog(payload)}');
+      debugPrint('[leadAssign] Response: ${_summarizeForLog(response.data)}');
+      _ensureAssignmentSucceeded(response.data);
+    } on DioException catch (error) {
+      debugPrint('[leadAssign] URL: $path');
+      debugPrint('[leadAssign] Error: ${error.message ?? error.error}');
+      if (error.response?.data != null) {
+        debugPrint(
+          '[leadAssign] Error Response: ${_summarizeForLog(error.response?.data)}',
+        );
+      }
+      rethrow;
+    }
   }
 
   /// Assigns multiple leads to one or more staff members in one request.
@@ -3939,13 +3946,15 @@ class ApiService {
 
     final normalizedLeads = selectedLeads
         .map((entry) {
-          final sourceType = (entry['source_type'] ?? entry['source'] ?? '')
+          final sourceType = _normalizeLeadSourceTypeForPath(
+            (entry['source'] ?? entry['source_type'] ?? '').toString(),
+          );
+          final rawId = (entry['source_id'] ?? entry['id'] ?? '')
               .toString()
               .trim();
-          final rawId = (entry['id'] ?? '').toString().trim();
           if (sourceType.isEmpty || rawId.isEmpty) return null;
           return <String, dynamic>{
-            'source_type': sourceType,
+            'source': sourceType,
             'id': int.tryParse(rawId) ?? rawId,
           };
         })
@@ -3957,18 +3966,48 @@ class ApiService {
       'assigned_user_ids': normalizedIds
           .map((id) => int.tryParse(id) ?? id)
           .toList(growable: false),
-      // Compatibility aliases for API variants.
-      'assigned_staff_ids': normalizedIds
-          .map((id) => int.tryParse(id) ?? id)
-          .toList(growable: false),
-      'assigned_to': normalizedIds
-          .map((id) => int.tryParse(id) ?? id)
-          .toList(growable: false),
       'selected_leads': normalizedLeads,
-      'leads': normalizedLeads,
     };
 
-    await post(ApiConstants.leadBulkAssign, data: payload);
+    try {
+      final response = await post(ApiConstants.leadBulkAssign, data: payload);
+      debugPrint('[leadBulkAssign] URL: ${ApiConstants.leadBulkAssign}');
+      debugPrint('[leadBulkAssign] Payload: ${_summarizeForLog(payload)}');
+      debugPrint(
+        '[leadBulkAssign] Response: ${_summarizeForLog(response.data)}',
+      );
+      _ensureAssignmentSucceeded(response.data);
+    } on DioException catch (error) {
+      debugPrint('[leadBulkAssign] URL: ${ApiConstants.leadBulkAssign}');
+      debugPrint('[leadBulkAssign] Error: ${error.message ?? error.error}');
+      if (error.response?.data != null) {
+        debugPrint(
+          '[leadBulkAssign] Error Response: ${_summarizeForLog(error.response?.data)}',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  void _ensureAssignmentSucceeded(dynamic responseData) {
+    final body = _normalizeMap(responseData);
+    final success = body['success'];
+    if (success is bool && success == false) {
+      throw Exception(_extractAssignmentErrorMessage(body));
+    }
+
+    final status = body['status']?.toString().trim().toLowerCase();
+    if (status == 'error' || status == 'failed' || status == 'fail') {
+      throw Exception(_extractAssignmentErrorMessage(body));
+    }
+  }
+
+  String _extractAssignmentErrorMessage(Map<String, dynamic> body) {
+    final message = body['message']?.toString().trim();
+    if (message != null && message.isNotEmpty) return message;
+    final error = body['error']?.toString().trim();
+    if (error != null && error.isNotEmpty) return error;
+    return 'Failed to assign lead(s).';
   }
 
   /// Updates status fields for a single lead.
@@ -3980,7 +4019,7 @@ class ApiService {
     String? lostReason,
     double? wonValue,
   }) async {
-    final normalizedSourceType = sourceType.trim();
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
     final normalizedLeadId = leadId.trim();
     final normalizedStatus = status.trim().toLowerCase();
     if (normalizedSourceType.isEmpty ||
@@ -4000,8 +4039,31 @@ class ApiService {
 
     final path = ApiConstants.leadStatusUpdate
         .replaceFirst('{sourceType}', normalizedSourceType)
-        .replaceFirst('{id}', normalizedLeadId);
-    await patch(path, data: payload);
+        .replaceFirst('{source_id}', normalizedLeadId);
+    try {
+      final response = await patch(path, data: payload);
+      debugPrint('[leadStatusUpdate] URL: $path');
+      debugPrint(
+        '[leadStatusUpdate] Response: ${_summarizeForLog(response.data)}',
+      );
+    } on DioException catch (error) {
+      debugPrint('[leadStatusUpdate] URL: $path');
+      debugPrint('[leadStatusUpdate] Error: ${error.message ?? error.error}');
+      if (error.response?.data != null) {
+        debugPrint(
+          '[leadStatusUpdate] Error Response: ${_summarizeForLog(error.response?.data)}',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  String _normalizeLeadSourceTypeForPath(String sourceType) {
+    return sourceType
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
   }
 
   /// Creates a new todo for the authenticated user.
