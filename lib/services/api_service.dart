@@ -242,6 +242,22 @@ class ContactEnquiryListPageResult {
   final bool hasNextPage;
 }
 
+class RoleListResult {
+  const RoleListResult({
+    required this.items,
+    required this.totalRolesCount,
+    required this.activeRolesCount,
+    required this.inactiveRolesCount,
+    required this.permissionsCount,
+  });
+
+  final List<RoleModel> items;
+  final int totalRolesCount;
+  final int activeRolesCount;
+  final int inactiveRolesCount;
+  final int permissionsCount;
+}
+
 class LeadDashboardCount {
   const LeadDashboardCount({
     required this.todayCount,
@@ -1790,9 +1806,51 @@ class ApiService {
 
   /// Loads the roles list for the authenticated user.
   Future<List<RoleModel>> getRolesList() async {
+    final result = await getRolesSummary();
+    return result.items;
+  }
+
+  /// Loads roles list with server-side counters.
+  Future<RoleListResult> getRolesSummary() async {
     final response = await get(ApiConstants.roles);
-    final records = _normalizeList(response.data);
-    return records.map(RoleModel.fromJson).toList();
+    final root = _normalizeMap(response.data);
+    final nestedData = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
+
+    final rolesPayload = nestedData['roles'] is Map
+        ? _normalizeMap(nestedData['roles'])
+        : root['roles'] is Map
+        ? _normalizeMap(root['roles'])
+        : const <String, dynamic>{};
+
+    final recordsSource = rolesPayload['data'];
+    final records = recordsSource is List
+        ? recordsSource.map(_normalizeMap).toList(growable: false)
+        : _normalizeList(response.data);
+    final items = records.map(RoleModel.fromJson).toList(growable: false);
+
+    final int totalRolesCount =
+        _readInt(nestedData['totalRolesCount']) ??
+        _readInt(rolesPayload['total']) ??
+        items.length;
+    final int activeRolesCount =
+        _readInt(nestedData['activeRolesCount']) ??
+        items.where((role) => role.isActive).length;
+    final int inactiveRolesCount =
+        _readInt(nestedData['inactiveRolesCount']) ??
+        (totalRolesCount - activeRolesCount).clamp(0, totalRolesCount).toInt();
+    final int permissionsCount =
+        _readInt(nestedData['permissionsCount']) ??
+        items.fold<int>(0, (sum, role) => sum + role.permissionsCount);
+
+    return RoleListResult(
+      items: items,
+      totalRolesCount: totalRolesCount,
+      activeRolesCount: activeRolesCount,
+      inactiveRolesCount: inactiveRolesCount,
+      permissionsCount: permissionsCount,
+    );
   }
 
   /// Loads the vendor list for the authenticated user.

@@ -36,13 +36,13 @@ class _RolesScreenState extends State<RolesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: const CommonScreenAppBar(title: 'Roles'),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(0xFF3B82F6),
-        elevation: 2,
-        mini: true,
-        child: const Icon(Icons.add, color: Colors.white, size: 22),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () {},
+      //   backgroundColor: const Color(0xFF3B82F6),
+      //   elevation: 2,
+      //   mini: true,
+      //   child: const Icon(Icons.add, color: Colors.white, size: 22),
+      // ),
       body: Consumer<RoleProvider>(
         builder: (context, provider, _) {
           return RefreshIndicator(
@@ -52,9 +52,12 @@ class _RolesScreenState extends State<RolesScreen> {
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
               child: Column(
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      Expanded(
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 32) / 2,
                         child: _SummaryCard(
                           title: 'TOTAL ROLES',
                           count: provider.totalRoles.toString(),
@@ -63,8 +66,8 @@ class _RolesScreenState extends State<RolesScreen> {
                           accentColor: const Color(0xFF3B82F6),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 32) / 2,
                         child: _SummaryCard(
                           title: 'ACTIVE',
                           count: provider.activeRoles.toString(),
@@ -73,8 +76,18 @@ class _RolesScreenState extends State<RolesScreen> {
                           accentColor: const Color(0xFF22C55E),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 32) / 2,
+                        child: _SummaryCard(
+                          title: 'INACTIVE',
+                          count: provider.inactiveRoles.toString(),
+                          icon: Icons.cancel_outlined,
+                          backgroundColor: const Color(0xFFFEF2F2),
+                          accentColor: const Color(0xFFEF4444),
+                        ),
+                      ),
+                      SizedBox(
+                        width: (MediaQuery.of(context).size.width - 32) / 2,
                         child: _SummaryCard(
                           title: 'PERMISSIONS',
                           count: provider.permissionsCount.toString(),

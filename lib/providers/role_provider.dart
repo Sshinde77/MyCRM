@@ -10,6 +10,10 @@ class RoleProvider extends ChangeNotifier {
   final ApiService _apiService;
 
   List<RoleModel> _allRoles = const <RoleModel>[];
+  int _totalRolesCount = 0;
+  int _activeRolesCount = 0;
+  int _inactiveRolesCount = 0;
+  int _permissionsCount = 0;
   String _searchQuery = '';
   bool _isLoading = false;
   String? _errorMessage;
@@ -24,10 +28,17 @@ class RoleProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
-  int get totalRoles => _allRoles.length;
-  int get activeRoles => _allRoles.where((role) => role.isActive).length;
-  int get permissionsCount =>
-      _allRoles.fold(0, (total, role) => total + role.permissionsCount);
+  int get totalRoles =>
+      _totalRolesCount > 0 ? _totalRolesCount : _allRoles.length;
+  int get activeRoles => _activeRolesCount > 0
+      ? _activeRolesCount
+      : _allRoles.where((role) => role.isActive).length;
+  int get inactiveRoles => _inactiveRolesCount > 0
+      ? _inactiveRolesCount
+      : (totalRoles - activeRoles).clamp(0, totalRoles);
+  int get permissionsCount => _permissionsCount > 0
+      ? _permissionsCount
+      : _allRoles.fold(0, (total, role) => total + role.permissionsCount);
 
   Future<void> loadRoles({bool forceRefresh = false}) async {
     if (_isLoading) {
@@ -43,7 +54,12 @@ class RoleProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _allRoles = await _apiService.getRolesList();
+      final result = await _apiService.getRolesSummary();
+      _allRoles = result.items;
+      _totalRolesCount = result.totalRolesCount;
+      _activeRolesCount = result.activeRolesCount;
+      _inactiveRolesCount = result.inactiveRolesCount;
+      _permissionsCount = result.permissionsCount;
     } catch (error) {
       _errorMessage = _toMessage(error);
     } finally {
