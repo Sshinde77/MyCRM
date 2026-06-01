@@ -55,10 +55,24 @@ enum AppBottomNavTab {
   final String routeName;
 }
 
-class PrimaryBottomNavigation extends StatelessWidget {
+class PrimaryBottomNavigation extends StatefulWidget {
   const PrimaryBottomNavigation({super.key, required this.currentTab});
 
   final AppBottomNavTab currentTab;
+
+  @override
+  State<PrimaryBottomNavigation> createState() =>
+      _PrimaryBottomNavigationState();
+}
+
+class _PrimaryBottomNavigationState extends State<PrimaryBottomNavigation> {
+  late final Future<List<AppBottomNavTab>> _visibleTabsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _visibleTabsFuture = _visibleTabs();
+  }
 
   void _handleTabChange(List<AppBottomNavTab> tabs, int index) {
     if (index < 0 || index >= tabs.length) {
@@ -66,7 +80,7 @@ class PrimaryBottomNavigation extends StatelessWidget {
     }
 
     final selectedTab = tabs[index];
-    if (selectedTab == currentTab) {
+    if (selectedTab == widget.currentTab) {
       return;
     }
 
@@ -76,7 +90,7 @@ class PrimaryBottomNavigation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<AppBottomNavTab>>(
-      future: _visibleTabs(),
+      future: _visibleTabsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const SizedBox.shrink();
@@ -87,7 +101,7 @@ class PrimaryBottomNavigation extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        final currentIndex = tabs.indexOf(currentTab);
+        final currentIndex = tabs.indexOf(widget.currentTab);
         final items = tabs
             .map((tab) => MagicNavItem(label: tab.label, icon: tab.icon))
             .toList(growable: false);

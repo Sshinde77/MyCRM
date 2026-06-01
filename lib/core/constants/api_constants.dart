@@ -5,7 +5,7 @@ class ApiConstants {
   static const int connectTimeout = 30000;
   static const int receiveTimeout = 30000;
 
-  // Endpoints
+  // Endpointss
   //Authentication Api
   static const String login = '$baseUrl/login';
   static const String user = '$baseUrl/me';
@@ -25,6 +25,10 @@ class ApiConstants {
   static const String createstaff = '$baseUrl/staff-v2';
   static const String liststaff = '$baseUrl/staff-v2';
   static const String staffdetail = '$baseUrl/staff-v2/{id}';
+  static const String staffAnalytics = '$baseUrl/staff-v2/{id}/analytics';
+  static const String staffLeadChart = '$baseUrl/staff-v2/{id}/lead-chart';
+  static const String staffFollowupChart =
+      '$baseUrl/staff-v2/{id}/followup-chart';
   static const String deletestaff = '$baseUrl/staff-v2/{id}';
   static const String editstaff = '$baseUrl/staff-v2/{id}';
   static const String staffDepartments = '$baseUrl/staff-v2/departments';
@@ -33,7 +37,9 @@ class ApiConstants {
   static const String stafftasks = '$baseUrl/staff/{id}/tasks';
 
   //Clients Api
-  static const String clients = '$baseUrl/clients'; 
+  static const String clients = '$baseUrl/clients';
+
+        
   static const String clientDetail = '$baseUrl/clients/{id}';
   static const String updateClient = '$baseUrl/clients/{id}';
   static const String deleteClient = '$baseUrl/clients/{id}';
@@ -66,6 +72,10 @@ class ApiConstants {
       '$baseUrl/lead-management/{sourceType}/{source_id}/note';
   static const String leadReminderCreate =
       '$baseUrl/lead-management/{sourceType}/{source_id}/reminder';
+  static const String leadAssignments =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/assignment';
+  static const String leadStatusHistory =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/status-history';
 
   //Todo Api
   static const String createtodo = '$baseUrl/todos';

@@ -22,6 +22,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   late final Future<QuickStatsModel> _quickStatsFuture;
+  late final Future<List<_ProfileAction>> _visibleActionsFuture;
 
   static const List<_ProfileAction> _actions = [
     // _ProfileAction(
@@ -120,6 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _quickStatsFuture = ApiService.instance.getQuickStats();
+    _visibleActionsFuture = _visibleActions();
   }
 
   @override
@@ -149,7 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final contentWidth = width >= 900 ? 920.0 : 520.0;
 
               return FutureBuilder<List<_ProfileAction>>(
-                future: _visibleActions(),
+                future: _visibleActionsFuture,
                 builder: (context, snapshot) {
                   final actions = snapshot.data ?? const <_ProfileAction>[];
 
@@ -191,10 +193,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<List<_ProfileAction>> _visibleActions() async {
+    final user = await PermissionService.getCurrentUser();
     final visible = <_ProfileAction>[];
     for (final action in _actions) {
       if (action.routeName == AppRoutes.renewalMaster) {
-        final user = await PermissionService.getCurrentUser();
         final canOpenRenewal = PermissionService.userHasAny(user, const [
           AppPermission.viewRenewals,
           AppPermission.viewServices,
@@ -206,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         continue;
       }
       final permission = action.permission;
-      if (permission == null || await PermissionService.has(permission)) {
+      if (permission == null || PermissionService.userHas(user, permission)) {
         visible.add(action);
       }
     }

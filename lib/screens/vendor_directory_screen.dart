@@ -304,16 +304,15 @@ class _VendorDirectoryScreenState extends State<VendorDirectoryScreen> {
                             startEntry: startEntry,
                             endEntry: endEntry,
                             totalEntries: totalEntries,
-                            currentPage: currentPage - 1,
-                            pageCount: pageCount,
+                            currentPage: currentPage,
+                            totalPages: pageCount,
                             compact: useMobileLayout,
-                            onPrevious: (currentPage > 1)
-                                ? () => _reload(page: currentPage - 1)
-                                : null,
-                            onNext: (currentPage < pageCount)
-                                ? () => _reload(page: currentPage + 1)
-                                : null,
-                            onSelectPage: (page) => _reload(page: page + 1),
+                            onPageTap: (page) {
+                              if (page == currentPage) {
+                                return;
+                              }
+                              _reload(page: page);
+                            },
                           ),
                         ],
                       ],
@@ -788,96 +787,23 @@ class _VendorFooter extends StatelessWidget {
     required this.endEntry,
     required this.totalEntries,
     required this.currentPage,
-    required this.pageCount,
+    required this.totalPages,
     required this.compact,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onSelectPage,
+    required this.onPageTap,
   });
 
   final int startEntry;
   final int endEntry;
   final int totalEntries;
   final int currentPage;
-  final int pageCount;
+  final int totalPages;
   final bool compact;
-  final VoidCallback? onPrevious;
-  final VoidCallback? onNext;
-  final ValueChanged<int> onSelectPage;
+  final ValueChanged<int> onPageTap;
 
   @override
   Widget build(BuildContext context) {
-    List<int?> visiblePages() {
-      // 0-based page indices, with `null` representing an ellipsis.
-      if (pageCount <= 7) {
-        return List<int?>.generate(pageCount, (index) => index);
-      }
-
-      final candidates = <int>{
-        0,
-        pageCount - 1,
-        currentPage - 1,
-        currentPage,
-        currentPage + 1,
-      }.where((index) => index >= 0 && index < pageCount).toList()..sort();
-
-      final result = <int?>[];
-      for (final index in candidates) {
-        if (result.isNotEmpty) {
-          final previous = result.last;
-          if (previous is int && index - previous > 1) {
-            result.add(null);
-          }
-        }
-        result.add(index);
-      }
-      return result;
-    }
-
-    if (compact) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Showing $startEntry to $endEntry of $totalEntries entries',
-            style: AppTextStyles.style(
-              color: const Color(0xFF475569),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _PageNavButton(label: 'Prev', onTap: onPrevious),
-                const SizedBox(width: 8),
-                ...visiblePages().map((pageIndex) {
-                  if (pageIndex == null) {
-                    return const Padding(
-                      padding: EdgeInsets.only(right: 8),
-                      child: _EllipsisChip(),
-                    );
-                  }
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _PageNumberButton(
-                      label: '${pageIndex + 1}',
-                      active: pageIndex == currentPage,
-                      onTap: () => onSelectPage(pageIndex),
-                    ),
-                  );
-                }),
-                _PageNavButton(label: 'Next', onTap: onNext),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Showing $startEntry to $endEntry of $totalEntries entries',
@@ -887,51 +813,191 @@ class _VendorFooter extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const Spacer(),
-        _PageNavButton(label: 'Prev', onTap: onPrevious),
-        const SizedBox(width: 8),
-        ...visiblePages().map((pageIndex) {
-          if (pageIndex == null) {
-            return const Padding(
-              padding: EdgeInsets.only(right: 8),
-              child: _EllipsisChip(),
-            );
-          }
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _PageNumberButton(
-              label: '${pageIndex + 1}',
-              active: pageIndex == currentPage,
-              onTap: () => onSelectPage(pageIndex),
+        SizedBox(height: compact ? 10 : 12),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: _PaginationBar(
+              compact: compact,
+              currentPage: currentPage,
+              totalPages: totalPages,
+              onPageTap: onPageTap,
             ),
-          );
-        }),
-        _PageNavButton(label: 'Next', onTap: onNext),
+          ),
+        ),
       ],
     );
   }
 }
 
-class _EllipsisChip extends StatelessWidget {
-  const _EllipsisChip();
+class _PaginationBar extends StatelessWidget {
+  const _PaginationBar({
+    required this.compact,
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageTap,
+  });
+
+  final bool compact;
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 38,
-      height: 38,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFD9E2EF)),
+    if (totalPages <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Padding(
+      padding: EdgeInsets.only(top: compact ? 6 : 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_left_rounded,
+            enabled: canGoPrev,
+            onTap: () => onPageTap(currentPage - 1),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tokens
+                .map((token) {
+                  if (token == null) {
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 2 : 4,
+                        vertical: compact ? 8 : 9,
+                      ),
+                      child: Text(
+                        '...',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF64748B),
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    );
+                  }
+                  final selected = token == currentPage;
+                  return InkWell(
+                    onTap: () => onPageTap(token),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: compact ? 34 : 36,
+                      height: compact ? 34 : 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xFF122B52)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$token',
+                        style: AppTextStyles.style(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF334155),
+                          fontSize: compact ? 13 : 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  );
+                })
+                .toList(growable: false),
+          ),
+          SizedBox(width: compact ? 10 : 12),
+          _PaginationArrowButton(
+            compact: compact,
+            icon: Icons.chevron_right_rounded,
+            enabled: canGoNext,
+            onTap: () => onPageTap(currentPage + 1),
+          ),
+        ],
       ),
-      child: Text(
-        '...',
-        style: AppTextStyles.style(
-          color: const Color(0xFF475569),
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
+    );
+  }
+
+  List<int?> _buildPageTokens(int current, int total) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (index) => index + 1);
+    }
+
+    final tokens = <int?>[1];
+    var start = current - 1;
+    var end = current + 1;
+
+    if (current <= 3) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 2) {
+      start = total - 3;
+      end = total - 1;
+    } else {
+      start = start < 2 ? 2 : start;
+      end = end > total - 1 ? total - 1 : end;
+    }
+
+    if (start > 2) {
+      tokens.add(null);
+    }
+    for (var page = start; page <= end; page += 1) {
+      tokens.add(page);
+    }
+    if (end < total - 1) {
+      tokens.add(null);
+    }
+    tokens.add(total);
+    return tokens;
+  }
+}
+
+class _PaginationArrowButton extends StatelessWidget {
+  const _PaginationArrowButton({
+    required this.compact,
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final bool compact;
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        width: compact ? 34 : 40,
+        height: compact ? 34 : 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFDCE6F2)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x140F172A),
+              blurRadius: 8,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          size: compact ? 18 : 20,
+          color: enabled ? const Color(0xFF334155) : const Color(0xFF94A3B8),
         ),
       ),
     );
@@ -1113,79 +1179,6 @@ class _ActionIcon extends StatelessWidget {
             icon,
             size: 18,
             color: danger ? const Color(0xFFB91C1C) : const Color(0xFF1D4ED8),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PageNavButton extends StatelessWidget {
-  const _PageNavButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: onTap == null ? const Color(0xFFF1F5F9) : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFD9E2EF)),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.style(
-            color: onTap == null
-                ? const Color(0xFF94A3B8)
-                : const Color(0xFF475569),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PageNumberButton extends StatelessWidget {
-  const _PageNumberButton({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        width: 38,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFF1D8BFF) : Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: active ? const Color(0xFF1D8BFF) : const Color(0xFFD9E2EF),
-          ),
-        ),
-        child: Text(
-          label,
-          style: AppTextStyles.style(
-            color: active ? Colors.white : const Color(0xFF475569),
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
           ),
         ),
       ),

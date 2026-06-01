@@ -1956,7 +1956,7 @@ class _AvatarCircle extends StatelessWidget {
   final String? profileImage;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) {  
     final imageUrl = _resolveProfileImageUrl(profileImage);
 
     return CircleAvatar(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dio/dio.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -38,10 +39,23 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
   int _selectedLeadTab = 0;
   List<Map<String, dynamic>> _timelineItems = const <Map<String, dynamic>>[];
   List<Map<String, dynamic>> _followupItems = const <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _noteItems = const <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _reminderItems = const <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _assignmentItems = const <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _statusHistoryItems =
+      const <Map<String, dynamic>>[];
   bool _isTimelineLoading = false;
   bool _isFollowupsLoading = false;
+  bool _isNotesLoading = false;
+  bool _isRemindersLoading = false;
+  bool _isAssignmentsLoading = false;
+  bool _isStatusHistoryLoading = false;
   String _loadedTimelineKey = '';
   String _loadedFollowupsKey = '';
+  String _loadedNotesKey = '';
+  String _loadedRemindersKey = '';
+  String _loadedAssignmentsKey = '';
+  String _loadedStatusHistoryKey = '';
   String _activeLeadKey = '';
   String _activeSourceType = '';
   String _activeSourceId = '';
@@ -60,7 +74,8 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
   }
 
   void _triggerTabLoad() {
-    if (!mounted || _activeSourceType.isEmpty || _activeSourceId.isEmpty) return;
+    if (!mounted || _activeSourceType.isEmpty || _activeSourceId.isEmpty)
+      return;
     if (_selectedLeadTab == 0) {
       _loadTimelineByKey(
         sourceType: _activeSourceType,
@@ -68,6 +83,23 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
       );
     } else if (_selectedLeadTab == 1) {
       _loadFollowupsByKey(
+        sourceType: _activeSourceType,
+        sourceId: _activeSourceId,
+      );
+    } else if (_selectedLeadTab == 2) {
+      _loadNotesByKey(sourceType: _activeSourceType, sourceId: _activeSourceId);
+    } else if (_selectedLeadTab == 3) {
+      _loadRemindersByKey(
+        sourceType: _activeSourceType,
+        sourceId: _activeSourceId,
+      );
+    } else if (_selectedLeadTab == 4) {
+      _loadAssignmentsByKey(
+        sourceType: _activeSourceType,
+        sourceId: _activeSourceId,
+      );
+    } else if (_selectedLeadTab == 5) {
+      _loadStatusHistoryByKey(
         sourceType: _activeSourceType,
         sourceId: _activeSourceId,
       );
@@ -133,6 +165,108 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     }
   }
 
+  Future<void> _loadNotesByKey({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final requestKey = '$sourceType::$sourceId';
+    if (_isNotesLoading || _loadedNotesKey == requestKey) return;
+
+    setState(() => _isNotesLoading = true);
+    try {
+      final results = await _apiService.getLeadNotes(
+        sourceType: sourceType,
+        sourceId: sourceId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _noteItems = results;
+        _loadedNotesKey = requestKey;
+        _isNotesLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isNotesLoading = false);
+    }
+  }
+
+  Future<void> _loadRemindersByKey({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final requestKey = '$sourceType::$sourceId';
+    if (_isRemindersLoading || _loadedRemindersKey == requestKey) return;
+
+    setState(() => _isRemindersLoading = true);
+    try {
+      final results = await _apiService.getLeadReminders(
+        sourceType: sourceType,
+        sourceId: sourceId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _reminderItems = results;
+        _loadedRemindersKey = requestKey;
+        _isRemindersLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isRemindersLoading = false);
+    }
+  }
+
+  Future<void> _loadAssignmentsByKey({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final requestKey = '$sourceType::$sourceId';
+    if (_isAssignmentsLoading || _loadedAssignmentsKey == requestKey) return;
+
+    setState(() => _isAssignmentsLoading = true);
+    try {
+      final results = await _apiService.getLeadAssignments(
+        sourceType: sourceType,
+        sourceId: sourceId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _assignmentItems = results;
+        _loadedAssignmentsKey = requestKey;
+        _isAssignmentsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isAssignmentsLoading = false);
+    }
+  }
+
+  Future<void> _loadStatusHistoryByKey({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final requestKey = '$sourceType::$sourceId';
+    if (_isStatusHistoryLoading || _loadedStatusHistoryKey == requestKey) {
+      return;
+    }
+
+    setState(() => _isStatusHistoryLoading = true);
+    try {
+      final results = await _apiService.getLeadStatusHistory(
+        sourceType: sourceType,
+        sourceId: sourceId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _statusHistoryItems = results;
+        _loadedStatusHistoryKey = requestKey;
+        _isStatusHistoryLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isStatusHistoryLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -167,8 +301,16 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
               _activeSourceId = _resolveLeadSourceId(lead);
               _loadedTimelineKey = '';
               _loadedFollowupsKey = '';
+              _loadedNotesKey = '';
+              _loadedRemindersKey = '';
+              _loadedAssignmentsKey = '';
+              _loadedStatusHistoryKey = '';
               _timelineItems = const <Map<String, dynamic>>[];
               _followupItems = const <Map<String, dynamic>>[];
+              _noteItems = const <Map<String, dynamic>>[];
+              _reminderItems = const <Map<String, dynamic>>[];
+              _assignmentItems = const <Map<String, dynamic>>[];
+              _statusHistoryItems = const <Map<String, dynamic>>[];
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (!mounted) return;
                 if (_selectedLeadTab == 0) {
@@ -181,44 +323,79 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                     sourceType: _activeSourceType,
                     sourceId: _activeSourceId,
                   );
+                } else if (_selectedLeadTab == 2) {
+                  _loadNotesByKey(
+                    sourceType: _activeSourceType,
+                    sourceId: _activeSourceId,
+                  );
+                } else if (_selectedLeadTab == 3) {
+                  _loadRemindersByKey(
+                    sourceType: _activeSourceType,
+                    sourceId: _activeSourceId,
+                  );
+                } else if (_selectedLeadTab == 4) {
+                  _loadAssignmentsByKey(
+                    sourceType: _activeSourceType,
+                    sourceId: _activeSourceId,
+                  );
+                } else if (_selectedLeadTab == 5) {
+                  _loadStatusHistoryByKey(
+                    sourceType: _activeSourceType,
+                    sourceId: _activeSourceId,
+                  );
                 }
               });
             }
 
             return Column(
               children: [
-                const CommonTopBar(title: 'Lead Profile', showBackButton: true),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: CommonTopBar(
+                    title: 'Lead Profile',
+                    showBackButton: true,
+                    compact: true,
+                  ),
+                ),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () => provider.loadLead(forceRefresh: true),
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                        horizontal: 12,
+                        vertical: 8,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _HeaderSection(lead: lead),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           _ActionButtons(
                             onAddFollowup: () => _openAddFollowupDialog(lead),
                             onUpdateStatus: () => _openStatusUpdateDialog(lead),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           _LeadInformationCard(lead: lead),
                           // const SizedBox(height: 16),
                           // _UpdateStatusCard(lead: lead),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 14),
                           _TimelineTabs(tabController: _tabController),
                           const SizedBox(height: 12),
                           _LeadTabContent(
                             tabIndex: _selectedLeadTab,
                             timelineItems: _timelineItems,
                             followupItems: _followupItems,
+                            noteItems: _noteItems,
+                            reminderItems: _reminderItems,
+                            assignmentItems: _assignmentItems,
+                            statusHistoryItems: _statusHistoryItems,
                             isTimelineLoading: _isTimelineLoading,
                             isFollowupsLoading: _isFollowupsLoading,
+                            isNotesLoading: _isNotesLoading,
+                            isRemindersLoading: _isRemindersLoading,
+                            isAssignmentsLoading: _isAssignmentsLoading,
+                            isStatusHistoryLoading: _isStatusHistoryLoading,
                             onAddNote: (note, isPrivate) async {
                               await _apiService.createLeadNote(
                                 sourceType: _buildLeadAssignSource(lead),
@@ -226,9 +403,16 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                 note: note,
                                 isPrivate: isPrivate,
                               );
+                              _loadedTimelineKey = '';
+                              _loadedNotesKey = '';
                               if (_selectedLeadTab == 0) {
-                                _loadedTimelineKey = '';
                                 await _loadTimelineByKey(
+                                  sourceType: _buildLeadAssignSource(lead),
+                                  sourceId: _resolveLeadSourceId(lead),
+                                );
+                              }
+                              if (_selectedLeadTab == 2) {
+                                await _loadNotesByKey(
                                   sourceType: _buildLeadAssignSource(lead),
                                   sourceId: _resolveLeadSourceId(lead),
                                 );
@@ -241,16 +425,16 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                 remindAt: remindAt,
                                 reminderType: reminderType,
                               );
-                              if (_selectedLeadTab == 1) {
-                                _loadedFollowupsKey = '';
-                                await _loadFollowupsByKey(
+                              _loadedRemindersKey = '';
+                              if (_selectedLeadTab == 3) {
+                                await _loadRemindersByKey(
                                   sourceType: _buildLeadAssignSource(lead),
                                   sourceId: _resolveLeadSourceId(lead),
                                 );
                               }
                             },
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 14),
                         ],
                       ),
                     ),
@@ -720,17 +904,10 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
               );
             }
 
-            Widget buildPair({
-              required Widget left,
-              required Widget right,
-            }) {
+            Widget buildPair({required Widget left, required Widget right}) {
               if (isNarrow) {
                 return Column(
-                  children: [
-                    left,
-                    const SizedBox(height: 8),
-                    right,
-                  ],
+                  children: [left, const SizedBox(height: 8), right],
                 );
               }
               return Row(
@@ -772,7 +949,8 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                               ),
                             ),
                             IconButton(
-                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              onPressed: () =>
+                                  Navigator.of(dialogContext).pop(),
                               visualDensity: VisualDensity.compact,
                               icon: const Icon(Icons.close, size: 24),
                             ),
@@ -833,21 +1011,27 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                       ],
                                       onChanged: (value) {
                                         if (value == null) return;
-                                        setLocalState(() => followupType = value);
+                                        setLocalState(
+                                          () => followupType = value,
+                                        );
                                       },
-                                      selectedItemBuilder: (context) => const [
-                                        'call',
-                                        'whatsapp',
-                                        'email',
-                                        'meeting',
-                                        'demo',
-                                        'video_call',
-                                        'site_visit',
-                                        'proposal_sent',
-                                        'quotation_sent',
-                                      ]
-                                          .map((value) => Text(dropdownLabel(value)))
-                                          .toList(),
+                                      selectedItemBuilder: (context) =>
+                                          const [
+                                                'call',
+                                                'whatsapp',
+                                                'email',
+                                                'meeting',
+                                                'demo',
+                                                'video_call',
+                                                'site_visit',
+                                                'proposal_sent',
+                                                'quotation_sent',
+                                              ]
+                                              .map(
+                                                (value) =>
+                                                    Text(dropdownLabel(value)),
+                                              )
+                                              .toList(),
                                       decoration: inputDecoration(),
                                     ),
                                   ],
@@ -905,26 +1089,27 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                         if (value == null) return;
                                         setLocalState(() => outcome = value);
                                       },
-                                      selectedItemBuilder: (context) => const [
-                                        '',
-                                        'interested',
-                                        'not_interested',
-                                        'callback_later',
-                                        'converted',
-                                        'no_response',
-                                        'meeting_scheduled',
-                                        'proposal_requested',
-                                        'negotiation',
-                                        'lost',
-                                      ]
-                                          .map(
-                                            (value) => Text(
-                                              value.isEmpty
-                                                  ? 'Select'
-                                                  : dropdownLabel(value),
-                                            ),
-                                          )
-                                          .toList(),
+                                      selectedItemBuilder: (context) =>
+                                          const [
+                                                '',
+                                                'interested',
+                                                'not_interested',
+                                                'callback_later',
+                                                'converted',
+                                                'no_response',
+                                                'meeting_scheduled',
+                                                'proposal_requested',
+                                                'negotiation',
+                                                'lost',
+                                              ]
+                                              .map(
+                                                (value) => Text(
+                                                  value.isEmpty
+                                                      ? 'Select'
+                                                      : dropdownLabel(value),
+                                                ),
+                                              )
+                                              .toList(),
                                       decoration: inputDecoration(),
                                     ),
                                   ],
@@ -1053,7 +1238,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                       ],
                                       onChanged: (value) {
                                         if (value == null) return;
-                                        setLocalState(() => reminderType = value);
+                                        setLocalState(
+                                          () => reminderType = value,
+                                        );
                                       },
                                       decoration: inputDecoration(),
                                     ),
@@ -1163,13 +1350,13 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                         return;
                                       }
 
-                                      final normalizedLeadStatus = leadStatus
-                                                  .trim()
-                                                  .toLowerCase() ==
+                                      final normalizedLeadStatus =
+                                          leadStatus.trim().toLowerCase() ==
                                               'no_change'
                                           ? ''
                                           : _normalizeStatusForApi(leadStatus);
-                                      final normalizedReminderType = createReminder
+                                      final normalizedReminderType =
+                                          createReminder
                                           ? reminderType.trim()
                                           : '';
                                       debugPrint(
@@ -1192,9 +1379,12 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                           followupType: followupType,
                                           outcome: outcome,
                                           discussionNotes: notesController.text,
-                                          nextFollowupDate: nextFollowupDate == null
+                                          nextFollowupDate:
+                                              nextFollowupDate == null
                                               ? null
-                                              : toApiDateTime(nextFollowupDate!),
+                                              : toApiDateTime(
+                                                  nextFollowupDate!,
+                                                ),
                                           leadStatusAfterFollowup:
                                               normalizedLeadStatus,
                                           createReminder: createReminder,
@@ -1215,6 +1405,53 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                         await context
                                             .read<LeadDetailProvider>()
                                             .loadLead(forceRefresh: true);
+                                      } on DioException catch (error) {
+                                        debugPrint(
+                                          '[followup] API call failed: ${error.response?.statusCode} ${error.response?.data}',
+                                        );
+                                        if (!mounted) return;
+                                        String message =
+                                            'Failed to save followup. Please try again.';
+                                        final data = error.response?.data;
+                                        if (data is Map) {
+                                          final topLevel =
+                                              (data['message'] ??
+                                                      data['error'] ??
+                                                      data['detail'])
+                                                  ?.toString()
+                                                  .trim();
+                                          if (topLevel != null &&
+                                              topLevel.isNotEmpty) {
+                                            message = topLevel;
+                                          }
+                                          final errors = data['errors'];
+                                          if (errors is Map &&
+                                              errors.isNotEmpty) {
+                                            final first = errors.values.first;
+                                            if (first is List &&
+                                                first.isNotEmpty) {
+                                              final firstMsg = first.first
+                                                  .toString()
+                                                  .trim();
+                                              if (firstMsg.isNotEmpty) {
+                                                message = firstMsg;
+                                              }
+                                            } else {
+                                              final firstMsg = first
+                                                  .toString()
+                                                  .trim();
+                                              if (firstMsg.isNotEmpty) {
+                                                message = firstMsg;
+                                              }
+                                            }
+                                          }
+                                        }
+                                        messenger.showSnackBar(
+                                          SnackBar(content: Text(message)),
+                                        );
+                                        setLocalState(
+                                          () => isSubmitting = false,
+                                        );
                                       } catch (_) {
                                         debugPrint(
                                           '[followup] API call failed',
@@ -1227,7 +1464,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                             ),
                                           ),
                                         );
-                                        setLocalState(() => isSubmitting = false);
+                                        setLocalState(
+                                          () => isSubmitting = false,
+                                        );
                                       }
                                     },
                               style: ElevatedButton.styleFrom(
@@ -1240,9 +1479,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                 ),
                               ),
                               child: Text(
-                                isSubmitting
-                                    ? 'Saving...'
-                                    : 'Save Followup',
+                                isSubmitting ? 'Saving...' : 'Save Followup',
                                 style: AppTextStyles.style(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -1289,7 +1526,7 @@ class _HeaderSection extends StatelessWidget {
               child: Text(
                 lead.displayName,
                 style: AppTextStyles.style(
-                  fontSize: 24,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1E293B),
                 ),
@@ -1310,7 +1547,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
       decoration: BoxDecoration(
         color: const Color(0xFFDCFCE7),
         borderRadius: BorderRadius.circular(20),
@@ -1318,7 +1555,7 @@ class _StatusBadge extends StatelessWidget {
       child: Text(
         _statusLabel(status),
         style: AppTextStyles.style(
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.w600,
           color: const Color(0xFF15803D),
         ),
@@ -1327,10 +1564,10 @@ class _StatusBadge extends StatelessWidget {
   }
 
   String _statusLabel(String value) {
-    final normalized = value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    final normalized = value.trim().toLowerCase().replaceAll(
+      RegExp(r'[^a-z0-9]+'),
+      '_',
+    );
     return normalized
         .split('_')
         .where((part) => part.isNotEmpty)
@@ -1401,7 +1638,7 @@ class _ActionButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(10),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(10),
@@ -1411,12 +1648,12 @@ class _ActionButton extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: foregroundColor),
-              const SizedBox(width: 8),
+              Icon(icon, size: 16, color: foregroundColor),
+              const SizedBox(width: 6),
               Text(
                 label,
                 style: AppTextStyles.style(
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: foregroundColor,
                 ),
@@ -1436,7 +1673,7 @@ class _LeadInformationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1451,19 +1688,19 @@ class _LeadInformationCard extends StatelessWidget {
               Text(
                 'Lead Information',
                 style: AppTextStyles.style(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF1E293B),
                 ),
               ),
               const Icon(
                 Icons.info_outline,
-                size: 20,
+                size: 18,
                 color: Color(0xFF64748B),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1472,14 +1709,14 @@ class _LeadInformationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _InfoItem(label: 'EMAIL', value: lead.displayEmail),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _InfoItem(label: 'COMPANY', value: lead.displayCompany),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _InfoItem(
                       label: 'CREATED DATE',
                       value: _formatDate(lead.createdAt),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _InfoItem(
                       label: 'CONVERTED AT',
                       value: _formatDate(lead.convertedAt),
@@ -1492,14 +1729,14 @@ class _LeadInformationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _InfoItem(label: 'PHONE', value: lead.displayPhone),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _InfoItem(label: 'SOURCE', value: lead.displaySource),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _InfoItem(
                       label: 'PREVIOUS STATUS',
                       value: lead.previousStatus ?? 'N/A',
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     _InfoItem(
                       label: 'LOST REASON',
                       value: lead.lostReason ?? '-',
@@ -1542,7 +1779,7 @@ class _InfoItem extends StatelessWidget {
         Text(
           value,
           style: AppTextStyles.style(
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w500,
             color: const Color(0xFF334155),
           ),
@@ -1697,16 +1934,32 @@ class _LeadTabContent extends StatelessWidget {
     required this.tabIndex,
     required this.timelineItems,
     required this.followupItems,
+    required this.noteItems,
+    required this.reminderItems,
+    required this.assignmentItems,
+    required this.statusHistoryItems,
     required this.isTimelineLoading,
     required this.isFollowupsLoading,
+    required this.isNotesLoading,
+    required this.isRemindersLoading,
+    required this.isAssignmentsLoading,
+    required this.isStatusHistoryLoading,
     required this.onAddNote,
     required this.onAddReminder,
   });
   final int tabIndex;
   final List<Map<String, dynamic>> timelineItems;
   final List<Map<String, dynamic>> followupItems;
+  final List<Map<String, dynamic>> noteItems;
+  final List<Map<String, dynamic>> reminderItems;
+  final List<Map<String, dynamic>> assignmentItems;
+  final List<Map<String, dynamic>> statusHistoryItems;
   final bool isTimelineLoading;
   final bool isFollowupsLoading;
+  final bool isNotesLoading;
+  final bool isRemindersLoading;
+  final bool isAssignmentsLoading;
+  final bool isStatusHistoryLoading;
   final Future<void> Function(String note, bool isPrivate) onAddNote;
   final Future<void> Function(String remindAt, String reminderType)
   onAddReminder;
@@ -1715,18 +1968,38 @@ class _LeadTabContent extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (tabIndex) {
       case 0:
-        return _TimelineList(items: timelineItems, isLoading: isTimelineLoading);
+        return _TimelineList(
+          items: timelineItems,
+          isLoading: isTimelineLoading,
+        );
       case 1:
-        return _FollowupList(items: followupItems, isLoading: isFollowupsLoading);
+        return _FollowupList(
+          items: followupItems,
+          isLoading: isFollowupsLoading,
+        );
       case 2:
-        return _NotesSection(onAddNote: onAddNote);
+        return _NotesSection(
+          onAddNote: onAddNote,
+          items: noteItems,
+          isLoading: isNotesLoading,
+        );
       case 3:
-        return _ReminderSection(onAddReminder: onAddReminder);
+        return _ReminderSection(
+          onAddReminder: onAddReminder,
+          items: reminderItems,
+          isLoading: isRemindersLoading,
+        );
       case 4:
-        return _AssignmentList();
+        return _AssignmentList(
+          items: assignmentItems,
+          isLoading: isAssignmentsLoading,
+        );
       case 5:
       default:
-        return _StatusHistoryList();
+        return _StatusHistoryList(
+          items: statusHistoryItems,
+          isLoading: isStatusHistoryLoading,
+        );
     }
   }
 }
@@ -1739,32 +2012,37 @@ class _TimelineList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20),
-        child: CircularProgressIndicator(),
-      ));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
     final timelineItems = items
         .map(
           (item) => _TimelineItemData(
-            title: (item['title'] ??
-                    item['event'] ??
-                    item['type'] ??
-                    item['action'] ??
-                    'Activity')
-                .toString(),
-            description: (item['description'] ??
-                    item['message'] ??
-                    item['notes'] ??
-                    item['details'] ??
-                    '-')
-                .toString(),
-            time: (item['created_at'] ??
-                    item['date'] ??
-                    item['time'] ??
-                    item['updated_at'] ??
-                    '-')
-                .toString(),
+            title:
+                (item['title'] ??
+                        item['event'] ??
+                        item['type'] ??
+                        item['action'] ??
+                        'Activity')
+                    .toString(),
+            description:
+                (item['description'] ??
+                        item['message'] ??
+                        item['notes'] ??
+                        item['details'] ??
+                        '-')
+                    .toString(),
+            time:
+                (item['created_at'] ??
+                        item['date'] ??
+                        item['time'] ??
+                        item['updated_at'] ??
+                        '-')
+                    .toString(),
           ),
         )
         .toList(growable: false);
@@ -1858,10 +2136,12 @@ class _FollowupList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(20),
-        child: CircularProgressIndicator(),
-      ));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(),
+        ),
+      );
     }
     if (items.isEmpty) {
       return const _SimpleInfoCard(
@@ -1871,32 +2151,43 @@ class _FollowupList extends StatelessWidget {
       );
     }
     return Column(
-      children: items.map((item) {
-        final type = (item['followup_type'] ?? item['type'] ?? '-').toString();
-        final outcome = (item['outcome'] ?? '-').toString();
-        final time = (item['followup_date'] ??
-                item['created_at'] ??
-                item['date'] ??
-                '-')
-            .toString();
-        final notes = (item['discussion_notes'] ??
-                item['notes'] ??
-                item['description'] ??
-                '-')
-            .toString();
-        return _SimpleInfoCard(
-          title: type,
-          subtitle: '$time | Outcome: $outcome',
-          description: notes,
-        );
-      }).toList(growable: false),
+      children: items
+          .map((item) {
+            final type = (item['followup_type'] ?? item['type'] ?? '-')
+                .toString();
+            final outcome = (item['outcome'] ?? '-').toString();
+            final time =
+                (item['followup_date'] ??
+                        item['created_at'] ??
+                        item['date'] ??
+                        '-')
+                    .toString();
+            final notes =
+                (item['discussion_notes'] ??
+                        item['notes'] ??
+                        item['description'] ??
+                        '-')
+                    .toString();
+            return _SimpleInfoCard(
+              title: type,
+              subtitle: '$time | Outcome: $outcome',
+              description: notes,
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
 
 class _NotesSection extends StatelessWidget {
-  const _NotesSection({required this.onAddNote});
+  const _NotesSection({
+    required this.onAddNote,
+    required this.items,
+    required this.isLoading,
+  });
   final Future<void> Function(String note, bool isPrivate) onAddNote;
+  final List<Map<String, dynamic>> items;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -1953,7 +2244,9 @@ class _NotesSection extends StatelessWidget {
                       noteController.clear();
                       setLocalState(() => isPrivate = false);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Note added successfully.')),
+                        const SnackBar(
+                          content: Text('Note added successfully.'),
+                        ),
                       );
                     },
                     child: const Text('Add Note'),
@@ -1963,15 +2256,79 @@ class _NotesSection extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: CircularProgressIndicator(),
+          )
+        else if (items.isEmpty)
+          const _SimpleInfoCard(
+            title: 'No Notes Found',
+            subtitle: '',
+            description: 'No notes available for this lead.',
+          )
+        else
+          Column(
+            children: items
+                .map((item) {
+                  final noteText =
+                      (item['note'] ??
+                              item['notes'] ??
+                              item['description'] ??
+                              item['message'] ??
+                              '-')
+                          .toString();
+                  final createdAt =
+                      (item['created_at'] ??
+                              item['date'] ??
+                              item['time'] ??
+                              '-')
+                          .toString();
+                  final isPrivateNote =
+                      item['is_private'] == true || item['is_private'] == 1;
+                  final author = (() {
+                    final createdBy = item['created_by'];
+                    final user = item['user'];
+                    final createdByName = createdBy is Map
+                        ? createdBy['name']
+                        : null;
+                    final userName = user is Map ? user['name'] : null;
+                    return (item['created_by_name'] ??
+                            createdByName ??
+                            userName ??
+                            '')
+                        .toString()
+                        .trim();
+                  })();
+                  final subtitleParts = <String>[
+                    createdAt,
+                    if (author.isNotEmpty) 'By: $author',
+                    if (isPrivateNote) 'Private',
+                  ];
+                  return _SimpleInfoCard(
+                    title: 'Note',
+                    subtitle: subtitleParts.join(' | '),
+                    description: noteText,
+                  );
+                })
+                .toList(growable: false),
+          ),
       ],
     );
   }
 }
 
 class _ReminderSection extends StatelessWidget {
-  const _ReminderSection({required this.onAddReminder});
+  const _ReminderSection({
+    required this.onAddReminder,
+    required this.items,
+    required this.isLoading,
+  });
   final Future<void> Function(String remindAt, String reminderType)
   onAddReminder;
+  final List<Map<String, dynamic>> items;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -2077,52 +2434,165 @@ class _ReminderSection extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        if (isLoading)
+          const Padding(
+            padding: EdgeInsets.all(12),
+            child: CircularProgressIndicator(),
+          )
+        else if (items.isEmpty)
+          const _SimpleInfoCard(
+            title: 'No Reminders Found',
+            subtitle: '',
+            description: 'No reminders available for this lead.',
+          )
+        else
+          Column(
+            children: items
+                .map((item) {
+                  final type =
+                      (item['reminder_type'] ??
+                              item['type'] ??
+                              item['channel'] ??
+                              '-')
+                          .toString();
+                  final remindAtText =
+                      (item['remind_at'] ??
+                              item['scheduled_at'] ??
+                              item['date'] ??
+                              item['created_at'] ??
+                              '-')
+                          .toString();
+                  final status = (item['status'] ?? item['state'] ?? '')
+                      .toString()
+                      .trim();
+                  final notes =
+                      (item['note'] ??
+                              item['notes'] ??
+                              item['description'] ??
+                              '-')
+                          .toString();
+                  final subtitle = status.isEmpty
+                      ? remindAtText
+                      : '$remindAtText | Status: $status';
+                  return _SimpleInfoCard(
+                    title: type,
+                    subtitle: subtitle,
+                    description: notes,
+                  );
+                })
+                .toList(growable: false),
+          ),
       ],
     );
   }
 }
 
 class _AssignmentList extends StatelessWidget {
+  const _AssignmentList({required this.items, required this.isLoading});
+  final List<Map<String, dynamic>> items;
+  final bool isLoading;
+
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        _SimpleInfoCard(
-          title: 'Saurabh Damale',
-          subtitle: 'Assigned at: 27 May 2026 05:45 PM',
-          description: 'Bulk assignment',
+    if (isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(),
         ),
-        _SimpleInfoCard(
-          title: 'Saurabh Damale',
-          subtitle: 'Assigned at: 26 May 2026 05:58 PM',
-          description: '-',
-        ),
-      ],
+      );
+    }
+    if (items.isEmpty) {
+      return const _SimpleInfoCard(
+        title: 'No Assignments Found',
+        subtitle: '',
+        description: 'No assignments available for this lead.',
+      );
+    }
+    return Column(
+      children: items
+          .map((item) {
+            final assignee = (() {
+              final assignedTo = item['assigned_to'];
+              final user = item['user'];
+              final assignedToName = assignedTo is Map
+                  ? assignedTo['name']
+                  : null;
+              final userName = user is Map ? user['name'] : null;
+              return (item['assignee_name'] ??
+                      item['assigned_to_name'] ??
+                      item['staff_name'] ??
+                      assignedToName ??
+                      userName ??
+                      '-')
+                  .toString();
+            })();
+            final assignedAt =
+                (item['assigned_at'] ??
+                        item['created_at'] ??
+                        item['date'] ??
+                        '-')
+                    .toString();
+            final note =
+                (item['assignment_note'] ??
+                        item['note'] ??
+                        item['notes'] ??
+                        item['description'] ??
+                        '-')
+                    .toString();
+            return _SimpleInfoCard(
+              title: assignee,
+              subtitle: 'Assigned at: $assignedAt',
+              description: note,
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
 
 class _StatusHistoryList extends StatelessWidget {
+  const _StatusHistoryList({required this.items, required this.isLoading});
+  final List<Map<String, dynamic>> items;
+  final bool isLoading;
+
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        _SimpleInfoCard(
-          title: 'converted -> new',
-          subtitle: '29 May 2026 03:10 PM',
-          description: 'Updated via followup',
+    if (isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: CircularProgressIndicator(),
         ),
-        _SimpleInfoCard(
-          title: 'converted -> converted',
-          subtitle: '28 May 2026 03:58 PM',
-          description: '-',
-        ),
-        _SimpleInfoCard(
-          title: 'new -> won',
-          subtitle: '28 May 2026 02:56 PM',
-          description: '-',
-        ),
-      ],
+      );
+    }
+    if (items.isEmpty) {
+      return const _SimpleInfoCard(
+        title: 'No Status History Found',
+        subtitle: '',
+        description: 'No status history available for this lead.',
+      );
+    }
+    return Column(
+      children: items
+          .map((item) {
+            final fromStatus =
+                (item['from_status'] ?? item['old_status'] ?? '-').toString();
+            final toStatus = (item['to_status'] ?? item['new_status'] ?? '-')
+                .toString();
+            final changedAt = (item['changed_at'] ?? item['created_at'] ?? '-')
+                .toString();
+            final reason =
+                (item['reason'] ?? item['notes'] ?? item['description'] ?? '-')
+                    .toString();
+            return _SimpleInfoCard(
+              title: '$fromStatus -> $toStatus',
+              subtitle: changedAt,
+              description: reason,
+            );
+          })
+          .toList(growable: false),
     );
   }
 }

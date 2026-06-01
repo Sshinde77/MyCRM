@@ -9,6 +9,7 @@ import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/models/team_setting_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
+import 'package:mycrm/screens/staff_analytics_screen.dart';
 
 import '../routes/app_routes.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
@@ -31,6 +32,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   late final String _staffId;
   late Future<StaffMemberModel> _staffFuture;
   late Future<_StaffActivitySummary> _activityFuture;
+  late Future<_StaffLeadMetricsSummary> _leadMetricsFuture;
   List<TeamSettingModel> _teamOptions = const <TeamSettingModel>[];
   List<DepartmentSettingModel> _departmentOptions =
       const <DepartmentSettingModel>[];
@@ -40,20 +42,43 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
   bool _didInitializeForm = false;
   bool _isActive = true;
   bool _isSaving = false;
+  final ScrollController _pageScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _staffId = (widget.staffId ?? Get.arguments ?? '').toString();
+    _staffId = _resolveStaffId(widget.staffId ?? Get.arguments);
+    debugPrint(
+      '[StaffDetail] init staffId="$_staffId" widget.staffId="${widget.staffId}" args="${Get.arguments}"',
+    );
     _staffFuture = ApiService.instance.getStaffDetail(_staffId);
     _activityFuture = _loadStaffActivitySummary();
+    _leadMetricsFuture = _loadStaffLeadMetricsSummary();
     _loadFormOptions();
+  }
+
+  String _resolveStaffId(dynamic source) {
+    if (source == null) return '';
+    if (source is String) return source.trim();
+    if (source is num) return source.toString().trim();
+    if (source is Map) {
+      final raw =
+          source['staffId'] ??
+          source['staff_id'] ??
+          source['user_id'] ??
+          source['employee_id'] ??
+          source['id'];
+      if (raw == null) return '';
+      return raw.toString().trim();
+    }
+    return source.toString().trim();
   }
 
   void _reload() {
     setState(() {
       _staffFuture = ApiService.instance.getStaffDetail(_staffId);
       _activityFuture = _loadStaffActivitySummary();
+      _leadMetricsFuture = _loadStaffLeadMetricsSummary();
       _didInitializeForm = false;
     });
     _loadFormOptions();
@@ -65,6 +90,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _pageScrollController.dispose();
     super.dispose();
   }
 
@@ -86,14 +112,28 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                 }
 
                 if (snapshot.hasError || !snapshot.hasData) {
+                  if (snapshot.hasError) {
+                    debugPrint(
+                      '[StaffDetail] load failed for staffId="$_staffId": ${snapshot.error}',
+                    );
+                  } else {
+                    debugPrint(
+                      '[StaffDetail] load returned empty data for staffId="$_staffId"',
+                    );
+                  }
                   return _DetailErrorState(
                     title: 'Unable to load staff profile',
                     subtitle: 'Please retry the request.',
+                    technicalDetails:
+                        'staffId=$_staffId error=${snapshot.error}',
                     onRetry: _reload,
                   );
                 }
 
                 final member = snapshot.data!;
+                debugPrint(
+                  '[StaffDetail] loaded staff member id="${member.id}" name="${member.name}" email="${member.email}"',
+                );
                 _initializeForm(member);
 
                 return FutureBuilder<_StaffActivitySummary>(
@@ -103,6 +143,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                         activitySnapshot.data ?? _StaffActivitySummary.empty();
 
                     return SingleChildScrollView(
+                      controller: _pageScrollController,
+                      primary: false,
                       padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,37 +193,91 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 12),
-                          _EditProfileForm(
-                            formKey: _formKey,
-                            firstNameController: _firstNameController,
-                            lastNameController: _lastNameController,
-                            emailController: _emailController,
-                            phoneController: _phoneController,
-                            teamOptions: _teamOptions,
-                            departmentOptions: _departmentOptions,
-                            selectedTeam: _teamValue,
-                            selectedDepartments: _departments,
-                            isActive: _isActive,
-                            isLoadingOptions: _loadingFormOptions,
-                            onTeamChanged: (value) =>
-                                setState(() => _teamValue = value),
-                            onDepartmentToggle: (value, selected) {
-                              setState(() {
-                                final updated = List<String>.from(_departments);
-                                if (selected) {
-                                  if (!updated.contains(value)) {
-                                    updated.add(value);
-                                  }
-                                } else {
-                                  updated.remove(value);
-                                }
-                                _departments = updated;
-                              });
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => Get.to(
+                                      () => StaffAnalyticsScreen(
+                                        staffId: _staffId,
+                                        staffName: member.name,
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                      Icons.analytics_outlined,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      'Lead Analytics',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.style(
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(0xFFE2E8F0),
+                                      ),
+                                      foregroundColor: const Color(0xFF0F172A),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () =>
+                                        _openEditDetailPopup(member),
+                                    icon: const Icon(
+                                      Icons.edit_outlined,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      'Edit Detail',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.style(
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(
+                                        color: Color(0xFFBFDBFE),
+                                      ),
+                                      foregroundColor: const Color(0xFF1D4ED8),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 10,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _SectionTitle(title: 'LEAD PERFORMANCE SUMMARY'),
+                          const SizedBox(height: 8),
+                          FutureBuilder<_StaffLeadMetricsSummary>(
+                            future: _leadMetricsFuture,
+                            builder: (context, leadMetricsSnapshot) {
+                              final metrics =
+                                  leadMetricsSnapshot.data ??
+                                  _StaffLeadMetricsSummary.empty();
+                              return _LeadMetricsGrid(summary: metrics);
                             },
-                            onStatusChanged: (value) =>
-                                setState(() => _isActive = value),
-                            isSaving: _isSaving,
-                            onSave: _saveChanges,
                           ),
                           // const SizedBox(height: 24),
                           // const _ChartPlaceholder(
@@ -252,8 +348,147 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         mediumPriorityTaskCount: mediumCount,
         lowPriorityTaskCount: lowCount,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[StaffDetail] activity summary failed for staffId="$_staffId": $error\n$stackTrace',
+      );
       return _StaffActivitySummary.empty();
+    }
+  }
+
+  Future<_StaffLeadMetricsSummary> _loadStaffLeadMetricsSummary() async {
+    if (_staffId.trim().isEmpty) {
+      return _StaffLeadMetricsSummary.empty();
+    }
+    try {
+      final payload = await ApiService.instance.getStaffAnalytics(_staffId);
+      final flattened = <String, dynamic>{};
+
+      String normalizeKey(String key) =>
+          key.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+      void collect(dynamic source) {
+        if (source is Map<String, dynamic>) {
+          source.forEach((key, value) {
+            flattened[normalizeKey(key)] = value;
+            collect(value);
+          });
+          return;
+        }
+        if (source is Map) {
+          source.forEach((key, value) {
+            flattened[normalizeKey(key.toString())] = value;
+            collect(value);
+          });
+          return;
+        }
+        if (source is List) {
+          for (final item in source) {
+            collect(item);
+          }
+        }
+      }
+
+      collect(payload);
+
+      int readInt(List<String> keys) {
+        for (final key in keys) {
+          final value = payload[key] ?? flattened[normalizeKey(key)];
+          if (value is num) {
+            return value.toInt();
+          }
+          final parsed = int.tryParse((value ?? '').toString().trim());
+          if (parsed != null) {
+            return parsed;
+          }
+        }
+        return 0;
+      }
+
+      String readText(List<String> keys, {String fallback = '0'}) {
+        for (final key in keys) {
+          final value = payload[key] ?? flattened[normalizeKey(key)];
+          if (value == null) continue;
+          final text = value.toString().trim();
+          if (text.isNotEmpty) {
+            return text;
+          }
+        }
+        return fallback;
+      }
+
+      String withSuffixIfNumeric(String value, String suffix) {
+        final normalized = value.trim();
+        if (normalized.isEmpty) return value;
+        if (normalized.endsWith(suffix)) return normalized;
+        return num.tryParse(normalized) != null
+            ? '$normalized$suffix'
+            : normalized;
+      }
+
+      return _StaffLeadMetricsSummary(
+        totalLeads: readInt(const [
+          'total_leads',
+          'totalLeads',
+          'all_leads',
+          'total_leads_assigned',
+        ]),
+        activeLeads: readInt(const ['active_leads', 'activeLeads']),
+        converted: readInt(const ['converted', 'converted_leads']),
+        lostLeads: readInt(const ['lost_leads', 'lostLeads']),
+        totalFollowups: readInt(const [
+          'total_followups',
+          'totalFollowups',
+          'followups',
+        ]),
+        pendingFollowups: readInt(const [
+          'pending_followups',
+          'pendingFollowups',
+        ]),
+        overdue: readInt(const ['overdue', 'overdue_followups']),
+        todaysFollowups: readInt(const [
+          'todays_followups',
+          'today_followups',
+          'todaysFollowups',
+        ]),
+        meetings: readInt(const [
+          'meetings',
+          'total_meetings',
+          'meetings_scheduled',
+        ]),
+        conversionPercent: withSuffixIfNumeric(
+          readText(const [
+            'conversion_percent',
+            'conversion_percentage',
+            'conversion',
+            'conversion_rate',
+          ], fallback: '0%'),
+          '%',
+        ),
+        avgResponse: withSuffixIfNumeric(
+          readText(const [
+            'avg_response',
+            'avg_response_time',
+            'average_response',
+            'avg_response_time_hours',
+          ], fallback: '0h'),
+          'h',
+        ),
+        avgConversion: withSuffixIfNumeric(
+          readText(const [
+            'avg_conversion',
+            'average_conversion_time',
+            'avg_conversion_time',
+            'avg_conversion_time_days',
+          ], fallback: '0d'),
+          'd',
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        '[StaffDetail] lead metrics failed for staffId="$_staffId": $error\n$stackTrace',
+      );
+      return _StaffLeadMetricsSummary.empty();
     }
   }
 
@@ -323,7 +558,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         _teamOptions = teams;
         _departmentOptions = departments;
       });
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('[StaffDetail] form options load failed: $error\n$stackTrace');
       if (!mounted) return;
       AppSnackbar.show('Warning', 'Unable to load team/department options.');
     } finally {
@@ -339,12 +575,11 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
     for (final team in _teamOptions) {
       if (team.name.trim() == selected) {
-        final id = (team.id ?? '').trim();
-        return id.isNotEmpty ? id : null;
+        return team.name.trim();
       }
       final id = (team.id ?? '').trim();
       if (id.isNotEmpty && id == selected) {
-        return id;
+        return team.name.trim();
       }
     }
     return null;
@@ -358,8 +593,8 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         final name = department.name.trim();
         final id = (department.id ?? '').trim();
         if (name == selected || (id.isNotEmpty && id == selected)) {
-          if (id.isNotEmpty) {
-            payload.add(id);
+          if (name.isNotEmpty) {
+            payload.add(name);
           }
           matched = true;
           break;
@@ -458,6 +693,208 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  Future<void> _openEditDetailPopup(StaffMemberModel member) async {
+    final dialogFormKey = GlobalKey<FormState>();
+    final firstNameController = TextEditingController();
+    final lastNameController = TextEditingController();
+    final emailController = TextEditingController();
+    final phoneController = TextEditingController();
+    final dialogScrollController = ScrollController();
+    final nameParts = member.name
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+    firstNameController.text = nameParts.isNotEmpty ? nameParts.first : '';
+    lastNameController.text = nameParts.length > 1
+        ? nameParts.sublist(1).join(' ')
+        : '';
+    emailController.text = member.email;
+    phoneController.text = member.phone ?? '';
+    var teamValue = member.team ?? '';
+    var departments = List<String>.from(member.departments);
+    var isActive = member.isActive;
+    var isSaving = false;
+
+    dynamic resolveTeamPayloadValue(String selected) {
+      final normalized = selected.trim();
+      if (normalized.isEmpty) return null;
+      for (final team in _teamOptions) {
+        if (team.name.trim() == normalized) {
+          return team.name.trim();
+        }
+        final id = (team.id ?? '').trim();
+        if (id.isNotEmpty && id == normalized) {
+          return team.name.trim();
+        }
+      }
+      return null;
+    }
+
+    List<dynamic> resolveDepartmentPayloadValues(List<String> selectedValues) {
+      final payload = <dynamic>[];
+      for (final selected in selectedValues) {
+        var matched = false;
+        for (final department in _departmentOptions) {
+          final name = department.name.trim();
+          final id = (department.id ?? '').trim();
+          if (name == selected || (id.isNotEmpty && id == selected)) {
+            if (name.isNotEmpty) {
+              payload.add(name);
+            }
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          return const <dynamic>[];
+        }
+      }
+      return payload;
+    }
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> saveFromDialog() async {
+              if (!dialogFormKey.currentState!.validate()) return;
+              if (teamValue.trim().isEmpty) {
+                AppSnackbar.show('Validation', 'Please select a team.');
+                return;
+              }
+              if (departments.isEmpty) {
+                AppSnackbar.show(
+                  'Validation',
+                  'Please select at least one department.',
+                );
+                return;
+              }
+              final teamPayload = resolveTeamPayloadValue(teamValue);
+              if (teamPayload == null) {
+                AppSnackbar.show(
+                  'Validation',
+                  'Please reselect team from the latest team options.',
+                );
+                return;
+              }
+              final departmentPayload = resolveDepartmentPayloadValues(
+                departments,
+              );
+              if (departmentPayload.isEmpty) {
+                AppSnackbar.show(
+                  'Validation',
+                  'Please reselect departments from the latest department options.',
+                );
+                return;
+              }
+
+              setDialogState(() => isSaving = true);
+              try {
+                await ApiService.instance.editStaff(
+                  id: _staffId,
+                  firstName: firstNameController.text.trim(),
+                  lastName: lastNameController.text.trim(),
+                  email: emailController.text.trim(),
+                  phone: phoneController.text.trim(),
+                  status: isActive ? 'active' : 'inactive',
+                  team: teamPayload,
+                  departments: departmentPayload,
+                );
+                if (!mounted) return;
+                Navigator.of(dialogContext).pop();
+                AppSnackbar.show(
+                  'Staff updated',
+                  'Profile changes were saved successfully.',
+                );
+                _reload();
+              } on DioException catch (error) {
+                var message = 'Failed to save staff details.';
+                final data = error.response?.data;
+                if (data is Map && data['message'] != null) {
+                  message = data['message'].toString();
+                } else if (error.message != null &&
+                    error.message!.trim().isNotEmpty) {
+                  message = error.message!.trim();
+                }
+                AppSnackbar.show('Save failed', message);
+              } finally {
+                if (dialogContext.mounted) {
+                  setDialogState(() => isSaving = false);
+                }
+              }
+            }
+
+            final media = MediaQuery.of(dialogContext);
+            final screenHeight = media.size.height;
+            final screenWidth = media.size.width;
+            return SafeArea(
+              child: Dialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: screenWidth > 760 ? 720 : screenWidth - 24,
+                    maxHeight: screenHeight * 0.84,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: dialogScrollController,
+                    primary: false,
+                    padding: const EdgeInsets.all(12),
+                    child: _EditProfileForm(
+                      formKey: dialogFormKey,
+                      firstNameController: firstNameController,
+                      lastNameController: lastNameController,
+                      emailController: emailController,
+                      phoneController: phoneController,
+                      teamOptions: _teamOptions,
+                      departmentOptions: _departmentOptions,
+                      selectedTeam: teamValue,
+                      selectedDepartments: departments,
+                      isActive: isActive,
+                      isLoadingOptions: _loadingFormOptions,
+                      onTeamChanged: (value) =>
+                          setDialogState(() => teamValue = value),
+                      onDepartmentToggle: (value, selected) {
+                        setDialogState(() {
+                          final updated = List<String>.from(departments);
+                          if (selected) {
+                            if (!updated.contains(value)) {
+                              updated.add(value);
+                            }
+                          } else {
+                            updated.remove(value);
+                          }
+                          departments = updated;
+                        });
+                      },
+                      onStatusChanged: (value) =>
+                          setDialogState(() => isActive = value),
+                      isSaving: isSaving,
+                      onCancel: () => Navigator.of(dialogContext).pop(),
+                      onSave: saveFromDialog,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      firstNameController.dispose();
+      lastNameController.dispose();
+      emailController.dispose();
+      phoneController.dispose();
+      dialogScrollController.dispose();
+    });
   }
 }
 
@@ -762,6 +1199,7 @@ class _EditProfileForm extends StatelessWidget {
     required this.onStatusChanged,
     required this.onSave,
     required this.isSaving,
+    this.onCancel,
   });
 
   final GlobalKey<FormState> formKey;
@@ -780,9 +1218,11 @@ class _EditProfileForm extends StatelessWidget {
   final ValueChanged<bool> onStatusChanged;
   final VoidCallback onSave;
   final bool isSaving;
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.sizeOf(context).width < 520;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -803,23 +1243,38 @@ class _EditProfileForm extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _InputField(
+            if (isNarrow)
+              Column(
+                children: [
+                  _InputField(
                     label: 'First Name',
                     controller: firstNameController,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _InputField(
+                  const SizedBox(height: 10),
+                  _InputField(
                     label: 'Last Name',
                     controller: lastNameController,
                   ),
-                ),
-              ],
-            ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: _InputField(
+                      label: 'First Name',
+                      controller: firstNameController,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _InputField(
+                      label: 'Last Name',
+                      controller: lastNameController,
+                    ),
+                  ),
+                ],
+              ),
             const SizedBox(height: 10),
             _InputField(
               label: 'Email Address',
@@ -880,39 +1335,130 @@ class _EditProfileForm extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: isSaving ? null : onSave,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: isSaving
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+            if (isNarrow)
+              Column(
+                children: [
+                  if (onCancel != null)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: isSaving ? null : onCancel,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFCBD5E1)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      )
-                    : Text(
-                        'Save Changes',
-                        style: AppTextStyles.style(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                        child: Text(
+                          'Cancel',
+                          style: AppTextStyles.style(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF334155),
+                          ),
                         ),
                       ),
+                    ),
+                  if (onCancel != null) const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: isSaving ? null : onSave,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3B82F6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isSaving
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              'Save Changes',
+                              style: AppTextStyles.style(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  if (onCancel != null)
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: OutlinedButton(
+                          onPressed: isSaving ? null : onCancel,
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: AppTextStyles.style(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF334155),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (onCancel != null) const SizedBox(width: 10),
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: isSaving ? null : onSave,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF3B82F6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: isSaving
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'Save Changes',
+                                style: AppTextStyles.style(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
         ),
       ),
@@ -1091,6 +1637,7 @@ class _DepartmentCheckboxGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxListHeight = MediaQuery.sizeOf(context).height * 0.22;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1120,29 +1667,40 @@ class _DepartmentCheckboxGroup extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 )
-              : Column(
-                  children: options
-                      .map((option) {
-                        final checked = selectedValues.contains(option);
-                        return CheckboxListTile(
-                          value: checked,
-                          title: Text(
-                            option,
-                            style: AppTextStyles.style(
-                              fontSize: 13,
-                              color: const Color(0xFF1E293B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          dense: true,
-                          visualDensity: const VisualDensity(horizontal: -4),
-                          onChanged: (value) =>
-                              onToggle(option, value ?? false),
-                        );
-                      })
-                      .toList(growable: false),
+              : ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxListHeight),
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: options
+                            .map((option) {
+                              final checked = selectedValues.contains(option);
+                              return CheckboxListTile(
+                                value: checked,
+                                title: Text(
+                                  option,
+                                  style: AppTextStyles.style(
+                                    fontSize: 13,
+                                    color: const Color(0xFF1E293B),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                contentPadding: EdgeInsets.zero,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
+                                dense: true,
+                                visualDensity: const VisualDensity(
+                                  horizontal: -4,
+                                ),
+                                onChanged: (value) =>
+                                    onToggle(option, value ?? false),
+                              );
+                            })
+                            .toList(growable: false),
+                      ),
+                    ),
+                  ),
                 ),
         ),
       ],
@@ -1338,6 +1896,238 @@ class _StaffActivitySummary {
       ((lowPriorityTaskCount / _safeTaskTotal) * 100).round();
 }
 
+class _StaffLeadMetricsSummary {
+  const _StaffLeadMetricsSummary({
+    required this.totalLeads,
+    required this.activeLeads,
+    required this.converted,
+    required this.lostLeads,
+    required this.totalFollowups,
+    required this.pendingFollowups,
+    required this.overdue,
+    required this.todaysFollowups,
+    required this.meetings,
+    required this.conversionPercent,
+    required this.avgResponse,
+    required this.avgConversion,
+  });
+
+  final int totalLeads;
+  final int activeLeads;
+  final int converted;
+  final int lostLeads;
+  final int totalFollowups;
+  final int pendingFollowups;
+  final int overdue;
+  final int todaysFollowups;
+  final int meetings;
+  final String conversionPercent;
+  final String avgResponse;
+  final String avgConversion;
+
+  factory _StaffLeadMetricsSummary.empty() => const _StaffLeadMetricsSummary(
+    totalLeads: 0,
+    activeLeads: 0,
+    converted: 0,
+    lostLeads: 0,
+    totalFollowups: 0,
+    pendingFollowups: 0,
+    overdue: 0,
+    todaysFollowups: 0,
+    meetings: 0,
+    conversionPercent: '0%',
+    avgResponse: '0h',
+    avgConversion: '0d',
+  );
+}
+
+class _LeadMetricsGrid extends StatelessWidget {
+  const _LeadMetricsGrid({required this.summary});
+
+  final _StaffLeadMetricsSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final cards = <_LeadMetricCardData>[
+      _LeadMetricCardData(
+        title: 'Total Leads',
+        value: '${summary.totalLeads}',
+        color: const Color(0xFF0EA5E9),
+        icon: Icons.groups_rounded,
+      ),
+      _LeadMetricCardData(
+        title: 'Active Leads',
+        value: '${summary.activeLeads}',
+        color: const Color(0xFF2563EB),
+        icon: Icons.track_changes_rounded,
+      ),
+      _LeadMetricCardData(
+        title: 'Converted',
+        value: '${summary.converted}',
+        color: const Color(0xFF22C55E),
+        icon: Icons.trending_up_rounded,
+      ),
+      _LeadMetricCardData(
+        title: 'Total Followups',
+        value: '${summary.totalFollowups}',
+        color: const Color(0xFFF59E0B),
+        icon: Icons.call_rounded,
+      ),
+      _LeadMetricCardData(
+        title: 'Lost Leads',
+        value: '${summary.lostLeads}',
+        color: const Color(0xFFF43F5E),
+        icon: Icons.trending_down_rounded,
+      ),
+      _LeadMetricCardData(
+        title: 'Conversion %',
+        value: summary.conversionPercent,
+        color: const Color(0xFF22C55E),
+        icon: Icons.percent_rounded,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        const crossAxisCount = 3;
+        final cardWidth = (width - ((crossAxisCount - 1) * 8)) / crossAxisCount;
+        final childAspectRatio = (cardWidth / 124).clamp(0.9, 1.6);
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cards.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: childAspectRatio,
+          ),
+          itemBuilder: (context, index) {
+            return _LeadMetricCard(data: cards[index]);
+          },
+        );
+      },
+    );
+  }
+}
+
+class _LeadMetricCardData {
+  const _LeadMetricCardData({
+    required this.title,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
+
+  final String title;
+  final String value;
+  final Color color;
+  final IconData icon;
+}
+
+class _LeadMetricCard extends StatelessWidget {
+  const _LeadMetricCard({required this.data});
+
+  final _LeadMetricCardData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 165;
+        final iconBox = compact ? 24.0 : 30.0;
+        final iconSize = compact ? 14.0 : 17.0;
+        final titleSize = compact ? 10.0 : 12.0;
+        final valueSize = compact ? 24.0 : 32.0;
+
+        return Container(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 8 : 12,
+            compact ? 8 : 12,
+            compact ? 8 : 12,
+            compact ? 8 : 10,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F0F172A),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    height: iconBox,
+                    width: iconBox,
+                    decoration: BoxDecoration(
+                      color: data.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(data.icon, size: iconSize, color: data.color),
+                  ),
+                  SizedBox(width: compact ? 6 : 8),
+                  Expanded(
+                    child: Text(
+                      data.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.style(
+                        fontSize: titleSize,
+                        color: const Color(0xFF475569),
+                        fontWeight: FontWeight.w600,
+                        height: 1.15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                data.value,
+                style: AppTextStyles.style(
+                  fontSize: valueSize,
+                  color: const Color(0xFF0F172A),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: data.color.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: FractionallySizedBox(
+                  widthFactor: 0.75,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: data.color,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _PriorityItem extends StatelessWidget {
   final String label;
   final String percent;
@@ -1403,11 +2193,13 @@ class _DetailErrorState extends StatelessWidget {
   const _DetailErrorState({
     required this.title,
     required this.subtitle,
+    this.technicalDetails,
     this.onRetry,
   });
 
   final String title;
   final String subtitle;
+  final String? technicalDetails;
   final VoidCallback? onRetry;
 
   @override
@@ -1450,6 +2242,18 @@ class _DetailErrorState extends StatelessWidget {
                   color: const Color(0xFF64748B),
                 ),
               ),
+              if ((technicalDetails ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                SelectableText(
+                  technicalDetails!,
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.style(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ),
+              ],
               if (onRetry != null) ...[
                 const SizedBox(height: 16),
                 ElevatedButton.icon(

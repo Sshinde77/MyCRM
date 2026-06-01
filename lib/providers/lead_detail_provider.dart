@@ -9,8 +9,7 @@ class LeadDetailProvider extends ChangeNotifier {
     this.sourceType,
     this.sourceId,
     ApiService? apiService,
-  })
-    : _apiService = apiService ?? ApiService.instance;
+  }) : _apiService = apiService ?? ApiService.instance;
 
   final String leadId;
   final String? sourceType;

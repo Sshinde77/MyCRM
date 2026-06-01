@@ -243,7 +243,7 @@ class RouteGenerator {
       case AppRoutes.staffDetail:
         return _protectedRoute(
           AppRoutes.staffDetail,
-          StaffDetailScreen(staffId: settings.arguments?.toString()),
+          StaffDetailScreen(staffId: _extractStaffId(settings.arguments)),
         );
       case AppRoutes.clients:
         return _protectedRoute(AppRoutes.clients, const ClientsScreen());

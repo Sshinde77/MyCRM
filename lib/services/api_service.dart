@@ -1828,29 +1828,44 @@ class ApiService {
     final response = await get(ApiConstants.vendors, queryParameters: query);
 
     final root = _normalizeMap(response.data);
-    final nestedData = _normalizeMap(root['data']);
+    final nestedData = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
 
-    Map<String, dynamic>? pagePayload;
-    if (nestedData.isNotEmpty) {
-      final inner = nestedData['data'];
-      if (inner is List) {
-        pagePayload = nestedData;
-      } else {
-        pagePayload = root;
-      }
-    } else {
-      pagePayload = root;
-    }
+    final vendorsPayload = nestedData['vendors'] is Map
+        ? _normalizeMap(nestedData['vendors'])
+        : root['vendors'] is Map
+        ? _normalizeMap(root['vendors'])
+        : const <String, dynamic>{};
+
+    final pagePayload = vendorsPayload.isNotEmpty
+        ? vendorsPayload
+        : nestedData['data'] is List
+        ? nestedData
+        : root;
 
     final source = pagePayload['data'];
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
-        : _normalizeList(response.data);
+        : const <Map<String, dynamic>>[];
     final items = records.map(VendorModel.fromJson).toList(growable: false);
-    final currentPage = _readInt(pagePayload['current_page']) ?? normalizedPage;
-    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload['total']) ?? items.length;
-    final resolvedPerPage = _readInt(pagePayload['per_page']) ?? items.length;
+
+    final currentPage =
+        _readInt(pagePayload['current_page']) ??
+        _readInt(nestedData['currentPage'] ?? nestedData['current_page']) ??
+        normalizedPage;
+    final lastPage =
+        _readInt(pagePayload['last_page']) ??
+        _readInt(nestedData['lastPage'] ?? nestedData['last_page']) ??
+        currentPage;
+    final total =
+        _readInt(pagePayload['total']) ??
+        _readInt(nestedData['totalVendors'] ?? nestedData['total']) ??
+        items.length;
+    final resolvedPerPage =
+        _readInt(pagePayload['per_page']) ??
+        _readInt(nestedData['perPage'] ?? nestedData['per_page']) ??
+        (items.isEmpty ? 10 : items.length);
     final hasNextPage =
         pagePayload['next_page_url'] != null || currentPage < lastPage;
 
@@ -3716,6 +3731,29 @@ class ApiService {
     return _normalizeList(list);
   }
 
+  Future<List<Map<String, dynamic>>> getLeadNotes({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    if (normalizedSourceType.isEmpty || normalizedSourceId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
+    final path = ApiConstants.leadNoteCreate
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    final response = await get(path);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    final notesSource = source['notes'];
+    final list =
+        (notesSource is Map ? _normalizeMap(notesSource)['data'] : null) ??
+        notesSource ??
+        source['data'] ??
+        source['items'];
+    return _normalizeList(list);
+  }
+
   Future<void> createLeadNote({
     required String sourceType,
     required String sourceId,
@@ -3735,11 +3773,33 @@ class ApiService {
         .replaceFirst('{source_id}', normalizedSourceId);
     await post(
       path,
-      data: <String, dynamic>{
-        'note': normalizedNote,
-        'is_private': isPrivate,
-      },
+      data: <String, dynamic>{'note': normalizedNote, 'is_private': isPrivate},
     );
+  }
+
+  Future<List<Map<String, dynamic>>> getLeadReminders({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    if (normalizedSourceType.isEmpty || normalizedSourceId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
+    final path = ApiConstants.leadReminderCreate
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    final response = await get(path);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    final remindersSource = source['reminders'];
+    final list =
+        (remindersSource is Map
+            ? _normalizeMap(remindersSource)['data']
+            : null) ??
+        remindersSource ??
+        source['data'] ??
+        source['items'];
+    return _normalizeList(list);
   }
 
   Future<void> createLeadReminder({
@@ -3768,6 +3828,59 @@ class ApiService {
         'reminder_type': normalizedReminderType,
       },
     );
+  }
+
+  Future<List<Map<String, dynamic>>> getLeadAssignments({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    if (normalizedSourceType.isEmpty || normalizedSourceId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
+    final path = ApiConstants.leadAssignments
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    final response = await get(path);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    final assignmentsSource = source['assignments'];
+    final list =
+        (assignmentsSource is Map
+            ? _normalizeMap(assignmentsSource)['data']
+            : null) ??
+        assignmentsSource ??
+        source['data'] ??
+        source['items'];
+    return _normalizeList(list);
+  }
+
+  Future<List<Map<String, dynamic>>> getLeadStatusHistory({
+    required String sourceType,
+    required String sourceId,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedSourceId = sourceId.trim();
+    if (normalizedSourceType.isEmpty || normalizedSourceId.isEmpty) {
+      throw Exception('Invalid lead source or id.');
+    }
+    final path = ApiConstants.leadStatusHistory
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedSourceId);
+    final response = await get(path);
+    final source = _normalizeMap(_extractDetailSource(response.data));
+    final statusHistorySource = source['status_history'];
+    final historySource = source['history'];
+    final list =
+        (statusHistorySource is Map
+            ? _normalizeMap(statusHistorySource)['data']
+            : null) ??
+        statusHistorySource ??
+        (historySource is Map ? _normalizeMap(historySource)['data'] : null) ??
+        historySource ??
+        source['data'] ??
+        source['items'];
+    return _normalizeList(list);
   }
 
   /// Loads form option data required by the add lead screen.
@@ -4176,6 +4289,7 @@ class ApiService {
       rethrow;
     }
   }
+
   /// Creates a followup record for a single lead-management source entry.
   Future<void> createLeadFollowup({
     required String sourceType,
@@ -4195,19 +4309,35 @@ class ApiService {
       throw Exception('Invalid lead source or id.');
     }
 
+    String normalizeChoice(String value) {
+      return value
+          .trim()
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+          .replaceAll(RegExp(r'^_+|_+$'), '');
+    }
+
     final payload = <String, dynamic>{
       'followup_date': followupDate.trim(),
-      'followup_type': followupType.trim().toLowerCase(),
-      'outcome': outcome.trim().toLowerCase(),
+      'followup_type': normalizeChoice(followupType),
+      'outcome': normalizeChoice(outcome),
       'discussion_notes': (discussionNotes ?? '').trim(),
-      'next_followup_date': (nextFollowupDate ?? '').trim().isEmpty
-          ? null
-          : nextFollowupDate!.trim(),
-      'lead_status_after_followup':
-          (leadStatusAfterFollowup ?? '').trim().toLowerCase(),
-      'create_reminder': createReminder,
-      'reminder_type': (reminderType ?? '').trim().toLowerCase(),
     };
+    final nextFollowup = (nextFollowupDate ?? '').trim();
+    if (nextFollowup.isNotEmpty) {
+      payload['next_followup_date'] = nextFollowup;
+    }
+    final normalizedStatus = normalizeChoice(leadStatusAfterFollowup ?? '');
+    if (normalizedStatus.isNotEmpty) {
+      payload['lead_status_after_followup'] = normalizedStatus;
+    }
+    if (createReminder) {
+      payload['create_reminder'] = true;
+      final normalizedReminderType = normalizeChoice(reminderType ?? '');
+      if (normalizedReminderType.isNotEmpty) {
+        payload['reminder_type'] = normalizedReminderType;
+      }
+    }
 
     final path = ApiConstants.leadFollowupCreate
         .replaceFirst('{sourceType}', normalizedSourceType)
@@ -4237,6 +4367,7 @@ class ApiService {
       rethrow;
     }
   }
+
   String _normalizeLeadSourceTypeForPath(String sourceType) {
     return sourceType
         .trim()
@@ -5088,6 +5219,87 @@ class ApiService {
     final response = await get(path);
     final body = _normalizeMap(_extractDetailSource(response.data));
     return StaffMemberModel.fromJson(body);
+  }
+
+  /// Loads analytics metrics for a single staff member.
+  Future<Map<String, dynamic>> getStaffAnalytics(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return const <String, dynamic>{};
+    }
+    final path = ApiConstants.staffAnalytics.replaceFirst('{id}', normalizedId);
+    final response = await get(path);
+    final root = _normalizeMap(response.data);
+    final nested = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
+    final statsSource = nested['stats'] ?? nested['summary'];
+    final stats = statsSource is Map
+        ? _normalizeMap(statsSource)
+        : const <String, dynamic>{};
+    final kpis = root['kpis'] is Map
+        ? _normalizeMap(root['kpis'])
+        : const <String, dynamic>{};
+
+    final merged = <String, dynamic>{}
+      ..addAll(root)
+      ..addAll(nested)
+      ..addAll(stats)
+      ..addAll(kpis);
+    return merged;
+  }
+
+  /// Loads lead chart data for a single staff member.
+  Future<Map<String, dynamic>> getStaffLeadChart(
+    String id, {
+    String? period,
+  }) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return const <String, dynamic>{};
+    }
+    final path = ApiConstants.staffLeadChart.replaceFirst('{id}', normalizedId);
+    final response = await get(
+      path,
+      queryParameters: (period == null || period.trim().isEmpty)
+          ? null
+          : <String, dynamic>{'period': period.trim()},
+    );
+    final root = _normalizeMap(response.data);
+    final nested = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
+    return <String, dynamic>{}
+      ..addAll(root)
+      ..addAll(nested);
+  }
+
+  /// Loads followup chart data for a single staff member.
+  Future<Map<String, dynamic>> getStaffFollowupChart(
+    String id, {
+    String? period,
+  }) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return const <String, dynamic>{};
+    }
+    final path = ApiConstants.staffFollowupChart.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final response = await get(
+      path,
+      queryParameters: (period == null || period.trim().isEmpty)
+          ? null
+          : <String, dynamic>{'period': period.trim()},
+    );
+    final root = _normalizeMap(response.data);
+    final nested = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
+    return <String, dynamic>{}
+      ..addAll(root)
+      ..addAll(nested);
   }
 
   /// Deletes a single staff member by id.

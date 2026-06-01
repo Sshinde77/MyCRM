@@ -38,6 +38,7 @@ dependencies:
   device_info_plus: ^12.4.0
   font_awesome_flutter: ^11.0.0
   shared_preferences: ^2.5.3
+  fl_chart: ^0.68.0
 
 # Packages used only during development and testing.
 dev_dependencies:
