@@ -2,6 +2,8 @@ class ClientModel {
   const ClientModel({
     required this.id,
     required this.name,
+    this.firstName = '',
+    this.lastName = '',
     this.companyNames = const [],
     this.companyBusinessDetails = const [],
     required this.email,
@@ -15,6 +17,8 @@ class ClientModel {
 
   final String id;
   final String name;
+  final String firstName;
+  final String lastName;
   final List<String> companyNames;
   final List<ClientBusinessDetail> companyBusinessDetails;
   final String email;
@@ -51,6 +55,14 @@ class ClientModel {
       'title',
     ]);
     final fallbackPersonName = _readFullName(source);
+    final resolvedFirstName = _readString(source, const [
+      'first_name',
+      'firstName',
+    ]);
+    final resolvedLastName = _readString(source, const [
+      'last_name',
+      'lastName',
+    ]);
 
     final resolvedContactName = _readString(source, [
       'contact_name',
@@ -77,6 +89,8 @@ class ClientModel {
           : (resolvedCompanyNames.isNotEmpty
                 ? resolvedCompanyNames.first
                 : fallbackPersonName),
+      firstName: resolvedFirstName,
+      lastName: resolvedLastName,
       companyNames: resolvedCompanyNames,
       companyBusinessDetails: resolvedCompanyBusinessDetails,
       email: _readString(source, [

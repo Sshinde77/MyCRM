@@ -48,6 +48,9 @@ class _AddClientScreenState extends State<AddClientScreen> {
   void initState() {
     super.initState();
     _hydrateFromArgs();
+    if (!_isEditMode) {
+      _status = 'Active';
+    }
   }
 
   void _hydrateFromArgs() {
@@ -59,6 +62,16 @@ class _AddClientScreenState extends State<AddClientScreen> {
       final rawId = args['id'] ?? args['clientId'] ?? args['client_id'];
       if (rawId != null) {
         resolvedId = rawId.toString();
+      }
+      final rawFirstName =
+          args['first_name'] ?? args['firstName'] ?? args['firstname'];
+      final rawLastName =
+          args['last_name'] ?? args['lastName'] ?? args['lastname'];
+      if (rawFirstName != null) {
+        _firstNameController.text = rawFirstName.toString().trim();
+      }
+      if (rawLastName != null) {
+        _lastNameController.text = rawLastName.toString().trim();
       }
       final rawEdit = args['isEdit'];
       editFlag = rawEdit == true || rawEdit == 'true' || rawEdit == 1;
@@ -94,10 +107,17 @@ class _AddClientScreenState extends State<AddClientScreen> {
   }
 
   void _applyDetail(ClientDetailModel detail) {
-    final contactName = detail.contactPerson.trim().isNotEmpty
-        ? detail.contactPerson
-        : detail.name;
-    _applyContactName(contactName);
+    if (detail.firstName.trim().isNotEmpty ||
+        detail.lastName.trim().isNotEmpty) {
+      _firstNameController.text = detail.firstName.trim();
+      _lastNameController.text = detail.lastName.trim();
+    } else if (_firstNameController.text.trim().isEmpty &&
+        _lastNameController.text.trim().isEmpty) {
+      final contactName = detail.contactPerson.trim().isNotEmpty
+          ? detail.contactPerson
+          : detail.name;
+      _applyContactName(contactName);
+    }
     _emailController.text = detail.email;
     _phoneController.text = detail.phone;
     _addressLine1Controller.text = detail.addressLine1;
@@ -256,6 +276,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
                       children: [
                         _TextFieldTile(
                           label: 'First Name',
+                          isRequired: !_isEditMode,
                           controller: _firstNameController,
                           hintText: 'Enter first name',
                         ),
@@ -276,16 +297,24 @@ class _AddClientScreenState extends State<AddClientScreen> {
                           hintText: 'Enter phone number',
                           keyboardType: TextInputType.phone,
                         ),
-                        _DropdownFieldTile(
-                          label: 'Status',
-                          value: _status,
-                          hintText: 'Select status',
-                          items: _statusItems(),
-                          onChanged: (value) => setState(() => _status = value),
-                        ),
+                        if (_isEditMode)
+                          _DropdownFieldTile(
+                            label: 'Status',
+                            value: _status,
+                            hintText: 'Select status',
+                            items: _statusItems(),
+                            onChanged: (value) =>
+                                setState(() => _status = value),
+                          )
+                        else
+                          const _StaticFieldTile(
+                            label: 'Status',
+                            value: 'Active',
+                          ),
                         if (!_isEditMode)
                           _TextFieldTile(
                             label: 'Password',
+                            isRequired: true,
                             labelHelperText: 'Minimum 8 characters',
                             controller: _passwordController,
                             hintText: 'Enter password',
@@ -460,12 +489,26 @@ class _AddClientScreenState extends State<AddClientScreen> {
     return items;
   }
 
-  String? _validateForm() {
+  String? _nullable(String value) {
+    final normalized = value.trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  String? _validateForm({required bool isCreate}) {
+    final firstName = _firstNameController.text.trim();
+    if (isCreate && firstName.isEmpty) {
+      return 'First name is required.';
+    }
+
     final email = _emailController.text.trim();
     if (email.isNotEmpty && !email.contains('@')) {
       return 'Enter a valid email address.';
     }
+
     final password = _passwordController.text.trim();
+    if (isCreate && password.isEmpty) {
+      return 'Password is required.';
+    }
     if (password.isNotEmpty && password.length < 8) {
       return 'Password must be at least 8 characters.';
     }
@@ -473,7 +516,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
   }
 
   Future<void> _submitClient() async {
-    final validationError = _validateForm();
+    final validationError = _validateForm(isCreate: true);
     if (validationError != null) {
       AppSnackbar.show('Missing details', validationError);
       return;
@@ -489,23 +532,23 @@ class _AddClientScreenState extends State<AddClientScreen> {
         : const <String, String>{};
     final request = CreateClientRequestModel(
       firstName: _firstNameController.text.trim(),
-      lastName: _lastNameController.text.trim(),
-      email: _emailController.text.trim(),
-      phone: _phoneController.text.trim(),
+      lastName: _nullable(_lastNameController.text),
+      email: _nullable(_emailController.text),
+      phone: _nullable(_phoneController.text),
       password: _passwordController.text.trim(),
       sendMail: _sendMail,
-      website: primaryBusiness['website'] ?? '',
-      addressLine1: _addressLine1Controller.text.trim(),
-      addressLine2: _addressLine2Controller.text.trim(),
-      city: _cityController.text.trim(),
-      state: _stateController.text.trim(),
-      postalCode: _postalCodeController.text.trim(),
-      country: _countryController.text.trim(),
+      website: _nullable(primaryBusiness['website'] ?? ''),
+      addressLine1: _nullable(_addressLine1Controller.text),
+      addressLine2: _nullable(_addressLine2Controller.text),
+      city: _nullable(_cityController.text),
+      state: _nullable(_stateController.text),
+      postalCode: _nullable(_postalCodeController.text),
+      country: _nullable(_countryController.text),
       clientType: primaryBusiness['client_type'],
       companyName: primaryBusiness['company_name'],
       industry: primaryBusiness['industry'],
       businessInformation: businessInformation,
-      status: (_status ?? 'active').trim().toLowerCase(),
+      status: 'active',
       profileImagePath: _profileImagePath,
     );
 
@@ -538,7 +581,7 @@ class _AddClientScreenState extends State<AddClientScreen> {
       return;
     }
 
-    final validationError = _validateForm();
+    final validationError = _validateForm(isCreate: false);
     if (validationError != null) {
       AppSnackbar.show('Missing details', validationError);
       return;
@@ -913,6 +956,44 @@ class _ResponsiveFields extends StatelessWidget {
               .toList(),
         );
       },
+    );
+  }
+}
+
+class _StaticFieldTile extends StatelessWidget {
+  const _StaticFieldTile({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF475569),
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(color: Color(0xFF0F172A), fontSize: 14),
+          ),
+        ),
+      ],
     );
   }
 }

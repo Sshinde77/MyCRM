@@ -682,7 +682,12 @@ class _ClientsList extends StatelessWidget {
             onEdit: () {
               Get.toNamed(
                 AppRoutes.addClient,
-                arguments: {'id': client.id, 'isEdit': true},
+                arguments: {
+                  'id': client.id,
+                  'isEdit': true,
+                  'first_name': client.firstName,
+                  'last_name': client.lastName,
+                },
               );
             },
             onDelete: () => handleDelete(client.id),

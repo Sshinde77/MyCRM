@@ -2,6 +2,8 @@ class ClientDetailModel {
   const ClientDetailModel({
     required this.id,
     required this.name,
+    required this.firstName,
+    required this.lastName,
     required this.companyName,
     required this.email,
     required this.phone,
@@ -26,6 +28,8 @@ class ClientDetailModel {
 
   final String id;
   final String name;
+  final String firstName;
+  final String lastName;
   final String companyName;
   final String email;
   final String phone;
@@ -71,6 +75,11 @@ class ClientDetailModel {
       'address_line_1',
     ]);
     final fallbackPersonName = _readFullName(json);
+    final resolvedFirstName = _readString(json, const [
+      'first_name',
+      'firstName',
+    ]);
+    final resolvedLastName = _readString(json, const ['last_name', 'lastName']);
     final resolvedName = _readString(json, [
       'name',
       'full_name',
@@ -160,6 +169,8 @@ class ClientDetailModel {
         'client_id',
       ]),
       name: resolvedName.isNotEmpty ? resolvedName : fallbackPersonName,
+      firstName: resolvedFirstName,
+      lastName: resolvedLastName,
       companyName: resolvedCompanyName,
       email: _readString(json, [
         'email',
