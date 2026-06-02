@@ -24,6 +24,7 @@ class ClientDetailModel {
     required this.country,
     required this.billingType,
     required this.dueDays,
+    required this.profileImageUrl,
   });
 
   final String id;
@@ -50,6 +51,7 @@ class ClientDetailModel {
   final String country;
   final String billingType;
   final String dueDays;
+  final String profileImageUrl;
 
   bool get isActive => status.toLowerCase().contains('active');
 
@@ -215,6 +217,13 @@ class ClientDetailModel {
         'dueDays',
         'payment_terms',
       ]),
+      profileImageUrl: _readString(json, [
+        'profile_image_url',
+        'profileImageUrl',
+        'profile_image',
+        'avatar',
+        'image',
+      ]),
     );
   }
 
@@ -307,10 +316,22 @@ class ClientDetailModel {
       }
     }
 
-    return entries
-        .map(_normalizeBusinessInformationItem)
-        .where((item) => item.isNotEmpty)
-        .toList(growable: false);
+    final unique = <String, Map<String, String>>{};
+    for (final entry in entries) {
+      final normalized = _normalizeBusinessInformationItem(entry);
+      if (normalized.isEmpty) {
+        continue;
+      }
+      final key = [
+        normalized['client_type'] ?? '',
+        normalized['company_name'] ?? '',
+        normalized['industry'] ?? '',
+        normalized['website'] ?? '',
+      ].join('||').toLowerCase();
+      unique[key] = normalized;
+    }
+
+    return unique.values.toList(growable: false);
   }
 
   static Map<String, String> _normalizeBusinessInformationItem(

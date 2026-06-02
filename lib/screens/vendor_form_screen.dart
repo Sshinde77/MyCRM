@@ -118,12 +118,8 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
     }
 
     final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
+    if (email.isNotEmpty && !email.contains('@')) {
       return 'Enter a valid email address.';
-    }
-
-    if (_phoneController.text.trim().isEmpty) {
-      return 'Mobile number is required.';
     }
 
     return null;
@@ -156,9 +152,15 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
 
     final payload = (
       name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      phone: _phoneController.text.trim(),
-      address: _addressController.text.trim(),
+      email: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
+      phone: _phoneController.text.trim().isEmpty
+          ? null
+          : _phoneController.text.trim(),
+      address: _addressController.text.trim().isEmpty
+          ? null
+          : _addressController.text.trim(),
       status: _isActive ? 'active' : 'inactive',
     );
 
@@ -277,14 +279,12 @@ class _VendorFormScreenState extends State<VendorFormScreen> {
                         ),
                         _VendorTextField(
                           label: 'Email ID',
-                          required: true,
                           controller: _emailController,
                           hintText: 'Enter email address',
                           keyboardType: TextInputType.emailAddress,
                         ),
                         _VendorTextField(
                           label: 'Mobile Number',
-                          required: true,
                           controller: _phoneController,
                           hintText: 'Enter mobile number',
                           keyboardType: TextInputType.phone,

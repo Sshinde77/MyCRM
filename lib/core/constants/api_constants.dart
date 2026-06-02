@@ -39,7 +39,6 @@ class ApiConstants {
   //Clients Api
   static const String clients = '$baseUrl/clients';
 
-        
   static const String clientDetail = '$baseUrl/clients/{id}';
   static const String updateClient = '$baseUrl/clients/{id}';
   static const String deleteClient = '$baseUrl/clients/{id}';
@@ -139,6 +138,8 @@ class ApiConstants {
   //vendor renewals
   static const String vendorRenewals = '$baseUrl/vendor-renewals';
   static const String createvendorRenewals = '$baseUrl/vendor-renewals';
+  static const String vendorRenewalsFormOptions =
+      '$baseUrl/vendor-renewals/form-options';
   static const String vendorRenewalsDetail = '$baseUrl/vendor-renewals/{id}';
   static const String updateVendorRenewal = '$baseUrl/vendor-renewals/{id}';
   static const String deleteVendorRenewal = '$baseUrl/vendor-renewals/{id}';

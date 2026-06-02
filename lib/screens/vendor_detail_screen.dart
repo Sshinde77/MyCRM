@@ -458,6 +458,7 @@ class _VendorDetailTable extends StatelessWidget {
       (label: 'Vendor Name', value: detail.vendorName),
       (label: 'Email ID', value: detail.email),
       (label: 'Contact No', value: detail.contactNo),
+      (label: 'Status', value: detail.status),
       (label: 'Created At', value: detail.createdAt),
       (label: 'Last Updated', value: detail.updatedAt),
     ];
@@ -504,6 +505,7 @@ class _VendorDetailMobile extends StatelessWidget {
       ),
       (icon: Icons.email_outlined, label: 'Email ID', value: detail.email),
       (icon: Icons.call_outlined, label: 'Contact No', value: detail.contactNo),
+      (icon: Icons.toggle_on_outlined, label: 'Status', value: detail.status),
       (
         icon: Icons.access_time_rounded,
         label: 'Created At',

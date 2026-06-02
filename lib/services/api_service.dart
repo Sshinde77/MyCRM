@@ -289,11 +289,15 @@ class ClientRenewalFormOptionsResult {
     required this.clients,
     required this.vendors,
     required this.statuses,
+    this.planTypes = const <String>[],
+    this.remarkColors = const <String>[],
   });
 
   final List<ClientModel> clients;
   final List<VendorModel> vendors;
   final List<String> statuses;
+  final List<String> planTypes;
+  final List<String> remarkColors;
 }
 
 class ApiService {
@@ -2933,6 +2937,72 @@ class ApiService {
       vendors: vendors,
       statuses: statuses,
     );
+  }
+
+  /// Loads vendor renewal form options (vendors + plan/status/color options).
+  Future<ClientRenewalFormOptionsResult> getVendorRenewalFormOptions() async {
+    final response = await get(ApiConstants.vendorRenewalsFormOptions);
+    final root = _normalizeMap(response.data);
+    final payload = _normalizeMap(root['data']);
+    final source = payload.isNotEmpty ? payload : root;
+
+    final rawVendors = source['vendors'];
+    final rawPlanTypes =
+        source['plan_types'] ?? source['planTypes'] ?? source['plans'];
+    final rawStatuses =
+        source['status_options'] ??
+        source['statusOptions'] ??
+        source['statuses'] ??
+        source['status'];
+    final rawRemarkColors =
+        source['remark_colors'] ?? source['remarkColors'] ?? source['colors'];
+
+    final vendors = rawVendors is List
+        ? rawVendors
+              .map(_normalizeMap)
+              .map(VendorModel.fromJson)
+              .where((entry) => entry.id.trim().isNotEmpty)
+              .toList(growable: false)
+        : const <VendorModel>[];
+
+    final planTypes = _normalizeOptionValues(rawPlanTypes);
+    final statuses = _normalizeOptionValues(rawStatuses);
+    final remarkColors = _normalizeOptionValues(rawRemarkColors);
+
+    return ClientRenewalFormOptionsResult(
+      clients: const <ClientModel>[],
+      vendors: vendors,
+      statuses: statuses,
+      planTypes: planTypes,
+      remarkColors: remarkColors,
+    );
+  }
+
+  List<String> _normalizeOptionValues(dynamic source) {
+    if (source is! List) {
+      return const <String>[];
+    }
+
+    return source
+        .map((entry) {
+          if (entry is String) {
+            return entry.trim().toLowerCase();
+          }
+          if (entry is Map) {
+            final map = _normalizeMap(entry);
+            final value =
+                map['value'] ??
+                map['name'] ??
+                map['label'] ??
+                map['status'] ??
+                map['color'];
+            return value?.toString().trim().toLowerCase() ?? '';
+          }
+          return entry.toString().trim().toLowerCase();
+        })
+        .where((entry) => entry.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
   }
 
   /// Creates a vendor renewal/service record.
@@ -5606,43 +5676,61 @@ class ApiService {
   /// Creates a new vendor.
   Future<void> createVendor({
     required String name,
-    required String email,
-    required String phone,
-    required String address,
-    required String status,
+    String? email,
+    String? phone,
+    String? address,
+    String? status,
   }) async {
-    await post(
-      ApiConstants.createvendors,
-      data: {
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'address': address,
-        'status': _normalizeVendorStatus(status),
-      },
-    );
+    final payload = <String, dynamic>{'name': name.trim()};
+    final normalizedEmail = (email ?? '').trim();
+    final normalizedPhone = (phone ?? '').trim();
+    final normalizedAddress = (address ?? '').trim();
+    final normalizedStatus = (status ?? '').trim();
+    if (normalizedEmail.isNotEmpty) {
+      payload['email'] = normalizedEmail;
+    }
+    if (normalizedPhone.isNotEmpty) {
+      payload['phone'] = normalizedPhone;
+    }
+    if (normalizedAddress.isNotEmpty) {
+      payload['address'] = normalizedAddress;
+    }
+    if (normalizedStatus.isNotEmpty) {
+      payload['status'] = _normalizeVendorStatus(normalizedStatus);
+    }
+
+    await post(ApiConstants.createvendors, data: payload);
   }
 
   /// Updates an existing vendor.
   Future<void> updateVendor({
     required String id,
     required String name,
-    required String email,
-    required String phone,
-    required String address,
-    required String status,
+    String? email,
+    String? phone,
+    String? address,
+    String? status,
   }) async {
     final path = ApiConstants.updateVendor.replaceFirst('{id}', id);
-    await put(
-      path,
-      data: {
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'address': address,
-        'status': _normalizeVendorStatus(status),
-      },
-    );
+    final payload = <String, dynamic>{'name': name.trim()};
+    final normalizedEmail = (email ?? '').trim();
+    final normalizedPhone = (phone ?? '').trim();
+    final normalizedAddress = (address ?? '').trim();
+    final normalizedStatus = (status ?? '').trim();
+    if (normalizedEmail.isNotEmpty) {
+      payload['email'] = normalizedEmail;
+    }
+    if (normalizedPhone.isNotEmpty) {
+      payload['phone'] = normalizedPhone;
+    }
+    if (normalizedAddress.isNotEmpty) {
+      payload['address'] = normalizedAddress;
+    }
+    if (normalizedStatus.isNotEmpty) {
+      payload['status'] = _normalizeVendorStatus(normalizedStatus);
+    }
+
+    await put(path, data: payload);
   }
 
   String _normalizeVendorStatus(String status) {

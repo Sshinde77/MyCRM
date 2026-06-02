@@ -273,6 +273,12 @@ class _ProfileHeader extends StatelessWidget {
         children: [
           Row(
             children: [
+              _ClientAvatar(
+                imageUrl: client.profileImageUrl,
+                radius: 26,
+                name: displayName,
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,6 +364,52 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ClientAvatar extends StatelessWidget {
+  const _ClientAvatar({
+    required this.imageUrl,
+    required this.radius,
+    required this.name,
+  });
+
+  final String imageUrl;
+  final double radius;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = imageUrl.trim();
+    if (trimmed.isEmpty) {
+      return _fallbackAvatar();
+    }
+
+    return ClipOval(
+      child: Image.network(
+        trimmed,
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallbackAvatar(),
+      ),
+    );
+  }
+
+  Widget _fallbackAvatar() {
+    final initial = name.trim().isEmpty ? 'C' : name.trim()[0].toUpperCase();
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFFE2E8F0),
+      child: Text(
+        initial,
+        style: AppTextStyles.style(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF334155),
+        ),
       ),
     );
   }

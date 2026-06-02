@@ -13,6 +13,7 @@ class ClientModel {
     required this.contactName,
     required this.contactRole,
     required this.isActive,
+    this.profileImageUrl = '',
   });
 
   final String id;
@@ -28,6 +29,7 @@ class ClientModel {
   final String contactName;
   final String contactRole;
   final bool isActive;
+  final String profileImageUrl;
 
   String get contactLine {
     final role = contactRole.trim();
@@ -125,6 +127,13 @@ class ClientModel {
         'position',
       ]),
       isActive: _readActive(source),
+      profileImageUrl: _readString(source, [
+        'profile_image_url',
+        'profileImageUrl',
+        'profile_image',
+        'avatar',
+        'image',
+      ]),
     );
   }
 

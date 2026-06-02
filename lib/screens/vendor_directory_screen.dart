@@ -575,6 +575,12 @@ class _VendorMobileCard extends StatelessWidget {
             label: 'Contact',
             value: row.contactNo,
           ),
+          const SizedBox(height: 8),
+          _MobileInfoRow(
+            icon: Icons.toggle_on_outlined,
+            label: 'Status',
+            value: row.status,
+          ),
           const SizedBox(height: 14),
           Row(
             children: [

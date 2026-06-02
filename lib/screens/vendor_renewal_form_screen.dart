@@ -69,6 +69,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
     'one-time',
   ];
 
+  List<String> _planTypeValues = List<String>.from(_defaultPlanTypes);
   List<String> _statusValues = <String>[
     'active',
     'inactive',
@@ -161,7 +162,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
   }
 
   List<String> get _planTypeOptions {
-    final values = <String>{..._defaultPlanTypes};
+    final values = <String>{..._planTypeValues};
     if (_selectedPlanType.trim().isNotEmpty) {
       values.add(_selectedPlanType.trim().toLowerCase());
     }
@@ -178,10 +179,16 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
   Future<void> _loadLookupData() async {
     setState(() => _isLoadingOptions = true);
     try {
-      final options = await _apiService.getClientRenewalFormOptions();
+      final options = await _apiService.getVendorRenewalFormOptions();
       _vendors = options.vendors;
+      if (options.planTypes.isNotEmpty) {
+        _planTypeValues = options.planTypes;
+      }
       if (options.statuses.isNotEmpty) {
         _statusValues = options.statuses;
+      }
+      if (!_planTypeValues.contains(_selectedPlanType)) {
+        _selectedPlanType = _planTypeValues.first;
       }
       if (!_statusValues.contains(_selectedStatus)) {
         _selectedStatus = _statusValues.first;

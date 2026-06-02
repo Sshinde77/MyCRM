@@ -27,6 +27,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
   int _currentPage = 1;
   int _lastPage = 1;
   int _totalCount = 0;
+  int _activeCount = 0;
   String _appliedSearch = '';
   String _selectedStatusFilter = 'all';
   static const int _perPage = 10;
@@ -58,12 +59,23 @@ class _ClientsScreenState extends State<ClientsScreen> {
     });
 
     try {
-      final page = await ApiService.instance.getClientsListPage(
-        page: pageNumber,
-        search: normalizedSearch,
-        status: _selectedStatusFilter == 'all' ? null : _selectedStatusFilter,
-        perPage: _perPage,
-      );
+      final futures = <Future<ClientListPageResult>>[
+        ApiService.instance.getClientsListPage(
+          page: pageNumber,
+          search: normalizedSearch,
+          status: _selectedStatusFilter == 'all' ? null : _selectedStatusFilter,
+          perPage: _perPage,
+        ),
+        ApiService.instance.getClientsListPage(
+          page: 1,
+          search: normalizedSearch,
+          status: 'active',
+          perPage: 1,
+        ),
+      ];
+      final responses = await Future.wait<ClientListPageResult>(futures);
+      final page = responses[0];
+      final activePage = responses[1];
       if (!mounted) return;
 
       setState(() {
@@ -73,6 +85,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
         _currentPage = page.currentPage;
         _lastPage = page.lastPage;
         _totalCount = page.total;
+        _activeCount = activePage.total;
         _appliedSearch = normalizedSearch;
       });
     } on DioException catch (error) {
@@ -229,7 +242,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
     final compact = width <= 360;
     final clients = _clients;
     final totalClients = _totalCount > 0 ? _totalCount : clients.length;
-    final activeClients = clients.where((client) => client.isActive).length;
+    final activeClients = _activeCount;
     final loadState = _isLoading && clients.isEmpty
         ? LoadState.loading
         : _errorMessage != null && clients.isEmpty
@@ -675,6 +688,7 @@ class _ClientsList extends StatelessWidget {
           _ClientCard(
             id: client.id,
             name: client.name.isNotEmpty ? client.name : 'Client',
+            profileImageUrl: client.profileImageUrl,
             role: client.contactLine,
             email: client.email.isNotEmpty ? client.email : 'No email',
             phone: client.phone.isNotEmpty ? client.phone : 'No phone',
@@ -799,6 +813,7 @@ class _StatCard extends StatelessWidget {
 class _ClientCard extends StatelessWidget {
   final String id;
   final String name;
+  final String profileImageUrl;
   final String role;
   final String email;
   final String phone;
@@ -809,6 +824,7 @@ class _ClientCard extends StatelessWidget {
   const _ClientCard({
     required this.id,
     required this.name,
+    required this.profileImageUrl,
     required this.role,
     required this.email,
     required this.phone,
@@ -837,7 +853,11 @@ class _ClientCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const CircleAvatar(radius: 18),
+                _ClientAvatar(
+                  imageUrl: profileImageUrl,
+                  radius: 18,
+                  name: name,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
@@ -938,6 +958,51 @@ class _ClientCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ClientAvatar extends StatelessWidget {
+  const _ClientAvatar({
+    required this.imageUrl,
+    required this.radius,
+    required this.name,
+  });
+
+  final String imageUrl;
+  final double radius;
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = imageUrl.trim();
+    if (trimmed.isEmpty) {
+      return _fallbackAvatar(radius, name);
+    }
+
+    return ClipOval(
+      child: Image.network(
+        trimmed,
+        width: radius * 2,
+        height: radius * 2,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _fallbackAvatar(radius, name),
+      ),
+    );
+  }
+
+  Widget _fallbackAvatar(double radius, String name) {
+    final initial = name.trim().isEmpty ? 'C' : name.trim()[0].toUpperCase();
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: const Color(0xFFE2E8F0),
+      child: Text(
+        initial,
+        style: const TextStyle(
+          color: Color(0xFF334155),
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
