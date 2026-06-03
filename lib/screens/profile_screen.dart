@@ -6,7 +6,6 @@ import 'package:mycrm/models/quick_stats_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/screens/book_a_call.dart';
 import 'package:mycrm/screens/career_enquiries_screen.dart';
-import 'package:mycrm/screens/web_leads.dart';
 
 import '../controllers/auth_controller.dart';
 import '../routes/app_routes.dart';
@@ -88,15 +87,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       permission: AppPermission.viewBookCalls,
       accentColor: Color(0xFF1D6FEA),
       screenBuilder: BookACallScreen.new,
-    ),
-    _ProfileAction(
-      title: 'Web Ads',
-      subtitle: 'Manage your ad campaigns',
-      icon: Icons.ads_click_rounded,
-      routeName: '',
-      permission: AppPermission.viewDigitalMarketingLeads,
-      accentColor: Color(0xFF0EA5E9),
-      screenBuilder: GoogleAdsScreen.new,
     ),
     _ProfileAction(
       title: 'Career Enquiries',

@@ -214,6 +214,7 @@ class CareerEnquiryListPageResult {
     required this.total,
     required this.perPage,
     required this.hasNextPage,
+    required this.links,
   });
 
   final List<CareerEnquiryModel> items;
@@ -222,6 +223,19 @@ class CareerEnquiryListPageResult {
   final int total;
   final int perPage;
   final bool hasNextPage;
+  final List<CareerEnquiryPageLink> links;
+}
+
+class CareerEnquiryPageLink {
+  const CareerEnquiryPageLink({
+    required this.label,
+    required this.url,
+    required this.active,
+  });
+
+  final String label;
+  final String? url;
+  final bool active;
 }
 
 class ContactEnquiryListPageResult {
@@ -639,7 +653,7 @@ class ApiService {
         'method': value.method,
         'uri': value.uri.toString(),
         'headers': value.headers,
-        'queryParameters': value.queryParameters,
+        'queryParameters': value,
         'data': _normalizeLogValue(value.data),
       };
     }
@@ -1726,17 +1740,23 @@ class ApiService {
     );
 
     final root = _normalizeMap(response.data);
-    final rawSource = root['data'] ?? response.data;
-    final itemsSource = _extractListSource(rawSource);
+    final dataSource = root['data'] is Map ? _normalizeMap(root['data']) : root;
+    final careersSource = dataSource['careers'] is Map
+        ? _normalizeMap(dataSource['careers'])
+        : dataSource;
+    final itemsSource = careersSource['data'] ?? careersSource['items'];
+    final extractedItems = _extractListSource(itemsSource);
     final records = itemsSource is List
         ? itemsSource
-        : _normalizeList(rawSource);
+        : extractedItems is List
+        ? extractedItems
+        : _normalizeList(itemsSource);
     final items = records
         .map(_normalizeMap)
         .map(CareerEnquiryModel.fromJson)
         .toList(growable: false);
 
-    final paginationSource = rawSource is Map ? _normalizeMap(rawSource) : root;
+    final paginationSource = careersSource;
     final currentPage =
         _readInt(
           paginationSource['current_page'] ?? paginationSource['page'],
@@ -1757,6 +1777,11 @@ class ApiService {
     final effectivePerPage =
         _readInt(paginationSource['per_page'] ?? paginationSource['limit']) ??
         normalizedPerPage;
+    final links = _extractPageLinks(
+      paginationSource['links'],
+      fallbackCurrentPage: currentPage,
+      fallbackLastPage: lastPage,
+    );
 
     return CareerEnquiryListPageResult(
       items: items,
@@ -1765,6 +1790,7 @@ class ApiService {
       total: total,
       perPage: effectivePerPage,
       hasNextPage: currentPage < (lastPage < 1 ? 1 : lastPage),
+      links: links,
     );
   }
 
@@ -6427,6 +6453,52 @@ class ApiService {
     }
 
     return data;
+  }
+
+  List<CareerEnquiryPageLink> _extractPageLinks(
+    dynamic rawLinks, {
+    required int fallbackCurrentPage,
+    required int fallbackLastPage,
+  }) {
+    if (rawLinks is! List) {
+      return <CareerEnquiryPageLink>[
+        if (fallbackCurrentPage > 1)
+          CareerEnquiryPageLink(label: 'Previous', url: null, active: false),
+        for (var page = 1; page <= fallbackLastPage; page++)
+          CareerEnquiryPageLink(
+            label: '$page',
+            url: null,
+            active: page == fallbackCurrentPage,
+          ),
+        if (fallbackCurrentPage < fallbackLastPage)
+          CareerEnquiryPageLink(label: 'Next', url: null, active: false),
+      ];
+    }
+
+    return rawLinks
+        .map((item) {
+          if (item is Map<String, dynamic>) {
+            return CareerEnquiryPageLink(
+              label: _readNullableString(item, const ['label']) ?? '',
+              url: _readNullableString(item, const ['url']),
+              active: item['active'] == true,
+            );
+          }
+          if (item is Map) {
+            final normalized = item.map(
+              (key, value) => MapEntry(key.toString(), value),
+            );
+            return CareerEnquiryPageLink(
+              label: _readNullableString(normalized, const ['label']) ?? '',
+              url: _readNullableString(normalized, const ['url']),
+              active: normalized['active'] == true,
+            );
+          }
+          final text = item.toString().trim();
+          return CareerEnquiryPageLink(label: text, url: null, active: false);
+        })
+        .where((link) => link.label.isNotEmpty)
+        .toList(growable: false);
   }
 
   dynamic _extractTeamSettingsListSource(dynamic data) {

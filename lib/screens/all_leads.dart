@@ -21,6 +21,7 @@ class AllLeadsScreen extends StatefulWidget {
 
 class _AllLeadsScreenState extends State<AllLeadsScreen> {
   static const List<String> _fixedStatusOptions = <String>[
+    'all',
     'new',
     'attempted_contact',
     'contacted',
@@ -119,6 +120,45 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         _isLoading = false;
         _error = 'Failed to load leads.';
       });
+    }
+  }
+
+  Future<void> _deleteLead(LeadModel lead) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete lead?'),
+          content: Text('Delete lead ${lead.displayName}?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _apiService.deleteLead(lead.id.trim());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Lead deleted successfully.')),
+      );
+      await _loadLeads(page: _currentPage, search: _appliedSearch);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete lead. ${error.toString()}')),
+      );
     }
   }
 
@@ -659,6 +699,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
 
   String _statusLabel(String status) {
     final normalized = _normalizeStatusForApi(status);
+    if (normalized == 'all') {
+      return 'All';
+    }
     return normalized
         .split('_')
         .where((part) => part.isNotEmpty)
@@ -966,6 +1009,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                           sourceId: _resolveLeadSourceId(lead),
                           onAssign: () => _openAssignSingleLead(lead),
                           onEditStatus: () => _openStatusUpdateDialog(lead),
+                          onDelete: () => _deleteLead(lead),
                         ),
                       ),
                     ],
@@ -1026,7 +1070,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           )
           .toList(),
       onChanged: (value) {
-        setState(() => _selectedStatus = value ?? '');
+        setState(() => _selectedStatus = value == 'all' ? '' : value ?? '');
         _loadLeads(page: 1, search: _appliedSearch);
       },
     );
@@ -1395,6 +1439,7 @@ class _LeadActions extends StatelessWidget {
     required this.sourceId,
     required this.onAssign,
     required this.onEditStatus,
+    required this.onDelete,
   });
 
   final String leadId;
@@ -1402,6 +1447,7 @@ class _LeadActions extends StatelessWidget {
   final String sourceId;
   final VoidCallback onAssign;
   final VoidCallback onEditStatus;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -1448,7 +1494,7 @@ class _LeadActions extends StatelessWidget {
         _ActionIconButton(
           icon: Icons.delete_outline,
           color: Color(0xFFEF4444),
-          onTap: () {},
+          onTap: onDelete,
         ),
       ],
     );

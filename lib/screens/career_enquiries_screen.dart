@@ -18,7 +18,7 @@ class CareerEnquiriesScreen extends StatefulWidget {
 
 class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final int _rowsPerPage = 10;
+  int _rowsPerPage = 10;
   int _currentPage = 1;
   int _lastPage = 1;
   int _total = 0;
@@ -55,6 +55,7 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
         _currentPage = page.currentPage;
         _lastPage = page.lastPage;
         _total = page.total;
+        _rowsPerPage = page.perPage > 0 ? page.perPage : _rowsPerPage;
       });
     } on DioException catch (error) {
       if (!mounted) return;
@@ -178,6 +179,10 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
   Widget build(BuildContext context) {
     final start = _total == 0 ? 0 : ((_currentPage - 1) * _rowsPerPage) + 1;
     final end = _total == 0 ? 0 : start + _items.length - 1;
+    final totalPages = _lastPage < 1 ? 1 : _lastPage;
+    final safeCurrentPage = _currentPage > totalPages
+        ? totalPages
+        : _currentPage;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
@@ -298,6 +303,7 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -338,50 +344,212 @@ class _CareerEnquiriesScreenState extends State<CareerEnquiriesScreen> {
               ),
             const SizedBox(height: 6),
             AppCard(
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      _total == 0
-                          ? 'Showing 0 to 0 of 0 entries'
-                          : 'Showing $start to $end of $_total entries',
-                      style: AppTextStyles.style(
-                        color: const Color(0xFF334155),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _total == 0
+                              ? 'Showing 0 to 0 of 0 entries'
+                              : 'Showing $start to $end of $_total entries',
+                          style: AppTextStyles.style(
+                            color: const Color(0xFF334155),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                    ),
+                      Text(
+                        'Page $safeCurrentPage of $totalPages',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF334155),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    onPressed: _currentPage > 1
-                        ? () {
-                            setState(() => _currentPage -= 1);
-                            _loadCareerEnquiries();
-                          }
-                        : null,
-                    icon: const Icon(Icons.chevron_left_rounded),
-                  ),
-                  Text(
-                    '$_currentPage/${_lastPage < 1 ? 1 : _lastPage}',
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF1E2A3B),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: _currentPage < _lastPage
-                        ? () {
-                            setState(() => _currentPage += 1);
-                            _loadCareerEnquiries();
-                          }
-                        : null,
-                    icon: const Icon(Icons.chevron_right_rounded),
+                  _CareerPaginationBar(
+                    currentPage: safeCurrentPage,
+                    totalPages: totalPages,
+                    onPageTap: (page) {
+                      if (page == safeCurrentPage) return;
+                      setState(() => _currentPage = page);
+                      _loadCareerEnquiries();
+                    },
                   ),
                 ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CareerPaginationBar extends StatelessWidget {
+  const _CareerPaginationBar({
+    required this.currentPage,
+    required this.totalPages,
+    required this.onPageTap,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final ValueChanged<int> onPageTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    final tokens = _buildPageTokens(currentPage, totalPages);
+    final canGoPrev = currentPage > 1;
+    final canGoNext = currentPage < totalPages;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _CareerPaginationArrowButton(
+            icon: Icons.chevron_left_rounded,
+            enabled: canGoPrev,
+            onTap: () => onPageTap(currentPage - 1),
+          ),
+          const SizedBox(width: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tokens
+                .map((token) {
+                  if (token == null) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 9,
+                      ),
+                      child: Text(
+                        '...',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF64748B),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    );
+                  }
+
+                  final selected = token == currentPage;
+                  return InkWell(
+                    onTap: () => onPageTap(token),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? const Color(0xFF122B52)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '$token',
+                        style: AppTextStyles.style(
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF334155),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  );
+                })
+                .toList(growable: false),
+          ),
+          const SizedBox(width: 12),
+          _CareerPaginationArrowButton(
+            icon: Icons.chevron_right_rounded,
+            enabled: canGoNext,
+            onTap: () => onPageTap(currentPage + 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<int?> _buildPageTokens(int current, int total) {
+    if (total <= 7) {
+      return List<int?>.generate(total, (index) => index + 1);
+    }
+
+    final tokens = <int?>[1];
+    var start = current - 1;
+    var end = current + 1;
+
+    if (current <= 3) {
+      start = 2;
+      end = 4;
+    } else if (current >= total - 2) {
+      start = total - 3;
+      end = total - 1;
+    } else {
+      start = start < 2 ? 2 : start;
+      end = end > total - 1 ? total - 1 : end;
+    }
+
+    if (start > 2) {
+      tokens.add(null);
+    }
+    for (var page = start; page <= end; page += 1) {
+      tokens.add(page);
+    }
+    if (end < total - 1) {
+      tokens.add(null);
+    }
+    tokens.add(total);
+    return tokens;
+  }
+}
+
+class _CareerPaginationArrowButton extends StatelessWidget {
+  const _CareerPaginationArrowButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: enabled ? Colors.white : const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFD2DDEA)),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            size: 20,
+            color: enabled ? const Color(0xFF1E2A3B) : const Color(0xFF94A3B8),
+          ),
         ),
       ),
     );
@@ -437,6 +605,12 @@ class _CareerEnquiryCard extends StatelessWidget {
             _kv('ECTC', item.expectedCtc),
             _kv('Location', item.location),
             _kv('Reference', item.reference),
+            _kv('Notice', item.noticePeriod),
+            _kv('RN', item.referenceName),
+            _kv('Skills', item.skillsText),
+            _kv('AI Tools', item.aiToolsText),
+            _kv('Source Page', item.sourceLabel),
+            _kv('Created At', item.createdAt),
             const SizedBox(height: 2),
             Row(
               children: [
