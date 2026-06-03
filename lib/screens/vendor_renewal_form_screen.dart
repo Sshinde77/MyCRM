@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 
 import '../core/constants/app_text_styles.dart';
 import '../core/services/permission_service.dart';
@@ -437,11 +438,7 @@ class _VendorRenewalFormSheetState extends State<VendorRenewalFormSheet> {
         return message;
       }
     }
-    final message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? fallback : message;
+    return AppErrorHandler.messageFromError(error, fallback: fallback);
   }
 
   void _showSnack({

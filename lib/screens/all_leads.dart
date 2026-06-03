@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
 import '../core/constants/app_text_styles.dart';
+import '../core/utils/app_error_handler.dart';
 import '../models/lead_model.dart';
 import '../models/staff_member_model.dart';
 import '../routes/app_routes.dart';
@@ -157,7 +158,14 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete lead. ${error.toString()}')),
+        SnackBar(
+          content: Text(
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Failed to delete lead.',
+            ),
+          ),
+        ),
       );
     }
   }

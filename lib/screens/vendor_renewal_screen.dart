@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import '../core/constants/app_text_styles.dart';
 import '../core/services/permission_service.dart';
 import '../models/renewal_model.dart';
@@ -434,12 +435,10 @@ class _VendorRenewalBodyState extends State<_VendorRenewalBody>
           }
         }
       } else {
-        final raw = error.toString().trim();
-        if (raw.startsWith('Exception: ')) {
-          message = raw.substring('Exception: '.length);
-        } else if (raw.isNotEmpty) {
-          message = raw;
-        }
+        message = AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Failed to delete service.',
+        );
       }
       if (kDebugMode) {
         debugPrint('Vendor renewal delete API failed: id=$renewalId');

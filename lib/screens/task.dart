@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/screens/create_task_screen.dart';
 import 'package:mycrm/screens/task_detail_screen.dart';
@@ -332,9 +333,10 @@ class _TasksScreenState extends State<TasksScreen> {
 
       setState(() {
         _isLoading = false;
-        _loadError = error.toString().trim().isEmpty
-            ? 'Failed to load tasks.'
-            : error.toString().trim();
+        _loadError = AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Failed to load tasks.',
+        );
       });
     }
   }
@@ -565,7 +567,13 @@ class _TasksScreenState extends State<TasksScreen> {
         return;
       }
 
-      AppSnackbar.show('Delete task failed', error.toString());
+      AppSnackbar.show(
+        'Delete task failed',
+        AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Failed to delete task.',
+        ),
+      );
     }
   }
 

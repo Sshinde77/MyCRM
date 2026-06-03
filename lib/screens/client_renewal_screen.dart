@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
@@ -448,26 +449,10 @@ class _ClientRenewalBodyState extends State<_ClientRenewalBody>
       if (!mounted) {
         return;
       }
-      String message = 'Failed to delete service.';
-      if (error is DioException) {
-        final data = error.response?.data;
-        if (data is Map && data['message'] != null) {
-          message = data['message'].toString();
-        } else {
-          final dioMessage = error.message?.trim() ?? '';
-          if (dioMessage.isNotEmpty) {
-            message = dioMessage;
-          }
-        }
-      } else {
-        final raw = error.toString().trim();
-        if (raw.startsWith('Exception: ')) {
-          message = raw.substring('Exception: '.length);
-        } else if (raw.isNotEmpty) {
-          message = raw;
-        }
-      }
-
+      final message = AppErrorHandler.messageFromError(
+        error,
+        fallback: 'Failed to delete service.',
+      );
       AppSnackbar.show('Delete failed', message);
     }
   }
@@ -2451,21 +2436,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   }
 
   String _readError(Object error, {required String fallback}) {
-    if (error is DioException) {
-      final data = error.response?.data;
-      if (data is Map && data['message'] != null) {
-        return data['message'].toString();
-      }
-      final message = error.message?.trim() ?? '';
-      if (message.isNotEmpty) {
-        return message;
-      }
-    }
-    final message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? fallback : message;
+    return AppErrorHandler.messageFromError(error, fallback: fallback);
   }
 
   void _showSnack({

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/models/project_model.dart';
 import '../models/client_detail_model.dart';
 import '../services/api_service.dart';
@@ -978,6 +979,8 @@ String _readErrorMessage(Object? error) {
       return message;
     }
   }
-  final fallback = error?.toString().trim() ?? '';
-  return fallback.isEmpty ? 'Failed to load client details.' : fallback;
+  return AppErrorHandler.messageFromError(
+    error,
+    fallback: 'Failed to load client details.',
+  );
 }

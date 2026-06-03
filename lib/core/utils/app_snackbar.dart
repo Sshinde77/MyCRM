@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 
 class AppSnackbar {
   static void show(
@@ -10,6 +11,10 @@ class AppSnackbar {
     bool isSuccess = false,
     Duration duration = const Duration(seconds: 3),
   }) {
+    final safeMessage = AppErrorHandler.sanitizeMessage(
+      message,
+      isError: isError,
+    );
     final context = Get.overlayContext ?? Get.context;
     if (context == null) return;
 
@@ -21,7 +26,7 @@ class AppSnackbar {
     entry = OverlayEntry(
       builder: (_) => _GlassSnackbar(
         title: title,
-        message: message,
+        message: safeMessage,
         isError: isError,
         isSuccess: isSuccess,
         onDismiss: () {

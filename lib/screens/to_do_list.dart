@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/screens/document_preview_screen.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -222,9 +223,10 @@ class _ToDoListScreenState extends State<ToDoListScreen> {
         return;
       }
 
-      final message = error.toString().trim().isEmpty
-          ? 'Failed to load tasks.'
-          : error.toString().trim();
+      final message = AppErrorHandler.messageFromError(
+        error,
+        fallback: 'Failed to load tasks.',
+      );
 
       setState(() {
         _isLoadingTodos = false;

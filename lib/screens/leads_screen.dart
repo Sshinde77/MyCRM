@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 
 import '../core/constants/app_text_styles.dart';
 import '../core/models/load_state.dart';
@@ -399,7 +400,11 @@ class _LeadsScreenState extends State<LeadsScreen> {
       }
       AppSnackbar.show(
         'Delete failed',
-        leadProvider.errorMessage ?? error.toString(),
+        leadProvider.errorMessage ??
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Failed to delete lead.',
+            ),
       );
     }
   }

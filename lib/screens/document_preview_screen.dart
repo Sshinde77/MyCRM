@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -103,7 +104,10 @@ class DocumentPreviewScreen extends StatefulWidget {
       if (context.mounted) {
         _showSnackBar(
           context,
-          error.toString().replaceFirst('Exception: ', ''),
+          AppErrorHandler.messageFromError(
+            error,
+            fallback: 'Unable to open file.',
+          ),
         );
       }
     } finally {

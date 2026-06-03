@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
@@ -907,7 +908,12 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       setState(() => _submitting = false);
       AppSnackbar.show(
         _isEditMode ? 'Update task failed' : 'Create task failed',
-        error.toString(),
+        AppErrorHandler.messageFromError(
+          error,
+          fallback: _isEditMode
+              ? 'Failed to update task.'
+              : 'Failed to create task.',
+        ),
       );
     }
   }

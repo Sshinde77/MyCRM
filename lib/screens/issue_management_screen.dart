@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
 import 'package:dio/dio.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import '../models/client_issue_model.dart';
 import '../routes/app_routes.dart';
 import '../screens/to_do_list.dart' as to_do;
@@ -250,11 +251,10 @@ class _IssueManagementScreenState extends State<IssueManagementScreen> {
       if (message != null && message.isNotEmpty) return message;
     }
 
-    final raw = error.toString().trim();
-    if (raw.startsWith('Exception: ')) {
-      return raw.substring('Exception: '.length);
-    }
-    return raw.isEmpty ? 'Unable to load issues right now.' : raw;
+    return AppErrorHandler.messageFromError(
+      error,
+      fallback: 'Unable to load issues right now.',
+    );
   }
 
   void _applySearch() {

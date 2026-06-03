@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/utils/app_error_handler.dart';
 import '../models/role_model.dart';
 import '../services/api_service.dart';
 
@@ -78,10 +79,9 @@ class RoleProvider extends ChangeNotifier {
   }
 
   String _toMessage(Object error) {
-    final message = error.toString().trim();
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-    return message.isEmpty ? 'Unable to load roles right now.' : message;
+    return AppErrorHandler.messageFromError(
+      error,
+      fallback: 'Unable to load roles right now.',
+    );
   }
 }

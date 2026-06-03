@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../core/utils/app_error_handler.dart';
 import '../models/project_issue_model.dart';
 import '../services/api_service.dart';
 
@@ -145,15 +146,9 @@ class ProjectIssueProvider extends ChangeNotifier {
   }
 
   String _toMessage(Object error) {
-    final message = error.toString().trim();
-    if (message.isEmpty) {
-      return 'Unable to process issue request right now.';
-    }
-
-    if (message.startsWith('Exception: ')) {
-      return message.substring('Exception: '.length);
-    }
-
-    return message;
+    return AppErrorHandler.messageFromError(
+      error,
+      fallback: 'Unable to process issue request right now.',
+    );
   }
 }

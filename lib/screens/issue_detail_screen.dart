@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/client_issue_model.dart';
 import 'package:mycrm/models/client_issue_task_model.dart';
@@ -160,11 +161,10 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
       if (message != null && message.isNotEmpty) return message;
     }
 
-    final raw = error.toString().trim();
-    if (raw.startsWith('Exception: ')) {
-      return raw.substring('Exception: '.length);
-    }
-    return raw.isEmpty ? 'Unable to load issue details.' : raw;
+    return AppErrorHandler.messageFromError(
+      error,
+      fallback: 'Unable to load issue details.',
+    );
   }
 
   Future<void> _openAssignTeamsDialog(String issueId) async {
@@ -1506,11 +1506,10 @@ class _TaskDetailDialogState extends State<_TaskDetailDialog> {
       if (message != null && message.isNotEmpty) return message;
     }
 
-    final raw = error?.toString().trim() ?? '';
-    if (raw.startsWith('Exception: ')) {
-      return raw.substring('Exception: '.length);
-    }
-    return raw.isEmpty ? 'Please try again.' : raw;
+    return AppErrorHandler.messageFromError(
+      error,
+      fallback: 'Please try again.',
+    );
   }
 
   Future<void> _openTaskAttachment(String title, String source) async {
@@ -2044,11 +2043,10 @@ class _AddTaskDialogState extends State<_AddTaskDialog> {
       if (message != null && message.isNotEmpty) return message;
     }
 
-    final raw = error.toString().trim();
-    if (raw.startsWith('Exception: ')) {
-      return raw.substring('Exception: '.length);
-    }
-    return raw.isEmpty ? 'Unable to save task right now.' : raw;
+    return AppErrorHandler.messageFromError(
+      error,
+      fallback: 'Unable to save task right now.',
+    );
   }
 
   @override

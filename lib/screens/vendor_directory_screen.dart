@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/models/vendor_model.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
@@ -1249,6 +1250,8 @@ String _readVendorError(Object? error) {
     }
   }
 
-  final fallback = error?.toString().trim() ?? '';
-  return fallback.isEmpty ? 'Failed to load vendors.' : fallback;
+  return AppErrorHandler.messageFromError(
+    error,
+    fallback: 'Failed to load vendors.',
+  );
 }

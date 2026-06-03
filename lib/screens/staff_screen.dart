@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/services/api_service.dart';
 
@@ -84,7 +85,10 @@ class _StaffScreenState extends State<StaffScreen> {
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _loadError = error.toString().replaceFirst('Exception: ', '');
+        _loadError = AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Failed to load staff.',
+        );
       });
     } finally {
       if (mounted) {
@@ -313,7 +317,10 @@ class _StaffScreenState extends State<StaffScreen> {
 
       AppSnackbar.show(
         'Delete failed',
-        error.toString().replaceFirst('Exception: ', ''),
+        AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Failed to delete staff.',
+        ),
       );
     } finally {
       if (mounted) {

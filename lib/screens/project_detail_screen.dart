@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/project_milestone_model.dart';
 import 'package:mycrm/models/project_issue_model.dart';
@@ -124,7 +125,9 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   Future<void> _openReports(ProjectDetailModel project) async {
-    final canViewReports = await PermissionService.has(AppPermission.viewReports);
+    final canViewReports = await PermissionService.has(
+      AppPermission.viewReports,
+    );
     if (!mounted) return;
     if (!canViewReports) {
       AppSnackbar.show(
@@ -1016,7 +1019,13 @@ class _MilestonesSectionState extends State<_MilestonesSection> {
       _showSnack('Milestone created successfully');
     } catch (error) {
       if (!mounted) return;
-      _showSnack(_provider.errorMessage ?? error.toString());
+      _showSnack(
+        _provider.errorMessage ??
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Unable to complete this action.',
+            ),
+      );
     }
   }
 
@@ -1049,7 +1058,13 @@ class _MilestonesSectionState extends State<_MilestonesSection> {
       _showSnack('Milestone updated successfully');
     } catch (error) {
       if (!mounted) return;
-      _showSnack(_provider.errorMessage ?? error.toString());
+      _showSnack(
+        _provider.errorMessage ??
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Unable to complete this action.',
+            ),
+      );
     }
   }
 
@@ -1093,7 +1108,13 @@ class _MilestonesSectionState extends State<_MilestonesSection> {
       _showSnack('Milestone deleted successfully');
     } catch (error) {
       if (!mounted) return;
-      _showSnack(_provider.errorMessage ?? error.toString());
+      _showSnack(
+        _provider.errorMessage ??
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Unable to complete this action.',
+            ),
+      );
     }
   }
 
@@ -1710,7 +1731,13 @@ class _IssuesSectionState extends State<_IssuesSection> {
       _showSnack('Issue reported successfully');
     } catch (error) {
       if (!mounted) return;
-      _showSnack(_provider.errorMessage ?? error.toString());
+      _showSnack(
+        _provider.errorMessage ??
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Unable to complete this action.',
+            ),
+      );
     }
   }
 
@@ -1741,7 +1768,13 @@ class _IssuesSectionState extends State<_IssuesSection> {
       _showSnack('Issue updated successfully');
     } catch (error) {
       if (!mounted) return;
-      _showSnack(_provider.errorMessage ?? error.toString());
+      _showSnack(
+        _provider.errorMessage ??
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Unable to complete this action.',
+            ),
+      );
     }
   }
 
@@ -1783,7 +1816,13 @@ class _IssuesSectionState extends State<_IssuesSection> {
       _showSnack('Issue deleted successfully');
     } catch (error) {
       if (!mounted) return;
-      _showSnack(_provider.errorMessage ?? error.toString());
+      _showSnack(
+        _provider.errorMessage ??
+            AppErrorHandler.messageFromError(
+              error,
+              fallback: 'Unable to complete this action.',
+            ),
+      );
     }
   }
 
@@ -2300,7 +2339,12 @@ class _CommentsSectionState extends State<_CommentsSection> {
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _submitError = error.toString());
+      setState(
+        () => _submitError = AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Unable to submit the form.',
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

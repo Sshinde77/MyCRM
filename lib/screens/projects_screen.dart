@@ -1,9 +1,10 @@
-﻿import 'package:dio/dio.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/core/services/permission_service.dart';
+import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/services/api_service.dart';
@@ -221,7 +222,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
       AppSnackbar.show(
         'Delete failed',
-        error.toString().replaceFirst('Exception: ', ''),
+        AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Failed to delete project.',
+        ),
       );
     } finally {
       if (mounted) {
@@ -242,21 +246,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   }
 
   String _resolveDeleteError(DioException error) {
-    final data = error.response?.data;
-
-    if (data is Map<String, dynamic>) {
-      final message = data['message']?.toString().trim() ?? '';
-      if (message.isNotEmpty) {
-        return message;
-      }
-    }
-
-    final fallback = error.message?.trim() ?? '';
-    if (fallback.isNotEmpty) {
-      return fallback;
-    }
-
-    return 'Failed to delete project.';
+    return AppErrorHandler.messageFromError(
+      error,
+      fallback: 'Failed to delete project.',
+    );
   }
 
   List<ProjectModel> _filterProjects(List<ProjectModel> projects) {
@@ -1956,7 +1949,7 @@ class _AvatarCircle extends StatelessWidget {
   final String? profileImage;
 
   @override
-  Widget build(BuildContext context) {  
+  Widget build(BuildContext context) {
     final imageUrl = _resolveProfileImageUrl(profileImage);
 
     return CircleAvatar(
