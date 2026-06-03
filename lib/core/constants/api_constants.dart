@@ -110,6 +110,10 @@ class ApiConstants {
   static const String projectcomments = '$baseUrl/projects/{id}/comments';
   static const String createprojectcomments = '$baseUrl/projects/{id}/comments';
   static const String projectussage = '$baseUrl/projects/{id}/usage';
+  static const String projectDetails = '$baseUrl/projects/{id}/details';
+  static const String projectCharts = '$baseUrl/projects/{id}/charts';
+  static const String projectActivityFeed =
+      '$baseUrl/projects/{id}/activity-feed';
 
   //task
   static const String tasks = '$baseUrl/tasks';

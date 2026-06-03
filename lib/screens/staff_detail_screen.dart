@@ -569,31 +569,38 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
     }
   }
 
-  dynamic _teamPayloadValue() {
-    final selected = _teamValue.trim();
+  dynamic _normalizeStaffOptionValue(dynamic value) {
+    if (value is num) return value;
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty) return '';
+    return int.tryParse(text) ?? text;
+  }
+
+  dynamic _teamPayloadValue(String selectedValue) {
+    final selected = selectedValue.trim();
     if (selected.isEmpty) return null;
 
     for (final team in _teamOptions) {
-      if (team.name.trim() == selected) {
-        return team.name.trim();
-      }
+      final name = team.name.trim();
       final id = (team.id ?? '').trim();
-      if (id.isNotEmpty && id == selected) {
-        return team.name.trim();
+      if (name == selected || (id.isNotEmpty && id == selected)) {
+        return name.isNotEmpty ? name : id;
       }
     }
     return null;
   }
 
-  List<dynamic> _departmentPayloadValues() {
+  List<dynamic> _departmentPayloadValues(List<String> selectedValues) {
     final payload = <dynamic>[];
-    for (final selected in _departments) {
+    for (final selected in selectedValues) {
       var matched = false;
       for (final department in _departmentOptions) {
         final name = department.name.trim();
         final id = (department.id ?? '').trim();
         if (name == selected || (id.isNotEmpty && id == selected)) {
-          if (name.isNotEmpty) {
+          if (id.isNotEmpty) {
+            payload.add(_normalizeStaffOptionValue(id));
+          } else if (name.isNotEmpty) {
             payload.add(name);
           }
           matched = true;
@@ -638,7 +645,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       return;
     }
 
-    final teamPayload = _teamPayloadValue();
+    final teamPayload = _teamPayloadValue(_teamValue);
     if (teamPayload == null) {
       AppSnackbar.show(
         'Validation',
@@ -646,7 +653,7 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       );
       return;
     }
-    final departmentPayload = _departmentPayloadValues();
+    final departmentPayload = _departmentPayloadValues(_departments);
     if (departmentPayload.isEmpty) {
       AppSnackbar.show(
         'Validation',
@@ -681,8 +688,16 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
 
       var message = 'Failed to save staff details.';
       final data = error.response?.data;
-      if (data is Map && data['message'] != null) {
-        message = data['message'].toString();
+      if (data is Map) {
+        final normalized = data.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+        final validationMessage = _readFirstValidationErrorMessage(normalized);
+        if (validationMessage != null) {
+          message = validationMessage;
+        } else if (normalized['message'] != null) {
+          message = normalized['message'].toString();
+        }
       } else if (error.message != null && error.message!.trim().isNotEmpty) {
         message = error.message!.trim();
       }
@@ -721,12 +736,10 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       final normalized = selected.trim();
       if (normalized.isEmpty) return null;
       for (final team in _teamOptions) {
-        if (team.name.trim() == normalized) {
-          return team.name.trim();
-        }
+        final name = team.name.trim();
         final id = (team.id ?? '').trim();
-        if (id.isNotEmpty && id == normalized) {
-          return team.name.trim();
+        if (name == normalized || (id.isNotEmpty && id == normalized)) {
+          return name.isNotEmpty ? name : id;
         }
       }
       return null;
@@ -740,7 +753,9 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
           final name = department.name.trim();
           final id = (department.id ?? '').trim();
           if (name == selected || (id.isNotEmpty && id == selected)) {
-            if (name.isNotEmpty) {
+            if (id.isNotEmpty) {
+              payload.add(_normalizeStaffOptionValue(id));
+            } else if (name.isNotEmpty) {
               payload.add(name);
             }
             matched = true;
@@ -896,6 +911,115 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
       dialogScrollController.dispose();
     });
   }
+}
+
+String? _readFirstValidationErrorMessage(Map<String, dynamic> payload) {
+  final errors = <MapEntry<String, String>>[];
+
+  void visit(dynamic node, {String? inheritedField}) {
+    if (node == null) return;
+
+    if (node is Map) {
+      final normalized = node.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+
+      if (normalized['errors'] != null) {
+        visit(normalized['errors'], inheritedField: inheritedField);
+      }
+
+      final field =
+          normalized['field']?.toString().trim() ??
+          normalized['name']?.toString().trim() ??
+          inheritedField ??
+          '';
+      final message =
+          normalized['message']?.toString().trim() ??
+          normalized['error']?.toString().trim() ??
+          normalized['detail']?.toString().trim() ??
+          '';
+
+      if (field.isNotEmpty && message.isNotEmpty) {
+        errors.add(MapEntry(field, message));
+      }
+
+      for (final entry in normalized.entries) {
+        final key = entry.key;
+        final value = entry.value;
+
+        if (key == 'errors' ||
+            key == 'message' ||
+            key == 'error' ||
+            key == 'detail' ||
+            key == 'field' ||
+            key == 'name') {
+          continue;
+        }
+
+        if (value is Map) {
+          final fieldName = inheritedField == null || inheritedField.isEmpty
+              ? key
+              : '$inheritedField.$key';
+          visit(value, inheritedField: fieldName);
+          continue;
+        }
+
+        if (value is Iterable) {
+          for (final item in value) {
+            if (item is Map) {
+              final fieldName = inheritedField == null || inheritedField.isEmpty
+                  ? key
+                  : '$inheritedField.$key';
+              visit(item, inheritedField: fieldName);
+              continue;
+            }
+
+            final message = item?.toString().trim() ?? '';
+            if (message.isNotEmpty) {
+              final fieldName = inheritedField == null || inheritedField.isEmpty
+                  ? key
+                  : '$inheritedField.$key';
+              errors.add(MapEntry(fieldName, message));
+            }
+          }
+          continue;
+        }
+
+        final message = value?.toString().trim() ?? '';
+        if (message.isNotEmpty) {
+          final fieldName = inheritedField == null || inheritedField.isEmpty
+              ? key
+              : '$inheritedField.$key';
+          errors.add(MapEntry(fieldName, message));
+        }
+      }
+      return;
+    }
+
+    if (node is Iterable) {
+      for (final item in node) {
+        visit(item, inheritedField: inheritedField);
+      }
+      return;
+    }
+
+    final message = node.toString().trim();
+    if (message.isNotEmpty &&
+        inheritedField != null &&
+        inheritedField.isNotEmpty) {
+      errors.add(MapEntry(inheritedField, message));
+    }
+  }
+
+  visit(payload['errors'] ?? payload);
+
+  if (errors.isNotEmpty) {
+    final first = errors.first;
+    return '${first.key}: ${first.value}';
+  }
+
+  final message = payload['message']?.toString().trim() ?? '';
+  return message.isEmpty ? null : message;
 }
 
 class _ProfileHeaderCard extends StatelessWidget {

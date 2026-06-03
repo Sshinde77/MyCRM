@@ -230,10 +230,15 @@ class ProjectDetailModel {
         'client_phone',
         'phone',
       ], fallback: 'Not available'),
-      clientAddress: _readValue(source, const [
-        'client_address',
-        'address',
-      ], fallback: 'Not available'),
+      clientAddress: _readValue(
+        source,
+        const ['client_address', 'address'],
+        fallback: _formatAddress(
+          _readAddressMap(source) ??
+              _readAddressMap(customerMap) ??
+              const <String, dynamic>{},
+        ),
+      ),
     );
   }
 
@@ -258,6 +263,55 @@ class ProjectDetailModel {
           ? _readMap(json, const ['customer'])
           : _readMap(projectMap, const ['customer', 'client']),
     };
+  }
+
+  static String _formatAddress(Map<String, dynamic> address) {
+    if (address.isEmpty) {
+      return 'Not available';
+    }
+
+    final parts = <String>[
+      _readValue(address, const ['address_line_1', 'line1', 'line_1']),
+      _readValue(address, const ['address_line_2', 'line2', 'line_2']),
+      _readValue(address, const ['city']),
+      _readValue(address, const ['state']),
+      _readValue(address, const ['country']),
+      _readValue(address, const ['pincode', 'zip', 'postal_code']),
+    ].where((part) => part.trim().isNotEmpty).toList();
+
+    if (parts.isEmpty) {
+      return 'Not available';
+    }
+
+    return parts.join(', ');
+  }
+
+  static Map<String, dynamic>? _readAddressMap(Map<String, dynamic> source) {
+    final directAddress = _readMap(source, const ['address']);
+    if (directAddress.isNotEmpty) {
+      return directAddress;
+    }
+
+    final customerUser = _readMap(source, const [
+      'customer_user',
+      'customerUser',
+    ]);
+    if (customerUser.isNotEmpty) {
+      final nestedAddress = _readMap(customerUser, const ['address']);
+      if (nestedAddress.isNotEmpty) {
+        return nestedAddress;
+      }
+    }
+
+    final customer = _readMap(source, const ['customer', 'client']);
+    if (customer.isNotEmpty) {
+      final nestedAddress = _readMap(customer, const ['address']);
+      if (nestedAddress.isNotEmpty) {
+        return nestedAddress;
+      }
+    }
+
+    return null;
   }
 
   static Map<String, dynamic> _readMap(
@@ -403,6 +457,7 @@ class ProjectFileRecord {
     required this.name,
     required this.url,
     required this.sizeBytes,
+    required this.formattedSize,
     required this.uploadedOn,
   });
 
@@ -410,6 +465,7 @@ class ProjectFileRecord {
   final String name;
   final String url;
   final int? sizeBytes;
+  final String formattedSize;
   final String uploadedOn;
 
   String get extension {
@@ -433,8 +489,9 @@ class ProjectFileRecord {
       'href',
       'path',
       'file',
+      'file_path',
       'value',
-    ]);
+    ], fallback: _readDownloadUrl(json));
 
     final name = ProjectDetailModel._readValue(json, const [
       'name',
@@ -460,6 +517,11 @@ class ProjectFileRecord {
         'file_size',
         'fileSize',
         'bytes',
+        'formatted_size',
+      ]),
+      formattedSize: ProjectDetailModel._readValue(json, const [
+        'formatted_size',
+        'formattedSize',
       ]),
       uploadedOn: ProjectDetailModel._readValue(json, const [
         'uploaded_on',
@@ -479,6 +541,25 @@ class ProjectFileRecord {
     final withoutQuery = trimmed.split('?').first;
     final last = withoutQuery.split('/').last.trim();
     return last;
+  }
+
+  static String _readDownloadUrl(Map<String, dynamic> json) {
+    final download = json['links'];
+    if (download is Map<String, dynamic>) {
+      final url = download['download'];
+      if (url is String && url.trim().isNotEmpty) {
+        return url.trim();
+      }
+    } else if (download is Map) {
+      final normalized = download.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      final url = normalized['download'];
+      if (url is String && url.trim().isNotEmpty) {
+        return url.trim();
+      }
+    }
+    return '';
   }
 
   static int? _readInt(Map<String, dynamic> json, List<String> keys) {

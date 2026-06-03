@@ -14,12 +14,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter  
-  cupertino_icons: ^1.0.9   
   get: ^4.7.3
   dio: ^5.9.2
   flutter_secure_storage: ^10.3.1
   local_auth: ^2.3.0
-  flutter_svg: ^2.2.4
   google_fonts: ^8.0.2
   image_picker: ^1.2.1
   file_picker:  ^10.1.9

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
-import 'package:mycrm/screens/career_enquiries_screen.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:mycrm/screens/contact_enquiries_screen.dart';
 
@@ -25,16 +24,6 @@ class WebEnquiryScreen extends StatelessWidget {
               accentColor: const Color(0xFF1D6FEA),
               onTap: () {
                 Get.to(() => const ContactEnquiriesScreen());
-              },
-            ),
-            const SizedBox(height: 10),
-            _EnquiryCard(
-              title: 'Career',
-              subtitle: 'Job applications and resumes',
-              icon: Icons.work_outline_rounded,
-              accentColor: const Color(0xFF0F766E),
-              onTap: () {
-                Get.to(() => const CareerEnquiriesScreen());
               },
             ),
           ],

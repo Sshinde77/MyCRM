@@ -1012,7 +1012,9 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
   }
 
   String _teamValueForPayload(TeamSettingModel team) {
-    return (team.id ?? '').trim().isNotEmpty ? team.id!.trim() : team.name;
+    return team.name.trim().isNotEmpty
+        ? team.name.trim()
+        : (team.id ?? '').trim();
   }
 
   String _departmentValueForPayload(DepartmentSettingModel department) {
@@ -1393,25 +1395,112 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
 }
 
 String? _readFirstValidationErrorMessage(Map<String, dynamic> payload) {
-  final rawErrors = payload['errors'];
-  if (rawErrors is Map) {
-    for (final value in rawErrors.values) {
-      if (value is List && value.isNotEmpty) {
-        final first = value.first;
-        if (first != null) {
-          final asText = first.toString().trim();
-          if (asText.isNotEmpty) {
-            return asText;
-          }
-        }
+  final errors = <MapEntry<String, String>>[];
+
+  void visit(dynamic node, {String? inheritedField}) {
+    if (node == null) return;
+
+    if (node is Map) {
+      final normalized = node.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+
+      if (normalized['errors'] != null) {
+        visit(normalized['errors'], inheritedField: inheritedField);
       }
 
-      if (value is String && value.trim().isNotEmpty) {
-        return value.trim();
+      final field =
+          normalized['field']?.toString().trim() ??
+          normalized['name']?.toString().trim() ??
+          inheritedField ??
+          '';
+      final message =
+          normalized['message']?.toString().trim() ??
+          normalized['error']?.toString().trim() ??
+          normalized['detail']?.toString().trim() ??
+          '';
+
+      if (field.isNotEmpty && message.isNotEmpty) {
+        errors.add(MapEntry(field, message));
       }
+
+      for (final entry in normalized.entries) {
+        final key = entry.key;
+        final value = entry.value;
+
+        if (key == 'errors' ||
+            key == 'message' ||
+            key == 'error' ||
+            key == 'detail' ||
+            key == 'field' ||
+            key == 'name') {
+          continue;
+        }
+
+        if (value is Map) {
+          final fieldName = inheritedField == null || inheritedField.isEmpty
+              ? key
+              : '$inheritedField.$key';
+          visit(value, inheritedField: fieldName);
+          continue;
+        }
+
+        if (value is Iterable) {
+          for (final item in value) {
+            if (item is Map) {
+              final fieldName = inheritedField == null || inheritedField.isEmpty
+                  ? key
+                  : '$inheritedField.$key';
+              visit(item, inheritedField: fieldName);
+              continue;
+            }
+
+            final message = item?.toString().trim() ?? '';
+            if (message.isNotEmpty) {
+              final fieldName = inheritedField == null || inheritedField.isEmpty
+                  ? key
+                  : '$inheritedField.$key';
+              errors.add(MapEntry(fieldName, message));
+            }
+          }
+          continue;
+        }
+
+        final message = value?.toString().trim() ?? '';
+        if (message.isNotEmpty) {
+          final fieldName = inheritedField == null || inheritedField.isEmpty
+              ? key
+              : '$inheritedField.$key';
+          errors.add(MapEntry(fieldName, message));
+        }
+      }
+      return;
+    }
+
+    if (node is Iterable) {
+      for (final item in node) {
+        visit(item, inheritedField: inheritedField);
+      }
+      return;
+    }
+
+    final message = node.toString().trim();
+    if (message.isNotEmpty &&
+        inheritedField != null &&
+        inheritedField.isNotEmpty) {
+      errors.add(MapEntry(inheritedField, message));
     }
   }
-  return null;
+
+  visit(payload['errors'] ?? payload);
+
+  if (errors.isNotEmpty) {
+    final first = errors.first;
+    return '${first.key}: ${first.value}';
+  }
+
+  final message = payload['message']?.toString().trim() ?? '';
+  return message.isEmpty ? null : message;
 }
 
 class _FullWidthField extends StatelessWidget {

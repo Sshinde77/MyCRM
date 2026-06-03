@@ -300,6 +300,13 @@ class ClientRenewalFormOptionsResult {
   final List<String> remarkColors;
 }
 
+class _BackendValidationError {
+  const _BackendValidationError({required this.field, required this.message});
+
+  final String field;
+  final String message;
+}
+
 class ApiService {
   ApiService._internal() {
     _dio.interceptors.add(_buildAuthInterceptor());
@@ -403,58 +410,128 @@ class ApiService {
   Interceptor _buildDebugLoggingInterceptor() {
     return InterceptorsWrapper(
       onRequest: (options, handler) {
-        debugPrint('*** API Calling ***');
-        debugPrint('${options.method} ${options.uri}');
-        final authorization = options.headers['Authorization']?.toString();
-        final authState = authorization == null || authorization.trim().isEmpty
-            ? 'missing'
-            : _maskAuthorizationHeader(authorization);
-        debugPrint('auth: $authState');
-        if (options.queryParameters.isNotEmpty) {
-          debugPrint('query: ${_summarizeForLog(options.queryParameters)}');
-        }
-        if (options.data != null) {
-          debugPrint('request: ${_summarizeForLog(options.data)}');
-        }
+        _logRequest(options);
         handler.next(options);
       },
       onResponse: (response, handler) {
-        debugPrint('*** API Response ***');
-        debugPrint(
-          '${response.requestOptions.method} ${response.requestOptions.uri}',
-        );
-        debugPrint('status: ${response.statusCode}');
-        debugPrint('response: ${_summarizeForLog(response.data)}');
+        _logResponse(response);
         handler.next(response);
       },
       onError: (error, handler) {
-        debugPrint('*** API Error ***');
-        debugPrint(
-          '${error.requestOptions.method} ${error.requestOptions.uri}',
-        );
-        debugPrint('status: ${error.response?.statusCode ?? 'N/A'}');
-        final redirectLocation = error.response?.headers.value('location');
-        if (redirectLocation != null && redirectLocation.trim().isNotEmpty) {
-          debugPrint('redirect: $redirectLocation');
-        }
-        debugPrint('message: ${error.message ?? error.error}');
-        if (error.response?.data != null) {
-          debugPrint('response: ${_summarizeForLog(error.response?.data)}');
-        }
+        _logError(error);
         handler.next(error);
       },
     );
   }
 
-  String _summarizeForLog(dynamic value, {int maxChars = 1200}) {
-    final text = _sanitizeForLog(value).toString();
-    return _truncateForLogText(text, maxChars: maxChars);
+  void _logApiTrace(String message) {
+    _debugPrintLong(message);
   }
 
-  String _truncateForLogText(String text, {int maxChars = 1200}) {
-    if (text.length <= maxChars) return text;
-    final omitted = text.length - maxChars;
-    return '${text.substring(0, maxChars)}... (truncated +$omitted chars)';
+  void _debugPrintLong(String message) {
+    if (message.isEmpty) {
+      debugPrint('');
+      return;
+    }
+
+    const chunkSize = 800;
+    for (var index = 0; index < message.length; index += chunkSize) {
+      final end = (index + chunkSize < message.length)
+          ? index + chunkSize
+          : message.length;
+      debugPrint(message.substring(index, end));
+    }
+  }
+
+  void _logRequest(RequestOptions options) {
+    final headers = _formatLogValue(_sanitizeForLog(options.headers));
+    final body = _formatLogValue(_sanitizeForLog(options.data));
+
+    _debugPrintLong('==================================');
+    _debugPrintLong('API REQUEST');
+    _debugPrintLong('==================================');
+    _debugPrintLong('URL: ${options.uri}');
+    _debugPrintLong('METHOD: ${options.method.toUpperCase()}');
+    _debugPrintLong('HEADERS: ${headers.isEmpty ? '(empty)' : headers}');
+    if (options.queryParameters.isNotEmpty) {
+      final queryParameters = _formatLogValue(
+        _sanitizeForLog(options.queryParameters),
+      );
+      _debugPrintLong(
+        'QUERY: ${queryParameters.isEmpty ? '(empty)' : queryParameters}',
+      );
+    }
+    _debugPrintLong('PAYLOAD: ${body.isEmpty ? '(empty)' : body}');
+    _debugPrintLong('==================================');
+  }
+
+  void _logResponse(Response response) {
+    final body = _formatLogValue(response.data);
+
+    _debugPrintLong('==================================');
+    _debugPrintLong('API RESPONSE');
+    _debugPrintLong('==================================');
+    _debugPrintLong('URL: ${response.requestOptions.uri}');
+    _debugPrintLong('METHOD: ${response.requestOptions.method.toUpperCase()}');
+    _debugPrintLong('STATUS: ${response.statusCode ?? 'N/A'}');
+    _debugPrintLong('BODY: ${body.isEmpty ? '(empty)' : body}');
+    _debugPrintLong('==================================');
+  }
+
+  void _logError(DioException error) {
+    final statusCode = error.response?.statusCode;
+    final requestOptions = error.requestOptions;
+    final requestPayload = _formatLogValue(
+      _sanitizeForLog(requestOptions.data),
+    );
+    final requestHeaders = _formatLogValue(
+      _sanitizeForLog(requestOptions.headers),
+    );
+    final responseBody = error.response?.data;
+    final formattedBody = _formatLogValue(responseBody);
+    final validationErrors = _extractValidationErrors(responseBody);
+    final stackTrace = error.stackTrace?.toString().trim() ?? '';
+
+    _debugPrintLong('==================================');
+    _debugPrintLong('API ERROR');
+    _debugPrintLong('==================================');
+    _debugPrintLong('URL: ${requestOptions.uri}');
+    _debugPrintLong('METHOD: ${requestOptions.method.toUpperCase()}');
+    _debugPrintLong('STATUS: ${statusCode ?? 'N/A'}');
+    _debugPrintLong(
+      'REQUEST HEADERS: ${requestHeaders.isEmpty ? '(empty)' : requestHeaders}',
+    );
+    _debugPrintLong('REQUEST:');
+    _debugPrintLong(requestPayload.isEmpty ? '(empty)' : requestPayload);
+    _debugPrintLong('RESPONSE:');
+    _debugPrintLong(formattedBody.isEmpty ? '(empty)' : formattedBody);
+
+    if (validationErrors.isNotEmpty) {
+      _debugPrintLong('BACKEND VALIDATION ERRORS:');
+      for (final entry in validationErrors) {
+        _debugPrintLong('FIELD: ${entry.field}');
+        _debugPrintLong('MESSAGE: ${entry.message}');
+      }
+    }
+
+    final backendMessage = _extractBackendMessage(responseBody);
+    if (backendMessage != null &&
+        backendMessage.trim().isNotEmpty &&
+        validationErrors.isEmpty) {
+      _debugPrintLong('MESSAGE: ${backendMessage.trim()}');
+    }
+
+    if (stackTrace.isNotEmpty) {
+      _debugPrintLong('STACK TRACE:');
+      _debugPrintLong(stackTrace);
+    }
+
+    _debugPrintLong('==================================');
+  }
+
+  String _summarizeForLog(dynamic value, {int maxChars = 1200}) {
+    final text = _formatLogValue(value);
+    return text;
   }
 
   dynamic _sanitizeForLog(dynamic value, {int depth = 0}) {
@@ -513,6 +590,270 @@ class ApiService {
       return '***';
     }
     return _sanitizeForLog(value, depth: depth + 1);
+  }
+
+  String _formatLogValue(dynamic value) {
+    final normalized = _normalizeLogValue(value);
+    if (normalized == null) {
+      return '';
+    }
+
+    if (normalized is String) {
+      final trimmed = normalized.trim();
+      if (trimmed.isEmpty) return '';
+      final decoded = _tryDecodeJson(trimmed);
+      if (decoded != null) {
+        return const JsonEncoder.withIndent('  ').convert(decoded);
+      }
+      return normalized;
+    }
+
+    try {
+      return const JsonEncoder.withIndent('  ').convert(normalized);
+    } catch (_) {
+      return normalized.toString();
+    }
+  }
+
+  dynamic _normalizeLogValue(dynamic value) {
+    if (value == null) return null;
+
+    if (value is FormData) {
+      return <String, dynamic>{
+        'fields': <String, dynamic>{
+          for (final field in value.fields) field.key: field.value,
+        },
+        'files': <Map<String, dynamic>>[
+          for (final file in value.files)
+            <String, dynamic>{
+              'field': file.key,
+              'filename': file.value.filename,
+              'length': file.value.length,
+            },
+        ],
+      };
+    }
+
+    if (value is RequestOptions) {
+      return <String, dynamic>{
+        'method': value.method,
+        'uri': value.uri.toString(),
+        'headers': value.headers,
+        'queryParameters': value.queryParameters,
+        'data': _normalizeLogValue(value.data),
+      };
+    }
+
+    if (value is Response) {
+      return <String, dynamic>{
+        'statusCode': value.statusCode,
+        'headers': value.headers.map,
+        'data': _normalizeLogValue(value.data),
+      };
+    }
+
+    if (value is DioException) {
+      return <String, dynamic>{
+        'message': value.message,
+        'type': value.type.toString(),
+        'statusCode': value.response?.statusCode,
+        'response': _normalizeLogValue(value.response?.data),
+      };
+    }
+
+    if (value is Map) {
+      return value.map(
+        (key, entryValue) =>
+            MapEntry(key.toString(), _normalizeLogValue(entryValue)),
+      );
+    }
+
+    if (value is Iterable) {
+      return value.map(_normalizeLogValue).toList(growable: false);
+    }
+
+    return value;
+  }
+
+  String? _tryDecodeJson(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      return const JsonEncoder.withIndent('  ').convert(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extractBackendMessage(dynamic data) {
+    if (data == null) return null;
+
+    if (data is String) {
+      final trimmed = data.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+
+    if (data is Map) {
+      final normalized = data.map(
+        (key, value) => MapEntry(key.toString(), value),
+      );
+      for (final key in const [
+        'message',
+        'error',
+        'error_message',
+        'detail',
+        'title',
+      ]) {
+        final value = normalized[key];
+        if (value == null) continue;
+        if (value is String && value.trim().isNotEmpty) {
+          return value.trim();
+        }
+        if (value is Map || value is List) {
+          final extracted = _extractBackendMessage(value);
+          if (extracted != null && extracted.trim().isNotEmpty) {
+            return extracted.trim();
+          }
+        }
+      }
+
+      final validationErrors = _extractValidationErrors(normalized);
+      if (validationErrors.isNotEmpty) {
+        return validationErrors.first.message;
+      }
+
+      final nestedData = normalized['data'];
+      if (nestedData != null) {
+        final extracted = _extractBackendMessage(nestedData);
+        if (extracted != null && extracted.trim().isNotEmpty) {
+          return extracted.trim();
+        }
+      }
+    }
+
+    if (data is Iterable) {
+      for (final item in data) {
+        final extracted = _extractBackendMessage(item);
+        if (extracted != null && extracted.trim().isNotEmpty) {
+          return extracted.trim();
+        }
+      }
+    }
+
+    return null;
+  }
+
+  List<_BackendValidationError> _extractValidationErrors(dynamic data) {
+    final errors = <_BackendValidationError>[];
+
+    void visit(dynamic node, {String? inheritedField}) {
+      if (node == null) return;
+
+      if (node is Map) {
+        final normalized = node.map(
+          (key, value) => MapEntry(key.toString(), value),
+        );
+
+        if (normalized['errors'] != null) {
+          visit(normalized['errors'], inheritedField: inheritedField);
+        }
+
+        final field =
+            normalized['field']?.toString().trim() ??
+            normalized['name']?.toString().trim() ??
+            inheritedField ??
+            '';
+        final message =
+            normalized['message']?.toString().trim() ??
+            normalized['error']?.toString().trim() ??
+            normalized['detail']?.toString().trim() ??
+            '';
+
+        if (field.isNotEmpty && message.isNotEmpty) {
+          errors.add(_BackendValidationError(field: field, message: message));
+        }
+
+        for (final entry in normalized.entries) {
+          final key = entry.key;
+          final value = entry.value;
+
+          if (key == 'errors' ||
+              key == 'message' ||
+              key == 'error' ||
+              key == 'detail' ||
+              key == 'field' ||
+              key == 'name') {
+            continue;
+          }
+
+          if (value is Map) {
+            final fieldName = inheritedField == null || inheritedField.isEmpty
+                ? key
+                : '$inheritedField.$key';
+            visit(value, inheritedField: fieldName);
+            continue;
+          }
+
+          if (value is Iterable) {
+            for (final item in value) {
+              if (item is Map) {
+                final fieldName =
+                    inheritedField == null || inheritedField.isEmpty
+                    ? key
+                    : '$inheritedField.$key';
+                visit(item, inheritedField: fieldName);
+                continue;
+              }
+              final message = item?.toString().trim() ?? '';
+              if (message.isNotEmpty) {
+                final fieldName =
+                    inheritedField == null || inheritedField.isEmpty
+                    ? key
+                    : '$inheritedField.$key';
+                errors.add(
+                  _BackendValidationError(field: fieldName, message: message),
+                );
+              }
+            }
+            continue;
+          }
+
+          final message = value?.toString().trim() ?? '';
+          if (message.isNotEmpty) {
+            final fieldName = inheritedField == null || inheritedField.isEmpty
+                ? key
+                : '$inheritedField.$key';
+            errors.add(
+              _BackendValidationError(field: fieldName, message: message),
+            );
+          }
+        }
+        return;
+      }
+
+      if (node is Iterable) {
+        for (final item in node) {
+          visit(item, inheritedField: inheritedField);
+        }
+        return;
+      }
+
+      final message = node.toString().trim();
+      if (message.isNotEmpty &&
+          inheritedField != null &&
+          inheritedField.isNotEmpty) {
+        errors.add(
+          _BackendValidationError(field: inheritedField, message: message),
+        );
+      }
+    }
+
+    visit(data);
+
+    final deduped = <String, _BackendValidationError>{};
+    for (final entry in errors) {
+      deduped['${entry.field}::${entry.message}'] = entry;
+    }
+    return deduped.values.toList(growable: false);
   }
 
   bool _isCacheFresh(DateTime? at, Duration ttl) {
@@ -664,7 +1005,6 @@ class ApiService {
   /// Multipart POST helper for endpoints that accept form-data payloads.
   Future<Response> postForm(String path, {required FormData data}) async {
     await _prepareAuthForPath(path);
-    _debugLogFormData(path: path, data: data);
     return await _dio.post(
       path,
       data: data,
@@ -3324,12 +3664,86 @@ class ApiService {
     return ProjectDetailModel.fromJson(source);
   }
 
+  /// Loads the full project detail report payload for a project by id.
+  Future<Map<String, dynamic>> getProjectReportDetails(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return const <String, dynamic>{};
+    }
+
+    final path = ApiConstants.projectDetails.replaceFirst('{id}', normalizedId);
+    final response = await get(path);
+    final root = _normalizeMap(response.data);
+    final data = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
+    final project = data['project'] is Map
+        ? _normalizeMap(data['project'])
+        : const <String, dynamic>{};
+    return <String, dynamic>{}
+      ..addAll(root)
+      ..addAll(data)
+      ..addAll(project)
+      ..['project'] = project.isNotEmpty
+          ? project
+          : _normalizeMap(root['project']);
+  }
+
   Future<ProjectUsageModel> getProjectUsage(String id) async {
     final path = ApiConstants.projectussage.replaceFirst('{id}', id);
     final response = await get(path);
     final body = _normalizeMap(response.data);
     final source = _normalizeMap(_extractProjectDetailSource(body));
     return ProjectUsageModel.fromJson(source);
+  }
+
+  /// Loads project chart data by project id.
+  Future<Map<String, dynamic>> getProjectCharts(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return const <String, dynamic>{};
+    }
+
+    final path = ApiConstants.projectCharts.replaceFirst('{id}', normalizedId);
+    final response = await get(path);
+    final root = _normalizeMap(response.data);
+    final nested = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
+    final charts = root['charts'] is Map
+        ? _normalizeMap(root['charts'])
+        : const <String, dynamic>{};
+    return <String, dynamic>{}
+      ..addAll(root)
+      ..addAll(nested)
+      ..addAll(charts);
+  }
+
+  /// Loads the activity feed for a project by id.
+  Future<List<Map<String, dynamic>>> getProjectActivityFeed(
+    String id, {
+    int perPage = 15,
+  }) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return const <Map<String, dynamic>>[];
+    }
+
+    final pageSize = perPage.clamp(5, 50).toInt();
+    final path = ApiConstants.projectActivityFeed.replaceFirst(
+      '{id}',
+      normalizedId,
+    );
+    final response = await get(
+      path,
+      queryParameters: <String, dynamic>{'per_page': pageSize},
+    );
+    final source = _extractListSource(response.data);
+    if (source is! List) {
+      return const <Map<String, dynamic>>[];
+    }
+
+    return source.map(_normalizeMap).toList();
   }
 
   /// Loads project files by project id.
@@ -5450,29 +5864,31 @@ class ApiService {
     String? role,
     String? password,
   }) async {
-    dynamic normalizeIdOrValue(dynamic value) {
-      if (value is num) return value;
+    String normalizeStringValue(dynamic value) {
       final text = value?.toString().trim() ?? '';
-      final parsed = int.tryParse(text);
-      return parsed ?? text;
+      return text;
     }
 
-    final normalizedTeam = normalizeIdOrValue(team);
+    final path = ApiConstants.editstaff.replaceFirst('{id}', id);
+    final normalizedTeam = team?.toString().trim() ?? '';
     final normalizedDepartments = departments
-        .map<dynamic>(normalizeIdOrValue)
-        .where((value) => value.toString().trim().isNotEmpty)
+        .map<String>(normalizeStringValue)
+        .where((value) => value.trim().isNotEmpty)
         .toList(growable: false);
 
-    final path = ApiConstants.editstaff.replaceFirst('{id}', id);
     final payload = <String, dynamic>{
       'first_name': firstName,
       'last_name': lastName,
       'email': email,
-      'phone': phone,
       'status': status,
       'team': normalizedTeam,
       'departments': normalizedDepartments,
     };
+
+    final normalizedPhone = phone.trim();
+    if (normalizedPhone.isNotEmpty) {
+      payload['phone'] = normalizedPhone;
+    }
 
     if (role != null && role.trim().isNotEmpty) {
       payload['role'] = role.trim();
@@ -5500,17 +5916,15 @@ class ApiService {
     String? role,
     String? profileImagePath,
   }) async {
-    dynamic normalizeIdOrValue(dynamic value) {
-      if (value is num) return value;
+    String normalizeStringValue(dynamic value) {
       final text = value?.toString().trim() ?? '';
-      final parsed = int.tryParse(text);
-      return parsed ?? text;
+      return text;
     }
 
-    final normalizedTeam = normalizeIdOrValue(team);
+    final normalizedTeam = team?.toString().trim() ?? '';
     final normalizedDepartments = departments
-        .map<dynamic>(normalizeIdOrValue)
-        .where((value) => value.toString().trim().isNotEmpty)
+        .map<String>(normalizeStringValue)
+        .where((value) => value.trim().isNotEmpty)
         .toList(growable: false);
 
     final payload = <String, dynamic>{
@@ -5921,6 +6335,13 @@ class ApiService {
         'files',
         'attachments',
         'documents',
+        'activity_feed',
+        'activityFeed',
+        'activities',
+        'activity_logs',
+        'activityLogs',
+        'feed',
+        'logs',
         'tasks',
         'task_lists',
         'todos',
@@ -5971,6 +6392,13 @@ class ApiService {
             'files',
             'attachments',
             'documents',
+            'activity_feed',
+            'activityFeed',
+            'activities',
+            'activity_logs',
+            'activityLogs',
+            'feed',
+            'logs',
             'tasks',
             'task_lists',
             'todos',
@@ -6607,26 +7035,6 @@ class ApiService {
     }
 
     return formData;
-  }
-
-  void _debugLogFormData({required String path, required FormData data}) {
-    if (!kDebugMode) return;
-
-    final fields = data.fields
-        .map((entry) => '${entry.key}=${entry.value}')
-        .join(', ');
-    final files = data.files
-        .map((entry) => '${entry.key}=${entry.value.filename}')
-        .join(', ');
-
-    debugPrint('*** Multipart Debug ***');
-    debugPrint('path: $path');
-    debugPrint(
-      'fields: ${fields.isEmpty ? '(none)' : _truncateForLogText(fields)}',
-    );
-    debugPrint(
-      'files: ${files.isEmpty ? '(none)' : _truncateForLogText(files)}',
-    );
   }
 
   Map<String, dynamic> _buildTaskListPayload({

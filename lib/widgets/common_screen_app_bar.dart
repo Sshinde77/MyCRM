@@ -11,12 +11,14 @@ class CommonScreenAppBar extends StatelessWidget
     this.showBackButton = true,
     this.showTodoButton = true,
     this.showNotificationButton = true,
+    this.showDateBadge = true,
   });
 
   final String title;
   final bool showBackButton;
   final bool showTodoButton;
   final bool showNotificationButton;
+  final bool showDateBadge;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -37,8 +39,10 @@ class CommonScreenAppBar extends StatelessWidget
           : null,
       title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
       actions: [
-        _TopBarCalendarBadge(date: now, compact: true),
-        const SizedBox(width: 8),
+        if (showDateBadge) ...[
+          _TopBarCalendarBadge(date: now, compact: true),
+          const SizedBox(width: 8),
+        ],
         if (showTodoButton)
           IconButton(
             icon: const Icon(Icons.checklist_rounded),
@@ -62,6 +66,7 @@ class CommonTopBar extends StatelessWidget {
     this.showBackButton = true,
     this.showTodoButton = true,
     this.showNotificationButton = true,
+    this.showDateBadge = true,
     this.compact = false,
   });
 
@@ -70,6 +75,7 @@ class CommonTopBar extends StatelessWidget {
   final bool showBackButton;
   final bool showTodoButton;
   final bool showNotificationButton;
+  final bool showDateBadge;
   final bool compact;
 
   @override
@@ -98,8 +104,10 @@ class CommonTopBar extends StatelessWidget {
             ),
           ),
         ),
-        _TopBarCalendarBadge(date: now, compact: compact),
-        SizedBox(width: compact ? 8 : 10),
+        if (showDateBadge) ...[
+          _TopBarCalendarBadge(date: now, compact: compact),
+          SizedBox(width: compact ? 8 : 10),
+        ],
         if (showTodoButton) ...[
           _TopBarIconButton(
             icon: Icons.checklist_rounded,

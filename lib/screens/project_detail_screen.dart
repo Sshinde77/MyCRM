@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:mycrm/core/constants/api_constants.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
 import 'package:mycrm/models/project_milestone_model.dart';
 import 'package:mycrm/models/project_issue_model.dart';
@@ -15,6 +16,7 @@ import 'package:mycrm/models/project_usage_model.dart';
 import 'package:mycrm/providers/project_issue_provider.dart';
 import 'package:mycrm/providers/project_milestone_provider.dart';
 import 'package:mycrm/services/api_service.dart';
+import 'package:mycrm/screens/project_reports_screen.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -57,30 +59,83 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ProjectDetailScreen.background,
-      body: SafeArea(
-        child: FutureBuilder<ProjectDetailModel>(
-          future: _future,
-          builder: (context, snapshot) {
-            return RefreshIndicator(
+    return FutureBuilder<ProjectDetailModel>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: ProjectDetailScreen.background,
+            body: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: () async => _reload(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
+                  child: const _StateCard(
+                    icon: Icons.hourglass_top_rounded,
+                    title: 'Loading project...',
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || snapshot.data == null) {
+          return Scaffold(
+            backgroundColor: ProjectDetailScreen.background,
+            body: SafeArea(
+              child: RefreshIndicator(
+                onRefresh: () async => _reload(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
+                  child: _ErrorCard(onRetry: _reload),
+                ),
+              ),
+            ),
+          );
+        }
+
+        final project = snapshot.data!;
+        return Scaffold(
+          backgroundColor: ProjectDetailScreen.background,
+          floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'project_reports_fab',
+            backgroundColor: ProjectDetailScreen.blue,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.bar_chart_rounded),
+            label: const Text('View Reports'),
+            onPressed: () => _openReports(project),
+          ),
+          body: SafeArea(
+            child: RefreshIndicator(
               onRefresh: () async => _reload(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
-                child: snapshot.connectionState == ConnectionState.waiting
-                    ? const _StateCard(
-                        icon: Icons.hourglass_top_rounded,
-                        title: 'Loading project...',
-                      )
-                    : snapshot.hasError
-                    ? _ErrorCard(onRetry: _reload)
-                    : _Body(project: snapshot.data!),
+                child: _Body(project: project),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openReports(ProjectDetailModel project) async {
+    final canViewReports = await PermissionService.has(AppPermission.viewReports);
+    if (!mounted) return;
+    if (!canViewReports) {
+      AppSnackbar.show(
+        'Access denied',
+        'You do not have permission to view reports.',
+        isError: true,
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ProjectReportsScreen(project: project)),
     );
   }
 }
