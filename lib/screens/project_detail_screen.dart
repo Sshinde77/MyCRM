@@ -39,6 +39,7 @@ class ProjectDetailScreen extends StatefulWidget {
 
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   late Future<ProjectDetailModel> _future;
+  int _reloadToken = 0;
 
   @override
   void initState() {
@@ -54,6 +55,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   void _reload() {
     setState(() {
+      _reloadToken += 1;
       _future = _load();
     });
   }
@@ -115,7 +117,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
-                child: _Body(project: project),
+                child: _Body(project: project, refreshToken: _reloadToken),
               ),
             ),
           ),
@@ -144,9 +146,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 }
 
 class _Body extends StatefulWidget {
-  const _Body({required this.project});
+  const _Body({required this.project, required this.refreshToken});
 
   final ProjectDetailModel project;
+  final int refreshToken;
 
   @override
   State<_Body> createState() => _BodyState();
@@ -428,6 +431,11 @@ class _BodyState extends State<_Body> {
         return _IssuesSection(projectId: project.id);
       case _ProjectDetailTab.comments:
         return _CommentsSection(projectId: project.id);
+      case _ProjectDetailTab.activity:
+        return _ActivitySection(
+          projectId: project.id,
+          refreshToken: widget.refreshToken,
+        );
     }
   }
 }
@@ -439,6 +447,7 @@ enum _ProjectDetailTab {
   usage('Usage'),
   milestones('Milestones'),
   issues('Issues'),
+  activity('Activity'),
   comments('Comments');
 
   const _ProjectDetailTab(this.title);
@@ -2270,6 +2279,593 @@ class _IssueFormDialogState extends State<_IssueFormDialog> {
       ),
     );
   }
+}
+
+class _ActivitySection extends StatefulWidget {
+  const _ActivitySection({required this.projectId, required this.refreshToken});
+
+  final String projectId;
+  final int refreshToken;
+
+  @override
+  State<_ActivitySection> createState() => _ActivitySectionState();
+}
+
+class _ActivitySectionState extends State<_ActivitySection> {
+  static const int _pageSize = 15;
+
+  final List<_ProjectActivityEntry> _entries = [];
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
+  int _currentPage = 0;
+  int _lastPage = 0;
+  int _total = 0;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFirstPage();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ActivitySection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.projectId != widget.projectId ||
+        oldWidget.refreshToken != widget.refreshToken) {
+      _loadFirstPage();
+    }
+  }
+
+  Future<void> _loadFirstPage() async {
+    await _loadPage(page: 1, reset: true);
+  }
+
+  Future<void> _loadMore() async {
+    if (_isLoading || _isLoadingMore || !_hasMore) return;
+    await _loadPage(page: _currentPage + 1, reset: false);
+  }
+
+  bool get _hasMore =>
+      _entries.isNotEmpty && _lastPage > 0 && _currentPage < _lastPage;
+
+  Future<void> _loadPage({required int page, required bool reset}) async {
+    final projectId = widget.projectId.trim();
+    if (projectId.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _entries.clear();
+        _currentPage = 0;
+        _lastPage = 0;
+        _total = 0;
+        _errorMessage = 'Project id is missing.';
+        _isLoading = false;
+        _isLoadingMore = false;
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _errorMessage = null;
+      if (reset) {
+        _isLoading = true;
+        _isLoadingMore = false;
+      } else {
+        _isLoadingMore = true;
+      }
+    });
+
+    try {
+      final result = await ApiService.instance.getProjectActivityFeed(
+        projectId,
+        page: page,
+        perPage: _pageSize,
+      );
+      final items = result.items
+          .map(_ProjectActivityEntry.fromJson)
+          .where(
+            (entry) => entry.title.isNotEmpty || entry.description.isNotEmpty,
+          )
+          .toList(growable: false);
+      if (!mounted) return;
+
+      setState(() {
+        if (reset) {
+          _entries
+            ..clear()
+            ..addAll(items);
+        } else {
+          _entries.addAll(items);
+        }
+        _currentPage = result.currentPage;
+        _lastPage = result.lastPage;
+        _total = result.total;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(
+        () => _errorMessage = AppErrorHandler.messageFromError(
+          error,
+          fallback: 'Unable to load activity feed.',
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isLoadingMore = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 640;
+              final title = Text(
+                'Activity',
+                style: AppTextStyles.style(
+                  color: ProjectDetailScreen.title,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+              final subtitle = Text(
+                _total > 0
+                    ? '$_total activities'
+                    : 'Latest activity feed for this project',
+                style: AppTextStyles.style(
+                  color: ProjectDetailScreen.muted,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+              final refreshButton = OutlinedButton.icon(
+                onPressed: _isLoading ? null : _loadFirstPage,
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(_isLoading ? 'Refreshing' : 'Refresh'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: ProjectDetailScreen.blue,
+                  side: const BorderSide(color: Color(0xFFBFDBFE)),
+                  minimumSize: const Size(0, 40),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+              );
+
+              if (compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title,
+                    const SizedBox(height: 4),
+                    subtitle,
+                    const SizedBox(height: 12),
+                    refreshButton,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [title, const SizedBox(height: 4), subtitle],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  refreshButton,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          const Divider(color: Color(0xFFDFE7F2), height: 1),
+          const SizedBox(height: 14),
+          if (_isLoading && _entries.isEmpty)
+            const _EmptySectionState(message: 'Loading activity feed...')
+          else if (_errorMessage != null && _entries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _errorMessage!,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFFB42318),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _loadFirstPage,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          else if (_entries.isEmpty)
+            const _EmptySectionState(message: 'No activity found.')
+          else
+            Column(
+              children: [
+                for (var i = 0; i < _entries.length; i++) ...[
+                  _ActivityFeedItem(entry: _entries[i]),
+                  if (i != _entries.length - 1) const SizedBox(height: 10),
+                ],
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _errorMessage!,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFFB42318),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                if (_isLoadingMore) ...[
+                  const SizedBox(height: 12),
+                  const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ] else if (_hasMore) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: _loadMore,
+                      icon: const Icon(Icons.expand_more_rounded, size: 18),
+                      label: const Text('Load more'),
+                    ),
+                  ),
+                ] else if (_entries.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'Showing ${_entries.length}${_total > 0 ? ' of $_total' : ''} activity items.',
+                    style: AppTextStyles.style(
+                      color: ProjectDetailScreen.muted,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectActivityEntry {
+  const _ProjectActivityEntry({
+    required this.title,
+    required this.description,
+    required this.actor,
+    required this.createdAt,
+    required this.icon,
+    required this.color,
+  });
+
+  final String title;
+  final String description;
+  final String actor;
+  final String createdAt;
+  final IconData icon;
+  final Color color;
+
+  factory _ProjectActivityEntry.fromJson(Map<String, dynamic> json) {
+    final activityType = _readString(json, const [
+      'activity_type',
+      'type',
+      'event_type',
+      'action',
+    ]);
+    final title = _readString(json, const [
+      'title',
+      'message',
+      'subject',
+      'activity',
+    ], fallback: activityType.isEmpty ? 'Activity' : _pretty(activityType));
+    final description = _readString(json, const [
+      'description',
+      'details',
+      'body',
+      'text',
+      'comment',
+      'summary',
+    ]);
+    final user = _findMap(json, const [
+      'user',
+      'actor',
+      'author',
+      'created_by',
+    ]);
+    final actorSource = user.isNotEmpty ? user : json;
+    final firstName = _readString(actorSource, const [
+      'first_name',
+      'firstName',
+    ]);
+    final lastName = _readString(actorSource, const ['last_name', 'lastName']);
+    final actor = [
+      firstName,
+      lastName,
+    ].where((part) => part.trim().isNotEmpty).join(' ').trim();
+    final resolvedActor = actor.isNotEmpty
+        ? actor
+        : _readString(actorSource, const [
+            'name',
+            'full_name',
+            'fullName',
+            'email',
+          ], fallback: 'System');
+    final createdAt = _formatActivityTimestamp(
+      _readString(json, const [
+        'activity_at',
+        'created_at',
+        'createdAt',
+        'timestamp',
+      ]),
+    );
+
+    return _ProjectActivityEntry(
+      title: title,
+      description: description,
+      actor: resolvedActor,
+      createdAt: createdAt,
+      icon: _activityIcon(activityType, title, description),
+      color: _activityColor(activityType, title, description),
+    );
+  }
+}
+
+class _ActivityFeedItem extends StatelessWidget {
+  const _ActivityFeedItem({required this.entry});
+
+  final _ProjectActivityEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: entry.color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(entry.icon, color: entry.color, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.title,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF0F172A),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (entry.description.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.description,
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF475569),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _MiniChip(
+                      label: entry.actor,
+                      color: const Color(0xFF1D6FEA),
+                    ),
+                    if (entry.createdAt.isNotEmpty)
+                      _MiniChip(
+                        label: entry.createdAt,
+                        color: const Color(0xFF64748B),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Map<String, dynamic> _findMap(Map<String, dynamic> source, List<String> keys) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((nestedKey, nestedValue) {
+        return MapEntry(nestedKey.toString(), nestedValue);
+      });
+    }
+  }
+  return const <String, dynamic>{};
+}
+
+String _readString(
+  Map<String, dynamic> source,
+  List<String> keys, {
+  String fallback = '',
+}) {
+  for (final key in keys) {
+    final value = source[key];
+    if (value == null) continue;
+    if (value is String && value.trim().isNotEmpty) return value.trim();
+    if (value is num) return value.toString();
+  }
+  return fallback;
+}
+
+String _pretty(String value) {
+  return value
+      .replaceAll('_', ' ')
+      .replaceAllMapped(
+        RegExp(r'([a-z])([A-Z])'),
+        (match) => '${match.group(1)} ${match.group(2)}',
+      )
+      .trim()
+      .replaceFirstMapped(
+        RegExp(r'^\w'),
+        (match) => match.group(0)!.toUpperCase(),
+      );
+}
+
+String _formatActivityTimestamp(String raw) {
+  final parsed = DateTime.tryParse(raw);
+  if (parsed == null) {
+    return raw;
+  }
+
+  final local = parsed.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final month = const [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ][local.month - 1];
+  final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
+  final minute = local.minute.toString().padLeft(2, '0');
+  final period = local.hour >= 12 ? 'PM' : 'AM';
+  return '$day $month ${local.year}, ${hour.toString().padLeft(2, '0')}:$minute $period';
+}
+
+class _MiniChip extends StatelessWidget {
+  const _MiniChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.style(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+IconData _activityIcon(String type, String title, String description) {
+  final combined = '$type $title $description'.toLowerCase();
+  if (combined.contains('delete') || combined.contains('removed')) {
+    return Icons.delete_outline_rounded;
+  }
+  if (combined.contains('status')) {
+    return Icons.swap_horiz_rounded;
+  }
+  if (combined.contains('create') || combined.contains('added')) {
+    return Icons.add_circle_outline_rounded;
+  }
+  if (combined.contains('update') || combined.contains('edit')) {
+    return Icons.edit_outlined;
+  }
+  if (combined.contains('comment') || combined.contains('note')) {
+    return Icons.chat_bubble_outline_rounded;
+  }
+  if (combined.contains('task') || combined.contains('kanban')) {
+    return Icons.task_alt_rounded;
+  }
+  if (combined.contains('milestone')) {
+    return Icons.flag_outlined;
+  }
+  return Icons.history_rounded;
+}
+
+Color _activityColor(String type, String title, String description) {
+  final combined = '$type $title $description'.toLowerCase();
+  if (combined.contains('delete') || combined.contains('removed')) {
+    return const Color(0xFFDC2626);
+  }
+  if (combined.contains('status')) {
+    return const Color(0xFF0EA5E9);
+  }
+  if (combined.contains('create') || combined.contains('added')) {
+    return const Color(0xFF16A34A);
+  }
+  if (combined.contains('update') || combined.contains('edit')) {
+    return const Color(0xFF8B5CF6);
+  }
+  if (combined.contains('comment') || combined.contains('note')) {
+    return const Color(0xFFF59E0B);
+  }
+  if (combined.contains('task') || combined.contains('kanban')) {
+    return const Color(0xFF3F7EF7);
+  }
+  if (combined.contains('milestone')) {
+    return const Color(0xFF14B8A6);
+  }
+  return const Color(0xFF64748B);
 }
 
 class _CommentsSection extends StatefulWidget {

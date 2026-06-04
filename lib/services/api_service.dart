@@ -148,6 +148,24 @@ class ProjectListPageResult {
   final bool hasNextPage;
 }
 
+class ProjectActivityFeedPageResult {
+  const ProjectActivityFeedPageResult({
+    required this.items,
+    required this.currentPage,
+    required this.lastPage,
+    required this.total,
+    required this.perPage,
+    required this.hasNextPage,
+  });
+
+  final List<Map<String, dynamic>> items;
+  final int currentPage;
+  final int lastPage;
+  final int total;
+  final int perPage;
+  final bool hasNextPage;
+}
+
 class TaskListPageResult {
   const TaskListPageResult({
     required this.items,
@@ -3746,15 +3764,24 @@ class ApiService {
   }
 
   /// Loads the activity feed for a project by id.
-  Future<List<Map<String, dynamic>>> getProjectActivityFeed(
+  Future<ProjectActivityFeedPageResult> getProjectActivityFeed(
     String id, {
+    int page = 1,
     int perPage = 15,
   }) async {
     final normalizedId = id.trim();
     if (normalizedId.isEmpty) {
-      return const <Map<String, dynamic>>[];
+      return const ProjectActivityFeedPageResult(
+        items: <Map<String, dynamic>>[],
+        currentPage: 1,
+        lastPage: 1,
+        total: 0,
+        perPage: 0,
+        hasNextPage: false,
+      );
     }
 
+    final normalizedPage = page < 1 ? 1 : page;
     final pageSize = perPage.clamp(5, 50).toInt();
     final path = ApiConstants.projectActivityFeed.replaceFirst(
       '{id}',
@@ -3762,14 +3789,34 @@ class ApiService {
     );
     final response = await get(
       path,
-      queryParameters: <String, dynamic>{'per_page': pageSize},
+      queryParameters: <String, dynamic>{
+        'page': normalizedPage,
+        'per_page': pageSize,
+      },
     );
+    final root = _normalizeMap(response.data);
+    final meta = _normalizeLooseMap(root['meta']);
     final source = _extractListSource(response.data);
-    if (source is! List) {
-      return const <Map<String, dynamic>>[];
-    }
+    final List<Map<String, dynamic>> records = source is List
+        ? source.map(_normalizeMap).toList(growable: false)
+        : <Map<String, dynamic>>[];
+    final currentPage = _readInt(meta['current_page']) ?? normalizedPage;
+    final lastPage = _readInt(meta['last_page']) ?? currentPage;
+    final total = _readInt(meta['total']) ?? records.length;
+    final resolvedPerPage = _readInt(meta['per_page']) ?? pageSize;
+    final hasNextPage =
+        meta['next_page_url'] != null ||
+        meta['nextPageUrl'] != null ||
+        currentPage < lastPage;
 
-    return source.map(_normalizeMap).toList();
+    return ProjectActivityFeedPageResult(
+      items: records,
+      currentPage: currentPage,
+      lastPage: lastPage,
+      total: total,
+      perPage: resolvedPerPage,
+      hasNextPage: hasNextPage,
+    );
   }
 
   /// Loads project files by project id.
