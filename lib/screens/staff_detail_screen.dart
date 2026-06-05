@@ -7,6 +7,7 @@ import 'package:mycrm/models/department_setting_model.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
 import 'package:mycrm/models/team_setting_model.dart';
+import 'package:mycrm/screens/staff_project_analytics_screen.dart';
 import 'package:mycrm/services/api_service.dart';
 import 'package:mycrm/widgets/common_screen_app_bar.dart';
 import 'package:mycrm/screens/staff_analytics_screen.dart';
@@ -195,74 +196,38 @@ class _StaffDetailScreenState extends State<StaffDetailScreen> {
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () => Get.to(
-                                      () => StaffAnalyticsScreen(
-                                        staffId: _staffId,
-                                        staffName: member.name,
-                                      ),
-                                    ),
-                                    icon: const Icon(
-                                      Icons.analytics_outlined,
-                                      size: 16,
-                                    ),
-                                    label: Text(
-                                      'Lead Analytics',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppTextStyles.style(
-                                        fontSize: 12.5,
-                                      ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                        color: Color(0xFFE2E8F0),
-                                      ),
-                                      foregroundColor: const Color(0xFF0F172A),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 10,
-                                      ),
+                            child: _StaffActionButtonsRow(
+                              items: [
+                                _StaffActionButtonData(
+                                  label: 'Lead Analytics',
+                                  icon: Icons.analytics_outlined,
+                                  borderColor: const Color(0xFFE2E8F0),
+                                  foregroundColor: const Color(0xFF0F172A),
+                                  onPressed: () => Get.to(
+                                    () => StaffAnalyticsScreen(
+                                      staffId: _staffId,
+                                      staffName: member.name,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () =>
-                                        _openEditDetailPopup(member),
-                                    icon: const Icon(
-                                      Icons.edit_outlined,
-                                      size: 16,
-                                    ),
-                                    label: Text(
-                                      'Edit Detail',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: AppTextStyles.style(
-                                        fontSize: 12.5,
-                                      ),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      side: const BorderSide(
-                                        color: Color(0xFFBFDBFE),
-                                      ),
-                                      foregroundColor: const Color(0xFF1D4ED8),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 10,
-                                      ),
+                                _StaffActionButtonData(
+                                  label: 'Project Analytics',
+                                  icon: Icons.insights_outlined,
+                                  borderColor: const Color(0xFFC7D2FE),
+                                  foregroundColor: const Color(0xFF4338CA),
+                                  onPressed: () => Get.to(
+                                    () => StaffProjectAnalyticsScreen(
+                                      staffId: _staffId,
+                                      staffName: member.name,
                                     ),
                                   ),
+                                ),
+                                _StaffActionButtonData(
+                                  label: 'Edit Details',
+                                  icon: Icons.edit_outlined,
+                                  borderColor: const Color(0xFFBFDBFE),
+                                  foregroundColor: const Color(0xFF1D4ED8),
+                                  onPressed: () => _openEditDetailPopup(member),
                                 ),
                               ],
                             ),
@@ -2018,6 +1983,76 @@ class _StaffActivitySummary {
       ((mediumPriorityTaskCount / _safeTaskTotal) * 100).round();
   int get lowPriorityPercent =>
       ((lowPriorityTaskCount / _safeTaskTotal) * 100).round();
+}
+
+class _StaffActionButtonsRow extends StatelessWidget {
+  const _StaffActionButtonsRow({required this.items});
+
+  final List<_StaffActionButtonData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final compact = width < 430;
+        final dense = width < 360;
+        final iconSize = dense ? 12.0 : (compact ? 13.0 : 16.0);
+        final fontSize = dense ? 10.0 : (compact ? 11.0 : 12.5);
+        final horizontalPadding = dense ? 6.0 : (compact ? 8.0 : 10.0);
+        final spacing = dense ? 6.0 : 8.0;
+
+        return Row(
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) SizedBox(width: spacing),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: items[i].onPressed,
+                  icon: Icon(items[i].icon, size: iconSize),
+                  label: Text(
+                    items[i].label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.style(fontSize: fontSize),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: items[i].borderColor),
+                    foregroundColor: items[i].foregroundColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StaffActionButtonData {
+  const _StaffActionButtonData({
+    required this.label,
+    required this.icon,
+    required this.borderColor,
+    required this.foregroundColor,
+    required this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color borderColor;
+  final Color foregroundColor;
+  final VoidCallback onPressed;
 }
 
 class _StaffLeadMetricsSummary {

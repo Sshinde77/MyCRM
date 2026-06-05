@@ -188,87 +188,107 @@ class _LeadConversionChart extends StatelessWidget {
     }
     if (maxY <= 0) maxY = 1;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 240,
-          child: LineChart(
-            LineChartData(
-              minX: 0,
-              maxX: (points.length - 1).toDouble(),
-              minY: 0,
-              maxY: maxY + 1,
-              gridData: FlGridData(
-                show: true,
-                horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
-                drawVerticalLine: false,
-              ),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    interval: math.max(1, (maxY / 3).ceilToDouble()),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = _safeChartWidth(context, constraints);
+        final compact = width < 380;
+        final chartHeight = compact ? 220.0 : 240.0;
+        final labelStep = _labelStep(
+          points.length,
+          width,
+          minimumPixelsPerLabel: 68,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: chartHeight,
+              child: LineChart(
+                LineChartData(
+                  minX: 0,
+                  maxX: (points.length - 1).toDouble(),
+                  minY: 0,
+                  maxY: maxY + 1,
+                  gridData: FlGridData(
+                    show: true,
+                    horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
+                    drawVerticalLine: false,
                   ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 30,
-                    interval: 1,
-                    getTitlesWidget: (value, meta) {
-                      final idx = value.toInt();
-                      if (idx < 0 || idx >= points.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          points[idx].monthLabel,
-                          style: AppTextStyles.style(fontSize: 10),
-                        ),
-                      );
-                    },
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 24 : 28,
+                        interval: math.max(1, (maxY / 3).ceilToDouble()),
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 40 : 30,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          final idx = value.toInt();
+                          if (idx < 0 ||
+                              idx >= points.length ||
+                              idx % labelStep != 0) {
+                            return const SizedBox.shrink();
+                          }
+                          final child = Text(
+                            points[idx].monthLabel,
+                            style: AppTextStyles.style(
+                              fontSize: compact ? 9 : 10,
+                            ),
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: compact
+                                ? Transform.rotate(angle: -0.45, child: child)
+                                : child,
+                          );
+                        },
+                      ),
+                    ),
                   ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: assignedSpots,
+                      isCurved: true,
+                      preventCurveOverShooting: true,
+                      color: const Color(0xFF2563EB),
+                      barWidth: compact ? 2.1 : 2.5,
+                      dotData: FlDotData(show: !compact),
+                    ),
+                    LineChartBarData(
+                      spots: convertedSpots,
+                      isCurved: true,
+                      preventCurveOverShooting: true,
+                      color: const Color(0xFF16A34A),
+                      barWidth: compact ? 2.1 : 2.5,
+                      dotData: FlDotData(show: !compact),
+                    ),
+                  ],
                 ),
               ),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: assignedSpots,
-                  isCurved: true,
-                  preventCurveOverShooting: true,
-                  color: const Color(0xFF2563EB),
-                  barWidth: 2.5,
-                  dotData: const FlDotData(show: false),
-                ),
-                LineChartBarData(
-                  spots: convertedSpots,
-                  isCurved: true,
-                  preventCurveOverShooting: true,
-                  color: const Color(0xFF16A34A),
-                  barWidth: 2.5,
-                  dotData: const FlDotData(show: false),
-                ),
+            ),
+            const SizedBox(height: 10),
+            const _LegendRow(
+              items: [
+                _LegendItem('Assigned', Color(0xFF2563EB)),
+                _LegendItem('Converted', Color(0xFF16A34A)),
               ],
             ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        const _LegendRow(
-          items: [
-            _LegendItem('Assigned', Color(0xFF2563EB)),
-            _LegendItem('Converted', Color(0xFF16A34A)),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -299,103 +319,132 @@ class _FollowupActivityChart extends StatelessWidget {
 
     final types = activity.keys.toList(growable: false);
     final monthCount = months.length;
-    final barGroups = <BarChartGroupData>[];
     double maxY = 0;
 
     for (var monthIndex = 0; monthIndex < monthCount; monthIndex++) {
-      final rods = <BarChartRodData>[];
       for (var typeIndex = 0; typeIndex < types.length; typeIndex++) {
         final values = activity[types[typeIndex]] ?? const <int>[];
         final double y = monthIndex < values.length
             ? values[monthIndex].toDouble()
             : 0.0;
         maxY = math.max(maxY, y);
-        rods.add(
-          BarChartRodData(
-            toY: y,
-            width: 7,
-            color: _palette[typeIndex % _palette.length],
-            borderRadius: BorderRadius.circular(2),
-            rodStackItems: const [],
-            backDrawRodData: BackgroundBarChartRodData(show: false),
-          ),
-        );
       }
-      barGroups.add(
-        BarChartGroupData(x: monthIndex, barsSpace: 2, barRods: rods),
-      );
     }
     if (maxY <= 0) maxY = 1;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 250,
-          child: BarChart(
-            BarChartData(
-              barGroups: barGroups,
-              minY: 0,
-              maxY: maxY + 1,
-              alignment: BarChartAlignment.spaceAround,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
-              ),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    interval: math.max(1, (maxY / 3).ceilToDouble()),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = _safeChartWidth(context, constraints);
+        final compact = width < 380;
+        final labelStep = _labelStep(
+          months.length,
+          width,
+          minimumPixelsPerLabel: 72,
+        );
+        final rodWidth = compact ? 5.0 : 7.0;
+        final barGroups = <BarChartGroupData>[
+          for (var monthIndex = 0; monthIndex < monthCount; monthIndex++)
+            BarChartGroupData(
+              x: monthIndex,
+              barsSpace: compact ? 1.5 : 2,
+              barRods: [
+                for (var typeIndex = 0; typeIndex < types.length; typeIndex++)
+                  BarChartRodData(
+                    toY:
+                        monthIndex <
+                            (activity[types[typeIndex]] ?? const <int>[]).length
+                        ? (activity[types[typeIndex]] ??
+                                  const <int>[])[monthIndex]
+                              .toDouble()
+                        : 0.0,
+                    width: rodWidth,
+                    color: _palette[typeIndex % _palette.length],
+                    borderRadius: BorderRadius.circular(2),
+                    rodStackItems: const [],
+                    backDrawRodData: BackgroundBarChartRodData(show: false),
                   ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 32,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index < 0 || index >= months.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          months[index],
-                          style: AppTextStyles.style(fontSize: 10),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              barTouchData: BarTouchData(enabled: true),
+              ],
             ),
-            swapAnimationDuration: const Duration(milliseconds: 250),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
+        ];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var i = 0; i < types.length; i++)
-              _LegendChip(
-                label: types[i],
-                color: _palette[i % _palette.length],
+            SizedBox(
+              height: compact ? 230 : 250,
+              child: BarChart(
+                BarChartData(
+                  barGroups: barGroups,
+                  minY: 0,
+                  maxY: maxY + 1,
+                  alignment: BarChartAlignment.spaceAround,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 24 : 28,
+                        interval: math.max(1, (maxY / 3).ceilToDouble()),
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 40 : 32,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 ||
+                              index >= months.length ||
+                              index % labelStep != 0) {
+                            return const SizedBox.shrink();
+                          }
+                          final child = Text(
+                            months[index],
+                            style: AppTextStyles.style(
+                              fontSize: compact ? 9 : 10,
+                            ),
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: compact
+                                ? Transform.rotate(angle: -0.45, child: child)
+                                : child,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  barTouchData: BarTouchData(enabled: true),
+                ),
+                swapAnimationDuration: const Duration(milliseconds: 250),
               ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: compact ? 10 : 12,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < types.length; i++)
+                  _LegendChip(
+                    label: types[i],
+                    color: _palette[i % _palette.length],
+                  ),
+              ],
+            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -434,11 +483,13 @@ class _LeadStatusChart extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 460;
-        final chartSize = isNarrow ? 180.0 : 220.0;
-        final centerSpace = isNarrow ? 40.0 : 48.0;
-        final sectionRadius = isNarrow ? 50.0 : 58.0;
-        final labelFont = isNarrow ? 11.0 : 11.5;
+        final width = _safeChartWidth(context, constraints);
+        final isNarrow = width < 460;
+        final isVeryNarrow = width < 340;
+        final chartSize = isVeryNarrow ? 160.0 : (isNarrow ? 180.0 : 220.0);
+        final centerSpace = isVeryNarrow ? 34.0 : (isNarrow ? 40.0 : 48.0);
+        final sectionRadius = isVeryNarrow ? 44.0 : (isNarrow ? 50.0 : 58.0);
+        final labelFont = isVeryNarrow ? 10.0 : (isNarrow ? 11.0 : 11.5);
 
         final chart = SizedBox(
           width: chartSize,
@@ -540,90 +591,103 @@ class _DailyActivityTimelineChart extends StatelessWidget {
     }
     if (maxY <= 0) maxY = 1;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 250,
-          child: LineChart(
-            LineChartData(
-              minX: 0,
-              maxX: (points.length - 1).toDouble(),
-              minY: 0,
-              maxY: maxY + 1,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
-              ),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    interval: math.max(1, (maxY / 3).ceilToDouble()),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = _safeChartWidth(context, constraints);
+        final compact = width < 380;
+        final labelStep = _labelStep(
+          points.length,
+          width,
+          minimumPixelsPerLabel: 58,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: compact ? 230 : 250,
+              child: LineChart(
+                LineChartData(
+                  minX: 0,
+                  maxX: (points.length - 1).toDouble(),
+                  minY: 0,
+                  maxY: maxY + 1,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
                   ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    interval: 1,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index < 0 || index >= points.length) {
-                        return const SizedBox.shrink();
-                      }
-                      if (points.length > 12 && index % 3 != 0) {
-                        return const SizedBox.shrink();
-                      }
-                      return Transform.rotate(
-                        angle: -0.6,
-                        child: Text(
-                          points[index].dayLabel,
-                          style: AppTextStyles.style(fontSize: 10),
-                        ),
-                      );
-                    },
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 24 : 28,
+                        interval: math.max(1, (maxY / 3).ceilToDouble()),
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 44 : 40,
+                        interval: 1,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index < 0 ||
+                              index >= points.length ||
+                              index % labelStep != 0) {
+                            return const SizedBox.shrink();
+                          }
+                          return Transform.rotate(
+                            angle: compact ? -0.75 : -0.6,
+                            child: Text(
+                              points[index].dayLabel,
+                              style: AppTextStyles.style(
+                                fontSize: compact ? 9 : 10,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: followupSpots,
+                      isCurved: true,
+                      preventCurveOverShooting: true,
+                      color: const Color(0xFF0F8A5F),
+                      barWidth: compact ? 2.2 : 2.8,
+                      dotData: FlDotData(show: !compact),
+                    ),
+                    LineChartBarData(
+                      spots: activitySpots,
+                      isCurved: true,
+                      preventCurveOverShooting: true,
+                      color: const Color(0xFF06B6D4),
+                      barWidth: compact ? 2.2 : 2.8,
+                      dotData: FlDotData(show: !compact),
+                    ),
+                  ],
                 ),
               ),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: followupSpots,
-                  isCurved: true,
-                  preventCurveOverShooting: true,
-                  color: const Color(0xFF0F8A5F),
-                  barWidth: 2.8,
-                  dotData: const FlDotData(show: true),
-                ),
-                LineChartBarData(
-                  spots: activitySpots,
-                  isCurved: true,
-                  preventCurveOverShooting: true,
-                  color: const Color(0xFF06B6D4),
-                  barWidth: 2.8,
-                  dotData: const FlDotData(show: true),
-                ),
+            ),
+            const SizedBox(height: 10),
+            const _LegendRow(
+              items: [
+                _LegendItem('Followups', Color(0xFF0F8A5F)),
+                _LegendItem('Activities', Color(0xFF06B6D4)),
               ],
             ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        const _LegendRow(
-          items: [
-            _LegendItem('Followups', Color(0xFF0F8A5F)),
-            _LegendItem('Activities', Color(0xFF06B6D4)),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -668,67 +732,108 @@ class _AssignedConvertedBarChart extends StatelessWidget {
 
     if (maxY <= 0) maxY = 1;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 250,
-          child: BarChart(
-            BarChartData(
-              minY: 0,
-              maxY: maxY + 1,
-              barGroups: groups,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
-              ),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = _safeChartWidth(context, constraints);
+        final compact = width < 380;
+        final labelStep = _labelStep(
+          points.length,
+          width,
+          minimumPixelsPerLabel: 72,
+        );
+        final rodWidth = compact ? 8.0 : 10.0;
+        final responsiveGroups = <BarChartGroupData>[
+          for (var i = 0; i < points.length; i++)
+            BarChartGroupData(
+              x: i,
+              barsSpace: compact ? 3 : 4,
+              barRods: [
+                BarChartRodData(
+                  toY: points[i].assigned.toDouble(),
+                  width: rodWidth,
+                  color: const Color(0xFF2563EB),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
+                BarChartRodData(
+                  toY: points[i].converted.toDouble(),
+                  width: rodWidth,
+                  color: const Color(0xFF16A34A),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    interval: math.max(1, (maxY / 3).ceilToDouble()),
+              ],
+            ),
+        ];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: compact ? 230 : 250,
+              child: BarChart(
+                BarChartData(
+                  minY: 0,
+                  maxY: maxY + 1,
+                  barGroups: responsiveGroups,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: math.max(1, (maxY / 3).ceilToDouble()),
                   ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 34,
-                    getTitlesWidget: (value, meta) {
-                      final i = value.toInt();
-                      if (i < 0 || i >= points.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          points[i].monthLabel,
-                          style: AppTextStyles.style(fontSize: 10),
-                        ),
-                      );
-                    },
+                  borderData: FlBorderData(show: false),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 24 : 28,
+                        interval: math.max(1, (maxY / 3).ceilToDouble()),
+                      ),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: compact ? 40 : 34,
+                        getTitlesWidget: (value, meta) {
+                          final i = value.toInt();
+                          if (i < 0 ||
+                              i >= points.length ||
+                              i % labelStep != 0) {
+                            return const SizedBox.shrink();
+                          }
+                          final child = Text(
+                            points[i].monthLabel,
+                            style: AppTextStyles.style(
+                              fontSize: compact ? 9 : 10,
+                            ),
+                          );
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: compact
+                                ? Transform.rotate(angle: -0.45, child: child)
+                                : child,
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        const _LegendRow(
-          items: [
-            _LegendItem('Assigned', Color(0xFF2563EB)),
-            _LegendItem('Converted', Color(0xFF16A34A)),
+            const SizedBox(height: 10),
+            const _LegendRow(
+              items: [
+                _LegendItem('Assigned', Color(0xFF2563EB)),
+                _LegendItem('Converted', Color(0xFF16A34A)),
+              ],
+            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
@@ -759,19 +864,37 @@ class _LegendChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final narrow = MediaQuery.sizeOf(context).width < 360;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 10,
-          height: 10,
+          width: narrow ? 8 : 10,
+          height: narrow ? 8 : 10,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: AppTextStyles.style(fontSize: 11.5)),
+        SizedBox(width: narrow ? 3 : 4),
+        Text(label, style: AppTextStyles.style(fontSize: narrow ? 10.5 : 11.5)),
       ],
     );
   }
+}
+
+double _safeChartWidth(BuildContext context, BoxConstraints constraints) {
+  if (constraints.maxWidth.isFinite) {
+    return constraints.maxWidth;
+  }
+  return MediaQuery.sizeOf(context).width;
+}
+
+int _labelStep(
+  int itemCount,
+  double width, {
+  required double minimumPixelsPerLabel,
+}) {
+  if (itemCount <= 1) return 1;
+  final slots = math.max(1, (width / minimumPixelsPerLabel).floor());
+  return math.max(1, (itemCount / slots).ceil());
 }
 
 class _LegendItem {

@@ -99,10 +99,10 @@ class _ProjectReportsScreenState extends State<ProjectReportsScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 18),
               children: [
-                _SectionCard(
-                  title: 'Time Tracking Stats',
-                  child: _TimeTrackingStatsCard(stats: data.timeTrackingStats),
-                ),
+                // _SectionCard(
+                //   title: 'Time Tracking Stats',
+                //   child: _TimeTrackingStatsCard(stats: data.timeTrackingStats),
+                // ),
                 const SizedBox(height: 12),
                 _SectionCard(
                   title: 'Task Status Distribution',
