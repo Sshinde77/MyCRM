@@ -93,10 +93,11 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
         _priorityOptions = options.priorities;
         _memberOptions = options.staff;
         _billingOptions = options.billingTypes;
-        _selectedCustomer = _resolveSelectedOption(
-          _selectedCustomer,
-          _customerOptions.map((item) => item.id).toList(growable: false),
-        );
+        _selectedCustomer =
+            _selectedCustomer != null &&
+                _customerOptions.any((item) => item.id == _selectedCustomer)
+            ? _selectedCustomer
+            : null;
         _selectedStatus = _resolveSelectedOption(
           _selectedStatus,
           _statusOptions,
@@ -233,7 +234,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
 
     final normalizedName = currentName.trim().toLowerCase();
     if (normalizedName.isEmpty) {
-      return _selectedCustomer;
+      return null;
     }
 
     for (final option in _customerOptions) {
@@ -242,7 +243,7 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
       }
     }
 
-    return _selectedCustomer;
+    return null;
   }
 
   Future<void> _pickMembers() async {
@@ -405,12 +406,12 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate() || _isSubmitting) return;
 
-    final customer = (_selectedCustomer ?? '').trim();
+    final customer = _selectedCustomer?.trim();
     final status = (_selectedStatus ?? '').trim();
     final priority = (_selectedPriority ?? '').trim();
     final billingType = (_selectedBillingType ?? '').trim();
 
-    if (customer.isEmpty || status.isEmpty || priority.isEmpty) {
+    if (status.isEmpty || priority.isEmpty) {
       return;
     }
 
@@ -423,7 +424,9 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
         await ApiService.instance.updateProject(
           id: widget.projectId!.trim(),
           projectName: _projectNameController.text.trim(),
-          customer: _normalizeIdValue(customer),
+          customer: customer == null || customer.isEmpty
+              ? null
+              : _normalizeIdValue(customer),
           status: status,
           startDate: _normalizeDateForApi(_startDateController.text),
           deadline: _normalizeDateForApi(_deadlineController.text),
@@ -441,7 +444,9 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
       } else {
         await ApiService.instance.createProject(
           projectName: _projectNameController.text.trim(),
-          customer: _normalizeIdValue(customer),
+          customer: customer == null || customer.isEmpty
+              ? null
+              : _normalizeIdValue(customer),
           status: status,
           startDate: _normalizeDateForApi(_startDateController.text),
           deadline: _normalizeDateForApi(_deadlineController.text),
@@ -656,23 +661,24 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
                                           ? _selectedCustomer
                                           : null,
                                       decoration: _inputDecoration('Choose...'),
-                                      items: _customerOptions
-                                          .map(
-                                            (option) => DropdownMenuItem(
-                                              value: option.id,
-                                              child: Text(option.name),
-                                            ),
-                                          )
-                                          .toList(),
+                                      items: [
+                                        const DropdownMenuItem<String>(
+                                          value: null,
+                                          child: Text('None'),
+                                        ),
+                                        ..._customerOptions.map(
+                                          (option) => DropdownMenuItem(
+                                            value: option.id,
+                                            child: Text(option.name),
+                                          ),
+                                        ),
+                                      ],
                                       onChanged: _isBusy
                                           ? null
                                           : (value) => setState(
                                               () => _selectedCustomer = value,
                                             ),
                                       validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Customer is required';
-                                        }
                                         return null;
                                       },
                                     ),
