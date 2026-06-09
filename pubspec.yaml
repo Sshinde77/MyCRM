@@ -37,6 +37,7 @@ dependencies:
   font_awesome_flutter: ^11.0.0
   shared_preferences: ^2.5.3
   fl_chart: ^0.68.0
+  flutter_tts: ^4.2.5
 
 # Packages used only during development and testing.
 dev_dependencies:

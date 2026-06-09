@@ -5,6 +5,7 @@ import '../core/utils/app_snackbar.dart';
 import '../models/renewal_settings_model.dart';
 import '../services/api_service.dart';
 import '../widgets/common_screen_app_bar.dart';
+import '../widgets/voice_notification_settings_widget.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -127,10 +128,6 @@ class _NotificationSettingsScreenState
   }
 
   Widget _buildContent() {
-    final settings = _settings;
-    if (settings == null) {
-      return const SizedBox.shrink();
-    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -147,6 +144,20 @@ class _NotificationSettingsScreenState
           style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
         ),
         const SizedBox(height: 14),
+        const VoiceNotificationSettingsSection(),
+        const SizedBox(height: 14),
+        if (_settings == null)
+          const SizedBox.shrink()
+        else
+          _buildRemoteSettingsSection(_settings!),
+      ],
+    );
+  }
+
+  Widget _buildRemoteSettingsSection(RenewalSettingsModel settings) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         _buildMainToggleCard(
           title: 'Daily Renewal Summary Email',
           subtitle: 'Sends automatic renewal summary at configured time.',
@@ -293,7 +304,7 @@ class _NotificationSettingsScreenState
                 : const Text(
                     'Save Notification Controls',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                  ),
+            ),
           ),
         ),
       ],

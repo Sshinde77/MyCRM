@@ -16,6 +16,9 @@
         android:name="android.permission.POST_NOTIFICATIONS"
         tools:targetApi="33" />
 
+    <!-- Audio (required for Text-to-Speech notifications) -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <!-- Limited/scoped media access -->
     <uses-permission
         android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
@@ -73,6 +76,9 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

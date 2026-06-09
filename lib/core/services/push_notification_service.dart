@@ -13,6 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../firebase_options.dart';
 import '../../services/api_service.dart';
+import 'notification_speech_manager.dart';
 import 'secure_storage_service.dart';
 
 @pragma('vm:entry-point')
@@ -38,6 +39,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       name: 'PushNotificationService',
     );
   }
+
+  // Background isolates cannot safely drive TTS here.
+  // Voice announcements are handled only when the app is running in the foreground
+  // or when the user brings the app to the foreground by tapping the notification.
 }
 
 class PushNotificationService {
@@ -45,6 +50,8 @@ class PushNotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final ApiService _apiService = ApiService.instance;
   static final SecureStorageService _storage = SecureStorageService.instance;
+  static final NotificationSpeechManager _speechManager =
+      NotificationSpeechManager.instance;
   static final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
 
   static StreamSubscription<String>? _tokenRefreshSubscription;
@@ -65,6 +72,9 @@ class PushNotificationService {
       return;
     }
     _isInitialized = true;
+
+    // Initialize voice notification stack.
+    await _speechManager.initialize();
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     await _requestNotificationPermission();
@@ -339,6 +349,9 @@ class PushNotificationService {
       'title=${message.notification?.title}, body=${message.notification?.body}, '
       'data=${message.data}',
     );
+    
+    unawaited(_speechManager.handleRemoteMessage(message, source: 'foreground'));
+    
     _showForegroundNotificationBanner(message);
   }
 
@@ -367,6 +380,7 @@ class PushNotificationService {
     _emitDiagnosticLog(
       'Message opened app: id=${message.messageId}, data=${message.data}',
     );
+    unawaited(_speechManager.handleRemoteMessage(message, source: 'opened_app'));
   }
 
   static Future<void> _handleInitialMessage() async {
@@ -378,6 +392,12 @@ class PushNotificationService {
       _emitDiagnosticLog(
         'Terminated-state message: id=${initialMessage.messageId}, '
         'data=${initialMessage.data}',
+      );
+      
+      // Speak notification from terminated state after a small delay to allow app to load
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      unawaited(
+        _speechManager.handleRemoteMessage(initialMessage, source: 'terminated_launch'),
       );
     } catch (error) {
       _emitDiagnosticLog('Failed to read terminated-state message: $error');
@@ -541,4 +561,6 @@ class PushNotificationService {
     }
     return false;
   }
+
+  // Voice announcement logic is centralized in NotificationSpeechManager.
 }
