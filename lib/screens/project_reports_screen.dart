@@ -876,7 +876,6 @@ class _OverdueTasksTrendCard extends StatelessWidget {
               barWidth: 2,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(show: false),
-
             ),
           ],
           titlesData: FlTitlesData(
@@ -951,8 +950,8 @@ class _MilestoneCompletionCard extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 460;
-        final progressColor = _statusColor('in progress');
-        final remainingColor = _statusColor('not started');
+        const completedColor = Color(0xFF00A86F);
+        const remainingColor = Color(0xFFF59E0B);
         final remainingPercent = ((1 - safeProgress).clamp(0.0, 1.0) * 100)
             .toStringAsFixed(0);
         final completedValue = completed.toDouble().clamp(0.0, double.infinity);
@@ -970,7 +969,7 @@ class _MilestoneCompletionCard extends StatelessWidget {
               sections: [
                 PieChartSectionData(
                   value: completedValue,
-                  color: progressColor,
+                  color: completedColor,
                   radius: 48,
                   title: total <= 0 ? '' : '$percent%',
                   titleStyle: AppTextStyles.style(
@@ -994,33 +993,9 @@ class _MilestoneCompletionCard extends StatelessWidget {
         final summary = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CompletionMetric(
-              label: 'Completed',
-              value: '$completed',
-              accent: progressColor,
-            ),
+            _CompletionMetric(label: 'Completed', accent: completedColor),
             const SizedBox(height: 10),
-            _CompletionMetric(
-              label: 'Total',
-              value: '$total',
-              accent: const Color(0xFF1D6FEA),
-            ),
-            const SizedBox(height: 10),
-            _CompletionMetric(
-              label: 'Remaining',
-              value: '$remainingPercent%',
-              accent: const Color(0xFFF59E0B),
-            ),
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: safeProgress,
-                minHeight: 8,
-                backgroundColor: const Color(0xFFE8EEF5),
-                valueColor: AlwaysStoppedAnimation(progressColor),
-              ),
-            ),
+            _CompletionMetric(label: 'Remaining', accent: remainingColor),
           ],
         );
 
@@ -1040,7 +1015,7 @@ class _MilestoneCompletionCard extends StatelessWidget {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: progressColor,
+                      color: completedColor,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1067,18 +1042,6 @@ class _MilestoneCompletionCard extends StatelessWidget {
                     Expanded(child: summary),
                   ],
                 ),
-              const SizedBox(height: 14),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '$completed of $total milestones completed',
-                  style: AppTextStyles.style(
-                    color: const Color(0xFF64748B),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
             ],
           ),
         );
@@ -1088,14 +1051,9 @@ class _MilestoneCompletionCard extends StatelessWidget {
 }
 
 class _CompletionMetric extends StatelessWidget {
-  const _CompletionMetric({
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
+  const _CompletionMetric({required this.label, required this.accent});
 
   final String label;
-  final String value;
   final Color accent;
 
   @override
@@ -1124,14 +1082,6 @@ class _CompletionMetric extends StatelessWidget {
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
-            ),
-          ),
-          Text(
-            value,
-            style: AppTextStyles.style(
-              color: const Color(0xFF0F172A),
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
             ),
           ),
         ],
