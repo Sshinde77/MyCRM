@@ -3,113 +3,169 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../core/constants/app_strings.dart';
 import '../core/constants/app_text_styles.dart';
+import '../core/services/permission_service.dart';
+import '../models/user_model.dart';
+import '../widgets/common_screen_app_bar.dart';
 import 'company_information_screen.dart';
+import 'department_settings_screen.dart';
 import 'email_settings_screen.dart';
 import 'general_settings_screen.dart';
-import 'department_settings_screen.dart';
-import 'renewal_settings_screen.dart';
 import 'notification_settings_screen.dart';
+import 'renewal_settings_screen.dart';
 import 'team_settings_screen.dart';
-import '../widgets/common_screen_app_bar.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  static const List<_SettingItem> _items = [
-    // _SettingItem(title: 'General Setting', icon: Icons.settings_outlined),
-    _SettingItem(title: 'Company Information', icon: Icons.apartment_outlined),
-    _SettingItem(title: 'Email Setting', icon: Icons.mail_outline_rounded),
-    _SettingItem(
-      title: 'Renewal Setting',
-      icon: Icons.notifications_none_rounded,
-    ),
-    _SettingItem(
-      title: 'Notification',
-      icon: Icons.notifications_active_outlined,
-    ),
-    _SettingItem(title: 'Teams', icon: Icons.group_outlined),
-    _SettingItem(title: 'Departments', icon: Icons.work_outline_rounded),
-    _SettingItem(title: 'Privacy Policy', icon: Icons.privacy_tip_outlined),
-  ];
+  List<_SettingItem> _buildItems() {
+    return [
+      _SettingItem(
+        title: 'General Setting',
+        icon: Icons.settings_outlined,
+        permission: AppPermission.viewGeneralSettings,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const GeneralSettingsScreen()),
+          );
+        },
+      ),
+      _SettingItem(
+        title: 'Company Information',
+        icon: Icons.apartment_outlined,
+        permission: AppPermission.viewCompanyInformation,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CompanyInformationScreen()),
+          );
+        },
+      ),
+      _SettingItem(
+        title: 'Email Setting',
+        icon: Icons.mail_outline_rounded,
+        permission: AppPermission.viewEmailSettings,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const EmailSettingsScreen()),
+          );
+        },
+      ),
+      _SettingItem(
+        title: 'Renewal Setting',
+        icon: Icons.notifications_none_rounded,
+        permission: AppPermission.renewalSettings,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const RenewalSettingsScreen()),
+          );
+        },
+      ),
+      _SettingItem(
+        title: 'Notification',
+        icon: Icons.notifications_active_outlined,
+        permission: AppPermission.notificationSettings,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const NotificationSettingsScreen(),
+            ),
+          );
+        },
+      ),
+      _SettingItem(
+        title: 'Teams',
+        icon: Icons.group_outlined,
+        permission: AppPermission.teamsSettings,
+        onTap: (context) async {
+          await Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const TeamSettingsScreen()));
+        },
+      ),
+      _SettingItem(
+        title: 'Departments',
+        icon: Icons.work_outline_rounded,
+        permission: AppPermission.departmentSettings,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const DepartmentSettingsScreen()),
+          );
+        },
+      ),
+      _SettingItem(
+        title: 'Privacy Policy',
+        icon: Icons.privacy_tip_outlined,
+        onTap: _openPrivacyPolicy,
+      ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F8FC),
-      appBar: const CommonScreenAppBar(title: 'Settings'),
-      body: SafeArea(
-        child: ListView.separated(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          itemCount: _items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final item = _items[index];
-            return _SettingTile(
-              item: item,
-              onTap: index == 0
-                  // ? () {
-                  //     Navigator.of(context).push(
-                  //       MaterialPageRoute(
-                  //         builder: (_) => const GeneralSettingsScreen(),
-                  //       ),
-                  //     );
-                  //   }
-                  // : index == 1
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const CompanyInformationScreen(),
-                        ),
+    return FutureBuilder<UserModel?>(
+      future: PermissionService.getCurrentUser(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            backgroundColor: const Color(0xFFF4F8FC),
+            appBar: const CommonScreenAppBar(title: 'Settings'),
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final items = _buildItems();
+        final visibleItems = items
+            .where((item) {
+              final permission = item.permission;
+              if (permission == null) {
+                return true;
+              }
+              return PermissionService.userHas(snapshot.data, permission);
+            })
+            .toList(growable: false);
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF4F8FC),
+          appBar: const CommonScreenAppBar(title: 'Settings'),
+          body: SafeArea(
+            child: visibleItems.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'No settings are available for your account.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    itemCount: visibleItems.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final item = visibleItems[index];
+                      return _SettingTile(
+                        item: item,
+                        onTap: () => _handleItemTap(context, item),
                       );
-                    }
-                  : index == 1
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const EmailSettingsScreen(),
-                        ),
-                      );
-                    }
-                  : index == 2
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const RenewalSettingsScreen(),
-                        ),
-                      );
-                    }
-                  : index == 3
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationSettingsScreen(),
-                        ),
-                      );
-                    }
-                  : index == 4
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const TeamSettingsScreen(),
-                        ),
-                      );
-                    }
-                  : index == 5
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const DepartmentSettingsScreen(),
-                        ),
-                      );
-                    }
-                  : index == 6
-                  ? () => _openPrivacyPolicy(context)
-                  : null,
-            );
-          },
-        ),
-      ),
+                    },
+                  ),
+          ),
+        );
+      },
     );
+  }
+
+  Future<void> _handleItemTap(BuildContext context, _SettingItem item) async {
+    final permission = item.permission;
+    if (permission != null && !await PermissionService.has(permission)) {
+      _showMessage(
+        context,
+        'You do not have permission to open ${item.title}.',
+      );
+      return;
+    }
+
+    await item.onTap?.call(context);
   }
 
   Future<void> _openPrivacyPolicy(BuildContext context) async {
@@ -133,10 +189,17 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _SettingItem {
-  const _SettingItem({required this.title, required this.icon});
+  const _SettingItem({
+    required this.title,
+    required this.icon,
+    this.permission,
+    this.onTap,
+  });
 
   final String title;
   final IconData icon;
+  final String? permission;
+  final Future<void> Function(BuildContext context)? onTap;
 }
 
 class _SettingTile extends StatelessWidget {

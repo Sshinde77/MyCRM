@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/services/permission_service.dart';
+import '../core/services/login_greeting_service.dart';
 import '../core/services/push_notification_service.dart';
 import '../core/services/secure_storage_service.dart';
 import '../models/login_response_model.dart';
@@ -28,6 +29,13 @@ class AuthService {
       'user_id=${response.user.id}, user_name=${response.user.name}',
     );
     unawaited(PushNotificationService.onUserLogin(userId: response.user.id));
+    unawaited(
+      LoginGreetingService.instance.speakGreeting(
+        userId: response.user.id,
+        userName: response.user.name,
+        user: response.user,
+      ),
+    );
     return response;
   }
 

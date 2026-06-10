@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 
 import '../core/services/biometric_service.dart';
+import '../core/services/login_greeting_service.dart';
 import '../core/services/permission_service.dart';
 import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
@@ -109,6 +112,16 @@ class AuthController extends GetxController {
   }
 
   Future<void> goToDashboard() async {
+    final user = await PermissionService.getCurrentUser();
+    if (user != null) {
+      unawaited(
+        LoginGreetingService.instance.speakGreeting(
+          userId: user.id,
+          userName: user.name,
+          user: user,
+        ),
+      );
+    }
     Get.offAllNamed(await PermissionService.firstAllowedRoute());
   }
 

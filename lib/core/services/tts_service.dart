@@ -28,6 +28,7 @@ class TtsService {
   bool _disposed = false;
   bool _isSpeaking = false;
   String? _lastError;
+  double _configuredSpeechRate = 0.35;
   Future<bool>? _initInFlight;
   Completer<void>? _activeSpeechCompleter;
 
@@ -35,6 +36,7 @@ class TtsService {
   bool get isAvailable => _available;
   bool get isSpeaking => _isSpeaking;
   String? get lastError => _lastError;
+  double get configuredSpeechRate => _configuredSpeechRate;
 
   Future<bool> initialize({bool forceRetry = false}) async {
     if (_disposed) {
@@ -89,7 +91,7 @@ class TtsService {
         if (attempt < maxAttempts) {
           await Future<void>.delayed(Duration(milliseconds: attempt * 250));
         }
-      }
+      } 
     }
 
     return false;
@@ -97,15 +99,9 @@ class TtsService {
 
   Future<void> _configureEngine() async {
     await _flutterTts.setLanguage(_bestLanguageCode());
-    const configuredSpeechRate = 0.5;
-    await _flutterTts.setSpeechRate(configuredSpeechRate);
-    final speechRateRange = await _flutterTts.getSpeechRateValidRange;
-    debugPrint(
-      'Speech rate configured: $configuredSpeechRate '
-      '(valid range: min=${speechRateRange.min}, '
-      'normal=${speechRateRange.normal}, max=${speechRateRange.max}, '
-      'platform=${speechRateRange.platform})',
-    );
+    _configuredSpeechRate = 0.35;
+    await _flutterTts.setSpeechRate(_configuredSpeechRate);
+    debugPrint('Speech rate configured: $_configuredSpeechRate');
     await _flutterTts.setPitch(1.0);
     await _flutterTts.setVolume(1.0);
     await _flutterTts.awaitSpeakCompletion(true);

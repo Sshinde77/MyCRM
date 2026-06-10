@@ -22,6 +22,7 @@ class AppPermission {
   static const editRenewals = 'edit_renewals';
   static const deleteRenewals = 'delete_renewals';
   static const viewLeads = 'view_leads';
+  static const viewLeadsManagement = 'view_leads_management';
   static const createLeads = 'create_leads';
   static const editLeads = 'edit_leads';
   static const deleteLeads = 'delete_leads';
@@ -69,6 +70,10 @@ class AppPermission {
   static const viewGeneralSettings = 'view_general_settings';
   static const viewCompanyInformation = 'view_company_information';
   static const viewEmailSettings = 'view_email_settings';
+  static const renewalSettings = 'renewal_settings';
+  static const notificationSettings = 'notification_settings';
+  static const teamsSettings = 'teams_settings';
+  static const departmentSettings = 'department_settings';
   static const viewReports = 'view_reports';
   static const exportData = 'export_data';
   static const importData = 'import_data';
@@ -297,7 +302,9 @@ class PermissionService {
       case AppRoutes.editTask:
         return AppPermission.editTasks;
       case AppRoutes.leads:
+        return AppPermission.viewLeads;
       case AppRoutes.allLeads:
+        return AppPermission.viewLeadsManagement;
       case AppRoutes.leadDetail:
         return AppPermission.viewLeads;
       case AppRoutes.addLead:
