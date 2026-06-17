@@ -216,7 +216,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     if (current != null && options.any((item) => item.id == current)) {
       return current;
     }
-    return options.first.id;
+    if (options.any((item) => item.id.isEmpty)) {
+      return '';
+    }
+    return null;
   }
 
   String _formatLeadValueForField(double? value) {

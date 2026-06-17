@@ -1713,6 +1713,11 @@ class _LeadInformationCard extends StatelessWidget {
                     _InfoItem(label: 'COMPANY', value: lead.displayCompany),
                     const SizedBox(height: 12),
                     _InfoItem(
+                      label: 'LEAD VALUE',
+                      value: lead.displayAmount.isEmpty ? 'N/A' : lead.displayAmount,
+                    ),
+                    const SizedBox(height: 12),
+                    _InfoItem(
                       label: 'CREATED DATE',
                       value: _formatDate(lead.createdAt),
                     ),

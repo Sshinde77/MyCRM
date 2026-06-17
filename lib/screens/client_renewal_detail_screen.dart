@@ -176,6 +176,19 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
       return normalized.isEmpty ? 'N/A' : normalized;
     }
 
+    String richTextValue(String raw) {
+      final normalized = raw
+          .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+          .replaceAll(RegExp(r'</p\s*>', caseSensitive: false), '\n')
+          .replaceAll(RegExp(r'<[^>]*>'), ' ')
+          .replaceAll('&nbsp;', ' ')
+          .replaceAll(RegExp(r'\s+\n'), '\n')
+          .replaceAll(RegExp(r'\n\s+'), '\n')
+          .replaceAll(RegExp(r'[ \t]+'), ' ')
+          .trim();
+      return normalized.isEmpty ? 'N/A' : normalized;
+    }
+
     final status = value(item?.status ?? '');
     final duration = value(item?.durationText ?? '');
     final billing = value(item?.billing ?? '');
@@ -195,6 +208,16 @@ class _ClientRenewalDetailScreenState extends State<ClientRenewalDetailScreen> {
         value: value(item?.vendorEmail ?? ''),
       ),
       _DetailRowData(label: 'Service Name', value: value(item?.title ?? '')),
+      _DetailRowData(
+        label: 'Service Details',
+        value: richTextValue(item?.serviceDetails ?? ''),
+        multiline: true,
+      ),
+      _DetailRowData(
+        label: 'Remark',
+        value: richTextValue(item?.remark ?? ''),
+        multiline: true,
+      ),
       _DetailRowData(label: 'Start Date', value: value(item?.startDate ?? '')),
       _DetailRowData(label: 'End Date', value: value(item?.endDate ?? '')),
       _DetailRowData(label: 'Duration', value: duration),
@@ -310,7 +333,7 @@ class _DetailRow extends StatelessWidget {
         ? _StatusBadge(text: row.value)
         : Text(
             row.value,
-            textAlign: TextAlign.end,
+            textAlign: row.multiline ? TextAlign.start : TextAlign.end,
             style: AppTextStyles.style(
               color: const Color(0xFF334155),
               fontSize: compact ? 13 : 14,
@@ -343,7 +366,12 @@ class _DetailRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Align(alignment: Alignment.centerRight, child: valueWidget),
+            child: Align(
+              alignment: row.multiline
+                  ? Alignment.centerLeft
+                  : Alignment.centerRight,
+              child: valueWidget,
+            ),
           ),
         ],
       ),
@@ -425,10 +453,12 @@ class _DetailRowData {
     required this.label,
     required this.value,
     this.asStatus = false,
+    this.multiline = false,
     this.isLast = false,
   });
   final String label;
   final String value;
   final bool asStatus;
+  final bool multiline;
   final bool isLast;
 }

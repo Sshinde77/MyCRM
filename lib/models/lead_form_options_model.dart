@@ -1,4 +1,9 @@
 class LeadFormOptionsModel {
+  static const LeadStaffOption unassignedStaffOption = LeadStaffOption(
+    id: '',
+    name: 'Not assigned',
+  );
+
   const LeadFormOptionsModel({
     this.statuses = const [],
     this.sources = const [],
@@ -104,7 +109,7 @@ class LeadFormOptionsModel {
           .toList();
 
       if (options.isNotEmpty) {
-        return options;
+        return _withUnassignedOption(options);
       }
     }
 
@@ -124,7 +129,16 @@ class LeadFormOptionsModel {
       }
     }
 
-    return const [];
+    return const [unassignedStaffOption];
+  }
+
+  static List<LeadStaffOption> _withUnassignedOption(
+    List<LeadStaffOption> options,
+  ) {
+    if (options.any((entry) => entry.id.isEmpty)) {
+      return options;
+    }
+    return <LeadStaffOption>[unassignedStaffOption, ...options];
   }
 
   static List<String> _normalizeStringList(dynamic value) {
