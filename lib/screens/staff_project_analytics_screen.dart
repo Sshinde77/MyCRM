@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
 import 'package:mycrm/services/api_service.dart';
@@ -32,7 +34,14 @@ class _StaffProjectAnalyticsScreenState
   }
 
   Future<_StaffProjectAnalyticsData> _loadAnalytics() async {
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] load start staffId=${widget.staffId} name=${widget.staffName ?? '(null)'}',
+    );
     final payload = await ApiService.instance.getStaffAnalytics(widget.staffId);
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] raw api payload keys=${payload.keys.toList()}',
+    );
+    _debugAnalyticsDump('[StaffProjectAnalytics] raw api payload', payload);
     return _StaffProjectAnalyticsData.fromPayload(payload);
   }
 
@@ -53,6 +62,9 @@ class _StaffProjectAnalyticsScreenState
           }
 
           if (snapshot.hasError) {
+            _debugAnalyticsLog(
+              '[StaffProjectAnalytics] load error: ${snapshot.error}',
+            );
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -65,10 +77,26 @@ class _StaffProjectAnalyticsScreenState
           }
 
           final data = snapshot.data ?? _StaffProjectAnalyticsData.empty();
+          _debugAnalyticsLog(
+            '[StaffProjectAnalytics] parsed projectStatus=${data.projectStatusDistribution}',
+          );
+          _debugAnalyticsLog(
+            '[StaffProjectAnalytics] parsed taskStatus=${data.taskStatusDistribution}',
+          );
+          _debugAnalyticsLog(
+            '[StaffProjectAnalytics] parsed timelineCount=${data.timelineEntries.length}',
+          );
+          _debugAnalyticsLog(
+            '[StaffProjectAnalytics] parsed taskOverview=${data.taskStatusOverview}',
+          );
           return RefreshIndicator(
             onRefresh: () async {
+              _debugAnalyticsLog(
+                '[StaffProjectAnalytics] manual refresh start',
+              );
               setState(() => _analyticsFuture = _loadAnalytics());
               await _analyticsFuture;
+              _debugAnalyticsLog('[StaffProjectAnalytics] manual refresh done');
             },
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -177,13 +205,23 @@ class _DistributionChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final sortedEntries = _sortEntries(entries, order);
     if (sortedEntries.isEmpty) {
+      _debugAnalyticsLog(
+        '[StaffProjectAnalytics] distribution chart empty order=$order entries=$entries',
+      );
       return const _EmptyChartState();
     }
 
     final total = sortedEntries.fold<int>(0, (sum, item) => sum + item.value);
     if (total <= 0) {
+      _debugAnalyticsLog(
+        '[StaffProjectAnalytics] distribution chart zero-total order=$order entries=$entries',
+      );
       return const _EmptyChartState();
     }
+
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] distribution chart render total=$total sorted=$sortedEntries',
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -288,6 +326,9 @@ class _TaskOverviewBarChart extends StatelessWidget {
       'Cancelled',
     ]);
     if (ordered.isEmpty) {
+      _debugAnalyticsLog(
+        '[StaffProjectAnalytics] task overview empty entries=$entries',
+      );
       return const _EmptyChartState();
     }
 
@@ -298,6 +339,10 @@ class _TaskOverviewBarChart extends StatelessWidget {
     if (maxY <= 0) {
       maxY = 1;
     }
+
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] task overview render maxY=$maxY ordered=$ordered',
+    );
 
     return SizedBox(
       height: 290,
@@ -419,11 +464,15 @@ class _ProjectTimelineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) {
+      _debugAnalyticsLog('[StaffProjectAnalytics] timeline empty');
       return const _EmptyChartState();
     }
 
     final sorted = [...entries]
       ..sort((a, b) => a.startDate.compareTo(b.startDate));
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] timeline render count=${sorted.length} entries=${sorted.map((e) => {'project': e.projectName, 'start': e.startDate.toIso8601String(), 'end': e.endDate.toIso8601String(), 'status': e.statusSnapshot}).toList()}',
+    );
     var minDate = sorted.first.startDate;
     var maxDate = sorted.first.endDate;
     for (final entry in sorted) {
@@ -813,6 +862,9 @@ class _StaffProjectAnalyticsData {
   }
 
   factory _StaffProjectAnalyticsData.fromPayload(Map<String, dynamic> payload) {
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] parser start payloadKeys=${payload.keys.toList()}',
+    );
     final flat = <String, dynamic>{};
 
     String normalizeKey(String key) =>
@@ -832,6 +884,9 @@ class _StaffProjectAnalyticsData {
     }
 
     collect(payload);
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] flattened key count=${flat.length}',
+    );
 
     dynamic readAny(List<String> keys) {
       for (final key in keys) {
@@ -851,6 +906,34 @@ class _StaffProjectAnalyticsData {
 
     Map<String, int> parseDistribution(dynamic source) {
       final result = <String, int>{};
+      _debugAnalyticsDump(
+        '[StaffProjectAnalytics] parseDistribution source',
+        source,
+      );
+
+      int readCount(dynamic value) {
+        if (value is int) return value;
+        if (value is num) return value.toInt();
+        if (value is Map) {
+          final map = value.map((key, nestedValue) {
+            return MapEntry(key.toString(), nestedValue);
+          });
+          for (final key in const [
+            'count',
+            'total',
+            'value',
+            'tasks',
+            'task_count',
+          ]) {
+            final parsed = parseInt(map[key]);
+            if (parsed != 0 || map.containsKey(key)) {
+              return parsed;
+            }
+          }
+        }
+        return int.tryParse((value ?? '').toString().trim()) ?? 0;
+      }
+
       if (source is Map) {
         final map = source.map((key, value) => MapEntry(key.toString(), value));
         final labels = map['labels'];
@@ -860,22 +943,38 @@ class _StaffProjectAnalyticsData {
           for (var i = 0; i < maxLen; i++) {
             final label = _prettyStatusLabel(labels[i]);
             if (label.isEmpty) continue;
-            result[label] = parseInt(series[i]);
+            result[label] = readCount(series[i]);
           }
+          _debugAnalyticsLog(
+            '[StaffProjectAnalytics] parseDistribution labels/series result=$result',
+          );
           return result;
+        }
+
+        final nestedList =
+            map['data'] ??
+            map['items'] ??
+            map['statuses'] ??
+            map['distribution'];
+        if (nestedList is List) {
+          return parseDistribution(nestedList);
         }
 
         var usedStructuredMap = false;
         map.forEach((key, value) {
-          if (value is! num && value is! String) {
-            return;
-          }
           final label = _prettyStatusLabel(key);
           if (label.isEmpty) return;
+          final count = readCount(value);
+          if (count <= 0 && value is! num && value is! String) {
+            return;
+          }
           usedStructuredMap = true;
-          result[label] = parseInt(value);
+          result[label] = count;
         });
         if (usedStructuredMap) {
+          _debugAnalyticsLog(
+            '[StaffProjectAnalytics] parseDistribution structured map result=$result',
+          );
           return result;
         }
       }
@@ -892,11 +991,14 @@ class _StaffProjectAnalyticsData {
                 map['title'],
           );
           if (label.isEmpty) continue;
-          result[label] = parseInt(
+          result[label] = readCount(
             map['count'] ?? map['value'] ?? map['total'] ?? map['tasks'],
           );
         }
       }
+      _debugAnalyticsLog(
+        '[StaffProjectAnalytics] parseDistribution list result=$result',
+      );
       return result;
     }
 
@@ -1026,6 +1128,12 @@ class _StaffProjectAnalyticsData {
         'project_status',
         'projectStatus',
         'projects_by_status',
+        'project_statuses',
+        'projectStatuses',
+        'project_status_analytics',
+        'projectStatusAnalytics',
+        'status_distribution',
+        'statusDistribution',
       ]),
     );
     final taskStatus = parseDistribution(
@@ -1075,6 +1183,9 @@ class _StaffProjectAnalyticsData {
       }
     }
 
+    _debugAnalyticsLog(
+      '[StaffProjectAnalytics] parser result projectStatus=$projectStatus taskStatus=$taskStatus timeline=${timeline.length} taskOverview=$taskOverview',
+    );
     return _StaffProjectAnalyticsData(
       projectStatusDistribution: projectStatus,
       taskStatusDistribution: taskStatus,
@@ -1174,6 +1285,26 @@ Future<void> _showTimelineEntryPopup(
       );
     },
   );
+}
+
+void _debugAnalyticsLog(String message) {
+  if (!kDebugMode) return;
+  debugPrint(message);
+}
+
+void _debugAnalyticsDump(String label, dynamic value) {
+  if (!kDebugMode) return;
+  _debugAnalyticsLog('$label:');
+  late final String text;
+  try {
+    text = const JsonEncoder.withIndent('  ').convert(value);
+  } catch (_) {
+    text = value.toString();
+  }
+  for (var index = 0; index < text.length; index += 800) {
+    final end = (index + 800 < text.length) ? index + 800 : text.length;
+    debugPrint(text.substring(index, end));
+  }
 }
 
 String _resolveTimelineStatusSnapshot({

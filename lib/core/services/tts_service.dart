@@ -114,7 +114,7 @@ class TtsService {
       }
     } else if (Platform.isIOS) {
       try {
-        await _flutterTts.setSharedInstance(true);
+        await _flutterTts.setSharedInstance(true);    
         await _flutterTts.setIosAudioCategory(
           IosTextToSpeechAudioCategory.ambient,
           [

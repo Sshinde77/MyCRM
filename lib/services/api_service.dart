@@ -5843,6 +5843,13 @@ class ApiService {
       return const <String, dynamic>{};
     }
     final path = ApiConstants.staffAnalytics.replaceFirst('{id}', normalizedId);
+    if (kDebugMode) {
+      _debugPrintLong('==================================');
+      _debugPrintLong('[getStaffAnalytics] REQUEST');
+      _debugPrintLong('URL: $path');
+      _debugPrintLong('STAFF ID: $normalizedId');
+      _debugPrintLong('==================================');
+    }
     final response = await get(path);
     final root = _normalizeMap(response.data);
     final nested = root['data'] is Map
@@ -5861,6 +5868,18 @@ class ApiService {
       ..addAll(nested)
       ..addAll(stats)
       ..addAll(kpis);
+    if (kDebugMode) {
+      _debugPrintLong('==================================');
+      _debugPrintLong('[getStaffAnalytics] RESPONSE');
+      _debugPrintLong('URL: $path');
+      _debugPrintLong('STATUS: ${response.statusCode ?? 'N/A'}');
+      _debugPrintLong('ROOT: ${_summarizeForLog(root)}');
+      _debugPrintLong('NESTED: ${_summarizeForLog(nested)}');
+      _debugPrintLong('STATS: ${_summarizeForLog(stats)}');
+      _debugPrintLong('KPIS: ${_summarizeForLog(kpis)}');
+      _debugPrintLong('MERGED: ${_summarizeForLog(merged)}');
+      _debugPrintLong('==================================');
+    }
     return merged;
   }
 
