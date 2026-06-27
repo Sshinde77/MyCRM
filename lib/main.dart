@@ -21,7 +21,7 @@ Future<void> main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     PushNotificationService.initialize();
   });
-}
+} 
 
 Future<void> _initializeFirebase() async {
   if (Firebase.apps.isNotEmpty) return;

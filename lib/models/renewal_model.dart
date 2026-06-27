@@ -1,3 +1,143 @@
+class AmcVisitModel {
+  const AmcVisitModel({
+    required this.id,
+    required this.visitNumber,
+    required this.visitDate,
+    required this.visitDateValue,
+    required this.status,
+    required this.details,
+    required this.completedAt,
+  });
+
+  final String id;
+  final int? visitNumber;
+  final String visitDate;
+  final DateTime? visitDateValue;
+  final String status;
+  final String details;
+  final String completedAt;
+
+  factory AmcVisitModel.fromJson(Map<String, dynamic> json) {
+    final source = RenewalModel._extractSource(json);
+    final rawVisitDate = RenewalModel._readString(source, const [
+      'visit_date',
+      'visitDate',
+    ]);
+    return AmcVisitModel(
+      id: RenewalModel._readString(source, const ['id', 'visit_id', 'visitId']),
+      visitNumber: RenewalModel._readInt(source, const [
+        'visit_number',
+        'visitNumber',
+      ]),
+      visitDate: RenewalModel._formatShortDate(rawVisitDate),
+      visitDateValue: RenewalModel._tryParseDate(rawVisitDate),
+      status: RenewalModel._normalizeStatus(source),
+      details: RenewalModel._readString(source, const [
+        'details',
+        'remark',
+        'note',
+      ]),
+      completedAt: RenewalModel._formatDateTime(
+        RenewalModel._readString(source, const [
+          'completed_at',
+          'completedAt',
+        ]),
+      ),
+    );
+  }
+}
+
+class AmcServiceModel {
+  const AmcServiceModel({
+    required this.id,
+    required this.totalVisits,
+    required this.completedVisits,
+    required this.pendingVisits,
+    required this.startDate,
+    required this.endDate,
+    required this.startDateValue,
+    required this.endDateValue,
+    required this.visits,
+  });
+
+  final String id;
+  final int? totalVisits;
+  final int? completedVisits;
+  final int? pendingVisits;
+  final String startDate;
+  final String endDate;
+  final DateTime? startDateValue;
+  final DateTime? endDateValue;
+  final List<AmcVisitModel> visits;
+
+  bool get hasData {
+    return (id.trim().isNotEmpty) ||
+        totalVisits != null ||
+        completedVisits != null ||
+        pendingVisits != null ||
+        startDate.trim().isNotEmpty ||
+        endDate.trim().isNotEmpty ||
+        visits.isNotEmpty;
+  }
+
+  factory AmcServiceModel.fromJson(Map<String, dynamic> json) {
+    final source = RenewalModel._extractSource(json);
+    final rawStartDate = RenewalModel._readString(source, const [
+      'amc_start_date',
+      'amcStartDate',
+      'start_date',
+      'startDate',
+    ]);
+    final rawEndDate = RenewalModel._readString(source, const [
+      'amc_end_date',
+      'amcEndDate',
+      'end_date',
+      'endDate',
+    ]);
+    final rawVisits = source['details'] ?? source['visits'];
+    final visits = rawVisits is List
+        ? rawVisits
+              .whereType<Object?>()
+              .map((entry) {
+                if (entry is Map<String, dynamic>) {
+                  return AmcVisitModel.fromJson(entry);
+                }
+                if (entry is Map) {
+                  return AmcVisitModel.fromJson(
+                    entry.map((key, value) => MapEntry(key.toString(), value)),
+                  );
+                }
+                return null;
+              })
+              .whereType<AmcVisitModel>()
+              .toList(growable: false)
+        : const <AmcVisitModel>[];
+
+    return AmcServiceModel(
+      id: RenewalModel._readString(source, const ['id', 'amc_id', 'amcId']),
+      totalVisits: RenewalModel._readInt(source, const [
+        'total_visits',
+        'totalVisits',
+        'amc_total_visits',
+        'amcTotalVisits',
+      ]),
+      completedVisits: RenewalModel._readInt(source, const [
+        'completed_visits',
+        'completedVisits',
+      ]),
+      pendingVisits: RenewalModel._readInt(source, const [
+        'pending_visits',
+        'pendingVisits',
+      ]),
+      startDate: RenewalModel._formatShortDate(rawStartDate),
+      endDate: RenewalModel._formatShortDate(rawEndDate),
+      startDateValue: RenewalModel._tryParseDate(rawStartDate),
+      endDateValue: RenewalModel._tryParseDate(rawEndDate),
+      visits: visits,
+    );
+  }
+}
+
 class RenewalModel {
   const RenewalModel({
     required this.id,
@@ -21,6 +161,16 @@ class RenewalModel {
     required this.billing,
     required this.billingDateValue,
     required this.status,
+    required this.isAmc,
+    required this.amcTotalVisits,
+    required this.amcStartDate,
+    required this.amcEndDate,
+    required this.amcStartDateValue,
+    required this.amcEndDateValue,
+    required this.amcCompletedVisits,
+    required this.amcPendingVisits,
+    required this.amcVisits,
+    required this.amcService,
     required this.renewalType,
     required this.partyName,
     required this.expiryNote,
@@ -49,6 +199,16 @@ class RenewalModel {
   final String billing;
   final DateTime? billingDateValue;
   final String status;
+  final bool isAmc;
+  final int? amcTotalVisits;
+  final String amcStartDate;
+  final String amcEndDate;
+  final DateTime? amcStartDateValue;
+  final DateTime? amcEndDateValue;
+  final int? amcCompletedVisits;
+  final int? amcPendingVisits;
+  final List<AmcVisitModel> amcVisits;
+  final AmcServiceModel? amcService;
   final String renewalType;
   final String partyName;
   final String expiryNote;
@@ -75,10 +235,18 @@ class RenewalModel {
         normalizedStatus.contains('due');
   }
 
+  bool get hasAmcDetails {
+    return isAmc ||
+        (amcService?.hasData ?? false) ||
+        amcTotalVisits != null ||
+        amcVisits.isNotEmpty;
+  }
+
   factory RenewalModel.fromJson(Map<String, dynamic> json) {
     final source = _extractSource(json);
     final clientMap = _readNestedMap(source['client']);
     final vendorMap = _readNestedMap(source['vendor']);
+    final amcServiceMap = _readNestedMap(source['amc_service']);
 
     final rawStartDate = _readString(source, const [
       'start_date',
@@ -104,6 +272,29 @@ class RenewalModel {
       'due_date',
       'dueDate',
     ]);
+    final rawAmcStartDate = _readString(source, const [
+      'amc_start_date',
+      'amcStartDate',
+    ]);
+    final rawAmcEndDate = _readString(source, const [
+      'amc_end_date',
+      'amcEndDate',
+    ]);
+    final rawNestedAmcStartDate = _readString(amcServiceMap, const [
+      'amc_start_date',
+      'amcStartDate',
+      'start_date',
+      'startDate',
+    ]);
+    final rawNestedAmcEndDate = _readString(amcServiceMap, const [
+      'amc_end_date',
+      'amcEndDate',
+      'end_date',
+      'endDate',
+    ]);
+    final parsedAmcService = amcServiceMap.isEmpty
+        ? null
+        : AmcServiceModel.fromJson(amcServiceMap);
 
     final title = _readString(source, const [
       'service_name',
@@ -242,6 +433,48 @@ class RenewalModel {
       billing: _formatShortDate(rawBillingDate),
       billingDateValue: _tryParseDate(rawBillingDate),
       status: _normalizeStatus(source),
+      isAmc:
+          _readBool(source, const [
+            'is_amc',
+            'isAmc',
+            'amc_enabled',
+            'amcEnabled',
+          ]) ||
+          (parsedAmcService?.hasData ?? false),
+      amcTotalVisits:
+          _readInt(source, const [
+            'amc_total_visits',
+            'amcTotalVisits',
+            'total_visits',
+            'totalVisits',
+          ]) ??
+          parsedAmcService?.totalVisits,
+      amcStartDate: _formatShortDate(
+        rawAmcStartDate.isNotEmpty ? rawAmcStartDate : rawNestedAmcStartDate,
+      ),
+      amcEndDate: _formatShortDate(
+        rawAmcEndDate.isNotEmpty ? rawAmcEndDate : rawNestedAmcEndDate,
+      ),
+      amcStartDateValue: _tryParseDate(
+        rawAmcStartDate.isNotEmpty ? rawAmcStartDate : rawNestedAmcStartDate,
+      ),
+      amcEndDateValue: _tryParseDate(
+        rawAmcEndDate.isNotEmpty ? rawAmcEndDate : rawNestedAmcEndDate,
+      ),
+      amcCompletedVisits:
+          _readInt(source, const [
+            'completed_visits',
+            'completedVisits',
+          ]) ??
+          parsedAmcService?.completedVisits,
+      amcPendingVisits:
+          _readInt(source, const [
+            'pending_visits',
+            'pendingVisits',
+          ]) ??
+          parsedAmcService?.pendingVisits,
+      amcVisits: parsedAmcService?.visits ?? const <AmcVisitModel>[],
+      amcService: parsedAmcService,
       renewalType: _readString(source, const ['type', 'renewal_type']),
       partyName: _firstNonEmpty([
         _readString(source, const [
@@ -339,6 +572,46 @@ class RenewalModel {
       }
     }
     return '';
+  }
+
+  static bool _readBool(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      if (value is bool) return value;
+      final normalized = value.toString().trim().toLowerCase();
+      if (normalized.isEmpty || normalized == 'null') continue;
+      if (normalized == '1' ||
+          normalized == 'true' ||
+          normalized == 'yes' ||
+          normalized == 'on') {
+        return true;
+      }
+      if (normalized == '0' ||
+          normalized == 'false' ||
+          normalized == 'no' ||
+          normalized == 'off') {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  static int? _readInt(Map<String, dynamic> json, List<String> keys) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+      if (value is int) return value;
+      final normalized = value.toString().trim();
+      if (normalized.isEmpty || normalized.toLowerCase() == 'null') continue;
+      final parsed = int.tryParse(normalized);
+      if (parsed != null) return parsed;
+      final numValue = num.tryParse(normalized);
+      if (numValue != null && numValue == numValue.toInt()) {
+        return numValue.toInt();
+      }
+    }
+    return null;
   }
 
   static String _normalizeStatus(Map<String, dynamic> json) {

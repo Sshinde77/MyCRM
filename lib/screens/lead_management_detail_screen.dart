@@ -1751,6 +1751,11 @@ class _LeadInformationCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          _InfoItem(
+            label: 'DESCRIPTION',
+            value: lead.displayDescription,
+          ),
         ],
       ),
     );

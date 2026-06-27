@@ -331,7 +331,15 @@ class LeadModel {
   }
 
   static Map<String, dynamic> _extractSource(Map<String, dynamic> json) {
-    for (final key in ['lead', 'data', 'item', 'result', 'attributes']) {
+    for (final key in [
+      'leadModel',
+      'lead_model',
+      'lead',
+      'data',
+      'item',
+      'result',
+      'attributes',
+    ]) {
       final value = json[key];
       if (value is Map<String, dynamic>) {
         return value;

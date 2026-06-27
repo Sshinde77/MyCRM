@@ -3272,6 +3272,8 @@ class ApiService {
 
     final rawClients = source['clients'];
     final rawVendors = source['vendors'];
+    final rawPlanTypes =
+        source['plan_types'] ?? source['planTypes'] ?? source['plans'];
     final rawStatuses =
         source['statuses'] ??
         source['status'] ??
@@ -3294,6 +3296,7 @@ class ApiService {
               .toList(growable: false)
         : const <VendorModel>[];
 
+    final planTypes = _normalizeOptionValues(rawPlanTypes);
     final statuses = rawStatuses is List
         ? rawStatuses
               .map((entry) {
@@ -3320,6 +3323,7 @@ class ApiService {
       clients: clients,
       vendors: vendors,
       statuses: statuses,
+      planTypes: planTypes,
     );
   }
 
@@ -3478,12 +3482,17 @@ class ApiService {
     required String vendorId,
     required String serviceName,
     required String serviceDetails,
+    required String planType,
     required String remarkText,
     required String remarkColor,
     required DateTime startDate,
     required DateTime endDate,
     required DateTime billingDate,
     required String status,
+    bool isAmc = false,
+    int? amcTotalVisits,
+    DateTime? amcStartDate,
+    DateTime? amcEndDate,
   }) async {
     final payload = FormData.fromMap({
       'client_id': clientId.trim(),
@@ -3493,12 +3502,19 @@ class ApiService {
       'vendor_id': vendorId.trim(),
       'service_name': serviceName.trim(),
       'service_details': serviceDetails.trim(),
+      'plan_type': planType.trim().toLowerCase(),
       'remark_text': remarkText.trim(),
       'remark_color': remarkColor.trim(),
       'start_date': _formatApiDate(startDate),
       'end_date': _formatApiDate(endDate),
       'billing_date': _formatApiDate(billingDate),
       'status': status.trim().toLowerCase(),
+      'is_amc': isAmc ? '1' : '0',
+      if (isAmc && amcTotalVisits != null) 'amc_total_visits': amcTotalVisits,
+      if (isAmc && amcStartDate != null)
+        'amc_start_date': _formatApiDate(amcStartDate),
+      if (isAmc && amcEndDate != null)
+        'amc_end_date': _formatApiDate(amcEndDate),
     });
 
     final response = await postForm(
@@ -3517,12 +3533,17 @@ class ApiService {
     required String vendorId,
     required String serviceName,
     required String serviceDetails,
+    required String planType,
     required String remarkText,
     required String remarkColor,
     required DateTime startDate,
     required DateTime endDate,
     required DateTime billingDate,
     required String status,
+    bool isAmc = false,
+    int? amcTotalVisits,
+    DateTime? amcStartDate,
+    DateTime? amcEndDate,
   }) async {
     final normalizedId = id.trim();
     if (normalizedId.isEmpty) {
@@ -3541,18 +3562,52 @@ class ApiService {
       'vendor_id': vendorId.trim(),
       'service_name': serviceName.trim(),
       'service_details': serviceDetails.trim(),
+      'plan_type': planType.trim().toLowerCase(),
       'remark_text': remarkText.trim(),
       'remark_color': remarkColor.trim(),
       'start_date': _formatApiDate(startDate),
       'end_date': _formatApiDate(endDate),
       'billing_date': _formatApiDate(billingDate),
       'status': status.trim().toLowerCase(),
+      'is_amc': isAmc ? '1' : '0',
+      if (isAmc && amcTotalVisits != null) 'amc_total_visits': amcTotalVisits,
+      if (isAmc && amcStartDate != null)
+        'amc_start_date': _formatApiDate(amcStartDate),
+      if (isAmc && amcEndDate != null)
+        'amc_end_date': _formatApiDate(amcEndDate),
       '_method': 'put',
     });
 
     final response = await postForm(path, data: payload);
     final body = _normalizeMap(_extractDetailSource(response.data));
     return RenewalModel.fromJson(body);
+  }
+
+  /// Updates a single AMC visit under a client renewal.
+  Future<void> updateClientRenewalAmcVisit({
+    required String renewalId,
+    required String visitId,
+    required String status,
+    required String details,
+  }) async {
+    final normalizedRenewalId = renewalId.trim();
+    final normalizedVisitId = visitId.trim();
+    if (normalizedRenewalId.isEmpty) {
+      throw Exception('Invalid client renewal id.');
+    }
+    if (normalizedVisitId.isEmpty) {
+      throw Exception('Invalid AMC visit id.');
+    }
+
+    final path =
+        '${ApiConstants.clientRenewals}/$normalizedRenewalId/amc-visits/$normalizedVisitId';
+    await post(
+      path,
+      data: <String, dynamic>{
+        'status': status.trim().toLowerCase(),
+        'details': details.trim(),
+      },
+    );
   }
 
   /// Deletes an existing client renewal/service record.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -1807,6 +1808,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   final TextEditingController _serviceNameController = TextEditingController();
   final TextEditingController _serviceDetailsController =
       TextEditingController();
+  final TextEditingController _amcTotalVisitsController =
+      TextEditingController();
 
   List<ClientModel> _clients = const <ClientModel>[];
   List<VendorModel> _vendors = const <VendorModel>[];
@@ -1818,10 +1821,14 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   String? _selectedVendorId;
   String _seedClientName = '';
   String _seedVendorName = '';
+  String _selectedPlanType = '';
   String _selectedStatus = 'active';
   DateTime? _startDate;
   DateTime? _endDate;
   DateTime? _billingDate;
+  bool _isAmcEnabled = false;
+  DateTime? _amcStartDate;
+  DateTime? _amcEndDate;
 
   bool _isLoadingOptions = false;
   bool _isLoadingDetail = false;
@@ -1830,6 +1837,14 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
   bool get _isEditMode => (_renewalId ?? '').isNotEmpty;
 
+  static const List<String> _defaultPlanTypes = <String>[
+    'monthly',
+    'yearly',
+    'quarterly',
+    'half-year',
+  ];
+
+  List<String> _planTypeValues = List<String>.from(_defaultPlanTypes);
   List<String> _statusValues = const <String>['active', 'inactive'];
 
   @override
@@ -1861,6 +1876,7 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
   void dispose() {
     _serviceNameController.dispose();
     _serviceDetailsController.dispose();
+    _amcTotalVisitsController.dispose();
     super.dispose();
   }
 
@@ -1885,10 +1901,15 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
 
     _serviceNameController.text = renewal.title.trim();
     _serviceDetailsController.text = renewal.serviceDetails.trim();
+    _selectedPlanType = _normalizePlanTypeForForm(renewal.planType);
     _selectedStatus = _normalizeStatusForForm(renewal.status);
     _startDate = renewal.startDateValue;
     _endDate = renewal.endDateValue;
     _billingDate = renewal.billingDateValue;
+    _isAmcEnabled = renewal.isAmc;
+    _amcTotalVisitsController.text = renewal.amcTotalVisits?.toString() ?? '';
+    _amcStartDate = renewal.amcStartDateValue;
+    _amcEndDate = renewal.amcEndDateValue;
   }
 
   String _normalizeStatusForForm(String rawStatus) {
@@ -1905,6 +1926,37 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       return _statusValues.contains('active') ? 'active' : _statusValues.first;
     }
     return _statusValues.first;
+  }
+
+  String _normalizePlanTypeForForm(String rawPlanType) {
+    final normalized = rawPlanType.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return '';
+    }
+    if (normalized == 'half year') {
+      return 'half-year';
+    }
+    return normalized;
+  }
+
+  List<String> get _planTypeOptions {
+    final values = <String>{..._planTypeValues};
+    if (_selectedPlanType.trim().isNotEmpty) {
+      values.add(_selectedPlanType.trim().toLowerCase());
+    }
+    return values.toList(growable: false);
+  }
+
+  String _formatPlanTypeLabel(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'half-year' || normalized == 'half year') {
+      return 'Half Year';
+    }
+    return normalized
+        .split(RegExp(r'[-_\s]+'))
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 
   Future<void> _loadFormData() async {
@@ -1926,8 +1978,19 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       final options = await _apiService.getClientRenewalFormOptions();
       _clients = options.clients;
       _vendors = options.vendors;
+      if (options.planTypes.isNotEmpty) {
+        _planTypeValues = options.planTypes
+            .map(_normalizePlanTypeForForm)
+            .where((entry) => entry.isNotEmpty)
+            .toSet()
+            .toList(growable: false);
+      }
       if (options.statuses.isNotEmpty) {
         _statusValues = options.statuses;
+      }
+      if (_selectedPlanType.trim().isNotEmpty &&
+          !_planTypeValues.contains(_selectedPlanType)) {
+        _planTypeValues = <String>[..._planTypeValues, _selectedPlanType];
       }
       if (!_statusValues.contains(_selectedStatus)) {
         _selectedStatus = _statusValues.first;
@@ -1994,6 +2057,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     if (_serviceNameController.text.trim().isEmpty) {
       return 'Service name is required.';
     }
+    if (_selectedPlanType.trim().isEmpty) {
+      return 'Plan type is required.';
+    }
     if (_startDate == null) {
       return 'Start date is required.';
     }
@@ -2005,6 +2071,21 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
     }
     if (_startDate!.isAfter(_endDate!)) {
       return 'End date must be on or after start date.';
+    }
+    if (_isAmcEnabled) {
+      final amcTotalVisits = int.tryParse(_amcTotalVisitsController.text.trim());
+      if (amcTotalVisits == null || amcTotalVisits <= 0) {
+        return 'AMC total visits is required.';
+      }
+      if (_amcStartDate == null) {
+        return 'AMC start date is required.';
+      }
+      if (_amcEndDate == null) {
+        return 'AMC end date is required.';
+      }
+      if (_amcStartDate!.isAfter(_amcEndDate!)) {
+        return 'AMC end date must be on or after AMC start date.';
+      }
     }
     return null;
   }
@@ -2043,12 +2124,17 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
           vendorId: _selectedVendorId!,
           serviceName: _serviceNameController.text.trim(),
           serviceDetails: _serviceDetailsController.text.trim(),
+          planType: _selectedPlanType,
           remarkText: '',
           remarkColor: '',
           startDate: _startDate!,
           endDate: _endDate!,
           billingDate: _billingDate!,
           status: _selectedStatus,
+          isAmc: _isAmcEnabled,
+          amcTotalVisits: int.tryParse(_amcTotalVisitsController.text.trim()),
+          amcStartDate: _amcStartDate,
+          amcEndDate: _amcEndDate,
         );
       } else {
         await _apiService.createClientRenewal(
@@ -2057,12 +2143,17 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
           vendorId: _selectedVendorId!,
           serviceName: _serviceNameController.text.trim(),
           serviceDetails: _serviceDetailsController.text.trim(),
+          planType: _selectedPlanType,
           remarkText: '',
           remarkColor: '',
           startDate: _startDate!,
           endDate: _endDate!,
           billingDate: _billingDate!,
           status: _selectedStatus,
+          isAmc: _isAmcEnabled,
+          amcTotalVisits: int.tryParse(_amcTotalVisitsController.text.trim()),
+          amcStartDate: _amcStartDate,
+          amcEndDate: _amcEndDate,
         );
       }
 
@@ -2103,10 +2194,15 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       _selectedVendorId = null;
       _serviceNameController.clear();
       _serviceDetailsController.clear();
+      _selectedPlanType = '';
       _startDate = null;
       _endDate = null;
       _billingDate = null;
       _selectedStatus = 'active';
+      _isAmcEnabled = false;
+      _amcTotalVisitsController.clear();
+      _amcStartDate = null;
+      _amcEndDate = null;
     });
   }
 
@@ -2659,6 +2755,50 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                       ),
                                     ),
                                   ),
+                                  SizedBox(
+                                    width: itemWidth,
+                                    child: _LabeledField(
+                                      label: 'Plan Type',
+                                      required: true,
+                                      child: DropdownButtonFormField<String>(
+                                        isExpanded: true,
+                                        menuMaxHeight: 300,
+                                        initialValue:
+                                            _planTypeOptions.contains(
+                                              _selectedPlanType,
+                                            )
+                                            ? _selectedPlanType
+                                            : null,
+                                        items: _planTypeOptions
+                                            .map(
+                                              (entry) =>
+                                                  DropdownMenuItem<String>(
+                                                    value: entry,
+                                                    child: Text(
+                                                      _formatPlanTypeLabel(
+                                                        entry,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                            )
+                                            .toList(growable: false),
+                                        onChanged: _isSubmitting
+                                            ? null
+                                            : (value) {
+                                                setState(
+                                                  () => _selectedPlanType =
+                                                      value ?? '',
+                                                );
+                                              },
+                                        decoration: _inputDecoration(
+                                          'Choose a plan type...',
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               );
                             },
@@ -2674,6 +2814,133 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FBFF),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFDCE6F2)),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'AMC',
+                                        style: AppTextStyles.style(
+                                          color: const Color(0xFF1E293B),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Turn on to add AMC visit and date details.',
+                                        style: AppTextStyles.style(
+                                          color: const Color(0xFF64748B),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Switch(
+                                  value: _isAmcEnabled,
+                                  onChanged: _isSubmitting
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _isAmcEnabled = value;
+                                            if (!value) {
+                                              _amcTotalVisitsController.clear();
+                                              _amcStartDate = null;
+                                              _amcEndDate = null;
+                                            }
+                                          });
+                                        },
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (_isAmcEnabled) ...[
+                            const SizedBox(height: 10),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isWide = constraints.maxWidth >= 900;
+                                final itemWidth = isWide
+                                    ? (constraints.maxWidth - 24) / 3
+                                    : constraints.maxWidth;
+
+                                return Wrap(
+                                  spacing: 12,
+                                  runSpacing: 10,
+                                  children: [
+                                    SizedBox(
+                                      width: itemWidth,
+                                      child: _LabeledField(
+                                        label: 'AMC Total Visits',
+                                        required: true,
+                                        child: TextField(
+                                          controller: _amcTotalVisitsController,
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter.digitsOnly,
+                                          ],
+                                          decoration: _inputDecoration(
+                                            'Enter AMC visits',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: itemWidth,
+                                      child: _LabeledField(
+                                        label: 'AMC Start Date',
+                                        required: true,
+                                        child: _DateInputField(
+                                          text: _formatDate(_amcStartDate),
+                                          onTap: _isSubmitting
+                                              ? null
+                                              : () => _pickDate(
+                                                  initialDate: _amcStartDate,
+                                                  onPicked: (date) => setState(
+                                                    () => _amcStartDate = date,
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: itemWidth,
+                                      child: _LabeledField(
+                                        label: 'AMC End Date',
+                                        required: true,
+                                        child: _DateInputField(
+                                          text: _formatDate(_amcEndDate),
+                                          onTap: _isSubmitting
+                                              ? null
+                                              : () => _pickDate(
+                                                  initialDate: _amcEndDate,
+                                                  onPicked: (date) => setState(
+                                                    () => _amcEndDate = date,
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 10),
                           LayoutBuilder(
                             builder: (context, constraints) {
