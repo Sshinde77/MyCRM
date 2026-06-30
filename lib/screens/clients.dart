@@ -286,10 +286,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
+                if (width <= 420)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
                         height: 44,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
@@ -318,26 +319,84 @@ class _ClientsScreenState extends State<ClientsScreen> {
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      height: 40,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _applySearch,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2563EB),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 40,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _applySearch,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF2563EB),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text('Search'),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _circleIcon(Icons.tune, onTap: _openFilterPopup),
+                        ],
+                      ),
+                    ],
+                  )
+                else
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 44,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              icon: Icon(
+                                Icons.search,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
+                              hintText: 'Search clients...',
+                              hintStyle: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
                         ),
-                        child: const Text('Search'),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    _circleIcon(Icons.tune, onTap: _openFilterPopup),
-                  ],
-                ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        height: 40,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _applySearch,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Search'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _circleIcon(Icons.tune, onTap: _openFilterPopup),
+                    ],
+                  ),
                 const SizedBox(height: 12),
                 PermissionGate(
                   permission: AppPermission.createClients,

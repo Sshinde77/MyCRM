@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../core/constants/app_strings.dart';
+import '../core/constants/api_constants.dart';
 import '../core/constants/app_text_styles.dart';
 import '../core/services/permission_service.dart';
 import '../models/user_model.dart';
@@ -9,7 +8,7 @@ import '../widgets/common_screen_app_bar.dart';
 import 'company_information_screen.dart';
 import 'department_settings_screen.dart';
 import 'email_settings_screen.dart';
-import 'general_settings_screen.dart';
+import 'legal_document_screen.dart';
 import 'notification_settings_screen.dart';
 import 'renewal_settings_screen.dart';
 import 'team_settings_screen.dart';
@@ -19,16 +18,6 @@ class SettingsScreen extends StatelessWidget {
 
   List<_SettingItem> _buildItems() {
     return [
-      _SettingItem(
-        title: 'General Setting',
-        icon: Icons.settings_outlined,
-        permission: AppPermission.viewGeneralSettings,
-        onTap: (context) async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const GeneralSettingsScreen()),
-          );
-        },
-      ),
       _SettingItem(
         title: 'Company Information',
         icon: Icons.apartment_outlined,
@@ -76,9 +65,9 @@ class SettingsScreen extends StatelessWidget {
         icon: Icons.group_outlined,
         permission: AppPermission.teamsSettings,
         onTap: (context) async {
-          await Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => const TeamSettingsScreen()));
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const TeamSettingsScreen()),
+          );
         },
       ),
       _SettingItem(
@@ -94,7 +83,30 @@ class SettingsScreen extends StatelessWidget {
       _SettingItem(
         title: 'Privacy Policy',
         icon: Icons.privacy_tip_outlined,
-        onTap: _openPrivacyPolicy,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const LegalDocumentScreen(
+                title: 'Privacy Policy',
+                endpoint: ApiConstants.privacyPolicy,
+              ),
+            ),
+          );
+        },
+      ),
+      _SettingItem(
+        title: 'Terms and Conditions',
+        icon: Icons.description_outlined,
+        onTap: (context) async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const LegalDocumentScreen(
+                title: 'Terms and Conditions',
+                endpoint: ApiConstants.termsAndConditions,
+              ),
+            ),
+          );
+        },
       ),
     ];
   }
@@ -168,23 +180,10 @@ class SettingsScreen extends StatelessWidget {
     await item.onTap?.call(context);
   }
 
-  Future<void> _openPrivacyPolicy(BuildContext context) async {
-    final uri = Uri.tryParse(AppStrings.privacyPolicyUrl);
-    if (uri == null) {
-      _showMessage(context, 'Privacy policy URL is not configured.');
-      return;
-    }
-
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && context.mounted) {
-      _showMessage(context, 'Unable to open privacy policy.');
-    }
-  }
-
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 }
 

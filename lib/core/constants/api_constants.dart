@@ -182,6 +182,9 @@ class ApiConstants {
   static const String generalSettings = '$baseUrl/settings/general';
   static const String appLogoSettings = '$baseUrl/settings/app-logo';
   static const String loginLogoSettings = '$baseUrl/settings/login-logo';
+  static const String privacyPolicy = '$baseUrl/settings/privacy-policy';
+  static const String termsAndConditions =
+      '$baseUrl/settings/terms-and-conditions';
   static const String companyInformation = '$baseUrl/settings/company';
   static const String emailSettings = '$baseUrl/settings/email';
   static const String renewalSettings = '$baseUrl/settings/renewal';
@@ -218,3 +221,5 @@ class ApiConstants {
   static const String metaLeadDetail = '$baseUrl/meta-leads/{id}';
   static const String deleteMetaLead = '$baseUrl/meta-leads/{id}';
 }
+
+

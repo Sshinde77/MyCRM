@@ -9,6 +9,7 @@ import 'core/services/push_notification_service.dart';
 import 'firebase_options.dart';
 import 'routes/app_routes.dart';
 import 'routes/route_generator.dart';
+import 'core/utils/responsive.dart';
 import 'theme/app_theme.dart';
 
 /// Application entry point.
@@ -78,7 +79,9 @@ class MyApp extends StatelessWidget {
       themeMode: initialDarkModeEnabled ? ThemeMode.dark : ThemeMode.light,
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
-        return SafeArea(child: child);
+        return ResponsiveAppViewport(
+          child: SafeArea(child: child),
+        );
       },
       initialRoute: AppRoutes.splash,
       onGenerateRoute: RouteGenerator.generateRoute,

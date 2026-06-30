@@ -343,7 +343,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                 singleLeadId != null ? 'Assign Lead' : 'Bulk Assign Leads',
               ),
               content: SizedBox(
-                width: 420,
+                width: MediaQuery.of(context).size.width < 456
+                    ? MediaQuery.of(context).size.width - 32
+                    : 420,
                 child: staffList.isEmpty
                     ? const Text('No staff members found.')
                     : Column(
@@ -785,6 +787,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
               const SizedBox(height: 10),
               LayoutBuilder(
                 builder: (context, constraints) {
+                  final stackedActions = constraints.maxWidth < 520;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -806,23 +809,51 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                         ],
                       ),
                       SizedBox(height: isNarrow ? 6 : 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildSearchField(isCompact: isNarrow),
-                          ),
-                          SizedBox(width: isNarrow ? 6 : 8),
-                          _buildGoButton(isCompact: isNarrow),
-                          SizedBox(width: isNarrow ? 6 : 8),
-                          _buildBulkAssignButton(isCompact: isNarrow),
-                          SizedBox(width: isNarrow ? 6 : 8),
-                          _buildAddLeadButton(
-                            compact: true,
-                            isCompact: isNarrow,
-                            iconOnly: isVeryNarrow,
-                          ),
-                        ],
-                      ),
+                      if (stackedActions)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildSearchField(isCompact: isNarrow),
+                            SizedBox(height: isNarrow ? 6 : 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildGoButton(isCompact: isNarrow),
+                                ),
+                                SizedBox(width: isNarrow ? 6 : 8),
+                                Expanded(
+                                  child: _buildBulkAssignButton(
+                                    isCompact: isNarrow,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: isNarrow ? 6 : 8),
+                            _buildAddLeadButton(
+                              compact: true,
+                              isCompact: isNarrow,
+                              iconOnly: isVeryNarrow,
+                            ),
+                          ],
+                        )
+                      else
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildSearchField(isCompact: isNarrow),
+                            ),
+                            SizedBox(width: isNarrow ? 6 : 8),
+                            _buildGoButton(isCompact: isNarrow),
+                            SizedBox(width: isNarrow ? 6 : 8),
+                            _buildBulkAssignButton(isCompact: isNarrow),
+                            SizedBox(width: isNarrow ? 6 : 8),
+                            _buildAddLeadButton(
+                              compact: true,
+                              isCompact: isNarrow,
+                              iconOnly: isVeryNarrow,
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 8),
                       if (_isLoading)
                         const Padding(

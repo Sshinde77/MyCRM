@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/routes/app_routes.dart';
 import 'package:mycrm/screens/to_do_list.dart' as to_do;
+import '../core/utils/responsive.dart';
 
 class CommonScreenAppBar extends StatelessWidget
     implements PreferredSizeWidget {
@@ -25,22 +26,37 @@ class CommonScreenAppBar extends StatelessWidget
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < AppBreakpoints.compact;
+    final showDateChip = showDateBadge && width >= 360;
     final now = DateTime.now();
     return AppBar(
       elevation: 0,
       scrolledUnderElevation: 0,
       backgroundColor: Colors.white,
       foregroundColor: const Color(0xFF1E293B),
+      toolbarHeight: compact ? 54 : kToolbarHeight,
+      titleSpacing: compact ? 0 : NavigationToolbar.kMiddleSpacing,
+      leadingWidth: showBackButton ? (compact ? 48 : 56) : 0,
       leading: showBackButton
           ? IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
               onPressed: () => Navigator.of(context).maybePop(),
             )
           : null,
-      title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      title: Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: const Color(0xFF1E293B),
+          fontSize: compact ? 18 : 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
       actions: [
-        if (showDateBadge) ...[
-          _TopBarCalendarBadge(date: now, compact: true),
+        if (showDateChip) ...[
+          _TopBarCalendarBadge(date: now, compact: compact),
           const SizedBox(width: 8),
         ],
         if (showTodoButton)
@@ -80,7 +96,10 @@ class CommonTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = compact ? 38.0 : 42.0;
+    final width = MediaQuery.sizeOf(context).width;
+    final effectiveCompact = compact || width < AppBreakpoints.compact;
+    final canShowDateBadge = showDateBadge && width >= 360;
+    final iconSize = effectiveCompact ? 36.0 : 42.0;
     final now = DateTime.now();
     return Row(
       children: [
@@ -90,7 +109,7 @@ class CommonTopBar extends StatelessWidget {
             size: iconSize,
             onTap: onBack ?? () => Navigator.of(context).maybePop(),
           ),
-          SizedBox(width: compact ? 10 : 12),
+          SizedBox(width: effectiveCompact ? 10 : 12),
         ],
         Expanded(
           child: Text(
@@ -99,14 +118,14 @@ class CommonTopBar extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: const Color(0xFF1E293B),
-              fontSize: compact ? 20 : 22,
+              fontSize: effectiveCompact ? 18 : 22,
               fontWeight: FontWeight.w700,
             ),
           ),
         ),
-        if (showDateBadge) ...[
-          _TopBarCalendarBadge(date: now, compact: compact),
-          SizedBox(width: compact ? 8 : 10),
+        if (canShowDateBadge) ...[
+          _TopBarCalendarBadge(date: now, compact: effectiveCompact),
+          SizedBox(width: effectiveCompact ? 8 : 10),
         ],
         if (showTodoButton) ...[
           _TopBarIconButton(
@@ -114,7 +133,7 @@ class CommonTopBar extends StatelessWidget {
             size: iconSize,
             onTap: () => Get.to(() => const to_do.ToDoListScreen()),
           ),
-          SizedBox(width: compact ? 8 : 10),
+          SizedBox(width: effectiveCompact ? 8 : 10),
         ],
         if (showNotificationButton)
           _TopBarIconButton(
@@ -171,9 +190,9 @@ class _TopBarCalendarBadge extends StatelessWidget {
     final month = _months[date.month - 1];
     final dateLabel = '$day $month ${date.year}';
     final weekdayLabel = _weekdays[date.weekday - 1];
-    final badgeWidth = compact ? 108.0 : 118.0;
-    final badgeHeight = compact ? 40.0 : 44.0;
-    final iconSize = compact ? 22.0 : 24.0;
+    final badgeWidth = compact ? 102.0 : 118.0;
+    final badgeHeight = compact ? 38.0 : 44.0;
+    final iconSize = compact ? 21.0 : 24.0;
 
     return SizedBox(
       width: badgeWidth,

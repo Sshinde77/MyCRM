@@ -67,7 +67,6 @@ class AppPermission {
   static const deleteDashboard = 'delete_dashboard';
   static const manageUsers = 'manage_users';
   static const manageSettings = 'manage_settings';
-  static const viewGeneralSettings = 'view_general_settings';
   static const viewCompanyInformation = 'view_company_information';
   static const viewEmailSettings = 'view_email_settings';
   static const renewalSettings = 'renewal_settings';
