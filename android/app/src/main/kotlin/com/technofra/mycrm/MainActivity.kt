@@ -1,4 +1,4 @@
-package com.example.mycrm
+package com.technofra.mycrm
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

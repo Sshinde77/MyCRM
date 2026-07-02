@@ -8,7 +8,7 @@ This project now includes baseline production wiring for:
 ## 1. Firebase + FCM
 
 1. Create a Firebase project and add:
-- Android app: `com.example.mycrm` (replace with your final package id first)
+- Android app: `com.technofra.mycrm`
 - iOS app: your final bundle id
 
 2. Download config files:

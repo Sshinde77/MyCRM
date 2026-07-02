@@ -35,7 +35,7 @@ if (hasGoogleServicesConfig) {
 }
 
 android {
-    namespace = "com.example.mycrm"
+    namespace = "com.technofra.mycrm"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -49,7 +49,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.mycrm"
+        applicationId = "com.technofra.mycrm"
         minSdk = flutter.minSdkVersion
         targetSdk = 35
         versionCode = flutter.versionCode
