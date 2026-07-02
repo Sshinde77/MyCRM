@@ -10,6 +10,35 @@
       "client_info": {
         "mobilesdk_app_id": "1:633846456010:android:63535f5c5aa7447c461e33",
         "android_client_info": {
+          "package_name": "com.example.mycrm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "633846456010-6lcsm9o58iof0bqkj8j6vta4oq2rlep3.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJRa_5lnLx9LIXdQEqIjWcRowdUcr7nyM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "633846456010-6lcsm9o58iof0bqkj8j6vta4oq2rlep3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633846456010:android:c0e5d7579ae8dc36461e33",
+        "android_client_info": {
           "package_name": "com.technofra.mycrm"
         }
       },
