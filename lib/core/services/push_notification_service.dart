@@ -78,6 +78,7 @@ class PushNotificationService {
 
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     await _requestNotificationPermission();
+    await _configureForegroundPresentationOptions();
     await _restoreCachedToken();
     await _fetchAndPersistToken(reason: 'app_start');
 
@@ -186,6 +187,31 @@ class PushNotificationService {
           'Android notification permission request failed: $error',
         );
       }
+    }
+  }
+
+  static Future<void> _configureForegroundPresentationOptions() async {
+    if (kIsWeb) {
+      return;
+    }
+
+    if (!Platform.isIOS && !Platform.isMacOS) {
+      return;
+    }
+
+    try {
+      await _messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      _emitDiagnosticLog(
+        'Configured iOS/macOS foreground notification presentation options.',
+      );
+    } catch (error) {
+      _emitDiagnosticLog(
+        'Foreground notification presentation configuration failed: $error',
+      );
     }
   }
 
