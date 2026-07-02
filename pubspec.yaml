@@ -1,6 +1,6 @@
 # Basic package information for the Flutter app.
 name: mycrm
-description: "A new Flutter CRM project."
+description: "CRM app for leads, projects, staff, and renewals."
 publish_to: 'none'
 
 # App version shown in release builds.

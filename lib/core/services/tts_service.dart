@@ -101,7 +101,9 @@ class TtsService {
     await _flutterTts.setLanguage(_bestLanguageCode());
     _configuredSpeechRate = 0.35;
     await _flutterTts.setSpeechRate(_configuredSpeechRate);
-    debugPrint('Speech rate configured: $_configuredSpeechRate');
+    if (kDebugMode) {
+      debugPrint('Speech rate configured: $_configuredSpeechRate');
+    }
     await _flutterTts.setPitch(1.0);
     await _flutterTts.setVolume(1.0);
     await _flutterTts.awaitSpeakCompletion(true);

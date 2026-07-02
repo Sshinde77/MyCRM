@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
@@ -32,7 +32,9 @@ Future<void> _initializeFirebase() async {
     options = DefaultFirebaseOptions.currentPlatform;
   } catch (error, stackTrace) {
     _printStartupLog('Firebase options initialization failed: $error');
-    debugPrint('$stackTrace');
+    if (kDebugMode) {
+      debugPrint('$stackTrace');
+    }
   }
 
   if (options != null) {
@@ -41,7 +43,9 @@ Future<void> _initializeFirebase() async {
       return;
     } catch (error, stackTrace) {
       _printStartupLog('Firebase options initialization failed: $error');
-      debugPrint('$stackTrace');
+      if (kDebugMode) {
+        debugPrint('$stackTrace');
+      }
     }
   } else if (kIsWeb) {
     _printStartupLog(
@@ -54,13 +58,17 @@ Future<void> _initializeFirebase() async {
     await Firebase.initializeApp();
   } catch (error, stackTrace) {
     _printStartupLog('Firebase native initialization failed: $error');
-    debugPrint('$stackTrace');
+    if (kDebugMode) {
+      debugPrint('$stackTrace');
+    }
   }
 }
 
 void _printStartupLog(String message) {
-  print(message);
-  debugPrint(message);
+  if (kDebugMode) {
+    print(message);
+    debugPrint(message);
+  }
 }
 
 /// Root widget that configures app-wide theme and navigation.
