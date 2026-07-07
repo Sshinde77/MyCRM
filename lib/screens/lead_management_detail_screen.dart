@@ -1714,7 +1714,9 @@ class _LeadInformationCard extends StatelessWidget {
                     const SizedBox(height: 12),
                     _InfoItem(
                       label: 'LEAD VALUE',
-                      value: lead.displayAmount.isEmpty ? 'N/A' : lead.displayAmount,
+                      value: lead.displayAmount.isEmpty
+                          ? 'N/A'
+                          : lead.displayAmount,
                     ),
                     const SizedBox(height: 12),
                     _InfoItem(
@@ -1752,10 +1754,7 @@ class _LeadInformationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _InfoItem(
-            label: 'DESCRIPTION',
-            value: lead.displayDescription,
-          ),
+          _InfoItem(label: 'DESCRIPTION', value: lead.displayDescription),
         ],
       ),
     );

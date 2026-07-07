@@ -9,136 +9,125 @@
 // ==================== Notification Types ====================
 
 /// Enum for supported notification types
-enum NotificationType {
-  lead,
-  followup,
-  task,
-  renewal,
-  payment,
-  deal,
-  general,
-}
+enum NotificationType { lead, followup, task, renewal, payment, deal, general }
 
 // ==================== Example FCM Payloads ====================
 
 /// Example FCM Payloads for Different Notification Types
-/// 
+///
 /// These payloads should be sent from your Laravel backend.
 /// The `type` field determines how the notification is announced via TTS.
 
 class NotificationPayloadExamples {
   /// New Lead Notification
-  /// 
+  ///
   /// Announces: "New lead received from John Doe"
   static const Map<String, dynamic> newLeadPayload = {
     'notification': {
       'title': 'New Lead',
-      'body': 'You have received a new lead'
+      'body': 'You have received a new lead',
     },
     'data': {
       'type': 'lead',
       'lead_name': 'John Doe',
       'lead_id': '12345',
-      'company': 'Acme Corp'
-    }
+      'company': 'Acme Corp',
+    },
   };
 
   /// Follow-up Reminder Notification
-  /// 
+  ///
   /// Announces: "Follow up reminder for ABC Industries"
   static const Map<String, dynamic> followupReminderPayload = {
     'notification': {
       'title': 'Follow-up Reminder',
-      'body': 'Time to follow up with your lead'
+      'body': 'Time to follow up with your lead',
     },
     'data': {
       'type': 'followup',
       'client_name': 'ABC Industries',
       'client_id': '12346',
-      'last_interaction': '2 days ago'
-    }
+      'last_interaction': '2 days ago',
+    },
   };
 
   /// Task Reminder Notification
-  /// 
+  ///
   /// Announces: "Task pending. Submit quotation"
   static const Map<String, dynamic> taskReminderPayload = {
     'notification': {
       'title': 'Task Pending',
-      'body': 'You have a pending task'
+      'body': 'You have a pending task',
     },
     'data': {
       'type': 'task',
       'task_description': 'Submit quotation',
       'task_id': '12347',
       'due_date': '2024-06-15',
-      'priority': 'high'
-    }
+      'priority': 'high',
+    },
   };
 
   /// Renewal Reminder Notification
-  /// 
+  ///
   /// Announces: "Renewal due tomorrow for ABC Industries"
   static const Map<String, dynamic> renewalReminderPayload = {
     'notification': {
       'title': 'Renewal Due',
-      'body': 'Contract renewal approaching'
+      'body': 'Contract renewal approaching',
     },
     'data': {
       'type': 'renewal',
       'client_name': 'ABC Industries',
       'client_id': '12346',
       'days_until': '1',
-      'renewal_amount': '50000'
-    }
+      'renewal_amount': '50000',
+    },
   };
 
   /// Payment Received Notification
-  /// 
+  ///
   /// Announces: "Payment of rupees twenty five thousand received"
   static const Map<String, dynamic> paymentReceivedPayload = {
     'notification': {
       'title': 'Payment Received',
-      'body': 'Payment has been received'
+      'body': 'Payment has been received',
     },
     'data': {
       'type': 'payment',
       'amount': 'twenty five thousand',
       'currency': 'rupees',
       'invoice_id': '12348',
-      'client_name': 'John Doe'
-    }
+      'client_name': 'John Doe',
+    },
   };
 
   /// Deal Closed Notification
-  /// 
+  ///
   /// Announces: "Congratulations. Deal worth rupees one lakh has been closed"
   static const Map<String, dynamic> dealClosedPayload = {
     'notification': {
       'title': 'Deal Closed',
-      'body': 'Congratulations on closing the deal!'
+      'body': 'Congratulations on closing the deal!',
     },
     'data': {
       'type': 'deal',
       'deal_amount': 'one lakh',
       'currency': 'rupees',
       'deal_id': '12349',
-      'client_name': 'XYZ Company'
-    }
+      'client_name': 'XYZ Company',
+    },
   };
 
   /// Generic Notification
-  /// 
+  ///
   /// Announces: title and body as provided
   static const Map<String, dynamic> genericPayload = {
     'notification': {
       'title': 'System Update',
-      'body': 'A new feature has been released'
+      'body': 'A new feature has been released',
     },
-    'data': {
-      'type': 'general',
-      'action_url': '/app/news'
-    }
+    'data': {'type': 'general', 'action_url': '/app/news'},
   };
 }
 
@@ -154,17 +143,19 @@ class PayloadFieldDocumentation {
     'data.type':
         'Type of notification: lead, followup, task, renewal, payment, deal, general',
     'data.lead_name': 'Name of the lead (for lead notifications)',
-    'data.client_name': 'Name of the client (for followup, renewal notifications)',
-    'data.task_description':
-        'Description of the task (for task notifications)',
-    'data.days_until': 'Number of days until renewal (for renewal notifications)',
+    'data.client_name':
+        'Name of the client (for followup, renewal notifications)',
+    'data.task_description': 'Description of the task (for task notifications)',
+    'data.days_until':
+        'Number of days until renewal (for renewal notifications)',
     'data.amount': 'Amount in words (for payment notifications)',
-    'data.currency': 'Currency name, e.g., "rupees" (for payment notifications)',
+    'data.currency':
+        'Currency name, e.g., "rupees" (for payment notifications)',
     'data.deal_amount': 'Deal amount in words (for deal notifications)',
   };
 
   /// Priority levels
-  /// 
+  ///
   /// - low: No interruption, queued behind normal messages
   /// - normal: Standard priority, queued normally
   /// - high: Interrupts current speech, spoken immediately (payments, deals)
@@ -178,16 +169,16 @@ class PayloadFieldDocumentation {
     'renewal',
     'payment',
     'deal',
-    'general'
+    'general',
   ];
 }
 
 // ==================== Backend Integration Guide ====================
 
 /// Integration guide for Laravel backend developers
-/// 
+///
 /// When sending FCM notifications, follow this structure:
-/// 
+///
 /// ```
 /// $message = [
 ///     'notification' => [
@@ -201,10 +192,10 @@ class PayloadFieldDocumentation {
 ///         // ... other fields
 ///     ],
 /// ];
-/// 
+///
 /// Firebase::sendMulticast($message, $tokens);
 /// ```
-/// 
+///
 /// The `type` field is CRITICAL - it determines:
 /// 1. How the notification is announced via TTS
 /// 2. Which data fields are expected
@@ -248,8 +239,8 @@ class BackendIntegrationGuide {
 /// Utilities for testing voice notifications
 class VoiceNotificationTestUtils {
   /// Generate a test notification payload
-  /// 
-  /// Usage: 
+  ///
+  /// Usage:
   /// ```dart
   /// final payload = VoiceNotificationTestUtils.generateTestPayload(
   ///   type: 'lead',

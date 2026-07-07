@@ -30,9 +30,9 @@ class NotificationSpeechManager with WidgetsBindingObserver {
     required VoiceNotificationSettings settings,
     required TtsService ttsService,
     required SpeechQueueManager queueManager,
-  })  : _settings = settings,
-        _ttsService = ttsService,
-        _queueManager = queueManager;
+  }) : _settings = settings,
+       _ttsService = ttsService,
+       _queueManager = queueManager;
 
   static final NotificationSpeechManager instance = NotificationSpeechManager._(
     settings: VoiceNotificationSettings.instance,
@@ -149,10 +149,7 @@ class NotificationSpeechManager with WidgetsBindingObserver {
       );
     }
 
-    final specificText = _buildSpecificAnnouncementText(
-      type: type,
-      data: data,
-    );
+    final specificText = _buildSpecificAnnouncementText(type: type, data: data);
     final fallbackText = _buildFallbackText(cleanTitle, cleanBody);
     final text = specificText ?? fallbackText;
 
@@ -266,7 +263,8 @@ class NotificationSpeechManager with WidgetsBindingObserver {
         final clientName = data['client_name']?.toString().trim() ?? '';
         return 'Follow up reminder for ${clientName.isNotEmpty ? clientName : 'your lead'}';
       case 'task':
-        final taskDescription = data['task_description']?.toString().trim() ?? '';
+        final taskDescription =
+            data['task_description']?.toString().trim() ?? '';
         return 'Task pending. ${taskDescription.isNotEmpty ? taskDescription : 'Check your tasks'}';
       case 'renewal':
         final clientName = data['client_name']?.toString().trim() ?? '';
@@ -274,8 +272,8 @@ class NotificationSpeechManager with WidgetsBindingObserver {
         final daysText = daysUntil == '0'
             ? 'today'
             : daysUntil == '1'
-                ? 'tomorrow'
-                : 'in $daysUntil days';
+            ? 'tomorrow'
+            : 'in $daysUntil days';
         return 'Renewal due $daysText for ${clientName.isNotEmpty ? clientName : 'a client'}';
       case 'payment':
       case 'payment_received':
@@ -287,7 +285,9 @@ class NotificationSpeechManager with WidgetsBindingObserver {
       case 'deal_closed':
         final dealAmount = data['deal_amount']?.toString().trim() ?? '';
         final currency = data['currency']?.toString().trim() ?? 'rupees';
-        final amountText = dealAmount.isNotEmpty ? dealAmount : 'significant value';
+        final amountText = dealAmount.isNotEmpty
+            ? dealAmount
+            : 'significant value';
         return 'Congratulations. Deal worth $currency $amountText has been closed';
       default:
         return null;

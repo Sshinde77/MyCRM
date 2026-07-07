@@ -29,10 +29,10 @@ class SpeechQueueManager {
     this.maxQueueSize = 20,
     this.duplicateExpiry = const Duration(minutes: 2),
     this.defaultTimeout = const Duration(seconds: 30),
-  })  : _speak = speak,
-        _stopCurrent = stopCurrent,
-        _logger = logger,
-        _clock = clock ?? DateTime.now;
+  }) : _speak = speak,
+       _stopCurrent = stopCurrent,
+       _logger = logger,
+       _clock = clock ?? DateTime.now;
 
   final Future<void> Function(SpeechQueueEntry entry) _speak;
   final Future<void> Function() _stopCurrent;
@@ -109,9 +109,10 @@ class SpeechQueueManager {
 
     for (var index = 0; index < items.length; index++) {
       final current = items[index];
-      final shouldInsertBefore = _priorityWeight(entry.priority) >
-              _priorityWeight(current.priority) ||
-          (_priorityWeight(entry.priority) == _priorityWeight(current.priority) &&
+      final shouldInsertBefore =
+          _priorityWeight(entry.priority) > _priorityWeight(current.priority) ||
+          (_priorityWeight(entry.priority) ==
+                  _priorityWeight(current.priority) &&
               entry.createdAt.isBefore(current.createdAt));
       if (shouldInsertBefore) {
         insertIndex = index;
@@ -166,7 +167,9 @@ class SpeechQueueManager {
 
   void _cleanupDedupes() {
     final now = _clock();
-    _recentDedupes.removeWhere((_, timestamp) => now.difference(timestamp) > duplicateExpiry);
+    _recentDedupes.removeWhere(
+      (_, timestamp) => now.difference(timestamp) > duplicateExpiry,
+    );
   }
 
   int _priorityWeight(SpeechPriority priority) {

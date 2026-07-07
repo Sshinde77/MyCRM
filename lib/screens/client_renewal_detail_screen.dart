@@ -386,7 +386,8 @@ class _AmcDetailsCard extends StatelessWidget {
     final totalVisits = item.amcTotalVisits ?? item.amcService?.totalVisits;
     final completedVisits =
         item.amcCompletedVisits ?? item.amcService?.completedVisits;
-    final pendingVisits = item.amcPendingVisits ?? item.amcService?.pendingVisits;
+    final pendingVisits =
+        item.amcPendingVisits ?? item.amcService?.pendingVisits;
     final startDate = _value(item.amcStartDate);
     final endDate = _value(item.amcEndDate);
     final visits = item.amcVisits;

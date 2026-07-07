@@ -84,14 +84,21 @@ class TtsService {
         _lastError = error.toString();
         _available = false;
         _initialized = true;
-        _log('[TTS] Error: initialization failed on attempt $attempt -> $error');
+        _log(
+          '[TTS] Error: initialization failed on attempt $attempt -> $error',
+        );
         if (kDebugMode) {
-          log('TTS initialization stacktrace', name: 'TtsService', error: error, stackTrace: stackTrace);
+          log(
+            'TTS initialization stacktrace',
+            name: 'TtsService',
+            error: error,
+            stackTrace: stackTrace,
+          );
         }
         if (attempt < maxAttempts) {
           await Future<void>.delayed(Duration(milliseconds: attempt * 250));
         }
-      } 
+      }
     }
 
     return false;
@@ -116,7 +123,7 @@ class TtsService {
       }
     } else if (Platform.isIOS) {
       try {
-        await _flutterTts.setSharedInstance(true);    
+        await _flutterTts.setSharedInstance(true);
         await _flutterTts.setIosAudioCategory(
           IosTextToSpeechAudioCategory.ambient,
           [

@@ -38,10 +38,7 @@ class AmcVisitModel {
         'note',
       ]),
       completedAt: RenewalModel._formatDateTime(
-        RenewalModel._readString(source, const [
-          'completed_at',
-          'completedAt',
-        ]),
+        RenewalModel._readString(source, const ['completed_at', 'completedAt']),
       ),
     );
   }
@@ -462,16 +459,10 @@ class RenewalModel {
         rawAmcEndDate.isNotEmpty ? rawAmcEndDate : rawNestedAmcEndDate,
       ),
       amcCompletedVisits:
-          _readInt(source, const [
-            'completed_visits',
-            'completedVisits',
-          ]) ??
+          _readInt(source, const ['completed_visits', 'completedVisits']) ??
           parsedAmcService?.completedVisits,
       amcPendingVisits:
-          _readInt(source, const [
-            'pending_visits',
-            'pendingVisits',
-          ]) ??
+          _readInt(source, const ['pending_visits', 'pendingVisits']) ??
           parsedAmcService?.pendingVisits,
       amcVisits: parsedAmcService?.visits ?? const <AmcVisitModel>[],
       amcService: parsedAmcService,

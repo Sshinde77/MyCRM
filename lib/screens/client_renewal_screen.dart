@@ -2073,7 +2073,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
       return 'End date must be on or after start date.';
     }
     if (_isAmcEnabled) {
-      final amcTotalVisits = int.tryParse(_amcTotalVisitsController.text.trim());
+      final amcTotalVisits = int.tryParse(
+        _amcTotalVisitsController.text.trim(),
+      );
       if (amcTotalVisits == null || amcTotalVisits <= 0) {
         return 'AMC total visits is required.';
       }
@@ -2823,7 +2825,9 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8FBFF),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFDCE6F2)),
+                              border: Border.all(
+                                color: const Color(0xFFDCE6F2),
+                              ),
                             ),
                             child: Row(
                               children: [
@@ -2892,7 +2896,8 @@ class _ClientRenewalFormSheetState extends State<_ClientRenewalFormSheet> {
                                           controller: _amcTotalVisitsController,
                                           keyboardType: TextInputType.number,
                                           inputFormatters: [
-                                            FilteringTextInputFormatter.digitsOnly,
+                                            FilteringTextInputFormatter
+                                                .digitsOnly,
                                           ],
                                           decoration: _inputDecoration(
                                             'Enter AMC visits',

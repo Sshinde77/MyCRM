@@ -12,7 +12,8 @@ class VoiceNotificationSettingsSection extends StatefulWidget {
 
 class _VoiceNotificationSettingsSectionState
     extends State<VoiceNotificationSettingsSection> {
-  final VoiceNotificationSettings _settings = VoiceNotificationSettings.instance;
+  final VoiceNotificationSettings _settings =
+      VoiceNotificationSettings.instance;
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -155,16 +156,15 @@ class _VoiceNotificationSettingsSectionState
                     children: [
                       Text(
                         'Voice Notifications',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Speak incoming notifications aloud when supported.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF64748B),
-                            ),
+                          color: const Color(0xFF64748B),
+                        ),
                       ),
                     ],
                   ),
@@ -176,7 +176,9 @@ class _VoiceNotificationSettingsSectionState
               contentPadding: EdgeInsets.zero,
               value: _enabled,
               title: const Text('Enable Voice Notifications'),
-              subtitle: const Text('Master switch for spoken notification alerts'),
+              subtitle: const Text(
+                'Master switch for spoken notification alerts',
+              ),
               onChanged: _isSaving ? null : _setEnabled,
             ),
             const Divider(height: 24),
@@ -185,7 +187,8 @@ class _VoiceNotificationSettingsSectionState
               description: 'New lead notifications',
               value: _lead,
               enabled: _enabled,
-              onChanged: (value) => _setCategory(VoiceNotificationCategory.lead, value),
+              onChanged: (value) =>
+                  _setCategory(VoiceNotificationCategory.lead, value),
             ),
             _CategoryTile(
               label: 'Enable Follow-up Announcements',
@@ -200,7 +203,8 @@ class _VoiceNotificationSettingsSectionState
               description: 'Task reminders and work items',
               value: _task,
               enabled: _enabled,
-              onChanged: (value) => _setCategory(VoiceNotificationCategory.task, value),
+              onChanged: (value) =>
+                  _setCategory(VoiceNotificationCategory.task, value),
             ),
             _CategoryTile(
               label: 'Enable Renewal Announcements',
@@ -223,7 +227,8 @@ class _VoiceNotificationSettingsSectionState
               description: 'Closed deal notifications',
               value: _deal,
               enabled: _enabled,
-              onChanged: (value) => _setCategory(VoiceNotificationCategory.deal, value),
+              onChanged: (value) =>
+                  _setCategory(VoiceNotificationCategory.deal, value),
             ),
             _CategoryTile(
               label: 'Enable General Announcements',

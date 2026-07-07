@@ -65,9 +65,9 @@ class SettingsScreen extends StatelessWidget {
         icon: Icons.group_outlined,
         permission: AppPermission.teamsSettings,
         onTap: (context) async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const TeamSettingsScreen()),
-          );
+          await Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const TeamSettingsScreen()));
         },
       ),
       _SettingItem(
@@ -181,9 +181,9 @@ class SettingsScreen extends StatelessWidget {
   }
 
   void _showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

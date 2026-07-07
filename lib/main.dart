@@ -22,7 +22,7 @@ Future<void> main() async {
   WidgetsBinding.instance.addPostFrameCallback((_) {
     PushNotificationService.initialize();
   });
-} 
+}
 
 Future<void> _initializeFirebase() async {
   if (Firebase.apps.isNotEmpty) return;
@@ -87,9 +87,7 @@ class MyApp extends StatelessWidget {
       themeMode: initialDarkModeEnabled ? ThemeMode.dark : ThemeMode.light,
       builder: (context, child) {
         if (child == null) return const SizedBox.shrink();
-        return ResponsiveAppViewport(
-          child: SafeArea(child: child),
-        );
+        return ResponsiveAppViewport(child: SafeArea(child: child));
       },
       initialRoute: AppRoutes.splash,
       onGenerateRoute: RouteGenerator.generateRoute,

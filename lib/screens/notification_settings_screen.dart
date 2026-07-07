@@ -304,7 +304,7 @@ class _NotificationSettingsScreenState
                 : const Text(
                     'Save Notification Controls',
                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-            ),
+                  ),
           ),
         ),
       ],

@@ -112,7 +112,9 @@ class LegalDocumentScreen extends StatelessWidget {
           }
 
           final content = snapshot.data?.trim() ?? '';
-          final html = content.isEmpty ? '<p>No content available.</p>' : content;
+          final html = content.isEmpty
+              ? '<p>No content available.</p>'
+              : content;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),

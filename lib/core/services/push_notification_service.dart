@@ -375,9 +375,11 @@ class PushNotificationService {
       'title=${message.notification?.title}, body=${message.notification?.body}, '
       'data=${message.data}',
     );
-    
-    unawaited(_speechManager.handleRemoteMessage(message, source: 'foreground'));
-    
+
+    unawaited(
+      _speechManager.handleRemoteMessage(message, source: 'foreground'),
+    );
+
     _showForegroundNotificationBanner(message);
   }
 
@@ -406,7 +408,9 @@ class PushNotificationService {
     _emitDiagnosticLog(
       'Message opened app: id=${message.messageId}, data=${message.data}',
     );
-    unawaited(_speechManager.handleRemoteMessage(message, source: 'opened_app'));
+    unawaited(
+      _speechManager.handleRemoteMessage(message, source: 'opened_app'),
+    );
   }
 
   static Future<void> _handleInitialMessage() async {
@@ -419,11 +423,14 @@ class PushNotificationService {
         'Terminated-state message: id=${initialMessage.messageId}, '
         'data=${initialMessage.data}',
       );
-      
+
       // Speak notification from terminated state after a small delay to allow app to load
       await Future<void>.delayed(const Duration(milliseconds: 500));
       unawaited(
-        _speechManager.handleRemoteMessage(initialMessage, source: 'terminated_launch'),
+        _speechManager.handleRemoteMessage(
+          initialMessage,
+          source: 'terminated_launch',
+        ),
       );
     } catch (error) {
       _emitDiagnosticLog('Failed to read terminated-state message: $error');

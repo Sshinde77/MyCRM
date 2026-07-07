@@ -8,6 +8,7 @@ void main() {
     ),
   );
 }
+
 class Dummyloginscreen extends StatefulWidget {
   const Dummyloginscreen({super.key});
 
@@ -29,22 +30,22 @@ class _DummyloginscreenState extends State<Dummyloginscreen> {
             border: Border.all(color: Colors.grey),
             color: Colors.white,
           ),
-        child: Column(
-          children: [
-            _buildTogglebutton(),
-            const SizedBox(height: 20),
-            _buildphonetext(),
-            const SizedBox(height: 20),
-            _buildtextfield(),
-            const SizedBox(height: 20),
-            _buildLoginButton(),
-            const SizedBox(height: 20),
-            const _OrDivider(),
-            const SizedBox(height: 20),
-            // _buildSocialLoginButtons(),
-          ],
+          child: Column(
+            children: [
+              _buildTogglebutton(),
+              const SizedBox(height: 20),
+              _buildphonetext(),
+              const SizedBox(height: 20),
+              _buildtextfield(),
+              const SizedBox(height: 20),
+              _buildLoginButton(),
+              const SizedBox(height: 20),
+              const _OrDivider(),
+              const SizedBox(height: 20),
+              // _buildSocialLoginButtons(),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -69,14 +70,14 @@ class _DummyloginscreenState extends State<Dummyloginscreen> {
                   border: Border.all(color: Colors.grey),
                   color: Colors.white,
                 ),
-                child:Center(
-                child: Text(
-                  'Phone',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                child: Center(
+                  child: Text(
+                    'Phone',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
-          ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -89,14 +90,14 @@ class _DummyloginscreenState extends State<Dummyloginscreen> {
                   border: Border.all(color: Colors.grey),
                   color: Colors.white,
                 ),
-                child:Center(
-                child: Text(
-                  'Email',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                child: Center(
+                  child: Text(
+                    'Email',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),
-          ),
           ),
         ],
       ),
@@ -151,25 +152,24 @@ class _DummyloginscreenState extends State<Dummyloginscreen> {
   }
 
   Widget _buildLoginButton() {
-    return
-      SizedBox(
-        width: double.infinity,
-        height: 52,
-        child:
-      ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
           ),
-          onPressed: () {},
-          child: const Text('Login with OTP',
+        ),
+        onPressed: () {},
+        child: const Text(
+          'Login with OTP',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          )
+        ),
       ),
-      );
+    );
   }
 }
 

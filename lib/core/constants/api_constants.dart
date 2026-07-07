@@ -26,7 +26,7 @@ class ApiConstants {
   static const String liststaff = '$baseUrl/staff-v2';
   static const String staffdetail = '$baseUrl/staff-v2/{id}';
   static const String staffAnalytics = '$baseUrl/staff-v2/{id}/analytics';
-  static const String staffLeadChart = '$baseUrl/staff-v2/{id}/lead-chart'; 
+  static const String staffLeadChart = '$baseUrl/staff-v2/{id}/lead-chart';
   static const String staffFollowupChart =
       '$baseUrl/staff-v2/{id}/followup-chart';
   static const String deletestaff = '$baseUrl/staff-v2/{id}';
@@ -221,5 +221,3 @@ class ApiConstants {
   static const String metaLeadDetail = '$baseUrl/meta-leads/{id}';
   static const String deleteMetaLead = '$baseUrl/meta-leads/{id}';
 }
-
-

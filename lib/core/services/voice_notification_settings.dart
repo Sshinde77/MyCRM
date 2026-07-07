@@ -35,7 +35,8 @@ class VoiceNotificationSettingsSnapshot {
 class VoiceNotificationSettings {
   VoiceNotificationSettings._();
 
-  static final VoiceNotificationSettings instance = VoiceNotificationSettings._();
+  static final VoiceNotificationSettings instance =
+      VoiceNotificationSettings._();
 
   static const String _enabledKey = 'voice_notifications_enabled';
   static const String _leadKey = 'voice_notifications_lead_enabled';
