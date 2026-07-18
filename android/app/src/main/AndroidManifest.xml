@@ -19,15 +19,6 @@
     <!-- Audio (required for Text-to-Speech notifications) -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
 
-    <!-- Limited/scoped media access -->
-    <uses-permission
-        android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED"
-        tools:targetApi="34" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-
     <!-- Keep camera optional so Play Store does not filter out non-camera devices -->
     <uses-feature
         android:name="android.hardware.camera"

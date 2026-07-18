@@ -9,6 +9,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/clients.dart';
 import '../screens/client_detail_screen.dart';
 import '../screens/notification_list_screen.dart';
+import '../screens/forgot_password_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/biometric_gate_screen.dart';
 import '../screens/profile_screen.dart';
@@ -51,6 +52,10 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case AppRoutes.login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case AppRoutes.forgotPassword:
+        return MaterialPageRoute(
+          builder: (_) => const ForgotPasswordScreen(),
+        );
       case AppRoutes.biometricGate:
         return MaterialPageRoute(builder: (_) => const BiometricGateScreen());
       case AppRoutes.dashboard:

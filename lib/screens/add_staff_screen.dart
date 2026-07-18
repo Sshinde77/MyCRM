@@ -1054,13 +1054,6 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
     }
     FocusScope.of(context).unfocus();
 
-    if (_selectedProfileImage != null) {
-      final hasPermission = await _ensureUploadPermission(
-        actionLabel: 'upload the selected image',
-      );
-      if (!hasPermission) return;
-    }
-
     setState(() => _isSubmitting = true);
 
     try {
@@ -1350,20 +1343,11 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
       return true;
     }
 
-    PermissionStatus status;
-
-    if (source == ImageSource.camera) {
-      status = await Permission.camera.request();
-    } else if (Platform.isIOS) {
-      status = await Permission.photos.request();
-    } else if (Platform.isAndroid) {
-      status = await Permission.photos.request();
-      if (!status.isGranted && !status.isLimited) {
-        status = await Permission.storage.request();
-      }
-    } else {
+    if (source != ImageSource.camera) {
       return true;
     }
+
+    final status = await Permission.camera.request();
 
     if (status.isGranted || status.isLimited) {
       return true;
@@ -1380,17 +1364,6 @@ class _AddStaffScreenState extends State<AddStaffScreen> {
 
     AppSnackbar.show('Permission required', deniedMessage);
     return false;
-  }
-
-  Future<bool> _ensureUploadPermission({required String actionLabel}) async {
-    if (_selectedProfileImage == null) {
-      return true;
-    }
-
-    return _ensurePickerPermission(
-      source: ImageSource.gallery,
-      actionLabel: actionLabel,
-    );
   }
 }
 

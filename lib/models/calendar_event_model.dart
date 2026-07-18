@@ -7,6 +7,7 @@ class CalendarEventModel {
     this.endAt,
     this.emailRecipients,
     this.whatsappRecipients,
+    this.notificationChannels = const <String>[],
     this.location,
   });
 
@@ -17,6 +18,7 @@ class CalendarEventModel {
   final DateTime? endAt;
   final String? emailRecipients;
   final String? whatsappRecipients;
+  final List<String> notificationChannels;
   final String? location;
 
   factory CalendarEventModel.fromJson(Map<String, dynamic> json) {
@@ -102,6 +104,10 @@ class CalendarEventModel {
         'phone_numbers',
         'phoneNumbers',
       ]),
+      notificationChannels: _readStringList(source, const [
+        'notification_channels',
+        'notificationChannels',
+      ]),
       location: _readNullableString(source, const [
         'location',
         'venue',
@@ -156,6 +162,39 @@ class CalendarEventModel {
   ) {
     final value = _readString(json, keys);
     return value.trim().isEmpty ? null : value.trim();
+  }
+
+  static List<String> _readStringList(
+    Map<String, dynamic> json,
+    List<String> keys,
+  ) {
+    for (final key in keys) {
+      final value = json[key];
+      if (value == null) continue;
+
+      if (value is List) {
+        final items = value
+            .map((item) => item == null ? '' : item.toString().trim())
+            .where((item) => item.isNotEmpty)
+            .toList(growable: false);
+        if (items.isNotEmpty) {
+          return items;
+        }
+      }
+
+      if (value is String) {
+        final items = value
+            .split(',')
+            .map((item) => item.trim())
+            .where((item) => item.isNotEmpty)
+            .toList(growable: false);
+        if (items.isNotEmpty) {
+          return items;
+        }
+      }
+    }
+
+    return const <String>[];
   }
 
   static DateTime? _readNullableDateTime(

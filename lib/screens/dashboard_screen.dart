@@ -532,6 +532,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  List<String> _notificationChannelsFromSelection({
+    required bool allPlatforms,
+    required bool mail,
+    required bool whatsapp,
+  }) {
+    final channels = <String>[];
+    if (allPlatforms) {
+      channels.add('all');
+    }
+    if (mail) {
+      channels.add('mail');
+    }
+    if (whatsapp) {
+      channels.add('whatsapp');
+    }
+    return channels;
+  }
+
   _Appointment _appointmentFromEvent(CalendarEventModel event) {
     final start = event.startAt ?? DateTime.now();
     final date = DateTime(start.year, start.month, start.day);
@@ -547,6 +565,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       time: time,
       emailRecipients: event.emailRecipients?.trim() ?? '',
       whatsappRecipients: event.whatsappRecipients?.trim() ?? '',
+      notificationChannels: event.notificationChannels,
       isFromApi: true,
     );
   }
@@ -828,6 +847,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         eventTime: _formatApiTime(draft.time),
         emailRecipients: draft.emailRecipients.trim(),
         whatsappRecipients: draft.whatsappRecipients.trim(),
+        notificationChannels: draft.notificationChannels,
       );
 
       if (!mounted) return;
@@ -884,6 +904,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         eventTime: _formatApiTime(draft.time),
         emailRecipients: draft.emailRecipients.trim(),
         whatsappRecipients: draft.whatsappRecipients.trim(),
+        notificationChannels: draft.notificationChannels,
       );
 
       if (!mounted) return;
@@ -966,6 +987,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     DateTime? selectedDate = initial?.date;
     TimeOfDay? selectedTime = initial?.time;
+    final initialChannels = initial?.notificationChannels ?? const <String>[];
+    final hasMailChannel = initialChannels.contains('mail');
+    final hasWhatsappChannel = initialChannels.contains('whatsapp');
+    bool allPlatformsSelected = initialChannels.isEmpty
+        ? true
+        : initialChannels.contains('all') ||
+            (hasMailChannel && hasWhatsappChannel);
+    bool mailSelected = initialChannels.isEmpty
+        ? true
+        : hasMailChannel || allPlatformsSelected;
+    bool whatsappSelected = initialChannels.isEmpty
+        ? true
+        : hasWhatsappChannel || allPlatformsSelected;
     final isEditing = initial != null;
 
     final saved = await showDialog<_Appointment>(
@@ -1024,6 +1058,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 }
                 setModalState(() => selectedTime = picked);
               }
+            }
+
+            void syncAllPlatformSelection() {
+              final shouldSelectAll = mailSelected && whatsappSelected;
+              allPlatformsSelected = shouldSelectAll;
             }
 
             return Dialog(
@@ -1179,10 +1218,63 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                           const SizedBox(height: 14),
                           _AppointmentFormField(
-                            label: 'Email Recipients',
+                            label: 'Notification Platforms',
                             requiredMark: true,
-                            // helperText:
-                            //     'Comma-separated emails. You can keep this empty if WhatsApp numbers are added.',
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Wrap(
+                                  spacing: 14,
+                                  runSpacing: 8,
+                                  children: [
+                                    FilterChip(
+                                      selected: allPlatformsSelected,
+                                      onSelected: (value) {
+                                        setModalState(() {
+                                          allPlatformsSelected = value;
+                                          mailSelected = value;
+                                          whatsappSelected = value;
+                                        });
+                                      },
+                                      label: const Text('All platforms'),
+                                    ),
+                                    FilterChip(
+                                      selected: mailSelected,
+                                      onSelected: (value) {
+                                        setModalState(() {
+                                          mailSelected = value;
+                                          syncAllPlatformSelection();
+                                        });
+                                      },
+                                      label: const Text('Mail'),
+                                    ),
+                                    FilterChip(
+                                      selected: whatsappSelected,
+                                      onSelected: (value) {
+                                        setModalState(() {
+                                          whatsappSelected = value;
+                                          syncAllPlatformSelection();
+                                        });
+                                      },
+                                      label: const Text('WhatsApp'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Choose email delivery, WhatsApp, or both. App and web notifications are sent automatically.',
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF7A8798),
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _AppointmentFormField(
+                            label: 'Email Recipients',
                             child: TextFormField(
                               controller: emailController,
                               decoration: _appointmentInputDecoration(
@@ -1194,15 +1286,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(height: 14),
                           _AppointmentFormField(
                             label: 'WhatsApp Number',
-                            requiredMark: true,
-                            // helperText:
-                            //     'Use international format. Multiple numbers comma separated.',
                             child: TextFormField(
                               controller: whatsappController,
-                              validator: (value) =>
-                                  value == null || value.trim().isEmpty
-                                  ? 'Please enter at least one WhatsApp number'
-                                  : null,
                               decoration: _appointmentInputDecoration(
                                 hintText: '919876543210, 919876543211',
                               ),
@@ -1239,7 +1324,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   if (!formKey.currentState!.validate()) {
                                     return;
                                   }
-                                  final conflict = _hasThirtyMinuteSlotConflict(
+                                  final conflict =
+                                      _hasThirtyMinuteSlotConflict(
                                     date: selectedDate!,
                                     time: selectedTime!,
                                     excludeAppointmentId: initial?.id,
@@ -1269,6 +1355,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       return;
                                     }
                                   }
+                                  final channels =
+                                      _notificationChannelsFromSelection(
+                                    allPlatforms: allPlatformsSelected,
+                                    mail: mailSelected,
+                                    whatsapp: whatsappSelected,
+                                  );
+                                  if (channels.isEmpty) {
+                                    AppSnackbar.show(
+                                      'Notice',
+                                      'Select at least one notification platform.',
+                                    );
+                                    return;
+                                  }
                                   Navigator.of(context).pop(
                                     _Appointment(
                                       id: initial?.id,
@@ -1286,6 +1385,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       whatsappRecipients: whatsappController
                                           .text
                                           .trim(),
+                                      notificationChannels: channels,
                                       isFromApi: initial?.isFromApi ?? false,
                                     ),
                                   );
@@ -1462,6 +1562,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         time: const TimeOfDay(hour: 15, minute: 26),
         emailRecipients: 'qa@mycrm.com',
         whatsappRecipients: '+919876543210',
+        notificationChannels: const ['all', 'mail', 'whatsapp'],
       ),
       _Appointment(
         title: 'Client Demo',
@@ -1470,6 +1571,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         time: const TimeOfDay(hour: 11, minute: 0),
         emailRecipients: 'sales@mycrm.com',
         whatsappRecipients: '+919876543211',
+        notificationChannels: const ['all', 'mail', 'whatsapp'],
       ),
       _Appointment(
         title: 'Contract Signing',
@@ -1478,6 +1580,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         time: const TimeOfDay(hour: 15, minute: 9),
         emailRecipients: 'contracts@mycrm.com',
         whatsappRecipients: '+919876543212',
+        notificationChannels: const ['all', 'mail', 'whatsapp'],
       ),
       _Appointment(
         title: 'Renewal Check-in',
@@ -1486,6 +1589,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         time: const TimeOfDay(hour: 10, minute: 15),
         emailRecipients: 'renewals@mycrm.com',
         whatsappRecipients: '+919876543213',
+        notificationChannels: const ['all', 'mail', 'whatsapp'],
       ),
     ];
   }
@@ -3481,6 +3585,13 @@ class _AppointmentSheetCard extends StatelessWidget {
                           : appointment.emailRecipients,
                       color: const Color(0xFF5E7290),
                     ),
+                    _AppointmentMetaChip(
+                      icon: Icons.notifications_active_outlined,
+                      label: _notificationChannelsLabel(
+                        appointment.notificationChannels,
+                      ),
+                      color: const Color(0xFF3E7B61),
+                    ),
                   ],
                 ),
               ],
@@ -3695,6 +3806,7 @@ class _Appointment {
     required this.time,
     required this.emailRecipients,
     required this.whatsappRecipients,
+    required this.notificationChannels,
     this.isFromApi = false,
   });
 
@@ -3705,7 +3817,42 @@ class _Appointment {
   final TimeOfDay time;
   final String emailRecipients;
   final String whatsappRecipients;
+  final List<String> notificationChannels;
   final bool isFromApi;
+}
+
+String _notificationChannelsLabel(List<String> channels) {
+  if (channels.isEmpty) {
+    return 'No channels';
+  }
+
+  final normalized =
+      channels.map((channel) => channel.trim().toLowerCase()).toSet();
+  if (normalized.contains('all') &&
+      normalized.contains('mail') &&
+      normalized.contains('whatsapp')) {
+    return 'All platforms';
+  }
+  if (normalized.length == 1 && normalized.contains('all')) {
+    return 'All platforms';
+  }
+
+  final labels = <String>[];
+  if (normalized.contains('mail')) {
+    labels.add('Mail');
+  }
+  if (normalized.contains('whatsapp')) {
+    labels.add('WhatsApp');
+  }
+  if (normalized.contains('all') && labels.isEmpty) {
+    labels.add('All platforms');
+  }
+
+  if (labels.isNotEmpty) {
+    return labels.join(', ');
+  }
+
+  return normalized.join(', ');
 }
 
 InputDecoration _appointmentInputDecoration({

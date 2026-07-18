@@ -39,6 +39,10 @@ class AuthService {
     return response;
   }
 
+  Future<String> forgotPassword({required String email}) async {
+    return await _apiService.forgotPassword(email: email);
+  }
+
   Future<bool> hasAccessToken() async {
     await _storage.migrateLegacyPrefsIfNeeded();
     return await _storage.hasAccessToken();

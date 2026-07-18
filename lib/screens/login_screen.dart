@@ -7,6 +7,7 @@ import 'package:mycrm/core/constants/app_colors.dart';
 import '../core/services/biometric_service.dart';
 import '../core/services/permission_service.dart';
 import '../controllers/auth_controller.dart';
+import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../utils/validators.dart';
 import 'package:mycrm/core/utils/app_snackbar.dart';
@@ -413,7 +414,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Get.toNamed(AppRoutes.forgotPassword);
+                            },
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,

@@ -1105,6 +1105,24 @@ class ApiService {
     return loginResponse;
   }
 
+  /// Requests a password reset link for the provided email address.
+  Future<String> forgotPassword({required String email}) async {
+    final response = await _dio.post(
+      ApiConstants.forgotPassword,
+      data: <String, dynamic>{'email': email},
+      options: Options(
+        headers: const {'Authorization': null},
+        extra: const {'skip_auth': true},
+      ),
+    );
+    final body = _normalizeMap(response.data);
+    final message = body['message']?.toString().trim();
+    if (message != null && message.isNotEmpty) {
+      return message;
+    }
+    return 'Password reset link sent successfully.';
+  }
+
   /// Syncs the current device FCM token to backend for the authenticated user.
   Future<dynamic> syncFcmToken({
     required String token,
@@ -3708,6 +3726,7 @@ class ApiService {
     required String eventTime,
     required String emailRecipients,
     required String whatsappRecipients,
+    required List<String> notificationChannels,
   }) async {
     final payload = {
       'title': title,
@@ -3716,6 +3735,7 @@ class ApiService {
       'event_time': eventTime,
       'email_recipients': emailRecipients,
       'whatsapp_recipients': whatsappRecipients,
+      'notification_channels': notificationChannels,
     };
 
     final response = await post(ApiConstants.createcalendar, data: payload);
@@ -3732,6 +3752,7 @@ class ApiService {
     required String eventTime,
     required String emailRecipients,
     required String whatsappRecipients,
+    required List<String> notificationChannels,
   }) async {
     final path = ApiConstants.updateCalendar.replaceFirst('{id}', id);
     final payload = {
@@ -3741,6 +3762,7 @@ class ApiService {
       'event_time': eventTime,
       'email_recipients': emailRecipients,
       'whatsapp_recipients': whatsappRecipients,
+      'notification_channels': notificationChannels,
     };
 
     final response = await put(path, data: payload);

@@ -8,6 +8,7 @@ class ApiConstants {
   // Endpointss
   //Authentication Api
   static const String login = '$baseUrl/login';
+  static const String forgotPassword = '$baseUrl/forgot-password';
   static const String user = '$baseUrl/me';
   static const String logout = '$baseUrl/logout';
   static const String refreshToken = '$baseUrl/refresh';
