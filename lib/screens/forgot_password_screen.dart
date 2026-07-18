@@ -121,6 +121,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      _buildHeader(context, isCompact: isCompact),
                       _buildLogo(isCompact: isCompact),
                       SizedBox(height: isCompact ? 18 : 22),
                       Text(
@@ -272,6 +273,38 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(
+    BuildContext context, {
+    required bool isCompact,
+  }) {
+    final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
+    if (!isIOS) {
+      return const SizedBox.shrink();
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: 'Back',
+        child: InkResponse(
+          onTap: () => Navigator.of(context).maybePop(),
+          radius: 24,
+          containedInkWell: true,
+          highlightShape: BoxShape.circle,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: isCompact ? 14 : 18),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: isCompact ? 20 : 22,
+              color: const Color(0xFF111827),
             ),
           ),
         ),

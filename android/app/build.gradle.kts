@@ -1,42 +1,13 @@
-import java.io.FileInputStream
-import java.util.Properties
-import org.gradle.api.GradleException
-
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services") apply false
-}
-
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
-}
-
-val hasGoogleServicesConfig = listOf(
-    "google-services.json",
-    "src/debug/google-services.json",
-    "src/release/google-services.json",
-).any { file(it).exists() }
-
-val isReleaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
-    taskName.contains("Release", ignoreCase = true)
-}
-
-if (hasGoogleServicesConfig) {
-    apply(plugin = "com.google.gms.google-services")
-} else {
-    logger.lifecycle(
-        "google-services.json not found; skipping Google Services plugin for this build.",
-    )
+    id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.technofra.mycrm"
-    compileSdk = 36
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -51,43 +22,23 @@ android {
     defaultConfig {
         applicationId = "com.technofra.mycrm"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
-    signingConfigs {
-        if (keystorePropertiesFile.exists()) {
-            create("release") {
-                keyAlias = keystoreProperties["keyAlias"] as String
-                keyPassword = keystoreProperties["keyPassword"] as String
-                val configuredStoreFile = keystoreProperties["storeFile"] as String
-                storeFile = rootProject.file(configuredStoreFile)
-                storePassword = keystoreProperties["storePassword"] as String
-            }
-        }
-    }
-
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-            if (isReleaseBuildRequested && !keystorePropertiesFile.exists()) {
-                throw GradleException(
-                    "Missing android/key.properties. Configure release keystore before building release APK/AAB.",
-                )
-            }
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    implementation("com.google.android.play:app-update:2.1.0")
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
 }

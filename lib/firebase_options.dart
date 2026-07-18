@@ -16,10 +16,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'iOS Firebase options are not configured. '
-          'Run flutterfire configure to generate firebase_options.dart.',
-        );
+        return ios;
       case TargetPlatform.macOS:
       case TargetPlatform.windows:
       case TargetPlatform.linux:
@@ -37,5 +34,15 @@ class DefaultFirebaseOptions {
     projectId: 'winter-brand-405107',
     databaseURL: 'https://winter-brand-405107-default-rtdb.firebaseio.com',
     storageBucket: 'winter-brand-405107.firebasestorage.app',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyBRDjPSIyXBZV9mgM27-arI7IXMQweMdto',
+    appId: '1:633846456010:ios:f54f6b7029f5a145461e33',
+    messagingSenderId: '633846456010',
+    projectId: 'winter-brand-405107',
+    databaseURL: 'https://winter-brand-405107-default-rtdb.firebaseio.com',
+    storageBucket: 'winter-brand-405107.firebasestorage.app',
+    iosBundleId: 'com.technofra.mycrm',
   );
 }
