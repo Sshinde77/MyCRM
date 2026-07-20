@@ -12,6 +12,7 @@ import '../widgets/app_bottom_navigation.dart';
 import '../widgets/app_card.dart';
 import '../widgets/common_screen_app_bar.dart';
 import '../widgets/skeletons/app_skeletons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AllLeadsScreen extends StatefulWidget {
   const AllLeadsScreen({super.key});
@@ -166,6 +167,36 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
             ),
           ),
         ),
+      );
+    }
+  }
+
+  Future<void> _callLead(String phoneNumber) async {
+    final normalizedPhone = _normalizePhoneNumber(phoneNumber);
+    if (normalizedPhone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phone number is not available.')),
+      );
+      return;
+    }
+
+    final uri = Uri(scheme: 'tel', path: normalizedPhone);
+
+    try {
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!mounted) return;
+      if (!launched) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the dialer.')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the dialer.')),
       );
     }
   }
@@ -763,6 +794,17 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     }
   }
 
+  String _normalizePhoneNumber(String phoneNumber) {
+    final trimmed = phoneNumber.trim();
+    if (trimmed.isEmpty) return '';
+
+    final hasLeadingPlus = trimmed.startsWith('+');
+    final digitsOnly = trimmed.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.isEmpty) return '';
+
+    return hasLeadingPlus ? '+$digitsOnly' : digitsOnly;
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusOptions = _fixedStatusOptions;
@@ -1043,6 +1085,8 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                         label: 'assigned_to',
                         value: lead.displayAssignedTo,
                         trailing: _LeadActions(
+                          phoneNumber: lead.phone,
+                          onCall: () => _callLead(lead.phone?.trim() ?? ''),
                           leadId: _resolveLeadSourceId(lead),
                           sourceType: _buildLeadAssignSource(lead),
                           sourceId: _resolveLeadSourceId(lead),
@@ -1473,6 +1517,8 @@ class _TypeBadge extends StatelessWidget {
 
 class _LeadActions extends StatelessWidget {
   const _LeadActions({
+    required this.phoneNumber,
+    required this.onCall,
     required this.leadId,
     required this.sourceType,
     required this.sourceId,
@@ -1481,6 +1527,8 @@ class _LeadActions extends StatelessWidget {
     required this.onDelete,
   });
 
+  final String? phoneNumber;
+  final VoidCallback onCall;
   final String leadId;
   final String sourceType;
   final String sourceId;
@@ -1490,9 +1538,18 @@ class _LeadActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoneNumber = phoneNumber?.trim().isNotEmpty == true;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (hasPhoneNumber) ...[
+          _ActionIconButton(
+            icon: Icons.phone_outlined,
+            color: const Color(0xFF16A34A),
+            onTap: onCall,
+          ),
+          const SizedBox(width: 8),
+        ],
         InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () => Get.toNamed(
