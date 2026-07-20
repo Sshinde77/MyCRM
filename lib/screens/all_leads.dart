@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 
@@ -199,6 +200,22 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         const SnackBar(content: Text('Could not open the dialer.')),
       );
     }
+  }
+
+  Future<void> _copyLeadPhone(String phoneNumber) async {
+    final normalizedPhone = phoneNumber.trim();
+    if (normalizedPhone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Phone number is not available.')),
+      );
+      return;
+    }
+
+    await Clipboard.setData(ClipboardData(text: normalizedPhone));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Phone number copied to clipboard.')),
+    );
   }
 
   List<LeadModel> _visibleItems() {
@@ -1074,6 +1091,15 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                         left: _LeadApiField(
                           label: 'number',
                           value: lead.displayPhone,
+                          trailing: lead.phone?.trim().isNotEmpty == true
+                              ? _ActionCircleButton(
+                                  icon: Icons.copy_outlined,
+                                  iconColor: const Color(0xFF334155),
+                                  background: const Color(0xFFE2E8F0),
+                                  onTap: () =>
+                                      _copyLeadPhone(lead.phone!.trim()),
+                                )
+                              : null,
                         ),
                         right: _LeadApiField(
                           label: 'source',
