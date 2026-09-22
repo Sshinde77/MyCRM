@@ -195,7 +195,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           ),
                           errorBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.redAccent),
+                            borderSide: const BorderSide(
+                              color: Colors.redAccent,
+                            ),
                           ),
                           focusedErrorBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -213,7 +215,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           onPressed: _isSubmitting ? null : _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: buttonBlue,
-                            disabledBackgroundColor: buttonBlue.withOpacity(0.7),
+                            disabledBackgroundColor: buttonBlue.withOpacity(
+                              0.7,
+                            ),
                             foregroundColor: Colors.white,
                             minimumSize: Size.fromHeight(isCompact ? 46 : 50),
                             shape: RoundedRectangleBorder(
@@ -280,10 +284,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildHeader(
-    BuildContext context, {
-    required bool isCompact,
-  }) {
+  Widget _buildHeader(BuildContext context, {required bool isCompact}) {
     final isIOS = Theme.of(context).platform == TargetPlatform.iOS;
     if (!isIOS) {
       return const SizedBox.shrink();

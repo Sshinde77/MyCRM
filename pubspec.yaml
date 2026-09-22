@@ -4,7 +4,7 @@ description: "CRM app for leads, projects, staff, and renewals."
 publish_to: 'none'
 
 # App version shown in release builds.
-version: 1.0.0+5
+version: 1.0.0+7
 
 # Minimum Dart SDK required for this project.
 environment:
@@ -39,6 +39,14 @@ dependencies:
   shared_preferences: ^2.5.3
   fl_chart: ^0.68.0
   flutter_tts: ^4.2.5
+
+dependency_overrides:
+  # flutter_html 3.0.0 still calls the private html query_selector.matches API,
+  # which was removed in html 0.15.7.
+  html: 0.15.6
+  # Keep the Android implementation on a Flutter 3.41-compatible release.
+  # Newer 0.8.13+23 requires Flutter >=3.44 and fails Gradle script compilation.
+  image_picker_android: 0.8.13+10
 
 # Packages used only during development and testing.
 dev_dependencies:

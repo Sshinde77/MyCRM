@@ -53,9 +53,7 @@ class RouteGenerator {
       case AppRoutes.login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
       case AppRoutes.forgotPassword:
-        return MaterialPageRoute(
-          builder: (_) => const ForgotPasswordScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordScreen());
       case AppRoutes.biometricGate:
         return MaterialPageRoute(builder: (_) => const BiometricGateScreen());
       case AppRoutes.dashboard:

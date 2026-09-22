@@ -993,7 +993,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     bool allPlatformsSelected = initialChannels.isEmpty
         ? true
         : initialChannels.contains('all') ||
-            (hasMailChannel && hasWhatsappChannel);
+              (hasMailChannel && hasWhatsappChannel);
     bool mailSelected = initialChannels.isEmpty
         ? true
         : hasMailChannel || allPlatformsSelected;
@@ -1324,8 +1324,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   if (!formKey.currentState!.validate()) {
                                     return;
                                   }
-                                  final conflict =
-                                      _hasThirtyMinuteSlotConflict(
+                                  final conflict = _hasThirtyMinuteSlotConflict(
                                     date: selectedDate!,
                                     time: selectedTime!,
                                     excludeAppointmentId: initial?.id,
@@ -1357,10 +1356,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   }
                                   final channels =
                                       _notificationChannelsFromSelection(
-                                    allPlatforms: allPlatformsSelected,
-                                    mail: mailSelected,
-                                    whatsapp: whatsappSelected,
-                                  );
+                                        allPlatforms: allPlatformsSelected,
+                                        mail: mailSelected,
+                                        whatsapp: whatsappSelected,
+                                      );
                                   if (channels.isEmpty) {
                                     AppSnackbar.show(
                                       'Notice',
@@ -3826,8 +3825,9 @@ String _notificationChannelsLabel(List<String> channels) {
     return 'No channels';
   }
 
-  final normalized =
-      channels.map((channel) => channel.trim().toLowerCase()).toSet();
+  final normalized = channels
+      .map((channel) => channel.trim().toLowerCase())
+      .toSet();
   if (normalized.contains('all') &&
       normalized.contains('mail') &&
       normalized.contains('whatsapp')) {
