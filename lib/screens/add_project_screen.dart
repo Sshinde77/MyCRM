@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/models/project_detail_model.dart';
 import 'package:mycrm/models/project_form_options_model.dart';
 import 'package:mycrm/services/api_service.dart';
@@ -84,7 +85,12 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
     });
 
     try {
-      final options = await ApiService.instance.getProjectFormOptions();
+      final results = await Future.wait<dynamic>([
+        ApiService.instance.getProjectFormOptions(),
+        PermissionService.getCurrentUser(),
+      ]);
+      final options = results[0];
+      final currentUser = results[1];
       if (!mounted) return;
 
       setState(() {
@@ -110,6 +116,23 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
           _selectedMemberIds,
           _memberOptions.map((item) => item.id).toSet(),
         );
+        if (!_isEditMode) {
+          final currentUserId = currentUser?.id.toString().trim() ?? '';
+          final currentUserName =
+              currentUser?.name.toString().trim().toLowerCase() ?? '';
+          for (final member in _memberOptions) {
+            final matchesId = currentUserId.isNotEmpty &&
+                member.id.trim() == currentUserId;
+            final matchesName = currentUserName.isNotEmpty &&
+                member.name.trim().toLowerCase() == currentUserName;
+            if (matchesId || matchesName) {
+              if (!_selectedMemberIds.contains(member.id)) {
+                _selectedMemberIds = [..._selectedMemberIds, member.id];
+              }
+              break;
+            }
+          }
+        }
         _selectedBillingType = _resolveSelectedOption(
           _selectedBillingType,
           _billingOptions,

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mycrm/core/constants/app_text_styles.dart';
+import 'package:mycrm/core/services/permission_service.dart';
 import 'package:mycrm/core/utils/app_error_handler.dart';
 import 'package:mycrm/models/project_model.dart';
 import 'package:mycrm/models/staff_member_model.dart';
@@ -747,12 +748,31 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
       final results = await Future.wait<dynamic>([
         ApiService.instance.getProjectsList(),
         ApiService.instance.getStaffList(),
+        PermissionService.getCurrentUser(),
       ]);
       if (!mounted) return;
 
       setState(() {
         _projects = _dedupeProjectsById(results[0] as List<ProjectModel>);
         _staff = results[1] as List<StaffMemberModel>;
+        if (!_isEditMode) {
+          final currentUser = results[2];
+          final currentUserId = currentUser?.id.toString().trim() ?? '';
+          final currentUserEmail =
+              currentUser?.email.toString().trim().toLowerCase() ?? '';
+          for (final member in _staff) {
+            final matchesId = currentUserId.isNotEmpty &&
+                member.id.trim() == currentUserId;
+            final matchesEmail = currentUserEmail.isNotEmpty &&
+                member.email.trim().toLowerCase() == currentUserEmail;
+            if (matchesId || matchesEmail) {
+              if (!_assigneeIds.contains(member.id)) {
+                _assigneeIds = [..._assigneeIds, member.id];
+              }
+              break;
+            }
+          }
+        }
         if (_projectId != null &&
             !_projects.any((project) => project.id == _projectId)) {
           _projectId = null;
