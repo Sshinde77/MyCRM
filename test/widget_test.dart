@@ -5,6 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/controllers/auth_controller.dart';
@@ -31,7 +32,7 @@ void main() {
 
   tearDown(Get.reset);
 
-  testWidgets('Login screen renders with dummy credentials', (
+  testWidgets('Signed-out startup shows login and requires credentials', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(const MyApp(initialDarkModeEnabled: false));
@@ -39,7 +40,19 @@ void main() {
     await tester.pump();
 
     expect(find.text('Welcome Back'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
-    expect(find.textContaining('demo@mycrm.com / crm@123'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNWidgets(2));
+    for (final field in tester.widgetList<TextFormField>(
+      find.byType(TextFormField),
+    )) {
+      expect(field.controller!.text, isEmpty);
+    }
+
+    await tester.ensureVisible(find.text('Sign In'));
+    await tester.tap(find.text('Sign In'));
+    await tester.pump();
+
+    expect(find.text('Email is required'), findsOneWidget);
+    expect(find.text('Password is required'), findsOneWidget);
   });
 }

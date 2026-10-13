@@ -41,6 +41,10 @@ dependencies:
   flutter_tts: ^4.2.5
 
 dependency_overrides:
+  # Use the platform-channel implementation to avoid objective_c native assets
+  # being cached for the simulator and embedded in iOS device archives.
+  # Revisit when upgrading Flutter's native-assets build support.
+  path_provider_foundation: 2.5.1
   # flutter_html 3.0.0 still calls the private html query_selector.matches API,
   # which was removed in html 0.15.7.
   html: 0.15.6
