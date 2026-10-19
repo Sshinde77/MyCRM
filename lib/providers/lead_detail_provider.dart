@@ -53,7 +53,10 @@ class LeadDetailProvider extends ChangeNotifier {
           sourceId: normalizedSourceId,
         );
       } else {
-        _lead = await _apiService.getLeadDetail(leadId);
+        _lead = await _apiService.getLeadManagementDetailView(
+          sourceType: 'lead',
+          sourceId: leadId,
+        );
       }
     } catch (error) {
       _errorMessage = _toMessage(error);

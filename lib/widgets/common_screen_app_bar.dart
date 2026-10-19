@@ -1,3 +1,4 @@
+import '../core/services/in_app_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mycrm/routes/app_routes.dart';
@@ -65,10 +66,7 @@ class CommonScreenAppBar extends StatelessWidget
             onPressed: () => Get.to(() => const to_do.ToDoListScreen()),
           ),
         if (showNotificationButton)
-          IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: _openNotifications,
-          ),
+          DatabaseNotificationButton(onPressed: _openNotifications),
       ],
     );
   }
@@ -136,11 +134,7 @@ class CommonTopBar extends StatelessWidget {
           SizedBox(width: effectiveCompact ? 8 : 10),
         ],
         if (showNotificationButton)
-          _TopBarIconButton(
-            icon: Icons.notifications_none_rounded,
-            size: iconSize,
-            onTap: _openNotifications,
-          ),
+          DatabaseNotificationButton(onPressed: _openNotifications),
       ],
     );
   }

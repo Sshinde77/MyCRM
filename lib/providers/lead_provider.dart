@@ -27,7 +27,9 @@ class LeadProvider extends ChangeNotifier {
   int get totalLeads => _totalLeads;
   int get currentPage => _currentPage;
   int get lastPage => _lastPage;
-  bool isDeletingLead(String id) => _deletingLeadIds.contains(id);
+  String _key(LeadModel lead) =>
+      '${lead.managementSource}::${lead.managementId}';
+  bool isDeletingLead(LeadModel lead) => _deletingLeadIds.contains(_key(lead));
 
   int get newLeadsCount {
     return _allLeads.where((lead) {
@@ -102,9 +104,9 @@ class LeadProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteLead(String id) async {
-    final normalizedId = id.trim();
-    if (normalizedId.isEmpty || _deletingLeadIds.contains(normalizedId)) {
+  Future<void> deleteLead(LeadModel lead) async {
+    final normalizedId = _key(lead);
+    if (lead.managementId.isEmpty || _deletingLeadIds.contains(normalizedId)) {
       return;
     }
 
@@ -113,9 +115,12 @@ class LeadProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _apiService.deleteLead(normalizedId);
+      await _apiService.deleteManagedLead(
+        source: lead.managementSource,
+        id: lead.managementId,
+      );
       _allLeads = _allLeads
-          .where((lead) => (lead.id.trim()) != normalizedId)
+          .where((item) => _key(item) != normalizedId)
           .toList(growable: false);
       if (_totalLeads > 0) {
         _totalLeads -= 1;

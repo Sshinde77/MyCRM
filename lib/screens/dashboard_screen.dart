@@ -34,6 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoadingSummary = false;
   bool _isLoadingRenewals = false;
   bool _isLoadingTickets = false;
+  bool _isMonthlyCalendarView = false;
   String? _calendarLoadError;
   String? _summaryLoadError;
   String? _renewalLoadError;
@@ -163,6 +164,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               appointments: _appointments,
                               displayedMonth: _displayedMonth,
                               selectedDate: _selectedCalendarDate,
+                              isMonthlyView: _isMonthlyCalendarView,
+                              upcomingRenewals: _upcomingRenewals,
+                              taskStatusCounts: _taskStatusCounts,
                               onAddAppointment: _handleCreateAppointment,
                               onDateTap: (date) {
                                 setState(() {
@@ -174,6 +178,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               onPickDate: _pickDashboardMonthYear,
                               onPreviousMonth: () => _changeDashboardDate(-1),
                               onNextMonth: () => _changeDashboardDate(1),
+                              onToggleView: () {
+                                setState(() {
+                                  _isMonthlyCalendarView = !_isMonthlyCalendarView;
+                                });
+                              },
                             ),
                             if (_isLoadingCalendar || _isSavingCalendar) ...[
                               const SizedBox(height: 8),
@@ -3291,26 +3300,40 @@ class _CalendarAppointmentsSection extends StatelessWidget {
     required this.appointments,
     required this.displayedMonth,
     required this.selectedDate,
+    required this.isMonthlyView,
+    required this.upcomingRenewals,
+    required this.taskStatusCounts,
     required this.onAddAppointment,
     required this.onDateTap,
     required this.onAppointmentTap,
     required this.onPickDate,
     required this.onPreviousMonth,
     required this.onNextMonth,
+    required this.onToggleView,
   });
 
   final List<_Appointment> appointments;
   final DateTime displayedMonth;
   final DateTime selectedDate;
+  final bool isMonthlyView;
+  final List<_UpcomingRenewalItem> upcomingRenewals;
+  final Map<String, int> taskStatusCounts;
   final VoidCallback onAddAppointment;
   final ValueChanged<DateTime> onDateTap;
   final ValueChanged<_Appointment> onAppointmentTap;
   final VoidCallback onPickDate;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
+  final VoidCallback onToggleView;
 
   @override
   Widget build(BuildContext context) {
+    return isMonthlyView
+        ? _buildMonthlyView(context)
+        : _buildDayView(context);
+  }
+
+  Widget _buildDayView(BuildContext context) {
     final now = DateTime.now();
     final selectedAppointments = appointments
         .where((appointment) => _isSameDate(appointment.date, selectedDate))
@@ -3392,6 +3415,11 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                   ],
                 ),
               ),
+              _CalendarViewToggleButton(
+                isMonthlyView: isMonthlyView,
+                onTap: onToggleView,
+              ),
+              const SizedBox(width: 8),
               PermissionGate(
                 permission: AppPermission.manageCalendar,
                 child: IconButton(
@@ -3455,9 +3483,9 @@ class _CalendarAppointmentsSection extends StatelessWidget {
           Row(
             children: visibleDates.map((date) {
               final selected = _isSameDate(date, selectedDate);
-              final hasEvent = appointments.any(
-                (appointment) => _isSameDate(appointment.date, date),
-              );
+              final dayData = _buildDayData(date);
+              final hasActivity = dayData.hasAnyActivity;
+
               return Expanded(
                 child: InkWell(
                   onTap: () => onDateTap(date),
@@ -3495,18 +3523,49 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Container(
-                          width: 4,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: hasEvent
-                                ? (selected
-                                      ? Colors.white
-                                      : const Color(0xFF3F8EF7))
-                                : Colors.transparent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                        if (hasActivity)
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 2.5,
+                            runSpacing: 2,
+                            children: [
+                              if (dayData.appointments.isNotEmpty)
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? Colors.white
+                                        : const Color(0xFF2A7FFF),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              if (dayData.hasTasks)
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? Colors.white
+                                        : const Color(0xFF8B5CF6),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              if (dayData.renewals.isNotEmpty)
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: selected
+                                        ? Colors.white
+                                        : const Color(0xFFF59E0B),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
+                          )
+                        else
+                          const SizedBox(height: 4),
                       ],
                     ),
                   ),
@@ -3529,69 +3588,564 @@ class _CalendarAppointmentsSection extends StatelessWidget {
               ),
             ],
           ),
-          if (selectedAppointments.isEmpty)
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF7F9FC),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
+          const SizedBox(height: 12),
+          Builder(
+            builder: (context) {
+              final dayData = _buildDayData(selectedDate);
+              final hasAnyActivity = dayData.hasAnyActivity;
+
+              if (!hasAnyActivity) {
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F9FC),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(
+                        Icons.event_available_rounded,
+                        color: Color(0xFF8DA0BC),
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No activities scheduled for this date',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF74839D),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.event_available_rounded,
-                    color: Color(0xFF8DA0BC),
-                    size: 32,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No appointments for this date',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.style(
-                      color: const Color(0xFF74839D),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  // ── Appointments ──
+                  if (selectedAppointments.isNotEmpty) ...[
+                    _MonthlyCategoryHeader(
+                      icon: Icons.event_rounded,
+                      label: 'Appointments',
+                      count: selectedAppointments.length,
+                      color: const Color(0xFF2A7FFF),
                     ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: ListView.separated(
-                shrinkWrap: true,
-                padding: const EdgeInsets.only(top: 8),
-                physics: const BouncingScrollPhysics(),
-                itemCount: selectedAppointments.length,
-                separatorBuilder: (context, index) =>
                     const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final appointment = selectedAppointments[index];
-                  final appointmentDateTime = DateTime(
-                    appointment.date.year,
-                    appointment.date.month,
-                    appointment.date.day,
-                    appointment.time.hour,
-                    appointment.time.minute,
-                  );
-                  final isNextUpcoming = index == 0 &&
-                      !appointmentDateTime.isBefore(now);
-                  return InkWell(
-                    onTap: () => onAppointmentTap(appointment),
-                    borderRadius: BorderRadius.circular(16),
-                    child: _AppointmentSheetCard(
-                      appointment: appointment,
-                      isHighlighted: isNextUpcoming,
+                    ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.zero,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: selectedAppointments.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final appointment = selectedAppointments[index];
+                        final appointmentDateTime = DateTime(
+                          appointment.date.year,
+                          appointment.date.month,
+                          appointment.date.day,
+                          appointment.time.hour,
+                          appointment.time.minute,
+                        );
+                        final isNextUpcoming = index == 0 &&
+                            !appointmentDateTime.isBefore(now);
+                        return InkWell(
+                          onTap: () => onAppointmentTap(appointment),
+                          borderRadius: BorderRadius.circular(16),
+                          child: _AppointmentSheetCard(
+                            appointment: appointment,
+                            isHighlighted: isNextUpcoming,
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // ── Renewals ──
+                  if (dayData.renewals.isNotEmpty) ...[
+                    _MonthlyCategoryHeader(
+                      icon: Icons.autorenew_rounded,
+                      label: 'Renewals',
+                      count: dayData.renewals.length,
+                      color: const Color(0xFFF59E0B),
+                    ),
+                    const SizedBox(height: 8),
+                    ...dayData.renewals.map(
+                      (r) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _MonthlyActivityTile(
+                          title: r.name,
+                          subtitle: '${r.serviceName} • ${r.daysLeftLabel}',
+                          color: const Color(0xFFF59E0B),
+                          icon: Icons.autorenew_rounded,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // ── Tasks ──
+                  if (dayData.hasTasks) ...[
+                    _MonthlyCategoryHeader(
+                      icon: Icons.task_alt_rounded,
+                      label: 'Tasks',
+                      count: taskStatusCounts.values
+                          .fold<int>(0, (s, v) => s + v),
+                      color: const Color(0xFF8B5CF6),
+                    ),
+                    const SizedBox(height: 8),
+                    _MonthlyActivityTile(
+                      title: 'Active Tasks',
+                      subtitle:
+                          '${taskStatusCounts['inProgress'] ?? 0} in progress, '
+                          '${taskStatusCounts['notStarted'] ?? 0} not started',
+                      color: const Color(0xFF8B5CF6),
+                      icon: Icons.task_alt_rounded,
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
         ],
       ),
+    );
+  }
+
+  /// Collects all CRM activity indicators for a given [date].
+  _MonthlyDayData _buildDayData(DateTime date) {
+    final dayAppointments = appointments
+        .where((a) => _isSameDate(a.date, date))
+        .toList(growable: false);
+
+    final dayRenewals = upcomingRenewals.where((item) {
+      final d = item.renewalDateValue;
+      if (d == null) return false;
+      return _isSameDate(d, date);
+    }).toList(growable: false);
+
+    // Tasks & To-Do counts are dashboard-level aggregates (not per-date),
+    // so we show them as general indicators on today's date only.
+    final isToday = _isSameDate(date, DateTime.now());
+    final totalTasks = taskStatusCounts.values.fold<int>(0, (s, v) => s + v);
+    final hasTasks = isToday && totalTasks > 0;
+
+    return _MonthlyDayData(
+      appointments: dayAppointments,
+      renewals: dayRenewals,
+      hasTasks: hasTasks,
+    );
+  }
+
+  Widget _buildMonthlyView(BuildContext context) {
+    final monthStart = DateTime(displayedMonth.year, displayedMonth.month);
+    final today = DateTime.now();
+    final firstGridDate = monthStart.subtract(
+      Duration(days: monthStart.weekday % 7),
+    );
+    final calendarDays = List.generate(
+      42,
+      (index) => DateTime(
+        firstGridDate.year,
+        firstGridDate.month,
+        firstGridDate.day + index,
+      ),
+    );
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE7ECF4)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ── Header ──
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFF7FAFF), Color(0xFFEEF4FF)],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Calendar',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF2D3B54),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    _CalendarViewToggleButton(
+                      isMonthlyView: isMonthlyView,
+                      onTap: onToggleView,
+                    ),
+                    const SizedBox(width: 8),
+                    PermissionGate(
+                      permission: AppPermission.manageCalendar,
+                      child: IconButton(
+                        onPressed: onAddAppointment,
+                        tooltip: 'Add appointment',
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFF3F8EF7),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(40, 40),
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 22),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    _CalendarIconButton(
+                      icon: Icons.chevron_left_rounded,
+                      onTap: onPreviousMonth,
+                    ),
+                    const SizedBox(width: 8),
+                    _CalendarIconButton(
+                      icon: Icons.chevron_right_rounded,
+                      onTap: onNextMonth,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: InkWell(
+                        onTap: onPickDate,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  _formatMonthYear(monthStart),
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.style(
+                                    color: const Color(0xFF2D3B54),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: Color(0xFF74839D),
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // ── Legend ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              children: const [
+                _MonthlyLegendChip(
+                  color: Color(0xFF2A7FFF),
+                  label: 'Appointments',
+                ),
+                _MonthlyLegendChip(
+                  color: Color(0xFF8B5CF6),
+                  label: 'Tasks',
+                ),
+                _MonthlyLegendChip(
+                  color: Color(0xFFF59E0B),
+                  label: 'Renewals',
+                ),
+                _MonthlyLegendChip(
+                  color: Color(0xFF22B573),
+                  label: 'Lead Mgmt',
+                ),
+                _MonthlyLegendChip(
+                  color: Color(0xFFEF4444),
+                  label: 'To-Do',
+                ),
+              ],
+            ),
+          ),
+
+          // ── Weekday headers ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+            child: Row(
+              children: [
+                for (final label in _weekdayLabels)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF2480F0),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // ── Month grid ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 4, 10, 12),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: calendarDays.length,
+              gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    crossAxisSpacing: 0,
+                    mainAxisSpacing: 0,
+                    childAspectRatio: 0.72,
+                  ),
+              itemBuilder: (context, index) {
+                final date = calendarDays[index];
+                final dayData = _buildDayData(date);
+
+                return _MonthlyCalendarDayCell(
+                  date: date,
+                  displayedMonth: monthStart,
+                  today: today,
+                  selectedDate: selectedDate,
+                  dayData: dayData,
+                  onTap: () {
+                    onDateTap(date);
+                    _showMonthlyDayDetail(context, date, dayData);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMonthlyDayDetail(
+    BuildContext context,
+    DateTime date,
+    _MonthlyDayData dayData,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final hasAnyData = dayData.appointments.isNotEmpty ||
+            dayData.renewals.isNotEmpty ||
+            dayData.hasTasks;
+
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 14),
+                    width: 46,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD7E2F0),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Text(
+                    _formatCalendarSheetDate(date),
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF22314A),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    hasAnyData
+                        ? 'All activities for this date'
+                        : 'No activities scheduled for this date.',
+                    style: AppTextStyles.style(
+                      color: const Color(0xFF7B8CA5),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                if (!hasAnyData)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7FAFE),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: const Color(0xFFE3EBF5),
+                        ),
+                      ),
+                      child: Text(
+                        'Tap "+" to schedule a meeting for this day.',
+                        style: AppTextStyles.style(
+                          color: const Color(0xFF5F738F),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ── Appointments ──
+                          if (dayData.appointments.isNotEmpty) ...[
+                            _MonthlyCategoryHeader(
+                              icon: Icons.event_rounded,
+                              label: 'Appointments',
+                              count: dayData.appointments.length,
+                              color: const Color(0xFF2A7FFF),
+                            ),
+                            const SizedBox(height: 8),
+                            ...dayData.appointments.map(
+                              (a) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: InkWell(
+                                  onTap: () => onAppointmentTap(a),
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: _MonthlyActivityTile(
+                                    title: a.title,
+                                    subtitle: _formatTime(a.time),
+                                    color: const Color(0xFF2A7FFF),
+                                    icon: Icons.access_time_rounded,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // ── Renewals ──
+                          if (dayData.renewals.isNotEmpty) ...[
+                            _MonthlyCategoryHeader(
+                              icon: Icons.autorenew_rounded,
+                              label: 'Renewals',
+                              count: dayData.renewals.length,
+                              color: const Color(0xFFF59E0B),
+                            ),
+                            const SizedBox(height: 8),
+                            ...dayData.renewals.map(
+                              (r) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: _MonthlyActivityTile(
+                                  title: r.name,
+                                  subtitle: '${r.serviceName} • ${r.daysLeftLabel}',
+                                  color: const Color(0xFFF59E0B),
+                                  icon: Icons.autorenew_rounded,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // ── Tasks ──
+                          if (dayData.hasTasks) ...[
+                            _MonthlyCategoryHeader(
+                              icon: Icons.task_alt_rounded,
+                              label: 'Tasks',
+                              count: taskStatusCounts.values
+                                  .fold<int>(0, (s, v) => s + v),
+                              color: const Color(0xFF8B5CF6),
+                            ),
+                            const SizedBox(height: 8),
+                            _MonthlyActivityTile(
+                              title: 'Active Tasks',
+                              subtitle:
+                                  '${taskStatusCounts['inProgress'] ?? 0} in progress, '
+                                  '${taskStatusCounts['notStarted'] ?? 0} not started',
+                              color: const Color(0xFF8B5CF6),
+                              icon: Icons.task_alt_rounded,
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // ── Lead Management (placeholder) ──
+                          // Lead data would show here when lead date matching is available.
+
+                          // ── To-Do (placeholder) ──
+                          // To-do items would show here when to-do date data is available.
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -4240,6 +4794,360 @@ class _CalendarIconButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(icon, color: Colors.white, size: 22),
+      ),
+    );
+  }
+}
+
+/// Data model holding all CRM activities for a single calendar day.
+class _MonthlyDayData {
+  const _MonthlyDayData({
+    required this.appointments,
+    required this.renewals,
+    required this.hasTasks,
+  });
+
+  final List<_Appointment> appointments;
+  final List<_UpcomingRenewalItem> renewals;
+  final bool hasTasks;
+
+  bool get hasAnyActivity =>
+      appointments.isNotEmpty || renewals.isNotEmpty || hasTasks;
+}
+
+/// Toggle button to switch between Day and Month calendar views.
+class _CalendarViewToggleButton extends StatelessWidget {
+  const _CalendarViewToggleButton({
+    required this.isMonthlyView,
+    required this.onTap,
+  });
+
+  final bool isMonthlyView;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2D3B54),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isMonthlyView
+                    ? Icons.view_day_rounded
+                    : Icons.calendar_month_rounded,
+                color: Colors.white,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isMonthlyView ? 'Day' : 'Month',
+                style: AppTextStyles.style(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A single day cell in the monthly calendar grid with category indicator dots.
+class _MonthlyCalendarDayCell extends StatelessWidget {
+  const _MonthlyCalendarDayCell({
+    required this.date,
+    required this.displayedMonth,
+    required this.today,
+    required this.selectedDate,
+    required this.dayData,
+    required this.onTap,
+  });
+
+  final DateTime date;
+  final DateTime displayedMonth;
+  final DateTime today;
+  final DateTime selectedDate;
+  final _MonthlyDayData dayData;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrentMonth = date.month == displayedMonth.month;
+    final isToday = _isSameDate(date, today);
+    final isSelected = _isSameDate(date, selectedDate);
+    final hasActivity = dayData.hasAnyActivity && isCurrentMonth;
+
+    final backgroundColor = isSelected
+        ? const Color(0xFF3F8EF7)
+        : isToday
+            ? const Color(0xFFFFF8D9)
+            : hasActivity
+                ? const Color(0xFFF0F4FF)
+                : Colors.white;
+
+    final dayColor = !isCurrentMonth
+        ? const Color(0xFFBDD0E8)
+        : isSelected
+            ? Colors.white
+            : const Color(0xFF202B3C);
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.all(0.5),
+        padding: const EdgeInsets.fromLTRB(4, 6, 4, 4),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF3F8EF7)
+                : hasActivity
+                    ? const Color(0xFFCDD8EA)
+                    : const Color(0xFFE8EDF5),
+            width: isSelected ? 1.5 : 1,
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Day number
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              decoration: BoxDecoration(
+                color: isToday && !isSelected
+                    ? const Color(0xFFFFF0A6)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '${date.day}',
+                style: AppTextStyles.style(
+                  color: dayColor,
+                  fontSize: 11,
+                  fontWeight: isToday || isSelected || hasActivity
+                      ? FontWeight.w800
+                      : FontWeight.w600,
+                ),
+              ),
+            ),
+            const Spacer(),
+            // Category indicator dots
+            if (hasActivity && isCurrentMonth)
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 3,
+                runSpacing: 3,
+                children: [
+                  if (dayData.appointments.isNotEmpty)
+                    _dotIndicator(
+                      const Color(0xFF2A7FFF),
+                      isSelected: isSelected,
+                    ),
+                  if (dayData.hasTasks)
+                    _dotIndicator(
+                      const Color(0xFF8B5CF6),
+                      isSelected: isSelected,
+                    ),
+                  if (dayData.renewals.isNotEmpty)
+                    _dotIndicator(
+                      const Color(0xFFF59E0B),
+                      isSelected: isSelected,
+                    ),
+                ],
+              )
+            else
+              const SizedBox(height: 6),
+            const SizedBox(height: 2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dotIndicator(Color color, {bool isSelected = false}) {
+    return Container(
+      width: 5,
+      height: 5,
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white : color,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+/// Legend chip showing a colored dot and label for a CRM category.
+class _MonthlyLegendChip extends StatelessWidget {
+  const _MonthlyLegendChip({
+    required this.color,
+    required this.label,
+  });
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: AppTextStyles.style(
+            color: const Color(0xFF5F738F),
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Section header for a CRM category in the monthly day detail bottom sheet.
+class _MonthlyCategoryHeader extends StatelessWidget {
+  const _MonthlyCategoryHeader({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: color),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: AppTextStyles.style(
+            color: const Color(0xFF22314A),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            '$count',
+            style: AppTextStyles.style(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Activity tile shown in the monthly day detail bottom sheet.
+class _MonthlyActivityTile extends StatelessWidget {
+  const _MonthlyActivityTile({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.icon,
+  });
+
+  final String title;
+  final String subtitle;
+  final Color color;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.18)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 6,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF22314A),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.style(
+                    color: const Color(0xFF70839F),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(icon, size: 18, color: color.withOpacity(0.5)),
+        ],
       ),
     );
   }

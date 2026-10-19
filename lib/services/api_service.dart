@@ -1,3 +1,4 @@
+import '../models/lead_flow.dart';
 // ignore_for_file: unused_element
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -38,6 +39,7 @@ import '../models/team_setting_model.dart';
 import '../models/vendor_model.dart';
 import '../models/quick_stats_model.dart';
 import '../core/services/secure_storage_service.dart';
+import '../core/services/lead_priority_cache.dart';
 
 /// Thin wrapper around Dio so API calls share one base configuration.
 class StaffListPageResult {
@@ -120,8 +122,16 @@ class LeadListPageResult {
     required this.total,
     required this.perPage,
     required this.hasNextPage,
+    this.statusOptions = const {},
+    this.sources = const {},
+    this.tabCounts = const {},
+    this.staff = const [],
   });
 
+  final Map<String, String> statusOptions;
+  final Map<String, String> sources;
+  final Map<String, dynamic> tabCounts;
+  final List<Map<String, dynamic>> staff;
   final List<LeadModel> items;
   final int currentPage;
   final int lastPage;
@@ -340,13 +350,16 @@ class _BackendValidationError {
 }
 
 class ApiService {
-  ApiService._internal() {
+  ApiService._internal() : _dio = _createClient() {
     _dio.interceptors.add(_buildAuthInterceptor());
 
     if (kDebugMode) {
       _dio.interceptors.add(_buildDebugLoggingInterceptor());
     }
   }
+
+  @visibleForTesting
+  ApiService.withClient(Dio client) : _dio = client;
 
   static final ApiService instance = ApiService._internal();
 
@@ -412,7 +425,9 @@ class ApiService {
     );
   }
 
-  final Dio _dio = Dio(
+  final Dio _dio;
+
+  static Dio _createClient() => Dio(
     BaseOptions(
       baseUrl: ApiConstants.baseUrl,
       connectTimeout: const Duration(milliseconds: ApiConstants.connectTimeout),
@@ -2497,46 +2512,44 @@ class ApiService {
     int fallbackPage,
   ) {
     final root = _normalizeMap(responseData);
-    Map<String, dynamic>? pagePayload;
     final rootData = root['data'];
-    if (rootData is Map<String, dynamic>) {
-      final leads = rootData['leads'];
-      if (leads is Map<String, dynamic>) {
-        pagePayload = leads;
-      } else if (leads is Map) {
-        pagePayload = leads.map(
-          (key, value) => MapEntry(key.toString(), value),
-        );
-      } else {
-        pagePayload = rootData;
-      }
-    } else if (rootData is Map) {
-      pagePayload = rootData.map(
-        (key, value) => MapEntry(key.toString(), value),
-      );
-    } else {
-      pagePayload = root;
-    }
-
-    final source = pagePayload['data'];
+    final envelope = rootData is Map ? _normalizeMap(rootData) : root;
+    final pagePayload = envelope['leads'] is Map
+        ? _normalizeMap(envelope['leads'])
+        : envelope;
+    final source =
+        pagePayload['data'] ??
+        envelope['leads'] ??
+        (rootData is List ? rootData : null);
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
-        : _normalizeList(responseData);
+        : _normalizeList(pagePayload['data'] ?? responseData);
     final items = records.map(LeadModel.fromJson).toList(growable: false);
-    final currentPage = _readInt(pagePayload['current_page']) ?? fallbackPage;
-    final lastPage = _readInt(pagePayload['last_page']) ?? currentPage;
-    final total = _readInt(pagePayload['total']) ?? items.length;
-    final perPage = _readInt(pagePayload['per_page']) ?? items.length;
-    final hasNextPage =
-        pagePayload['next_page_url'] != null || currentPage < lastPage;
-
+    final pagination = _normalizeMap(
+      envelope['pagination'] ?? root['pagination'] ?? const <String, dynamic>{},
+    );
+    final meta = {
+      ...pagePayload,
+      ..._normalizeMap(pagePayload['meta'] ?? const <String, dynamic>{}),
+      ...pagination,
+    };
+    final currentPage = _readInt(meta['current_page']) ?? fallbackPage;
+    final lastPage = _readInt(meta['last_page']) ?? currentPage;
     return LeadListPageResult(
       items: items,
       currentPage: currentPage,
       lastPage: lastPage,
-      total: total,
-      perPage: perPage,
-      hasNextPage: hasNextPage,
+      total: _readInt(meta['total']) ?? items.length,
+      perPage: _readInt(meta['per_page']) ?? items.length,
+      hasNextPage: currentPage < lastPage,
+      statusOptions: LeadFlow.options(
+        envelope['statusOptions'] ?? root['statusOptions'],
+      ),
+      sources: LeadFlow.options(envelope['sources'] ?? root['sources']),
+      tabCounts: _normalizeMap(
+        envelope['tabCounts'] ?? root['tabCounts'] ?? const <String, dynamic>{},
+      ),
+      staff: _normalizeList(envelope['staff'] ?? root['staff'] ?? const []),
     );
   }
 
@@ -4322,17 +4335,19 @@ class ApiService {
     int? perPage,
     String? search,
     String? status,
+    String? source,
     String? userId,
     String? roleId,
   }) async {
-    final query = await _resolveLeadQueryParameters(
-      userId: userId,
-      roleId: roleId,
-    );
+    final query = <String, dynamic>{
+      if ((userId ?? '').trim().isNotEmpty) 'user_id': userId!.trim(),
+      if ((roleId ?? '').trim().isNotEmpty) 'role_id': roleId!.trim(),
+    };
     final normalizedPage = page < 1 ? 1 : page;
     final normalizedPerPage = perPage != null && perPage > 0 ? perPage : null;
     final normalizedSearch = (search ?? '').trim();
     final normalizedStatus = (status ?? '').trim();
+    if ((source ?? '').trim().isNotEmpty) query['source'] = source!.trim();
     query['page'] = normalizedPage;
     if (normalizedPerPage != null) {
       query['per_page'] = normalizedPerPage;
@@ -4373,8 +4388,32 @@ class ApiService {
         .replaceFirst('{sourceType}', normalizedSourceType)
         .replaceFirst('{source_id}', normalizedSourceId);
     final response = await get(path);
-    final body = _normalizeMap(_extractDetailSource(response.data));
-    return LeadModel.fromJson(body);
+    final root = _normalizeMap(response.data);
+    final body = root['data'] is Map ? _normalizeMap(root['data']) : root;
+    final model = LeadModel.fromJson({
+      ...body,
+      'source_type': normalizedSourceType,
+      'source_id': normalizedSourceId,
+    });
+    if (model.priority != null && model.priority!.isNotEmpty) {
+      LeadPriorityCache.set(
+        sourceType: normalizedSourceType,
+        sourceId: normalizedSourceId,
+        priority: model.priority,
+      );
+    }
+    return model;
+  }
+
+  List<Map<String, dynamic>> _leadRecords(dynamic body, List<String> keys) {
+    if (body is List) return body.map(_normalizeMap).toList(growable: false);
+    final map = _normalizeMap(body);
+    for (final key in keys) {
+      if (map[key] != null) return _leadRecords(map[key], const []);
+    }
+    if (map['data'] != null) return _leadRecords(map['data'], keys);
+    if (map['items'] != null) return _leadRecords(map['items'], const []);
+    return const [];
   }
 
   Future<List<Map<String, dynamic>>> getLeadTimeline({
@@ -4390,15 +4429,7 @@ class ApiService {
         .replaceFirst('{sourceType}', normalizedSourceType)
         .replaceFirst('{source_id}', normalizedSourceId);
     final response = await get(path);
-    final source = _normalizeMap(_extractDetailSource(response.data));
-    final list =
-        source['activities']?['data'] ??
-        source['activities'] ??
-        source['timeline']?['data'] ??
-        source['timeline'] ??
-        source['data'] ??
-        source['items'];
-    return _normalizeList(list);
+    return _leadRecords(response.data, const ['activities', 'timeline']);
   }
 
   Future<List<Map<String, dynamic>>> getLeadFollowups({
@@ -4414,13 +4445,7 @@ class ApiService {
         .replaceFirst('{sourceType}', normalizedSourceType)
         .replaceFirst('{source_id}', normalizedSourceId);
     final response = await get(path);
-    final source = _normalizeMap(_extractDetailSource(response.data));
-    final list =
-        source['followups']?['data'] ??
-        source['followups'] ??
-        source['data'] ??
-        source['items'];
-    return _normalizeList(list);
+    return _leadRecords(response.data, const ['followups']);
   }
 
   Future<List<Map<String, dynamic>>> getLeadNotes({
@@ -4436,14 +4461,7 @@ class ApiService {
         .replaceFirst('{sourceType}', normalizedSourceType)
         .replaceFirst('{source_id}', normalizedSourceId);
     final response = await get(path);
-    final source = _normalizeMap(_extractDetailSource(response.data));
-    final notesSource = source['notes'];
-    final list =
-        (notesSource is Map ? _normalizeMap(notesSource)['data'] : null) ??
-        notesSource ??
-        source['data'] ??
-        source['items'];
-    return _normalizeList(list);
+    return _leadRecords(response.data, const ['notes']);
   }
 
   Future<void> createLeadNote({
@@ -4482,16 +4500,7 @@ class ApiService {
         .replaceFirst('{sourceType}', normalizedSourceType)
         .replaceFirst('{source_id}', normalizedSourceId);
     final response = await get(path);
-    final source = _normalizeMap(_extractDetailSource(response.data));
-    final remindersSource = source['reminders'];
-    final list =
-        (remindersSource is Map
-            ? _normalizeMap(remindersSource)['data']
-            : null) ??
-        remindersSource ??
-        source['data'] ??
-        source['items'];
-    return _normalizeList(list);
+    return _leadRecords(response.data, const ['reminders']);
   }
 
   Future<void> createLeadReminder({
@@ -4535,16 +4544,7 @@ class ApiService {
         .replaceFirst('{sourceType}', normalizedSourceType)
         .replaceFirst('{source_id}', normalizedSourceId);
     final response = await get(path);
-    final source = _normalizeMap(_extractDetailSource(response.data));
-    final assignmentsSource = source['assignments'];
-    final list =
-        (assignmentsSource is Map
-            ? _normalizeMap(assignmentsSource)['data']
-            : null) ??
-        assignmentsSource ??
-        source['data'] ??
-        source['items'];
-    return _normalizeList(list);
+    return _leadRecords(response.data, const ['assignments']);
   }
 
   Future<List<Map<String, dynamic>>> getLeadStatusHistory({
@@ -4560,19 +4560,7 @@ class ApiService {
         .replaceFirst('{sourceType}', normalizedSourceType)
         .replaceFirst('{source_id}', normalizedSourceId);
     final response = await get(path);
-    final source = _normalizeMap(_extractDetailSource(response.data));
-    final statusHistorySource = source['status_history'];
-    final historySource = source['history'];
-    final list =
-        (statusHistorySource is Map
-            ? _normalizeMap(statusHistorySource)['data']
-            : null) ??
-        statusHistorySource ??
-        (historySource is Map ? _normalizeMap(historySource)['data'] : null) ??
-        historySource ??
-        source['data'] ??
-        source['items'];
-    return _normalizeList(list);
+    return _leadRecords(response.data, const ['status_history', 'history']);
   }
 
   /// Loads form option data required by the add lead screen.
@@ -4714,6 +4702,15 @@ class ApiService {
     return payload;
   }
 
+  Future<void> deleteManagedLead({
+    required String source,
+    required String id,
+  }) async {
+    await delete(
+      '${ApiConstants.leadManagement}/${_normalizeLeadSourceTypeForPath(source)}/${id.trim()}',
+    );
+  }
+
   /// Deletes a single lead by id.
   Future<void> deleteLead(String id) async {
     final path = ApiConstants.leadDelete.replaceFirst('{id}', id);
@@ -4759,7 +4756,8 @@ class ApiService {
       tags: tags,
       description: description,
     );
-    await post(ApiConstants.createleads, data: payload);
+    final response = await post(ApiConstants.createleads, data: payload);
+    _ensureAssignmentSucceeded(response.data);
   }
 
   /// Updates an existing lead.
@@ -4803,7 +4801,8 @@ class ApiService {
       tags: tags,
       description: description,
     );
-    await put(path, data: payload);
+    final response = await put(path, data: payload);
+    _ensureAssignmentSucceeded(response.data);
   }
 
   /// Assigns one lead to one or more staff members.
@@ -4966,6 +4965,7 @@ class ApiService {
         .replaceFirst('{source_id}', normalizedLeadId);
     try {
       final response = await patch(path, data: payload);
+      _ensureAssignmentSucceeded(response.data);
       debugPrint('[leadStatusUpdate] URL: $path');
       debugPrint(
         '[leadStatusUpdate] Response: ${_summarizeForLog(response.data)}',
@@ -4982,6 +4982,45 @@ class ApiService {
     }
   }
 
+  /// Updates a lead's priority directly.
+  Future<void> updateLeadPriority({
+    required String sourceType,
+    required String leadId,
+    required String priority,
+  }) async {
+    final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
+    final normalizedLeadId = leadId.trim();
+    final payload = {
+      'priority': priority.trim().toLowerCase(),
+    };
+
+    final path = ApiConstants.leadPriorityUpdate
+        .replaceFirst('{sourceType}', normalizedSourceType)
+        .replaceFirst('{source_id}', normalizedLeadId);
+    try {
+      final response = await patch(path, data: payload);
+      _ensureAssignmentSucceeded(response.data);
+      LeadPriorityCache.set(
+        sourceType: normalizedSourceType,
+        sourceId: normalizedLeadId,
+        priority: priority,
+      );
+      debugPrint('[leadPriorityUpdate] URL: $path');
+      debugPrint(
+        '[leadPriorityUpdate] Response: ${_summarizeForLog(response.data)}',
+      );
+    } on DioException catch (error) {
+      debugPrint('[leadPriorityUpdate] URL: $path');
+      debugPrint('[leadPriorityUpdate] Error: ${error.message ?? error.error}');
+      if (error.response?.data != null) {
+        debugPrint(
+          '[leadPriorityUpdate] Error Response: ${_summarizeForLog(error.response?.data)}',
+        );
+      }
+      rethrow;
+    }
+  }
+
   /// Creates a followup record for a single lead-management source entry.
   Future<void> createLeadFollowup({
     required String sourceType,
@@ -4989,7 +5028,10 @@ class ApiService {
     required String followupDate,
     required String followupType,
     required String outcome,
-    String? discussionNotes,
+    required String discussionNotes,
+    String? lostReason,
+    double? wonValue,
+    bool completeScheduledFollowup = true,
     String? nextFollowupDate,
     String? leadStatusAfterFollowup,
     bool createReminder = false,
@@ -5013,7 +5055,10 @@ class ApiService {
       'followup_date': followupDate.trim(),
       'followup_type': normalizeChoice(followupType),
       'outcome': normalizeChoice(outcome),
-      'discussion_notes': (discussionNotes ?? '').trim(),
+      'discussion_notes': discussionNotes.trim(),
+      'complete_scheduled_followup': completeScheduledFollowup,
+      'lost_reason': lostReason,
+      'won_value': wonValue,
     };
     final nextFollowup = (nextFollowupDate ?? '').trim();
     if (nextFollowup.isNotEmpty) {
@@ -5043,6 +5088,7 @@ class ApiService {
         );
       }
       final response = await post(path, data: payload);
+      _ensureAssignmentSucceeded(response.data);
       if (kDebugMode) {
         debugPrint(
           '[leadFollowupCreate] Response: ${_summarizeForLog(response.data)}',
@@ -5349,17 +5395,26 @@ class ApiService {
     );
 
     final root = _normalizeMap(response.data);
-    final source = _extractListSource(root['data']);
+    final source = _extractListSource(root['data'] ?? root['notifications']);
     final records = source is List
         ? source.map(_normalizeMap).toList(growable: false)
         : const <Map<String, dynamic>>[];
-    final meta = _normalizeMap(root['meta']);
+    final data = root['data'] is Map
+        ? _normalizeMap(root['data'])
+        : const <String, dynamic>{};
+    final meta = {
+      ...data,
+      ..._normalizeMap(data['meta'] ?? const <String, dynamic>{}),
+      ..._normalizeMap(root['pagination'] ?? const <String, dynamic>{}),
+      ..._normalizeMap(root['meta'] ?? const <String, dynamic>{}),
+    };
 
     final currentPage = _readInt(meta['current_page']) ?? normalizedPage;
     final lastPage = _readInt(meta['last_page']) ?? currentPage;
     final total = _readInt(meta['total']) ?? records.length;
     final resolvedPerPage = _readInt(meta['per_page']) ?? normalizedPerPage;
-    final unreadCount = _readInt(meta['unread_count']) ?? 0;
+    final unreadCount =
+        _readInt(root['unread_count'] ?? meta['unread_count']) ?? 0;
     final hasNextPage = currentPage < lastPage;
 
     return NotificationListPageResult(
@@ -5841,13 +5896,8 @@ class ApiService {
       payload['lead_value'] = leadValue;
     }
 
-    if (assigned.isNotEmpty) {
-      payload['assigned'] = assigned;
-    }
-
-    if (tags.isNotEmpty) {
-      payload['tags'] = tags;
-    }
+    payload['assigned'] = assigned;
+    payload['tags'] = tags;
 
     return payload;
   }

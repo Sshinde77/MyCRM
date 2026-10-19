@@ -23,7 +23,6 @@ import '../screens/create_task_screen.dart';
 import '../screens/add_lead_screen.dart';
 import '../screens/leads_screen.dart';
 import '../screens/all_leads.dart';
-import '../screens/lead_detail_screen.dart';
 import '../screens/lead_management_detail_screen.dart';
 import '../screens/issue_management_screen.dart';
 import '../screens/issue_detail_screen.dart';
@@ -134,7 +133,7 @@ class RouteGenerator {
           AppRoutes.leadDetail,
           ChangeNotifierProvider(
             create: (_) => LeadDetailProvider(leadId: leadId)..loadLead(),
-            child: const LeadDetailScreen(),
+            child: const LeadManagementDetailScreen(),
           ),
         );
       case AppRoutes.leadManagementDetail:

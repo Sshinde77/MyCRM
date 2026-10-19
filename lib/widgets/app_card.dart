@@ -6,6 +6,10 @@ class AppCard extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final double? width;
   final double? height;
+  final Color? color;
+  final BoxBorder? border;
+  final List<BoxShadow>? boxShadow;
+  final BorderRadiusGeometry? borderRadius;
 
   const AppCard({
     super.key,
@@ -13,6 +17,10 @@ class AppCard extends StatelessWidget {
     this.padding,
     this.width,
     this.height,
+    this.color,
+    this.border,
+    this.boxShadow,
+    this.borderRadius,
   });
 
   @override
@@ -20,13 +28,13 @@ class AppCard extends StatelessWidget {
     final cardTheme = Theme.of(context).cardTheme;
     final shape = cardTheme.shape;
 
-    BorderRadius? borderRadius;
-    BoxBorder? border;
+    BorderRadius? defaultRadius;
+    BoxBorder? defaultBorder;
 
     // Extract border radius and border side when the theme uses a rounded shape.
     if (shape is RoundedRectangleBorder) {
-      borderRadius = shape.borderRadius as BorderRadius?;
-      border = Border.fromBorderSide(shape.side);
+      defaultRadius = shape.borderRadius as BorderRadius?;
+      defaultBorder = Border.fromBorderSide(shape.side);
     }
 
     return Container(
@@ -34,10 +42,10 @@ class AppCard extends StatelessWidget {
       height: height,
       padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardTheme.color ?? Colors.white,
-        borderRadius: borderRadius ?? BorderRadius.circular(12),
-        border: border,
-        boxShadow: [
+        color: color ?? cardTheme.color ?? Colors.white,
+        borderRadius: borderRadius ?? defaultRadius ?? BorderRadius.circular(12),
+        border: border ?? defaultBorder,
+        boxShadow: boxShadow ?? [
           if ((cardTheme.elevation ?? 0) > 0)
             BoxShadow(
               color: Colors.black.withOpacity(0.05),

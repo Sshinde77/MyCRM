@@ -1,4 +1,5 @@
-﻿import 'package:dio/dio.dart';
+import '../core/services/in_app_notifications.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_text_styles.dart';
@@ -13,7 +14,8 @@ class NotificationListScreen extends StatefulWidget {
   State<NotificationListScreen> createState() => _NotificationListScreenState();
 }
 
-class _NotificationListScreenState extends State<NotificationListScreen> {
+class _NotificationListScreenState extends State<NotificationListScreen>
+    with WidgetsBindingObserver {
   final ApiService _api = ApiService.instance;
   List<_NotificationItem> _items = const <_NotificationItem>[];
   bool _isLoading = true;
@@ -27,7 +29,19 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadPage(page: 1);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadPage(page: _currentPage);
   }
 
   Future<void> _loadPage({int page = 1}) async {
@@ -40,6 +54,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
     try {
       final result = await _api.getNotificationsPage(page: page, perPage: 20);
+      InAppNotifications.instance.unreadCount.value = result.unreadCount;
       final items = result.items.map(_NotificationItem.fromJson).toList();
       if (!mounted) return;
 
@@ -136,7 +151,12 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                 onMarkAll: _markAllAsRead,
               ),
               const SizedBox(height: 10),
-              Expanded(child: _buildBody(compact)),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => _loadPage(page: _currentPage),
+                  child: _buildBody(compact),
+                ),
+              ),
               if (_lastPage > 1) ...[
                 const SizedBox(height: 8),
                 _PaginationBar(
@@ -195,6 +215,7 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
     }
 
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       itemCount: _items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {

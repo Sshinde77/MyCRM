@@ -225,7 +225,13 @@ class _LeadsScreenState extends State<LeadsScreen> {
                             child: PermissionGate(
                               permission: AppPermission.createLeads,
                               child: ElevatedButton.icon(
-                                onPressed: () => Get.toNamed(AppRoutes.addLead),
+                                onPressed: () async {
+                                  await Get.toNamed(AppRoutes.addLead);
+                                  if (mounted)
+                                    await leadProvider.loadLeads(
+                                      forceRefresh: true,
+                                    );
+                                },
                                 icon: const Icon(
                                   Icons.add_rounded,
                                   color: Colors.white,
@@ -386,7 +392,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
     }
 
     try {
-      await leadProvider.deleteLead(id);
+      await leadProvider.deleteLead(lead);
       if (!mounted) {
         return;
       }
@@ -417,7 +423,7 @@ class _LeadsScreenState extends State<LeadsScreen> {
       for (var index = 0; index < leads.length; index++) ...[
         _LeadCard(
           lead: leads[index],
-          isDeleting: leadProvider.isDeletingLead(leads[index].id),
+          isDeleting: leadProvider.isDeletingLead(leads[index]),
           onDelete: () => _deleteLead(context, leadProvider, leads[index]),
         ),
         if (index != leads.length - 1) const SizedBox(height: 16),
@@ -687,18 +693,40 @@ class _LeadCard extends StatelessWidget {
     const Color textLight = Color(0xFF76839A);
     const Color textDark = Color(0xFF1E2A3B);
     final statusColors = _statusColors(lead.displayStatus);
+    final isHighPriority = lead.isHighPriority;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Get.toNamed(AppRoutes.leadDetail, arguments: lead.id),
+        onTap: () => Get.toNamed(
+          AppRoutes.leadManagementDetail,
+          arguments: {
+            'leadId': lead.id,
+            'sourceType': lead.managementSource,
+            'sourceId': lead.managementId,
+          },
+        ),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isHighPriority ? const Color(0xFFFEF2F2) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isHighPriority
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFFE2E8F0),
+              width: isHighPriority ? 1.5 : 1.0,
+            ),
+            boxShadow: isHighPriority
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFEF4444).withOpacity(0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -706,24 +734,65 @@ class _LeadCard extends StatelessWidget {
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isCompact = constraints.maxWidth < 360;
-                  final statusBadge = Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColors.background,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      lead.displayStatus.toUpperCase(),
-                      style: AppTextStyles.style(
-                        color: statusColors.foreground,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.5,
+                  final priorityBadge = isHighPriority
+                      ? Container(
+                          margin: const EdgeInsets.only(right: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEE2E2),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFFCA5A5)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.flag_rounded,
+                                size: 10,
+                                color: Color(0xFFDC2626),
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'HIGH',
+                                style: AppTextStyles.style(
+                                  color: const Color(0xFFDC2626),
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : null;
+
+                  final statusBadge = Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (priorityBadge != null) priorityBadge,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          lead.displayStatus.toUpperCase(),
+                          style: AppTextStyles.style(
+                            color: statusColors.foreground,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   );
 
                   final amountText = lead.displayAmount.isNotEmpty
@@ -902,8 +971,12 @@ class _LeadCard extends StatelessWidget {
                       _ActionIcon(
                         icon: Icons.visibility_outlined,
                         onTap: () => Get.toNamed(
-                          AppRoutes.leadDetail,
-                          arguments: lead.id,
+                          AppRoutes.leadManagementDetail,
+                          arguments: {
+                            'leadId': lead.id,
+                            'sourceType': lead.managementSource,
+                            'sourceId': lead.managementId,
+                          },
                         ),
                       ),
                       const SizedBox(width: 10),

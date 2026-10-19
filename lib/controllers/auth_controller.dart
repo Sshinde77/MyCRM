@@ -1,3 +1,4 @@
+import '../core/services/in_app_notifications.dart';
 import 'dart:async';
 
 import 'package:get/get.dart';
@@ -96,6 +97,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> clearLocalSession({bool disableBiometric = true}) async {
+    InAppNotifications.instance.stop();
     await _authService.clearSession(clearBiometricFlag: disableBiometric);
     if (disableBiometric) {
       biometricEnabled.value = false;
@@ -103,6 +105,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    InAppNotifications.instance.stop();
     await _authService.logout();
     biometricEnabled.value = false;
   }
@@ -112,6 +115,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> goToDashboard() async {
+    InAppNotifications.instance.start();
     final user = await PermissionService.getCurrentUser();
     if (user != null) {
       unawaited(

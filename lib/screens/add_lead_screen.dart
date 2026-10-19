@@ -1,3 +1,5 @@
+import '../models/lead_flow.dart';
+import '../core/services/in_app_notifications.dart';
 import 'package:country_state_city_selector/country_state_city_selector.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -39,9 +41,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   bool _isLoadingLead = false;
   bool _isSubmitting = false;
   String? _formOptionsError;
-  String? _selectedStatus;
-  String? _selectedTag;
-  String? _selectedStaffId;
+  String? _selectedStatus = 'new';
+  final Set<String> _selectedTags = {};
+  final Set<String> _selectedStaffIds = {};
+  Map<String, String> _fieldErrors = {};
   List<String> _statusOptions = const [];
   List<String> _tagOptions = const [];
   List<LeadStaffOption> _staffOptions = const [];
@@ -92,18 +95,16 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       if (!mounted) return;
 
       setState(() {
-        _statusOptions = options.statuses;
+        _statusOptions = options.statuses.isEmpty
+            ? LeadFlow.statuses
+            : options.statuses;
         _tagOptions = options.tags;
         _staffOptions = options.staff;
         _selectedStatus = _resolveSelectedValue(
           _selectedStatus,
           _statusOptions,
         );
-        _selectedTag = _resolveSelectedValue(_selectedTag, _tagOptions);
-        _selectedStaffId = _resolveSelectedStaffId(
-          _selectedStaffId,
-          _staffOptions,
-        );
+
         _isLoadingFormOptions = false;
       });
     } catch (_) {
@@ -177,22 +178,12 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
       _selectedStatus =
           _resolveSelectedValue(lead.status?.trim(), _statusOptions) ??
           lead.status?.trim();
-      _selectedTag =
-          _resolveSelectedValue(
-            lead.tags.isNotEmpty ? lead.tags.first.trim() : null,
-            _tagOptions,
-          ) ??
-          (lead.tags.isNotEmpty ? lead.tags.first.trim() : null);
-      _selectedStaffId =
-          _resolveSelectedStaffId(
-            lead.assignedStaffIds.isNotEmpty
-                ? lead.assignedStaffIds.first.trim()
-                : null,
-            _staffOptions,
-          ) ??
-          (lead.assignedStaffIds.isNotEmpty
-              ? lead.assignedStaffIds.first.trim()
-              : null);
+      _selectedTags
+        ..clear()
+        ..addAll(lead.tags);
+      _selectedStaffIds
+        ..clear()
+        ..addAll(lead.assignedStaffIds);
     });
   }
 
@@ -203,23 +194,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     if (current != null && options.contains(current)) {
       return current;
     }
-    return options.first;
-  }
-
-  String? _resolveSelectedStaffId(
-    String? current,
-    List<LeadStaffOption> options,
-  ) {
-    if (options.isEmpty) {
-      return null;
-    }
-    if (current != null && options.any((item) => item.id == current)) {
-      return current;
-    }
-    if (options.any((item) => item.id.isEmpty)) {
-      return '';
-    }
-    return null;
+    return options.contains('new') ? 'new' : options.first;
   }
 
   String _formatLeadValueForField(double? value) {
@@ -230,6 +205,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
   }
 
   Future<void> _submit() async {
+    setState(() => _fieldErrors = {});
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -239,18 +215,10 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
     }
 
     final parsedLeadValue = double.tryParse(_leadValueController.text.trim());
-    final assignedValues = <dynamic>[];
-    final normalizedStaffId = _selectedStaffId?.trim() ?? '';
-    if (normalizedStaffId.isNotEmpty) {
-      final numericStaffId = int.tryParse(normalizedStaffId);
-      assignedValues.add(numericStaffId ?? normalizedStaffId);
-    }
-
-    final tags = <String>[];
-    final normalizedTag = _selectedTag?.trim() ?? '';
-    if (normalizedTag.isNotEmpty) {
-      tags.add(normalizedTag);
-    }
+    final assignedValues = _selectedStaffIds
+        .map((id) => int.tryParse(id) ?? id)
+        .toList();
+    final tags = _selectedTags.toList();
 
     setState(() {
       _isSubmitting = true;
@@ -325,8 +293,24 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
             ? 'The lead has been updated successfully.'
             : 'The lead has been created successfully.',
       );
+      InAppNotifications.instance.refresh();
       Navigator.of(context).pop(true);
     } on DioException catch (error) {
+      if (mounted && error.response?.data is Map) {
+        final errors = (error.response!.data as Map)['errors'];
+        if (errors is Map)
+          setState(
+            () => _fieldErrors = {
+              for (final e in errors.entries)
+                e.key.toString(): e.value is List
+                    ? (e.value as List).join('\n')
+                    : e.value.toString(),
+            },
+          );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _formKey.currentState?.validate();
+        });
+      }
       if (!mounted) {
         return;
       }
@@ -407,7 +391,7 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                             label: 'Source',
                             controller: _sourceController,
                             hintText: 'Enter lead source',
-                            validator: _requiredValidator,
+                            validator: (v) => _fieldErrors['source'],
                           ),
                           _DropdownTile(
                             label: 'Status',
@@ -415,59 +399,84 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                             hintText: 'Select status',
                             items: _statusOptions
                                 .map(
-                                  (item) =>
-                                      _DropdownItem(value: item, label: item),
+                                  (item) => _DropdownItem(
+                                    value: item,
+                                    label: LeadFlow.label(item),
+                                  ),
                                 )
                                 .toList(growable: false),
                             enabled: !_isBusy && _statusOptions.isNotEmpty,
-                            validator: _requiredValidator,
+                            validator: (v) =>
+                                _fieldErrors['status'] ?? _requiredValidator(v),
                             onChanged: (value) {
                               setState(() => _selectedStatus = value);
                             },
                           ),
-                          _DropdownTile(
-                            label: 'Assigned',
-                            value: _selectedStaffId,
-                            hintText: 'Assign staff member',
-                            items: _staffOptions
-                                .map(
-                                  (item) => _DropdownItem(
-                                    value: item.id,
-                                    label: item.name,
-                                  ),
-                                )
-                                .toList(growable: false),
-                            enabled: !_isBusy && _staffOptions.isNotEmpty,
-                            onChanged: (value) {
-                              setState(() => _selectedStaffId = value);
+                          _MultiSelectTile(
+                            label: 'Assigned Staff',
+                            options: {
+                              for (final o in _staffOptions)
+                                if (o.id.isNotEmpty) o.id: o.name,
+                              for (final id in _selectedStaffIds)
+                                id:
+                                    _staffOptions
+                                        .where((o) => o.id == id)
+                                        .map((o) => o.name)
+                                        .firstOrNull ??
+                                    id,
                             },
+                            selected: _selectedStaffIds,
+                            enabled: !_isBusy && !_isSubmitting,
+                            error: _fieldErrors.entries
+                                .where(
+                                  (e) =>
+                                      e.key == 'assigned' ||
+                                      e.key.startsWith('assigned.'),
+                                )
+                                .map((e) => e.value)
+                                .firstOrNull,
+                            onChanged: () => setState(() {}),
                           ),
-                          _DropdownTile(
+                          _MultiSelectTile(
                             label: 'Tags',
-                            value: _selectedTag,
-                            hintText: 'Select tag',
-                            items: _tagOptions
-                                .map(
-                                  (item) =>
-                                      _DropdownItem(value: item, label: item),
-                                )
-                                .toList(growable: false),
-                            enabled: !_isBusy && _tagOptions.isNotEmpty,
-                            onChanged: (value) {
-                              setState(() => _selectedTag = value);
+                            options: {
+                              for (final t in {
+                                ..._tagOptions,
+                                ..._selectedTags,
+                              })
+                                if (t.isNotEmpty) t: t,
                             },
+                            selected: _selectedTags,
+                            enabled: !_isBusy && !_isSubmitting,
+                            error: _fieldErrors.entries
+                                .where(
+                                  (e) =>
+                                      e.key == 'tags' ||
+                                      e.key.startsWith('tags.'),
+                                )
+                                .map((e) => e.value)
+                                .firstOrNull,
+                            onChanged: () => setState(() {}),
                           ),
                           _TextFieldTile(
                             label: 'Name',
                             controller: _nameController,
-                            hintText: 'Enter lead name',
-                            validator: _requiredValidator,
+                            hintText: 'Enter lead name (optional)',
+                            validator: (v) => _fieldErrors['name'],
                           ),
                           _TextFieldTile(
                             label: 'Email Address',
                             controller: _emailController,
                             hintText: 'Enter email address',
                             keyboardType: TextInputType.emailAddress,
+                            validator: (v) =>
+                                _fieldErrors['email'] ??
+                                ((v ?? '').trim().isEmpty ||
+                                        RegExp(
+                                          r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                        ).hasMatch(v!.trim())
+                                    ? null
+                                    : 'Enter a valid email address.'),
                           ),
                           _TextFieldTile(
                             label: 'Company',
@@ -490,6 +499,20 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                             controller: _websiteController,
                             hintText: 'Enter website URL',
                             keyboardType: TextInputType.url,
+                            validator: (v) {
+                              if (_fieldErrors['website'] != null)
+                                return _fieldErrors['website'];
+                              if ((v ?? '').trim().isEmpty) return null;
+                              final uri = Uri.tryParse(v!.trim());
+                              return uri != null &&
+                                      const [
+                                        'http',
+                                        'https',
+                                      ].contains(uri.scheme) &&
+                                      uri.host.isNotEmpty
+                                  ? null
+                                  : 'Enter a valid website URL.';
+                            },
                           ),
                         ],
                       ),
@@ -531,6 +554,15 @@ class _AddLeadScreenState extends State<AddLeadScreen> {
                             label: 'Lead Value',
                             controller: _leadValueController,
                             hintText: 'Enter lead value',
+                            validator: (v) {
+                              if (_fieldErrors['lead_value'] != null)
+                                return _fieldErrors['lead_value'];
+                              if ((v ?? '').trim().isEmpty) return null;
+                              final n = double.tryParse(v!.trim());
+                              return n != null && n.isFinite && n >= 0
+                                  ? null
+                                  : 'Enter a value of zero or more.';
+                            },
                             keyboardType: const TextInputType.numberWithOptions(
                               decimal: true,
                             ),
@@ -928,4 +960,101 @@ class _LocationPickerCard extends StatelessWidget {
       ],
     );
   }
+}
+
+class _MultiSelectTile extends StatelessWidget {
+  const _MultiSelectTile({
+    required this.label,
+    required this.options,
+    required this.selected,
+    required this.enabled,
+    required this.onChanged,
+    this.error,
+  });
+  final String label;
+  final Map<String, String> options;
+  final Set<String> selected;
+  final bool enabled;
+  final VoidCallback onChanged;
+  final String? error;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF475569),
+        ),
+      ),
+      const SizedBox(height: 8),
+      InkWell(
+        onTap: !enabled
+            ? null
+            : () async {
+                final draft = {...selected};
+                final accepted = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => StatefulBuilder(
+                    builder: (context, update) => AlertDialog(
+                      title: Text(label),
+                      content: SizedBox(
+                        width: 420,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              for (final e in options.entries)
+                                CheckboxListTile(
+                                  title: Text(e.value),
+                                  value: draft.contains(e.key),
+                                  onChanged: (v) => update(() {
+                                    if (v == true) {
+                                      draft.add(e.key);
+                                    } else {
+                                      draft.remove(e.key);
+                                    }
+                                  }),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Done'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+                if (accepted == true) {
+                  selected
+                    ..clear()
+                    ..addAll(draft);
+                  onChanged();
+                }
+              },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            errorText: error,
+            enabled: enabled,
+            suffixIcon: const Icon(Icons.arrow_drop_down),
+          ),
+          child: Text(
+            selected.isEmpty
+                ? 'Select (optional)'
+                : selected.map((id) => options[id] ?? id).join(', '),
+          ),
+        ),
+      ),
+    ],
+  );
 }

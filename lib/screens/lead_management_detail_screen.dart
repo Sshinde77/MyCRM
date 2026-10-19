@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:dio/dio.dart';
+import '../models/lead_flow.dart';
+import '../widgets/lead_activity_dialog.dart';
+import '../core/services/in_app_notifications.dart';
+import '../core/utils/app_error_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -21,19 +24,6 @@ class LeadManagementDetailScreen extends StatefulWidget {
 
 class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     with SingleTickerProviderStateMixin {
-  static const List<String> _fixedStatusOptions = <String>[
-    'new',
-    'attempted_contact',
-    'contacted',
-    'qualified',
-    'demo_scheduled',
-    'proposal_sent',
-    'negotiation',
-    'converted',
-    'lost',
-    'junk',
-  ];
-
   final ApiService _apiService = ApiService.instance;
   late TabController _tabController;
   int _selectedLeadTab = 0;
@@ -56,6 +46,8 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
   String _loadedRemindersKey = '';
   String _loadedAssignmentsKey = '';
   String _loadedStatusHistoryKey = '';
+  final Map<int, String> _tabErrors = {};
+  int _dataRevision = 0;
   String _activeLeadKey = '';
   String _activeSourceType = '';
   String _activeSourceId = '';
@@ -122,21 +114,38 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     final requestKey = '$sourceType::$sourceId';
     if (_isTimelineLoading || _loadedTimelineKey == requestKey) return;
 
-    setState(() => _isTimelineLoading = true);
+    final revision = _dataRevision;
+    setState(() {
+      _isTimelineLoading = true;
+      _tabErrors.remove(0);
+    });
     try {
       final results = await _apiService.getLeadTimeline(
         sourceType: sourceType,
         sourceId: sourceId,
       );
       if (!mounted) return;
+      if (revision != _dataRevision) {
+        setState(() => _isTimelineLoading = false);
+        _triggerTabLoad();
+        return;
+      }
       setState(() {
         _timelineItems = results;
         _loadedTimelineKey = requestKey;
         _isTimelineLoading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _isTimelineLoading = false);
+      if (revision != _dataRevision) {
+        setState(() => _isTimelineLoading = false);
+        _triggerTabLoad();
+        return;
+      }
+      setState(() {
+        _isTimelineLoading = false;
+        _tabErrors[0] = AppErrorHandler.messageFromError(error);
+      });
     }
   }
 
@@ -147,21 +156,38 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     final requestKey = '$sourceType::$sourceId';
     if (_isFollowupsLoading || _loadedFollowupsKey == requestKey) return;
 
-    setState(() => _isFollowupsLoading = true);
+    final revision = _dataRevision;
+    setState(() {
+      _isFollowupsLoading = true;
+      _tabErrors.remove(1);
+    });
     try {
       final results = await _apiService.getLeadFollowups(
         sourceType: sourceType,
         sourceId: sourceId,
       );
       if (!mounted) return;
+      if (revision != _dataRevision) {
+        setState(() => _isFollowupsLoading = false);
+        _triggerTabLoad();
+        return;
+      }
       setState(() {
         _followupItems = results;
         _loadedFollowupsKey = requestKey;
         _isFollowupsLoading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _isFollowupsLoading = false);
+      if (revision != _dataRevision) {
+        setState(() => _isFollowupsLoading = false);
+        _triggerTabLoad();
+        return;
+      }
+      setState(() {
+        _isFollowupsLoading = false;
+        _tabErrors[1] = AppErrorHandler.messageFromError(error);
+      });
     }
   }
 
@@ -172,21 +198,38 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     final requestKey = '$sourceType::$sourceId';
     if (_isNotesLoading || _loadedNotesKey == requestKey) return;
 
-    setState(() => _isNotesLoading = true);
+    final revision = _dataRevision;
+    setState(() {
+      _isNotesLoading = true;
+      _tabErrors.remove(2);
+    });
     try {
       final results = await _apiService.getLeadNotes(
         sourceType: sourceType,
         sourceId: sourceId,
       );
       if (!mounted) return;
+      if (revision != _dataRevision) {
+        setState(() => _isNotesLoading = false);
+        _triggerTabLoad();
+        return;
+      }
       setState(() {
         _noteItems = results;
         _loadedNotesKey = requestKey;
         _isNotesLoading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _isNotesLoading = false);
+      if (revision != _dataRevision) {
+        setState(() => _isNotesLoading = false);
+        _triggerTabLoad();
+        return;
+      }
+      setState(() {
+        _isNotesLoading = false;
+        _tabErrors[2] = AppErrorHandler.messageFromError(error);
+      });
     }
   }
 
@@ -197,21 +240,38 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     final requestKey = '$sourceType::$sourceId';
     if (_isRemindersLoading || _loadedRemindersKey == requestKey) return;
 
-    setState(() => _isRemindersLoading = true);
+    final revision = _dataRevision;
+    setState(() {
+      _isRemindersLoading = true;
+      _tabErrors.remove(3);
+    });
     try {
       final results = await _apiService.getLeadReminders(
         sourceType: sourceType,
         sourceId: sourceId,
       );
       if (!mounted) return;
+      if (revision != _dataRevision) {
+        setState(() => _isRemindersLoading = false);
+        _triggerTabLoad();
+        return;
+      }
       setState(() {
         _reminderItems = results;
         _loadedRemindersKey = requestKey;
         _isRemindersLoading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _isRemindersLoading = false);
+      if (revision != _dataRevision) {
+        setState(() => _isRemindersLoading = false);
+        _triggerTabLoad();
+        return;
+      }
+      setState(() {
+        _isRemindersLoading = false;
+        _tabErrors[3] = AppErrorHandler.messageFromError(error);
+      });
     }
   }
 
@@ -222,21 +282,38 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     final requestKey = '$sourceType::$sourceId';
     if (_isAssignmentsLoading || _loadedAssignmentsKey == requestKey) return;
 
-    setState(() => _isAssignmentsLoading = true);
+    final revision = _dataRevision;
+    setState(() {
+      _isAssignmentsLoading = true;
+      _tabErrors.remove(4);
+    });
     try {
       final results = await _apiService.getLeadAssignments(
         sourceType: sourceType,
         sourceId: sourceId,
       );
       if (!mounted) return;
+      if (revision != _dataRevision) {
+        setState(() => _isAssignmentsLoading = false);
+        _triggerTabLoad();
+        return;
+      }
       setState(() {
         _assignmentItems = results;
         _loadedAssignmentsKey = requestKey;
         _isAssignmentsLoading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _isAssignmentsLoading = false);
+      if (revision != _dataRevision) {
+        setState(() => _isAssignmentsLoading = false);
+        _triggerTabLoad();
+        return;
+      }
+      setState(() {
+        _isAssignmentsLoading = false;
+        _tabErrors[4] = AppErrorHandler.messageFromError(error);
+      });
     }
   }
 
@@ -249,21 +326,38 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
       return;
     }
 
-    setState(() => _isStatusHistoryLoading = true);
+    final revision = _dataRevision;
+    setState(() {
+      _isStatusHistoryLoading = true;
+      _tabErrors.remove(5);
+    });
     try {
       final results = await _apiService.getLeadStatusHistory(
         sourceType: sourceType,
         sourceId: sourceId,
       );
       if (!mounted) return;
+      if (revision != _dataRevision) {
+        setState(() => _isStatusHistoryLoading = false);
+        _triggerTabLoad();
+        return;
+      }
       setState(() {
         _statusHistoryItems = results;
         _loadedStatusHistoryKey = requestKey;
         _isStatusHistoryLoading = false;
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
-      setState(() => _isStatusHistoryLoading = false);
+      if (revision != _dataRevision) {
+        setState(() => _isStatusHistoryLoading = false);
+        _triggerTabLoad();
+        return;
+      }
+      setState(() {
+        _isStatusHistoryLoading = false;
+        _tabErrors[5] = AppErrorHandler.messageFromError(error);
+      });
     }
   }
 
@@ -359,7 +453,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                 ),
                 Expanded(
                   child: RefreshIndicator(
-                    onRefresh: () => provider.loadLead(forceRefresh: true),
+                    onRefresh: _refreshAll,
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(
@@ -369,71 +463,79 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _HeaderSection(lead: lead),
+                          _HeaderSection(
+                            lead: lead,
+                            onUpdatePriority: () => _openPriorityUpdateDialog(lead),
+                          ),
                           const SizedBox(height: 12),
                           _ActionButtons(
-                            onAddFollowup: () => _openAddFollowupDialog(lead),
+                            onAddFollowup: lead.isClosed
+                                ? null
+                                : () => _openAddFollowupDialog(lead),
                             onUpdateStatus: () => _openStatusUpdateDialog(lead),
+                            onUpdatePriority: () => _openPriorityUpdateDialog(lead),
                           ),
                           const SizedBox(height: 12),
                           _LeadInformationCard(lead: lead),
+                          const SizedBox(height: 12),
+                          _LeadFlowSummary(lead: lead),
                           // const SizedBox(height: 16),
                           // _UpdateStatusCard(lead: lead),
                           const SizedBox(height: 14),
                           _TimelineTabs(tabController: _tabController),
                           const SizedBox(height: 12),
-                          _LeadTabContent(
-                            tabIndex: _selectedLeadTab,
-                            timelineItems: _timelineItems,
-                            followupItems: _followupItems,
-                            noteItems: _noteItems,
-                            reminderItems: _reminderItems,
-                            assignmentItems: _assignmentItems,
-                            statusHistoryItems: _statusHistoryItems,
-                            isTimelineLoading: _isTimelineLoading,
-                            isFollowupsLoading: _isFollowupsLoading,
-                            isNotesLoading: _isNotesLoading,
-                            isRemindersLoading: _isRemindersLoading,
-                            isAssignmentsLoading: _isAssignmentsLoading,
-                            isStatusHistoryLoading: _isStatusHistoryLoading,
-                            onAddNote: (note, isPrivate) async {
-                              await _apiService.createLeadNote(
-                                sourceType: _buildLeadAssignSource(lead),
-                                sourceId: _resolveLeadSourceId(lead),
-                                note: note,
-                                isPrivate: isPrivate,
-                              );
-                              _loadedTimelineKey = '';
-                              _loadedNotesKey = '';
-                              if (_selectedLeadTab == 0) {
-                                await _loadTimelineByKey(
+                          if (_tabErrors[_selectedLeadTab] != null)
+                            Column(
+                              children: [
+                                Text(_tabErrors[_selectedLeadTab]!),
+                                TextButton(
+                                  onPressed: _triggerTabLoad,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            )
+                          else
+                            _LeadTabContent(
+                              tabIndex: _selectedLeadTab,
+                              timelineItems: _timelineItems,
+                              followupItems: _followupItems,
+                              noteItems: _noteItems,
+                              reminderItems: _reminderItems,
+                              assignmentItems: _assignmentItems,
+                              statusHistoryItems: _statusHistoryItems,
+                              isTimelineLoading: _isTimelineLoading,
+                              isFollowupsLoading: _isFollowupsLoading,
+                              isNotesLoading: _isNotesLoading,
+                              isRemindersLoading: _isRemindersLoading,
+                              isAssignmentsLoading: _isAssignmentsLoading,
+                              isStatusHistoryLoading: _isStatusHistoryLoading,
+                              onAddNote: (note, isPrivate) async {
+                                await _apiService.createLeadNote(
                                   sourceType: _buildLeadAssignSource(lead),
                                   sourceId: _resolveLeadSourceId(lead),
+                                  note: note,
+                                  isPrivate: isPrivate,
                                 );
-                              }
-                              if (_selectedLeadTab == 2) {
-                                await _loadNotesByKey(
+                                _loadedTimelineKey = '';
+                                await _refreshAll();
+
+                                if (_selectedLeadTab == 2) {
+                                  await _loadNotesByKey(
+                                    sourceType: _buildLeadAssignSource(lead),
+                                    sourceId: _resolveLeadSourceId(lead),
+                                  );
+                                }
+                              },
+                              onAddReminder: (remindAt, reminderType) async {
+                                await _apiService.createLeadReminder(
                                   sourceType: _buildLeadAssignSource(lead),
                                   sourceId: _resolveLeadSourceId(lead),
+                                  remindAt: remindAt,
+                                  reminderType: reminderType,
                                 );
-                              }
-                            },
-                            onAddReminder: (remindAt, reminderType) async {
-                              await _apiService.createLeadReminder(
-                                sourceType: _buildLeadAssignSource(lead),
-                                sourceId: _resolveLeadSourceId(lead),
-                                remindAt: remindAt,
-                                reminderType: reminderType,
-                              );
-                              _loadedRemindersKey = '';
-                              if (_selectedLeadTab == 3) {
-                                await _loadRemindersByKey(
-                                  sourceType: _buildLeadAssignSource(lead),
-                                  sourceId: _resolveLeadSourceId(lead),
-                                );
-                              }
-                            },
-                          ),
+                                await _refreshAll();
+                              },
+                            ),
                           const SizedBox(height: 14),
                         ],
                       ),
@@ -451,1060 +553,127 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
     );
   }
 
-  String _buildLeadAssignSource(LeadModel lead) {
-    final raw = (lead.sourceType ?? lead.source ?? '')
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
-    switch (raw) {
-      case 'lead':
-      case 'leads':
-        return 'lead';
-      case 'digitalmarketing':
-        return 'digital_marketing';
-      case 'webapp':
-      case 'webapps':
-      case 'webapplication':
-        return 'webapp';
-      case 'meta':
-      case 'facebook':
-        return 'meta';
-      case 'google':
-      case 'googleads':
-        return 'google';
-      case 'indiamart':
-        return 'indiamart';
-      case 'justdial':
-        return 'justdial';
-      default:
-        return raw.isEmpty ? 'lead' : raw;
-    }
-  }
+  String _buildLeadAssignSource(LeadModel lead) => lead.managementSource;
+  String _resolveLeadSourceId(LeadModel lead) => lead.managementId;
 
-  String _resolveLeadSourceId(LeadModel lead) {
-    final sourceId = (lead.sourceId ?? '').trim();
-    if (sourceId.isNotEmpty) return sourceId;
-    return lead.id.trim();
-  }
-
-  String _normalizeStatusForApi(String status) {
-    return status.trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
-  }
-
-  String _statusLabel(String status) {
-    final normalized = _normalizeStatusForApi(status);
-    return normalized
-        .split('_')
-        .where((part) => part.isNotEmpty)
-        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-        .join(' ');
-  }
-
-  String _resolveCurrentStatusOption(String currentStatus) {
-    final normalizedCurrent = _normalizeStatusForApi(currentStatus);
-    for (final option in _fixedStatusOptions) {
-      final normalizedOption = _normalizeStatusForApi(option);
-      if (normalizedOption == normalizedCurrent) {
-        return option;
-      }
-      if (normalizedCurrent == 'won' && normalizedOption == 'converted') {
-        return option;
-      }
-    }
-    return _fixedStatusOptions.first;
+  Future<void> _refreshAll() async {
+    _dataRevision++;
+    _loadedTimelineKey = '';
+    _loadedFollowupsKey = '';
+    _loadedNotesKey = '';
+    _loadedRemindersKey = '';
+    _loadedAssignmentsKey = '';
+    _loadedStatusHistoryKey = '';
+    await context.read<LeadDetailProvider>().loadLead(forceRefresh: true);
+    if (!mounted) return;
+    _triggerTabLoad();
+    InAppNotifications.instance.refresh();
   }
 
   Future<void> _openStatusUpdateDialog(LeadModel lead) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final remarksController = TextEditingController();
-    final lostReasonController = TextEditingController();
-    final wonValueController = TextEditingController();
-    String selectedStatus = _resolveCurrentStatusOption(lead.displayStatus);
-    bool isSubmitting = false;
-
-    if (!mounted) return;
-    await showDialog<void>(
+    final saved = await showDialog<bool>(
       context: context,
-      barrierDismissible: !isSubmitting,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setLocalState) {
-            final isLost = selectedStatus.toLowerCase() == 'lost';
-            final isConverted = selectedStatus.toLowerCase() == 'converted';
-
-            Future<void> onUpdate() async {
-              if (isSubmitting) return;
-              if (isLost && lostReasonController.text.trim().isEmpty) {
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Lost reason is required for lost status.'),
-                  ),
-                );
-                return;
-              }
-              if (isConverted && wonValueController.text.trim().isNotEmpty) {
-                final parsed = double.tryParse(wonValueController.text.trim());
-                if (parsed == null) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Converted value must be a valid number.'),
-                    ),
-                  );
-                  return;
-                }
-              }
-
-              setLocalState(() => isSubmitting = true);
-              try {
-                await _apiService.updateLeadStatus(
-                  sourceType: _buildLeadAssignSource(lead),
-                  leadId: _resolveLeadSourceId(lead),
-                  status: _normalizeStatusForApi(selectedStatus),
-                  remarks: remarksController.text.trim(),
-                  lostReason: isLost ? lostReasonController.text.trim() : null,
-                  wonValue:
-                      isConverted && wonValueController.text.trim().isNotEmpty
-                      ? double.tryParse(wonValueController.text.trim())
-                      : null,
-                );
-                if (!mounted) return;
-                Navigator.of(dialogContext).pop();
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Lead status updated successfully.'),
-                  ),
-                );
-                await context.read<LeadDetailProvider>().loadLead(
-                  forceRefresh: true,
-                );
-              } catch (_) {
-                if (!mounted) return;
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Failed to update lead status. Please try again.',
-                    ),
-                  ),
-                );
-                setLocalState(() => isSubmitting = false);
-              }
-            }
-
-            return Dialog(
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 20,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Change Lead Status',
-                              style: AppTextStyles.style(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF374151),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: isSubmitting
-                                ? null
-                                : () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            lead.displayName,
-                            style: AppTextStyles.style(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF374151),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Current Status',
-                            style: AppTextStyles.style(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF4B5563),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF8FAFC),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: const Color(0xFFE2E8F0),
-                              ),
-                            ),
-                            child: Text(
-                              _statusLabel(lead.displayStatus),
-                              style: AppTextStyles.style(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF1E293B),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Status',
-                            style: AppTextStyles.style(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF4B5563),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            value: selectedStatus,
-                            items: _fixedStatusOptions
-                                .map(
-                                  (status) => DropdownMenuItem<String>(
-                                    value: status,
-                                    child: Text(_statusLabel(status)),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: isSubmitting
-                                ? null
-                                : (value) {
-                                    if (value == null) return;
-                                    setLocalState(() => selectedStatus = value);
-                                  },
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: wonValueController,
-                            enabled: !isSubmitting,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Converted Value (if converted)',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: lostReasonController,
-                            enabled: !isSubmitting,
-                            minLines: 2,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              labelText: 'Lost Reason (required if lost)',
-                              border: const OutlineInputBorder(),
-                              isDense: true,
-                              errorText:
-                                  isLost &&
-                                      lostReasonController.text.trim().isEmpty
-                                  ? 'Required for Lost status'
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: remarksController,
-                            enabled: !isSubmitting,
-                            minLines: 2,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                              labelText: 'Remarks',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: isSubmitting
-                                ? null
-                                : () => Navigator.of(dialogContext).pop(),
-                            child: const Text('Cancel'),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: isSubmitting ? null : onUpdate,
-                            child: Text(
-                              isSubmitting ? 'Updating...' : 'Update',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      barrierDismissible: false,
+      builder: (_) => LeadActivityDialog(lead: lead, conversation: false),
     );
+    if (saved == true && mounted) await _refreshAll();
   }
 
   Future<void> _openAddFollowupDialog(LeadModel lead) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final notesController = TextEditingController();
-    String followupType = 'call';
-    String outcome = '';
-    String leadStatus = 'no_change';
-    String reminderType = 'Dashboard';
-    bool createReminder = false;
-    bool isSubmitting = false;
-    DateTime? followupDate;
-    DateTime? nextFollowupDate;
-
-    String formatDate(DateTime? date) {
-      if (date == null) return 'dd-mm-yyyy --:--';
-      return DateFormat('dd-MM-yyyy hh:mm a').format(date);
-    }
-
-    Future<void> pickDate(
-      BuildContext context,
-      DateTime? currentValue,
-      ValueChanged<DateTime> onPicked,
-    ) async {
-      final now = DateTime.now();
-      final picked = await showDatePicker(
-        context: context,
-        initialDate: currentValue ?? now,
-        firstDate: DateTime(2000),
-        lastDate: DateTime(2100),
-      );
-      if (picked != null) onPicked(picked);
-    }
-
-    Future<void> pickDateTime(
-      BuildContext context,
-      DateTime? currentValue,
-      ValueChanged<DateTime> onPicked,
-    ) async {
-      await pickDate(context, currentValue, (pickedDate) async {
-        if (!context.mounted) return;
-        final pickedTime = await showTimePicker(
-          context: context,
-          initialTime: currentValue == null
-              ? const TimeOfDay(hour: 0, minute: 0)
-              : TimeOfDay.fromDateTime(currentValue),
-        );
-        if (pickedTime == null) return;
-        onPicked(
-          DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          ),
-        );
-      });
-    }
-
-    if (!mounted) return;
-    await showDialog<void>(
+    if (lead.isClosed) return;
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setLocalState) {
-            final screenWidth = MediaQuery.of(context).size.width;
-            final isNarrow = screenWidth < 560;
-            String toApiDateTime(DateTime date) {
-              return DateFormat('yyyy-MM-dd HH:mm:ss').format(date);
-            }
+      barrierDismissible: false,
+      builder: (_) => LeadActivityDialog(lead: lead),
+    );
+    if (saved == true && mounted) await _refreshAll();
+  }
 
-            InputDecoration inputDecoration({Widget? suffixIcon}) {
-              return InputDecoration(
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Color(0xFFD1D5DB)),
-                ),
-                suffixIcon: suffixIcon,
-              );
-            }
-
-            Widget buildLabel(String text) {
-              return Text(
-                text,
-                style: AppTextStyles.style(
-                  fontSize: isNarrow ? 12 : 13,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFF4B5563),
-                ),
-              );
-            }
-
-            String dropdownLabel(String value) {
-              return value
-                  .split('_')
-                  .where((part) => part.isNotEmpty)
-                  .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
-                  .join(' ');
-            }
-
-            Widget buildDateField({
-              required DateTime? value,
-              required VoidCallback onTap,
-            }) {
-              return TextFormField(
-                readOnly: true,
-                controller: TextEditingController(text: formatDate(value)),
-                onTap: onTap,
-                decoration: inputDecoration(
-                  suffixIcon: const Icon(Icons.calendar_today, size: 18),
-                ),
-              );
-            }
-
-            Widget buildPair({required Widget left, required Widget right}) {
-              if (isNarrow) {
-                return Column(
-                  children: [left, const SizedBox(height: 8), right],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: left),
-                  const SizedBox(width: 8),
-                  Expanded(child: right),
-                ],
-              );
-            }
-
-            return Dialog(
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 12,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.88,
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 10, 6, 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Add Followup',
-                                style: AppTextStyles.style(
-                                  fontSize: isNarrow ? 20 : 24,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF374151),
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () =>
-                                  Navigator.of(dialogContext).pop(),
-                              visualDensity: VisualDensity.compact,
-                              icon: const Icon(Icons.close, size: 24),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-                          child: Column(
-                            children: [
-                              buildPair(
-                                left: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildLabel('Followup Type'),
-                                    const SizedBox(height: 4),
-                                    DropdownButtonFormField<String>(
-                                      value: followupType,
-                                      items: const [
-                                        DropdownMenuItem(
-                                          value: 'call',
-                                          child: Text('Call'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'whatsapp',
-                                          child: Text('Whatsapp'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'email',
-                                          child: Text('Email'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'meeting',
-                                          child: Text('Meeting'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'demo',
-                                          child: Text('Demo'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'video_call',
-                                          child: Text('Video Call'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'site_visit',
-                                          child: Text('Site Visit'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'proposal_sent',
-                                          child: Text('Proposal Sent'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'quotation_sent',
-                                          child: Text('Quotation Sent'),
-                                        ),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value == null) return;
-                                        setLocalState(
-                                          () => followupType = value,
-                                        );
-                                      },
-                                      selectedItemBuilder: (context) =>
-                                          const [
-                                                'call',
-                                                'whatsapp',
-                                                'email',
-                                                'meeting',
-                                                'demo',
-                                                'video_call',
-                                                'site_visit',
-                                                'proposal_sent',
-                                                'quotation_sent',
-                                              ]
-                                              .map(
-                                                (value) =>
-                                                    Text(dropdownLabel(value)),
-                                              )
-                                              .toList(),
-                                      decoration: inputDecoration(),
-                                    ),
-                                  ],
-                                ),
-                                right: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildLabel('Outcome'),
-                                    const SizedBox(height: 4),
-                                    DropdownButtonFormField<String>(
-                                      value: outcome,
-                                      items: const [
-                                        DropdownMenuItem(
-                                          value: '',
-                                          child: Text('Select'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'interested',
-                                          child: Text('Interested'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'not_interested',
-                                          child: Text('Not Interested'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'callback_later',
-                                          child: Text('Callback Later'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'converted',
-                                          child: Text('Converted'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'no_response',
-                                          child: Text('No Response'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'meeting_scheduled',
-                                          child: Text('Meeting Scheduled'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'proposal_requested',
-                                          child: Text('Proposal Requested'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'negotiation',
-                                          child: Text('Negotiation'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'lost',
-                                          child: Text('Lost'),
-                                        ),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value == null) return;
-                                        setLocalState(() => outcome = value);
-                                      },
-                                      selectedItemBuilder: (context) =>
-                                          const [
-                                                '',
-                                                'interested',
-                                                'not_interested',
-                                                'callback_later',
-                                                'converted',
-                                                'no_response',
-                                                'meeting_scheduled',
-                                                'proposal_requested',
-                                                'negotiation',
-                                                'lost',
-                                              ]
-                                              .map(
-                                                (value) => Text(
-                                                  value.isEmpty
-                                                      ? 'Select'
-                                                      : dropdownLabel(value),
-                                                ),
-                                              )
-                                              .toList(),
-                                      decoration: inputDecoration(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              buildPair(
-                                left: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildLabel('Followup Date'),
-                                    const SizedBox(height: 4),
-                                    buildDateField(
-                                      value: followupDate,
-                                      onTap: () => pickDateTime(
-                                        context,
-                                        followupDate,
-                                        (picked) => setLocalState(
-                                          () => followupDate = picked,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                right: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildLabel('Next Followup'),
-                                    const SizedBox(height: 4),
-                                    buildDateField(
-                                      value: nextFollowupDate,
-                                      onTap: () => pickDateTime(
-                                        context,
-                                        nextFollowupDate,
-                                        (picked) => setLocalState(
-                                          () => nextFollowupDate = picked,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              buildPair(
-                                left: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildLabel('Lead Status'),
-                                    const SizedBox(height: 4),
-                                    DropdownButtonFormField<String>(
-                                      value: leadStatus,
-                                      items: const [
-                                        DropdownMenuItem(
-                                          value: 'no_change',
-                                          child: Text('No Change'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'new',
-                                          child: Text('New'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'attempted_contact',
-                                          child: Text('Attempted Contact'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'contacted',
-                                          child: Text('Contacted'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'qualified',
-                                          child: Text('Qualified'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'demo_scheduled',
-                                          child: Text('Demo Scheduled'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'proposal_sent',
-                                          child: Text('Proposal Sent'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'negotiation',
-                                          child: Text('Negotiation'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'converted',
-                                          child: Text('Converted'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'lost',
-                                          child: Text('Lost'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'junk',
-                                          child: Text('Junk'),
-                                        ),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value == null) return;
-                                        setLocalState(() => leadStatus = value);
-                                      },
-                                      decoration: inputDecoration(),
-                                    ),
-                                  ],
-                                ),
-                                right: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    buildLabel('Reminder Type'),
-                                    const SizedBox(height: 4),
-                                    DropdownButtonFormField<String>(
-                                      value: reminderType,
-                                      items: const [
-                                        DropdownMenuItem(
-                                          value: 'Dashboard',
-                                          child: Text('Dashboard'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'Email',
-                                          child: Text('Email'),
-                                        ),
-                                        DropdownMenuItem(
-                                          value: 'WhatsApp',
-                                          child: Text('WhatsApp'),
-                                        ),
-                                      ],
-                                      onChanged: (value) {
-                                        if (value == null) return;
-                                        setLocalState(
-                                          () => reminderType = value,
-                                        );
-                                      },
-                                      decoration: inputDecoration(),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: Checkbox(
-                                      value: createReminder,
-                                      onChanged: (value) => setLocalState(
-                                        () => createReminder = value ?? false,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Create Reminder',
-                                    style: AppTextStyles.style(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF4B5563),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: buildLabel('Discussion Notes'),
-                              ),
-                              const SizedBox(height: 4),
-                              TextField(
-                                controller: notesController,
-                                minLines: isNarrow ? 3 : 4,
-                                maxLines: isNarrow ? 3 : 4,
-                                decoration: inputDecoration(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            ElevatedButton(
-                              onPressed: isSubmitting
-                                  ? null
-                                  : () => Navigator.of(dialogContext).pop(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF6B7280),
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(80, 38),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
-                                ),
-                              ),
-                              child: Text(
-                                'Cancel',
-                                style: AppTextStyles.style(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            ElevatedButton(
-                              onPressed: isSubmitting
-                                  ? null
-                                  : () async {
-                                      debugPrint(
-                                        '[followup] Save tapped: followupType=$followupType, outcome=$outcome',
-                                      );
-                                      if (followupDate == null) {
-                                        debugPrint(
-                                          '[followup] Validation failed: followup_date missing',
-                                        );
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Followup date is required.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      if (outcome.isEmpty) {
-                                        debugPrint(
-                                          '[followup] Validation failed: outcome not selected',
-                                        );
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Please select outcome.',
-                                            ),
-                                          ),
-                                        );
-                                        return;
-                                      }
-
-                                      final normalizedLeadStatus =
-                                          leadStatus.trim().toLowerCase() ==
-                                              'no_change'
-                                          ? ''
-                                          : _normalizeStatusForApi(leadStatus);
-                                      final normalizedReminderType =
-                                          createReminder
-                                          ? reminderType.trim()
-                                          : '';
-                                      debugPrint(
-                                        '[followup] Prepared payload values: followup_date=${toApiDateTime(followupDate!)}, next_followup_date=${nextFollowupDate == null ? 'null' : toApiDateTime(nextFollowupDate!)}, lead_status_after_followup=$normalizedLeadStatus, create_reminder=$createReminder, reminder_type=$normalizedReminderType',
-                                      );
-
-                                      setLocalState(() => isSubmitting = true);
-                                      try {
-                                        debugPrint(
-                                          '[followup] API call start for leadId=${_resolveLeadSourceId(lead)} sourceType=${_buildLeadAssignSource(lead)}',
-                                        );
-                                        await _apiService.createLeadFollowup(
-                                          sourceType: _buildLeadAssignSource(
-                                            lead,
-                                          ),
-                                          leadId: _resolveLeadSourceId(lead),
-                                          followupDate: toApiDateTime(
-                                            followupDate!,
-                                          ),
-                                          followupType: followupType,
-                                          outcome: outcome,
-                                          discussionNotes: notesController.text,
-                                          nextFollowupDate:
-                                              nextFollowupDate == null
-                                              ? null
-                                              : toApiDateTime(
-                                                  nextFollowupDate!,
-                                                ),
-                                          leadStatusAfterFollowup:
-                                              normalizedLeadStatus,
-                                          createReminder: createReminder,
-                                          reminderType: normalizedReminderType,
-                                        );
-                                        debugPrint(
-                                          '[followup] API call success',
-                                        );
-                                        if (!mounted) return;
-                                        Navigator.of(dialogContext).pop();
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Followup saved successfully.',
-                                            ),
-                                          ),
-                                        );
-                                        await context
-                                            .read<LeadDetailProvider>()
-                                            .loadLead(forceRefresh: true);
-                                      } on DioException catch (error) {
-                                        debugPrint(
-                                          '[followup] API call failed: ${error.response?.statusCode} ${error.response?.data}',
-                                        );
-                                        if (!mounted) return;
-                                        String message =
-                                            'Failed to save followup. Please try again.';
-                                        final data = error.response?.data;
-                                        if (data is Map) {
-                                          final topLevel =
-                                              (data['message'] ??
-                                                      data['error'] ??
-                                                      data['detail'])
-                                                  ?.toString()
-                                                  .trim();
-                                          if (topLevel != null &&
-                                              topLevel.isNotEmpty) {
-                                            message = topLevel;
-                                          }
-                                          final errors = data['errors'];
-                                          if (errors is Map &&
-                                              errors.isNotEmpty) {
-                                            final first = errors.values.first;
-                                            if (first is List &&
-                                                first.isNotEmpty) {
-                                              final firstMsg = first.first
-                                                  .toString()
-                                                  .trim();
-                                              if (firstMsg.isNotEmpty) {
-                                                message = firstMsg;
-                                              }
-                                            } else {
-                                              final firstMsg = first
-                                                  .toString()
-                                                  .trim();
-                                              if (firstMsg.isNotEmpty) {
-                                                message = firstMsg;
-                                              }
-                                            }
-                                          }
-                                        }
-                                        messenger.showSnackBar(
-                                          SnackBar(content: Text(message)),
-                                        );
-                                        setLocalState(
-                                          () => isSubmitting = false,
-                                        );
-                                      } catch (_) {
-                                        debugPrint(
-                                          '[followup] API call failed',
-                                        );
-                                        if (!mounted) return;
-                                        messenger.showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Failed to save followup. Please try again.',
-                                            ),
-                                          ),
-                                        );
-                                        setLocalState(
-                                          () => isSubmitting = false,
-                                        );
-                                      }
-                                    },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF1E88E5),
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(118, 38),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                              ),
-                              child: Text(
-                                isSubmitting ? 'Saving...' : 'Save Followup',
-                                style: AppTextStyles.style(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+  Future<void> _openPriorityUpdateDialog(LeadModel lead) async {
+    String selectedPriority = lead.displayPriority.toLowerCase();
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Update Priority',
+            style: AppTextStyles.style(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1E293B),
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: LeadFlow.priorities.map((p) {
+              final isSelected = selectedPriority == p;
+              return RadioListTile<String>(
+                title: Text(
+                  LeadFlow.label(p),
+                  style: AppTextStyles.style(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: p == 'high'
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFF1E293B),
                   ),
                 ),
+                value: p,
+                groupValue: selectedPriority,
+                activeColor: const Color(0xFF3F51B5),
+                onChanged: (val) {
+                  if (val != null) setDialogState(() => selectedPriority = val);
+                },
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3F51B5),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-            );
-          },
-        );
-      },
+              onPressed: () async {
+                try {
+                  await _apiService.updateLeadPriority(
+                    sourceType: _buildLeadAssignSource(lead),
+                    leadId: _resolveLeadSourceId(lead),
+                    priority: selectedPriority,
+                  );
+                  if (context.mounted) Navigator.of(dialogCtx).pop(true);
+                } catch (error) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(AppErrorHandler.messageFromError(error))),
+                    );
+                  }
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
     );
+    if (saved == true && mounted) await _refreshAll();
   }
 }
 
 class _HeaderSection extends StatelessWidget {
-  const _HeaderSection({required this.lead});
+  const _HeaderSection({
+    required this.lead,
+    this.onUpdatePriority,
+  });
   final LeadModel lead;
+  final VoidCallback? onUpdatePriority;
 
   @override
   Widget build(BuildContext context) {
@@ -1532,10 +701,62 @@ class _HeaderSection extends StatelessWidget {
                 ),
               ),
             ),
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: onUpdatePriority,
+              child: _PriorityBadge(priority: lead.displayPriority),
+            ),
+            const SizedBox(width: 6),
             _StatusBadge(status: lead.displayStatus),
           ],
         ),
       ],
+    );
+  }
+}
+
+class _PriorityBadge extends StatelessWidget {
+  const _PriorityBadge({required this.priority});
+  final String priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = priority.trim().toLowerCase();
+    final Color bg;
+    final Color fg;
+    if (normalized == 'high') {
+      bg = const Color(0xFFFEE2E2);
+      fg = const Color(0xFFDC2626);
+    } else if (normalized == 'low') {
+      bg = const Color(0xFFF1F5F9);
+      fg = const Color(0xFF64748B);
+    } else {
+      bg = const Color(0xFFFEF3C7);
+      fg = const Color(0xFFD97706);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: fg.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.flag_rounded, size: 11, color: fg),
+          const SizedBox(width: 3),
+          Text(
+            normalized.toUpperCase(),
+            style: AppTextStyles.style(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1580,10 +801,12 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.onAddFollowup,
     required this.onUpdateStatus,
+    required this.onUpdatePriority,
   });
 
-  final VoidCallback onAddFollowup;
+  final VoidCallback? onAddFollowup;
   final VoidCallback onUpdateStatus;
+  final VoidCallback onUpdatePriority;
 
   @override
   Widget build(BuildContext context) {
@@ -1592,7 +815,7 @@ class _ActionButtons extends StatelessWidget {
       child: Row(
         children: [
           _ActionButton(
-            label: 'Add Followup',
+            label: onAddFollowup == null ? 'Lead Closed' : 'Log Conversation',
             icon: Icons.add_circle_outline,
             backgroundColor: const Color(0xFF3F51B5),
             foregroundColor: Colors.white,
@@ -1606,6 +829,15 @@ class _ActionButtons extends StatelessWidget {
             foregroundColor: const Color(0xFF3F51B5),
             borderColor: const Color(0xFF3F51B5),
             onTap: onUpdateStatus,
+          ),
+          const SizedBox(width: 8),
+          _ActionButton(
+            label: 'Priority',
+            icon: Icons.flag_outlined,
+            backgroundColor: Colors.white,
+            foregroundColor: const Color(0xFFD97706),
+            borderColor: const Color(0xFFD97706),
+            onTap: onUpdatePriority,
           ),
         ],
       ),
@@ -2248,15 +1480,26 @@ class _NotesSection extends StatelessWidget {
                     onPressed: () async {
                       final note = noteController.text.trim();
                       if (note.isEmpty) return;
-                      await onAddNote(note, isPrivate);
-                      if (!context.mounted) return;
-                      noteController.clear();
-                      setLocalState(() => isPrivate = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Note added successfully.'),
-                        ),
-                      );
+                      try {
+                        await onAddNote(note, isPrivate);
+                        if (!context.mounted) return;
+                        noteController.clear();
+                        setLocalState(() => isPrivate = false);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Note added successfully.'),
+                          ),
+                        );
+                      } catch (error) {
+                        if (context.mounted)
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                AppErrorHandler.messageFromError(error),
+                              ),
+                            ),
+                          );
+                      }
                     },
                     child: const Text('Add Note'),
                   ),
@@ -2402,11 +1645,6 @@ class _ReminderSection extends StatelessWidget {
                           value: 'dashboard',
                           child: Text('Dashboard'),
                         ),
-                        DropdownMenuItem(value: 'email', child: Text('Email')),
-                        DropdownMenuItem(
-                          value: 'whatsapp',
-                          child: Text('WhatsApp'),
-                        ),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
@@ -2425,17 +1663,36 @@ class _ReminderSection extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    if (remindAt == null) return;
-                    await onAddReminder(
-                      DateFormat('yyyy-MM-dd HH:mm:ss').format(remindAt!),
-                      reminderType,
-                    );
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Reminder added successfully.'),
-                      ),
-                    );
+                    if (remindAt == null ||
+                        !remindAt!.isAfter(DateTime.now())) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Choose a future reminder date.'),
+                        ),
+                      );
+                      return;
+                    }
+                    try {
+                      await onAddReminder(
+                        DateFormat('yyyy-MM-dd HH:mm:ss').format(remindAt!),
+                        reminderType,
+                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Reminder added successfully.'),
+                        ),
+                      );
+                    } catch (error) {
+                      if (context.mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              AppErrorHandler.messageFromError(error),
+                            ),
+                          ),
+                        );
+                    }
                   },
                   child: const Text('Add Reminder'),
                 ),
@@ -2687,6 +1944,96 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LeadFlowSummary extends StatelessWidget {
+  const _LeadFlowSummary({required this.lead});
+  final LeadModel lead;
+  @override
+  Widget build(BuildContext context) {
+    final stages = lead.statusOptions.isNotEmpty
+        ? lead.statusOptions.keys.toList()
+        : LeadFlow.statuses;
+    final current = stages.indexOf(lead.status ?? '');
+    final next = DateTime.tryParse(lead.nextFollowupDate ?? '');
+    final overdue =
+        !lead.isClosed && next != null && next.isBefore(DateTime.now());
+    final latest = lead.latestConversation;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Lead Pipeline',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 10),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (var i = 0; i < stages.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Chip(
+                        avatar: Icon(
+                          i == current
+                              ? Icons.radio_button_checked
+                              : Icons.circle_outlined,
+                          size: 16,
+                        ),
+                        backgroundColor: i == current
+                            ? const Color(0xFFDBEAFE)
+                            : null,
+                        label: Text(
+                          lead.statusOptions[stages[i]] ??
+                              LeadFlow.label(stages[i]),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (!lead.isClosed) ...[
+              const Divider(),
+              Text(
+                overdue ? 'Next Action - Overdue' : 'Next Action',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: overdue ? Colors.red : null,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                next == null
+                    ? lead.nextFollowupDate ?? 'No next action scheduled'
+                    : DateFormat('dd MMM yyyy, hh:mm a').format(next),
+              ),
+            ],
+            const Divider(),
+            Text(
+              'Latest Conversation',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 6),
+            if (latest.isEmpty)
+              const Text('No conversation recorded')
+            else ...[
+              Text(
+                '${LeadFlow.label((latest['followup_type'] ?? '').toString())} � ${LeadFlow.label((latest['outcome'] ?? '').toString())}',
+              ),
+              if (latest['followup_date'] != null)
+                Text(latest['followup_date'].toString()),
+              if (latest['discussion_notes'] != null)
+                Text(latest['discussion_notes'].toString()),
+            ],
           ],
         ),
       ),

@@ -1,3 +1,6 @@
+import '../models/lead_flow.dart';
+import '../widgets/lead_activity_dialog.dart';
+import '../core/services/in_app_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -23,48 +26,22 @@ class AllLeadsScreen extends StatefulWidget {
 }
 
 class _AllLeadsScreenState extends State<AllLeadsScreen> {
-  static const List<String> _fixedStatusOptions = <String>[
-    'all',
-    'new',
-    'attempted_contact',
-    'contacted',
-    'qualified',
-    'demo_scheduled',
-    'proposal_sent',
-    'negotiation',
-    'converted',
-    'lost',
-    'junk',
-  ];
-
-  static const List<_SourceOption> _fixedSourceOptions = <_SourceOption>[
-    _SourceOption(label: 'All', iconData: Icons.apps_rounded),
-    _SourceOption(label: 'Leads', iconData: Icons.leaderboard_outlined),
-    _SourceOption(
-      label: 'Digital Marketing',
-      iconData: Icons.campaign_outlined,
-    ),
-    _SourceOption(label: 'Web App', iconData: Icons.language_outlined),
-    _SourceOption(
-      label: 'Meta',
-      iconData: FontAwesomeIcons.meta,
-      useFaIcon: true,
-    ),
-    _SourceOption(
-      label: 'Google',
-      iconData: FontAwesomeIcons.google,
-      useFaIcon: true,
-    ),
-    _SourceOption(label: 'IndiaMart', iconData: Icons.storefront_outlined),
-    _SourceOption(label: 'JustDial', iconData: Icons.phone_in_talk_outlined),
-  ];
-
+  Map<String, String> _statusOptions = {
+    for (final s in LeadFlow.statuses) s: LeadFlow.label(s),
+  };
+  Map<String, String> _sources = {
+    for (final s in LeadFlow.sources) s: LeadFlow.label(s),
+  };
+  Map<String, dynamic> _tabCounts = {};
+  List<StaffMemberModel> _staff = [];
+  int _requestVersion = 0;
   final ApiService _apiService = ApiService.instance;
   final TextEditingController _searchController = TextEditingController();
 
   bool _isLoading = true;
   String? _error;
   List<LeadModel> _items = const <LeadModel>[];
+  final Map<String, LeadModel> _priorityDetails = {};
   int _currentPage = 1;
   int _lastPage = 1;
   int _total = 0;
@@ -89,6 +66,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   }
 
   Future<void> _loadLeads({int page = 1, String? search}) async {
+    final version = ++_requestVersion;
     final normalizedSearch = (search ?? _appliedSearch).trim();
 
     setState(() {
@@ -102,11 +80,18 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         perPage: _perPage,
         search: normalizedSearch,
         status: _selectedStatus,
+        source: _selectedSource,
       );
 
-      if (!mounted) return;
+      if (!mounted || version != _requestVersion) return;
       setState(() {
         _items = result.items;
+        _priorityDetails.clear();
+        if (result.statusOptions.isNotEmpty)
+          _statusOptions = result.statusOptions;
+        if (result.sources.isNotEmpty) _sources = result.sources;
+        _tabCounts = result.tabCounts;
+        _staff = result.staff.map(StaffMemberModel.fromJson).toList();
         _currentPage = result.currentPage;
         _lastPage = result.lastPage < 1 ? 1 : result.lastPage;
         _total = result.total;
@@ -117,13 +102,46 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         );
         _isLoading = false;
       });
-    } catch (_) {
-      if (!mounted) return;
+      _hydrateMissingPriorities(_items, version);
+    } catch (error) {
+      if (!mounted || version != _requestVersion) return;
       setState(() {
         _isLoading = false;
-        _error = 'Failed to load leads.';
+        _error = AppErrorHandler.messageFromError(error);
       });
     }
+  }
+
+  Future<void> _hydrateMissingPriorities(
+    List<LeadModel> leads,
+    int version,
+  ) async {
+    // Imported profiles can report a default priority that differs from their
+    // pipeline. Verify them even when the list already supplied a priority.
+    final missing = leads.where((lead) {
+      return lead.managementSource != 'lead' ||
+          (lead.priority?.trim().isEmpty ?? true);
+    }).toList();
+
+    if (missing.isEmpty) return;
+
+    await Future.wait(
+      missing.map((lead) async {
+        try {
+          if (!mounted || version != _requestVersion) return;
+          final detail = await _apiService.getLeadManagementDetailView(
+            sourceType: _buildLeadAssignSource(lead),
+            sourceId: _resolveLeadSourceId(lead),
+          );
+          if (!mounted || version != _requestVersion) return;
+          setState(() {
+            _priorityDetails[_leadSelectionKey(lead)] = detail;
+          });
+        } catch (error) {
+          debugPrint('Unable to verify lead priority: $error');
+        }
+      }),
+    );
   }
 
   Future<void> _deleteLead(LeadModel lead) async {
@@ -151,12 +169,16 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     if (confirmed != true) return;
 
     try {
-      await _apiService.deleteLead(lead.id.trim());
+      await _apiService.deleteManagedLead(
+        source: lead.managementSource,
+        id: lead.managementId,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lead deleted successfully.')),
       );
       await _loadLeads(page: _currentPage, search: _appliedSearch);
+      InAppNotifications.instance.refresh();
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -218,16 +240,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     );
   }
 
-  List<LeadModel> _visibleItems() {
-    if (_selectedSource.isEmpty) return _items;
-    return _items
-        .where(
-          (lead) =>
-              _normalizeSourceLabel((lead.source ?? '').trim()) ==
-              _selectedSource,
-        )
-        .toList(growable: false);
-  }
+  List<LeadModel> _visibleItems() => _items;
 
   String _leadSelectionKey(LeadModel lead) {
     return '${_buildLeadAssignSource(lead)}::${_resolveLeadSourceId(lead)}';
@@ -273,41 +286,8 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
     return selected;
   }
 
-  String _buildLeadAssignSource(LeadModel lead) {
-    final raw = (lead.sourceType ?? lead.source ?? '')
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
-    switch (raw) {
-      case 'lead':
-      case 'leads':
-        return 'lead';
-      case 'digitalmarketing':
-        return 'digital_marketing';
-      case 'webapp':
-      case 'webapps':
-      case 'webapplication':
-        return 'webapp';
-      case 'meta':
-      case 'facebook':
-        return 'meta';
-      case 'google':
-      case 'googleads':
-        return 'google';
-      case 'indiamart':
-        return 'indiamart';
-      case 'justdial':
-        return 'justdial';
-      default:
-        return raw.isEmpty ? 'lead' : raw;
-    }
-  }
-
-  String _resolveLeadSourceId(LeadModel lead) {
-    final sourceId = (lead.sourceId ?? '').trim();
-    if (sourceId.isNotEmpty) return sourceId;
-    return lead.id.trim();
-  }
+  String _buildLeadAssignSource(LeadModel lead) => lead.managementSource;
+  String _resolveLeadSourceId(LeadModel lead) => lead.managementId;
 
   Future<void> _showAssignDialog({
     required List<Map<String, dynamic>> selectedLeads,
@@ -321,7 +301,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
 
     List<StaffMemberModel> staffList = const <StaffMemberModel>[];
     try {
-      staffList = await _apiService.getStaffList(forceRefresh: true);
+      staffList = _staff.isNotEmpty
+          ? _staff
+          : await _apiService.getStaffList(forceRefresh: true);
     } catch (_) {}
 
     if (!mounted) return;
@@ -372,13 +354,12 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                 setState(() => _selectedLeadKeys.clear());
                 setState(() => _isBulkSelectionMode = false);
                 await _loadLeads(page: _currentPage, search: _appliedSearch);
-              } catch (_) {
+                InAppNotifications.instance.refresh();
+              } catch (error) {
                 if (!mounted) return;
                 messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Failed to assign lead(s). Please try again.',
-                    ),
+                  SnackBar(
+                    content: Text(AppErrorHandler.messageFromError(error)),
                   ),
                 );
                 setLocalState(() => submitting = false);
@@ -400,7 +381,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Select Staff'),
+                          const Text(
+                            'Select staff to add to the assigned team. Existing assignments remain.',
+                          ),
                           const SizedBox(height: 8),
                           Container(
                             constraints: const BoxConstraints(maxHeight: 220),
@@ -491,237 +474,138 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
   }
 
   Future<void> _openStatusUpdateDialog(LeadModel lead) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final remarksController = TextEditingController();
-    final lostReasonController = TextEditingController();
-    final wonValueController = TextEditingController();
-    String selectedStatus = _resolveCurrentStatusOption(lead.displayStatus);
-    bool isSubmitting = false;
-
-    if (!mounted) return;
-    await showDialog<void>(
+    final saved = await showDialog<bool>(
       context: context,
-      barrierDismissible: !isSubmitting,
-      builder: (dialogContext) {
+      barrierDismissible: false,
+      builder: (_) => LeadActivityDialog(
+        lead: lead,
+        conversation: false,
+        statusOptions: _statusOptions,
+      ),
+    );
+    if (saved == true && mounted) {
+      await _loadLeads(page: _currentPage);
+      InAppNotifications.instance.refresh();
+    }
+  }
+
+  Future<void> _openPriorityDialog(LeadModel lead) async {
+    String selectedPriority =
+        (_priorityDetails[_leadSelectionKey(lead)] ?? lead).displayPriority;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) {
         return StatefulBuilder(
-          builder: (context, setLocalState) {
-            final isLost = selectedStatus.toLowerCase() == 'lost';
-            final isConverted = selectedStatus.toLowerCase() == 'converted';
-
-            Future<void> onUpdate() async {
-              if (isSubmitting) return;
-              if (isLost && lostReasonController.text.trim().isEmpty) {
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Lost reason is required for lost status.'),
-                  ),
-                );
-                return;
-              }
-              if (isConverted && wonValueController.text.trim().isNotEmpty) {
-                final parsed = double.tryParse(wonValueController.text.trim());
-                if (parsed == null) {
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Converted value must be a valid number.'),
-                    ),
-                  );
-                  return;
-                }
-              }
-
-              setLocalState(() => isSubmitting = true);
-              try {
-                await _apiService.updateLeadStatus(
-                  sourceType: _buildLeadAssignSource(lead),
-                  leadId: _resolveLeadSourceId(lead),
-                  status: _normalizeStatusForApi(selectedStatus),
-                  remarks: remarksController.text.trim(),
-                  lostReason: isLost ? lostReasonController.text.trim() : null,
-                  wonValue:
-                      isConverted && wonValueController.text.trim().isNotEmpty
-                      ? double.tryParse(wonValueController.text.trim())
-                      : null,
-                );
-                if (!mounted) return;
-                Navigator.of(dialogContext).pop();
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Lead status updated successfully.'),
-                  ),
-                );
-                await _loadLeads(page: _currentPage, search: _appliedSearch);
-              } catch (_) {
-                if (!mounted) return;
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Failed to update lead status. Please try again.',
-                    ),
-                  ),
-                );
-                setLocalState(() => isSubmitting = false);
-              }
-            }
-
-            return Dialog(
-              insetPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 20,
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Change Lead Status',
-                              style: AppTextStyles.style(
-                                fontSize: 30,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF374151),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: isSubmitting
-                                ? null
-                                : () => Navigator.of(dialogContext).pop(),
-                            icon: const Icon(Icons.close),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            lead.displayName,
-                            style: AppTextStyles.style(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF374151),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Status',
-                            style: AppTextStyles.style(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF4B5563),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          DropdownButtonFormField<String>(
-                            value: selectedStatus,
-                            items: _fixedStatusOptions
-                                .map(
-                                  (status) => DropdownMenuItem<String>(
-                                    value: status,
-                                    child: Text(_statusLabel(status)),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: isSubmitting
-                                ? null
-                                : (value) {
-                                    if (value == null) return;
-                                    setLocalState(() => selectedStatus = value);
-                                  },
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: wonValueController,
-                            enabled: !isSubmitting,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            decoration: const InputDecoration(
-                              labelText: 'Converted Value (if converted)',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: lostReasonController,
-                            enabled: !isSubmitting,
-                            minLines: 2,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              labelText: 'Lost Reason (required if lost)',
-                              border: const OutlineInputBorder(),
-                              isDense: true,
-                              errorText:
-                                  isLost &&
-                                      lostReasonController.text.trim().isEmpty
-                                  ? 'Required for Lost status'
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          TextField(
-                            controller: remarksController,
-                            enabled: !isSubmitting,
-                            minLines: 2,
-                            maxLines: 3,
-                            decoration: const InputDecoration(
-                              labelText: 'Remarks',
-                              border: OutlineInputBorder(),
-                              isDense: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: isSubmitting
-                                ? null
-                                : () => Navigator.of(dialogContext).pop(),
-                            child: const Text('Cancel'),
-                          ),
-                          const SizedBox(width: 10),
-                          ElevatedButton(
-                            onPressed: isSubmitting ? null : onUpdate,
-                            child: Text(
-                              isSubmitting ? 'Updating...' : 'Update',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+              title: Text(
+                'Change Priority',
+                style: AppTextStyles.style(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1E293B),
                 ),
               ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: LeadFlow.priorities.map((p) {
+                  final isSelected = selectedPriority == p;
+                  return RadioListTile<String>(
+                    title: Row(
+                      children: [
+                        if (p == 'high')
+                          const Padding(
+                            padding: EdgeInsets.only(right: 6),
+                            child: Icon(
+                              Icons.flag_rounded,
+                              size: 16,
+                              color: Color(0xFFDC2626),
+                            ),
+                          ),
+                        Text(
+                          LeadFlow.label(p),
+                          style: AppTextStyles.style(
+                            fontSize: 14,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: p == 'high'
+                                ? const Color(0xFFDC2626)
+                                : const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    value: p,
+                    groupValue: selectedPriority,
+                    activeColor: p == 'high'
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFF1D6FEA),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() => selectedPriority = val);
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogCtx).pop(false),
+                  child: Text(
+                    'Cancel',
+                    style: AppTextStyles.style(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1D6FEA),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () async {
+                    try {
+                      await _apiService.updateLeadPriority(
+                        sourceType: _buildLeadAssignSource(lead),
+                        leadId: _resolveLeadSourceId(lead),
+                        priority: selectedPriority,
+                      );
+                      if (dialogCtx.mounted) {
+                        Navigator.of(dialogCtx).pop(true);
+                      }
+                    } catch (error) {
+                      if (dialogCtx.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to update priority: $error'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text(
+                    'Save',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ],
             );
           },
         );
       },
     );
+    if (saved == true && mounted) {
+      await _loadLeads(page: _currentPage);
+      InAppNotifications.instance.refresh();
+    }
   }
 
   Future<void> _openBulkAssign() async {
@@ -767,50 +651,6 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
         .join(' ');
   }
 
-  String _resolveCurrentStatusOption(String currentStatus) {
-    final normalizedCurrent = _normalizeStatusForApi(currentStatus);
-    for (final option in _fixedStatusOptions) {
-      final normalizedOption = _normalizeStatusForApi(option);
-      if (normalizedOption == normalizedCurrent) {
-        return option;
-      }
-      if (normalizedCurrent == 'won' && normalizedOption == 'converted') {
-        return option;
-      }
-    }
-    return _fixedStatusOptions.first;
-  }
-
-  String _normalizeSourceLabel(String source) {
-    final normalized = source.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]'),
-      '',
-    );
-    switch (normalized) {
-      case 'lead':
-      case 'leads':
-        return 'Leads';
-      case 'digitalmarketing':
-        return 'Digital Marketing';
-      case 'webapp':
-      case 'webapps':
-      case 'webapplication':
-        return 'Web App';
-      case 'meta':
-      case 'facebook':
-        return 'Meta';
-      case 'google':
-      case 'googleads':
-        return 'Google';
-      case 'indiamart':
-        return 'IndiaMart';
-      case 'justdial':
-        return 'JustDial';
-      default:
-        return source;
-    }
-  }
-
   String _normalizePhoneNumber(String phoneNumber) {
     final trimmed = phoneNumber.trim();
     if (trimmed.isEmpty) return '';
@@ -824,8 +664,12 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final statusOptions = _fixedStatusOptions;
-    final sourceOptions = _fixedSourceOptions;
+    final statusOptions = ['all', ..._statusOptions.keys];
+    final sourceOptions = [
+      const _SourceOption(label: 'All', iconData: Icons.apps_rounded),
+      for (final s in _sources.entries)
+        _SourceOption(label: s.key, iconData: Icons.source_outlined),
+    ];
     final visibleItems = _visibleItems();
     final screenWidth = MediaQuery.of(context).size.width;
     final isNarrow = screenWidth < 420;
@@ -974,6 +818,9 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       children: List<Widget>.generate(leads.length, (index) {
         final lead = leads[index];
         final serialNumber = ((_currentPage - 1) * _perPage) + index + 1;
+        // Apply the same priority styling to every management source.
+        final isHighPriority =
+            (_priorityDetails[_leadSelectionKey(lead)] ?? lead).isHighPriority;
 
         return Padding(
           padding: EdgeInsets.only(bottom: index == leads.length - 1 ? 0 : 10),
@@ -986,9 +833,36 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
             },
             onTap: _isBulkSelectionMode
                 ? () => _toggleLeadSelection(lead, !_isLeadSelected(lead))
-                : null,
+                : () async {
+                    await Get.toNamed(
+                      AppRoutes.leadManagementDetail,
+                      arguments: <String, dynamic>{
+                        'leadId': _resolveLeadSourceId(lead),
+                        'sourceType': _buildLeadAssignSource(lead),
+                        'sourceId': _resolveLeadSourceId(lead),
+                        'source_id': _resolveLeadSourceId(lead),
+                      },
+                    );
+                    _loadLeads(page: _currentPage);
+                  },
             child: AppCard(
               padding: const EdgeInsets.all(12),
+              color: isHighPriority ? const Color(0xFFFEF2F2) : Colors.white,
+              border: Border.all(
+                color: isHighPriority
+                    ? const Color(0xFFEF4444)
+                    : const Color(0xFFE2E8F0),
+                width: isHighPriority ? 1.5 : 1.0,
+              ),
+              boxShadow: isHighPriority
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFEF4444).withOpacity(0.12),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1028,6 +902,15 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                                     Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
+                                        if (isHighPriority) ...[
+                                          _PriorityBadge(
+                                            compact: compact,
+                                            veryCompact: veryCompact,
+                                            onTap: () =>
+                                                _openPriorityDialog(lead),
+                                          ),
+                                          SizedBox(width: veryCompact ? 4 : 6),
+                                        ],
                                         ConstrainedBox(
                                           constraints: BoxConstraints(
                                             maxWidth: veryCompact ? 72 : 96,
@@ -1111,6 +994,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                         label: 'assigned_to',
                         value: lead.displayAssignedTo,
                         trailing: _LeadActions(
+                          onReturn: () => _loadLeads(page: _currentPage),
                           phoneNumber: lead.phone,
                           onCall: () => _callLead(lead.phone?.trim() ?? ''),
                           leadId: _resolveLeadSourceId(lead),
@@ -1118,6 +1002,8 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                           sourceId: _resolveLeadSourceId(lead),
                           onAssign: () => _openAssignSingleLead(lead),
                           onEditStatus: () => _openStatusUpdateDialog(lead),
+                          onEditPriority: () => _openPriorityDialog(lead),
+                          isHighPriority: isHighPriority,
                           onDelete: () => _deleteLead(lead),
                         ),
                       ),
@@ -1174,7 +1060,11 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           .map(
             (status) => DropdownMenuItem<String>(
               value: status,
-              child: Text(_statusLabel(status)),
+              child: Text(
+                status == 'all'
+                    ? 'All'
+                    : _statusOptions[status] ?? _statusLabel(status),
+              ),
             ),
           )
           .toList(),
@@ -1226,7 +1116,13 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
                     child: source.buildIcon(),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(source.label)),
+                  Expanded(
+                    child: Text(
+                      source.label == 'All'
+                          ? 'All'
+                          : '${_sources[source.label] ?? LeadFlow.label(source.label)}${_tabCounts[source.label] == null ? '' : ' (${_tabCounts[source.label]})'}',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1234,6 +1130,7 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
           .toList(),
       onChanged: (value) {
         setState(() => _selectedSource = value ?? '');
+        _loadLeads(page: 1);
       },
     );
   }
@@ -1281,12 +1178,24 @@ class _AllLeadsScreenState extends State<AllLeadsScreen> {
       width: iconOnly ? (isCompact ? 36 : 40) : null,
       child: iconOnly
           ? ElevatedButton(
-              onPressed: () => Get.toNamed(AppRoutes.addLead),
+              onPressed: () async {
+                await Get.toNamed(AppRoutes.addLead);
+                if (mounted) {
+                  await _loadLeads(page: 1);
+                  InAppNotifications.instance.refresh();
+                }
+              },
               style: buttonStyle,
               child: Icon(Icons.add, size: isCompact ? 14 : 16),
             )
           : ElevatedButton.icon(
-              onPressed: () => Get.toNamed(AppRoutes.addLead),
+              onPressed: () async {
+                await Get.toNamed(AppRoutes.addLead);
+                if (mounted) {
+                  await _loadLeads(page: 1);
+                  InAppNotifications.instance.refresh();
+                }
+              },
               icon: Icon(Icons.add, size: isCompact ? 14 : 16),
               label: Text(
                 compact ? 'Add Lead' : 'Add New Lead',
@@ -1551,6 +1460,9 @@ class _LeadActions extends StatelessWidget {
     required this.onAssign,
     required this.onEditStatus,
     required this.onDelete,
+    this.onEditPriority,
+    this.isHighPriority = false,
+    this.onReturn,
   });
 
   final String? phoneNumber;
@@ -1561,6 +1473,9 @@ class _LeadActions extends StatelessWidget {
   final VoidCallback onAssign;
   final VoidCallback onEditStatus;
   final VoidCallback onDelete;
+  final VoidCallback? onEditPriority;
+  final bool isHighPriority;
+  final VoidCallback? onReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -1578,15 +1493,18 @@ class _LeadActions extends StatelessWidget {
         ],
         InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () => Get.toNamed(
-            AppRoutes.leadManagementDetail,
-            arguments: <String, dynamic>{
-              'leadId': leadId,
-              'sourceType': sourceType,
-              'sourceId': sourceId,
-              'source_id': sourceId,
-            },
-          ),
+          onTap: () async {
+            await Get.toNamed(
+              AppRoutes.leadManagementDetail,
+              arguments: <String, dynamic>{
+                'leadId': leadId,
+                'sourceType': sourceType,
+                'sourceId': sourceId,
+                'source_id': sourceId,
+              },
+            );
+            onReturn?.call();
+          },
           child: Ink(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
             decoration: BoxDecoration(
@@ -1601,6 +1519,16 @@ class _LeadActions extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
+        if (onEditPriority != null) ...[
+          _ActionIconButton(
+            icon: isHighPriority ? Icons.flag_rounded : Icons.flag_outlined,
+            color: isHighPriority
+                ? const Color(0xFFDC2626)
+                : const Color(0xFFD97706),
+            onTap: onEditPriority!,
+          ),
+          const SizedBox(width: 8),
+        ],
         _ActionIconButton(
           icon: Icons.person_add_alt_1_outlined,
           color: Color(0xFFF59E0B),
@@ -1619,6 +1547,56 @@ class _LeadActions extends StatelessWidget {
           onTap: onDelete,
         ),
       ],
+    );
+  }
+}
+
+class _PriorityBadge extends StatelessWidget {
+  const _PriorityBadge({
+    this.compact = false,
+    this.veryCompact = false,
+    this.onTap,
+  });
+
+  final bool compact;
+  final bool veryCompact;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: veryCompact ? 5 : (compact ? 6 : 8),
+          vertical: veryCompact ? 2 : (compact ? 3 : 4),
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEE2E2),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0xFFFCA5A5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.flag_rounded, size: 11, color: Color(0xFFDC2626)),
+            if (!veryCompact) ...[
+              const SizedBox(width: 3),
+              Text(
+                'HIGH',
+                maxLines: 1,
+                style: AppTextStyles.style(
+                  color: const Color(0xFFDC2626),
+                  fontSize: veryCompact ? 9 : (compact ? 9.5 : 10.5),
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

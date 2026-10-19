@@ -1,3 +1,7 @@
+import 'package:intl/intl.dart';
+import '../core/services/lead_priority_cache.dart';
+import 'lead_flow.dart';
+
 class LeadModel {
   const LeadModel({
     required this.id,
@@ -26,9 +30,23 @@ class LeadModel {
     this.country,
     this.zipCode,
     this.description,
+    this.nextFollowupDate,
+    this.latestConversation = const {},
+    this.statusOptions = const {},
     this.tags = const [],
     this.assignedStaffIds = const [],
+    this.priority,
   });
+
+  final String? priority;
+  final String? nextFollowupDate;
+  final Map<String, dynamic> latestConversation;
+  final Map<String, String> statusOptions;
+  bool get isClosed => LeadFlow.isClosed(status);
+  String get managementSource =>
+      (sourceType?.trim().isNotEmpty ?? false) ? sourceType!.trim() : 'lead';
+  String get managementId =>
+      (sourceId?.trim().isNotEmpty ?? false) ? sourceId!.trim() : id;
 
   final String id;
   final String name;
@@ -196,6 +214,18 @@ class LeadModel {
         'notes',
         'remark',
       ]),
+      nextFollowupDate: _readNullableString(source, [
+        'next_followup_date',
+        'next_action_at',
+      ]),
+      latestConversation: _extractNestedMap(source, [
+        'latest_followup',
+        'latestFollowup',
+        'latest_conversation',
+      ]),
+      statusOptions: LeadFlow.options(
+        source['statusOptions'] ?? source['status_options'],
+      ),
       tags: _readStringList(source['tags']),
       assignedStaffIds: _readAssignedStaffIds(
         assignedStaff,
@@ -207,7 +237,111 @@ class LeadModel {
         'image',
         'profile_picture',
       ]),
+      priority: () {
+        final rawPriority =
+            source['priority'] ??
+            source['lead_priority'] ??
+            source['priority_level'] ??
+            source['priority_name'] ??
+            source['priority_status'] ??
+            source['pipeline_priority'];
+        String? extracted;
+        if (rawPriority is Map) {
+          extracted = _readNullableString(
+            Map<String, dynamic>.from(rawPriority),
+            ['name', 'slug', 'value', 'label', 'title'],
+          );
+        } else if (rawPriority != null) {
+          final str = rawPriority.toString().trim();
+          if (str.isNotEmpty) extracted = str;
+        } else {
+          extracted = _readNullableString(source, [
+            'priority',
+            'lead_priority',
+            'priority_level',
+            'pipeline_priority',
+          ]);
+        }
+
+        final resolvedSourceType =
+            _readNullableString(source, [
+              'source_type',
+              'sourceType',
+              'lead_type',
+            ]) ??
+            'lead';
+        final resolvedSourceId =
+            _readNullableString(source, [
+              'source_id',
+              'sourceId',
+              'id',
+              '_id',
+              'lead_id',
+            ]) ??
+            '';
+
+        if (extracted != null && extracted.isNotEmpty) {
+          LeadPriorityCache.set(
+            sourceType: resolvedSourceType,
+            sourceId: resolvedSourceId,
+            priority: extracted,
+          );
+          return extracted;
+        }
+
+        return LeadPriorityCache.get(
+              sourceType: resolvedSourceType,
+              sourceId: resolvedSourceId,
+            ) ??
+            LeadPriorityCache.get(sourceId: resolvedSourceId);
+      }(),
     );
+  }
+
+  String get displayPriority {
+    final cached =
+        LeadPriorityCache.get(
+          sourceType: managementSource,
+          sourceId: managementId,
+        ) ??
+        LeadPriorityCache.get(sourceId: managementId) ??
+        LeadPriorityCache.get(sourceId: id);
+    final value = (priority ?? cached)?.trim().toLowerCase();
+    if (value == null || value.isEmpty) return 'medium';
+    return value;
+  }
+
+  bool get isHighPriority {
+    final value = displayPriority.toLowerCase();
+    if (value == 'high' ||
+        value == 'urgent' ||
+        value == 'critical' ||
+        value == '1') {
+      return true;
+    }
+    final cached =
+        LeadPriorityCache.get(
+          sourceType: managementSource,
+          sourceId: managementId,
+        ) ??
+        LeadPriorityCache.get(sourceId: managementId) ??
+        LeadPriorityCache.get(sourceId: id);
+    if (cached != null) {
+      final c = cached.toLowerCase();
+      if (c == 'high' || c == 'urgent' || c == 'critical' || c == '1') {
+        return true;
+      }
+    }
+    for (final tag in tags) {
+      final t = tag.trim().toLowerCase();
+      if (t == 'high' ||
+          t == 'high priority' ||
+          t == 'high-priority' ||
+          t == 'urgent') {
+        return true;
+      }
+    }
+    return false;
   }
 
   String get displayId {
@@ -331,24 +465,100 @@ class LeadModel {
   }
 
   static Map<String, dynamic> _extractSource(Map<String, dynamic> json) {
-    for (final key in [
-      'leadModel',
-      'lead_model',
-      'lead',
-      'data',
-      'item',
-      'result',
-      'attributes',
-    ]) {
+    final result = Map<String, dynamic>.from(json);
+    for (final key in ['data', 'item', 'result', 'attributes']) {
       final value = json[key];
-      if (value is Map<String, dynamic>) {
-        return value;
-      }
-      if (value is Map) {
-        return value.map((key, value) => MapEntry(key.toString(), value));
+      if (value is Map)
+        result.addAll(_extractSource(Map<String, dynamic>.from(value)));
+    }
+    final profile =
+        result['lead'] ??
+        result['profile'] ??
+        result['leadProfile'] ??
+        result['lead_profile'];
+    if (profile is Map) {
+      // Imported profiles may have empty priority fields. Keep the priority
+      // supplied by the management record in that case.
+      for (final entry in Map<String, dynamic>.from(profile).entries) {
+        if (entry.key.contains('priority') &&
+            (entry.value == null || entry.value.toString().trim().isEmpty)) {
+          continue;
+        }
+        result[entry.key] = entry.value;
       }
     }
-    return json;
+    final rawPipeline =
+        result['leadModel'] ??
+        result['lead_model'] ??
+        result['pipeline'] ??
+        result['pipelines'] ??
+        result['pipeline_lead'] ??
+        result['pipelineLead'] ??
+        result['pipeline_leads'] ??
+        result['pipelineLeads'] ??
+        result['lead_pipeline'] ??
+        result['leadPipeline'] ??
+        result['pipeline_data'] ??
+        result['pipelineData'];
+
+    Map<String, dynamic>? pipeline;
+    if (rawPipeline is Map) {
+      pipeline = Map<String, dynamic>.from(rawPipeline);
+    } else if (rawPipeline is List &&
+        rawPipeline.isNotEmpty &&
+        rawPipeline.first is Map) {
+      pipeline = Map<String, dynamic>.from(rawPipeline.first as Map);
+    }
+
+    if (pipeline != null) {
+      result['id'] ??= pipeline['id'];
+      for (final entry in pipeline.entries) {
+        if (entry.key.toString().contains('priority') &&
+            (entry.value == null || entry.value.toString().trim().isEmpty)) {
+          continue;
+        }
+        if (!const [
+          'id',
+          'name',
+          'email',
+          'phone',
+          'number',
+          'source',
+        ].contains(entry.key)) {
+          result[entry.key.toString()] = entry.value;
+        }
+      }
+    }
+    if (result['priority'] == null) {
+      final fallbackPriority =
+          result['pipeline_priority'] ??
+          result['lead_priority'] ??
+          result['priority_level'] ??
+          result['priority_name'] ??
+          result['priority_status'];
+      if (fallbackPriority != null) {
+        result['priority'] = fallbackPriority;
+      }
+    }
+    if (result['latest_followup'] == null &&
+        result['latest_conversation'] == null) {
+      final raw = result['followups'];
+      final list = raw is Map ? raw['data'] : raw;
+      if (list is List && list.isNotEmpty) {
+        final records = list.whereType<Map>().toList();
+        records.sort(
+          (a, b) =>
+              (DateTime.tryParse((b['followup_date'] ?? '').toString()) ??
+                      DateTime(1900))
+                  .compareTo(
+                    DateTime.tryParse((a['followup_date'] ?? '').toString()) ??
+                        DateTime(1900),
+                  ),
+        );
+        if (records.isNotEmpty) result['latest_followup'] = records.first;
+      }
+    }
+    return result;
   }
 
   static Map<String, dynamic> _extractNestedMap(
@@ -542,8 +752,11 @@ class LeadModel {
       }
       if (value is String && value.trim().isNotEmpty) {
         final parsed = DateTime.tryParse(value.trim());
-        if (parsed != null) {
-          return parsed;
+        if (parsed != null) return parsed;
+        try {
+          return DateFormat('dd MMM yyyy hh:mm a').parseStrict(value.trim());
+        } on FormatException {
+          /* Try the next field. */
         }
       }
     }

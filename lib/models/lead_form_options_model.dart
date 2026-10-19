@@ -1,3 +1,5 @@
+import 'lead_flow.dart';
+
 class LeadFormOptionsModel {
   static const LeadStaffOption unassignedStaffOption = LeadStaffOption(
     id: '',
@@ -19,12 +21,13 @@ class LeadFormOptionsModel {
   factory LeadFormOptionsModel.fromJson(Map<String, dynamic> json) {
     final source = _extractSource(json);
     return LeadFormOptionsModel(
-      statuses: _readStringOptions(source, [
-        'statuses',
-        'status',
-        'lead_statuses',
-        'leadStatuses',
-      ]),
+      statuses: LeadFlow.options(
+        source['statusOptions'] ??
+            source['statuses'] ??
+            source['status'] ??
+            source['lead_statuses'] ??
+            source['leadStatuses'],
+      ).keys.toList(),
       sources: _readStringOptions(source, [
         'sources',
         'source',

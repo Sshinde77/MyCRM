@@ -59,6 +59,8 @@ class ApiConstants {
       '$baseUrl/lead-management/{sourceType}/{source_id}/assign';
   static const String leadStatusUpdate =
       '$baseUrl/lead-management/{sourceType}/{source_id}/status';
+  static const String leadPriorityUpdate =
+      '$baseUrl/lead-management/{sourceType}/{source_id}/priority';
   static const String leadBulkAssign = '$baseUrl/lead-management/bulk-assign';
   static const String leadFollowupCreate =
       '$baseUrl/lead-management/{sourceType}/{source_id}/followup';
