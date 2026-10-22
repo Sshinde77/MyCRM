@@ -45,11 +45,7 @@ class LeadFlow {
     'negotiation',
     'lost',
   ];
-  static const priorities = <String>[
-    'low',
-    'medium',
-    'high',
-  ];
+  static const priorities = <String>['low', 'medium', 'high'];
   static bool isClosed(String? status) =>
       const ['converted', 'lost', 'junk'].contains(status);
   static String label(String value) => value

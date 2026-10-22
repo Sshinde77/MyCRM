@@ -171,7 +171,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               onDateTap: (date) {
                                 setState(() {
                                   _selectedCalendarDate = date;
-                                  _displayedMonth = DateTime(date.year, date.month);
+                                  _displayedMonth = DateTime(
+                                    date.year,
+                                    date.month,
+                                  );
                                 });
                               },
                               onAppointmentTap: _showAppointmentDetail,
@@ -180,7 +183,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               onNextMonth: () => _changeDashboardDate(1),
                               onToggleView: () {
                                 setState(() {
-                                  _isMonthlyCalendarView = !_isMonthlyCalendarView;
+                                  _isMonthlyCalendarView =
+                                      !_isMonthlyCalendarView;
                                 });
                               },
                             ),
@@ -474,9 +478,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: double.infinity,
                   height: 48,
                   child: ElevatedButton(
-                    onPressed: () => Navigator.of(sheetContext).pop(
-                      DateTime(selectedYear, selectedMonth),
-                    ),
+                    onPressed: () => Navigator.of(
+                      sheetContext,
+                    ).pop(DateTime(selectedYear, selectedMonth)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF3F8EF7),
                       foregroundColor: Colors.white,
@@ -3328,9 +3332,7 @@ class _CalendarAppointmentsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return isMonthlyView
-        ? _buildMonthlyView(context)
-        : _buildDayView(context);
+    return isMonthlyView ? _buildMonthlyView(context) : _buildDayView(context);
   }
 
   Widget _buildDayView(BuildContext context) {
@@ -3363,11 +3365,8 @@ class _CalendarAppointmentsSection extends StatelessWidget {
     final stripStart = selectedDate.subtract(const Duration(days: 3));
     final visibleDates = List.generate(
       7,
-      (index) => DateTime(
-        stripStart.year,
-        stripStart.month,
-        stripStart.day + index,
-      ),
+      (index) =>
+          DateTime(stripStart.year, stripStart.month, stripStart.day + index),
     );
     final isToday = _isSameDate(selectedDate, DateTime.now());
 
@@ -3597,7 +3596,10 @@ class _CalendarAppointmentsSection extends StatelessWidget {
               if (!hasAnyActivity) {
                 return Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 20,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF7F9FC),
                     borderRadius: BorderRadius.circular(12),
@@ -3652,8 +3654,8 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                           appointment.time.hour,
                           appointment.time.minute,
                         );
-                        final isNextUpcoming = index == 0 &&
-                            !appointmentDateTime.isBefore(now);
+                        final isNextUpcoming =
+                            index == 0 && !appointmentDateTime.isBefore(now);
                         return InkWell(
                           onTap: () => onAppointmentTap(appointment),
                           borderRadius: BorderRadius.circular(16),
@@ -3695,8 +3697,10 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                     _MonthlyCategoryHeader(
                       icon: Icons.task_alt_rounded,
                       label: 'Tasks',
-                      count: taskStatusCounts.values
-                          .fold<int>(0, (s, v) => s + v),
+                      count: taskStatusCounts.values.fold<int>(
+                        0,
+                        (s, v) => s + v,
+                      ),
                       color: const Color(0xFF8B5CF6),
                     ),
                     const SizedBox(height: 8),
@@ -3724,11 +3728,13 @@ class _CalendarAppointmentsSection extends StatelessWidget {
         .where((a) => _isSameDate(a.date, date))
         .toList(growable: false);
 
-    final dayRenewals = upcomingRenewals.where((item) {
-      final d = item.renewalDateValue;
-      if (d == null) return false;
-      return _isSameDate(d, date);
-    }).toList(growable: false);
+    final dayRenewals = upcomingRenewals
+        .where((item) {
+          final d = item.renewalDateValue;
+          if (d == null) return false;
+          return _isSameDate(d, date);
+        })
+        .toList(growable: false);
 
     // Tasks & To-Do counts are dashboard-level aggregates (not per-date),
     // so we show them as general indicators on today's date only.
@@ -3883,22 +3889,13 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                   color: Color(0xFF2A7FFF),
                   label: 'Appointments',
                 ),
-                _MonthlyLegendChip(
-                  color: Color(0xFF8B5CF6),
-                  label: 'Tasks',
-                ),
-                _MonthlyLegendChip(
-                  color: Color(0xFFF59E0B),
-                  label: 'Renewals',
-                ),
+                _MonthlyLegendChip(color: Color(0xFF8B5CF6), label: 'Tasks'),
+                _MonthlyLegendChip(color: Color(0xFFF59E0B), label: 'Renewals'),
                 _MonthlyLegendChip(
                   color: Color(0xFF22B573),
                   label: 'Lead Mgmt',
                 ),
-                _MonthlyLegendChip(
-                  color: Color(0xFFEF4444),
-                  label: 'To-Do',
-                ),
+                _MonthlyLegendChip(color: Color(0xFFEF4444), label: 'To-Do'),
               ],
             ),
           ),
@@ -3934,13 +3931,12 @@ class _CalendarAppointmentsSection extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: calendarDays.length,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    crossAxisSpacing: 0,
-                    mainAxisSpacing: 0,
-                    childAspectRatio: 0.72,
-                  ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                crossAxisSpacing: 0,
+                mainAxisSpacing: 0,
+                childAspectRatio: 0.72,
+              ),
               itemBuilder: (context, index) {
                 final date = calendarDays[index];
                 final dayData = _buildDayData(date);
@@ -3974,7 +3970,8 @@ class _CalendarAppointmentsSection extends StatelessWidget {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) {
-        final hasAnyData = dayData.appointments.isNotEmpty ||
+        final hasAnyData =
+            dayData.appointments.isNotEmpty ||
             dayData.renewals.isNotEmpty ||
             dayData.hasTasks;
 
@@ -4040,9 +4037,7 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0xFFF7FAFE),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: const Color(0xFFE3EBF5),
-                        ),
+                        border: Border.all(color: const Color(0xFFE3EBF5)),
                       ),
                       child: Text(
                         'Tap "+" to schedule a meeting for this day.',
@@ -4102,7 +4097,8 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                                 padding: const EdgeInsets.only(bottom: 8),
                                 child: _MonthlyActivityTile(
                                   title: r.name,
-                                  subtitle: '${r.serviceName} • ${r.daysLeftLabel}',
+                                  subtitle:
+                                      '${r.serviceName} • ${r.daysLeftLabel}',
                                   color: const Color(0xFFF59E0B),
                                   icon: Icons.autorenew_rounded,
                                 ),
@@ -4116,8 +4112,10 @@ class _CalendarAppointmentsSection extends StatelessWidget {
                             _MonthlyCategoryHeader(
                               icon: Icons.task_alt_rounded,
                               label: 'Tasks',
-                              count: taskStatusCounts.values
-                                  .fold<int>(0, (s, v) => s + v),
+                              count: taskStatusCounts.values.fold<int>(
+                                0,
+                                (s, v) => s + v,
+                              ),
                               color: const Color(0xFF8B5CF6),
                             ),
                             const SizedBox(height: 8),
@@ -4893,16 +4891,16 @@ class _MonthlyCalendarDayCell extends StatelessWidget {
     final backgroundColor = isSelected
         ? const Color(0xFF3F8EF7)
         : isToday
-            ? const Color(0xFFFFF8D9)
-            : hasActivity
-                ? const Color(0xFFF0F4FF)
-                : Colors.white;
+        ? const Color(0xFFFFF8D9)
+        : hasActivity
+        ? const Color(0xFFF0F4FF)
+        : Colors.white;
 
     final dayColor = !isCurrentMonth
         ? const Color(0xFFBDD0E8)
         : isSelected
-            ? Colors.white
-            : const Color(0xFF202B3C);
+        ? Colors.white
+        : const Color(0xFF202B3C);
 
     return InkWell(
       onTap: onTap,
@@ -4915,8 +4913,8 @@ class _MonthlyCalendarDayCell extends StatelessWidget {
             color: isSelected
                 ? const Color(0xFF3F8EF7)
                 : hasActivity
-                    ? const Color(0xFFCDD8EA)
-                    : const Color(0xFFE8EDF5),
+                ? const Color(0xFFCDD8EA)
+                : const Color(0xFFE8EDF5),
             width: isSelected ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(6),
@@ -4992,10 +4990,7 @@ class _MonthlyCalendarDayCell extends StatelessWidget {
 
 /// Legend chip showing a colored dot and label for a CRM category.
 class _MonthlyLegendChip extends StatelessWidget {
-  const _MonthlyLegendChip({
-    required this.color,
-    required this.label,
-  });
+  const _MonthlyLegendChip({required this.color, required this.label});
 
   final Color color;
   final String label;
@@ -5008,10 +5003,7 @@ class _MonthlyLegendChip extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
         Text(

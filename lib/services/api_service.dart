@@ -4990,9 +4990,7 @@ class ApiService {
   }) async {
     final normalizedSourceType = _normalizeLeadSourceTypeForPath(sourceType);
     final normalizedLeadId = leadId.trim();
-    final payload = {
-      'priority': priority.trim().toLowerCase(),
-    };
+    final payload = {'priority': priority.trim().toLowerCase()};
 
     final path = ApiConstants.leadPriorityUpdate
         .replaceFirst('{sourceType}', normalizedSourceType)

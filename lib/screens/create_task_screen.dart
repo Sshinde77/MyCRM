@@ -761,9 +761,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           final currentUserEmail =
               currentUser?.email.toString().trim().toLowerCase() ?? '';
           for (final member in _staff) {
-            final matchesId = currentUserId.isNotEmpty &&
-                member.id.trim() == currentUserId;
-            final matchesEmail = currentUserEmail.isNotEmpty &&
+            final matchesId =
+                currentUserId.isNotEmpty && member.id.trim() == currentUserId;
+            final matchesEmail =
+                currentUserEmail.isNotEmpty &&
                 member.email.trim().toLowerCase() == currentUserEmail;
             if (matchesId || matchesEmail) {
               if (!_assigneeIds.contains(member.id)) {

@@ -30,10 +30,7 @@ class LeadPriorityCache {
   }
 
   /// Retrieve cached priority. Checks source-qualified first, then ID-alone.
-  static String? get({
-    String? sourceType,
-    required String? sourceId,
-  }) {
+  static String? get({String? sourceType, required String? sourceId}) {
     final id = (sourceId ?? '').trim().toLowerCase();
     if (id.isEmpty) return null;
 

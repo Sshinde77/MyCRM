@@ -465,7 +465,8 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                         children: [
                           _HeaderSection(
                             lead: lead,
-                            onUpdatePriority: () => _openPriorityUpdateDialog(lead),
+                            onUpdatePriority: () =>
+                                _openPriorityUpdateDialog(lead),
                           ),
                           const SizedBox(height: 12),
                           _ActionButtons(
@@ -473,7 +474,8 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                                 ? null
                                 : () => _openAddFollowupDialog(lead),
                             onUpdateStatus: () => _openStatusUpdateDialog(lead),
-                            onUpdatePriority: () => _openPriorityUpdateDialog(lead),
+                            onUpdatePriority: () =>
+                                _openPriorityUpdateDialog(lead),
                           ),
                           const SizedBox(height: 12),
                           _LeadInformationCard(lead: lead),
@@ -595,7 +597,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             'Update Priority',
             style: AppTextStyles.style(
@@ -652,7 +656,9 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
                 } catch (error) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(AppErrorHandler.messageFromError(error))),
+                      SnackBar(
+                        content: Text(AppErrorHandler.messageFromError(error)),
+                      ),
                     );
                   }
                 }
@@ -668,10 +674,7 @@ class _LeadManagementDetailScreenState extends State<LeadManagementDetailScreen>
 }
 
 class _HeaderSection extends StatelessWidget {
-  const _HeaderSection({
-    required this.lead,
-    this.onUpdatePriority,
-  });
+  const _HeaderSection({required this.lead, this.onUpdatePriority});
   final LeadModel lead;
   final VoidCallback? onUpdatePriority;
 
@@ -933,68 +936,85 @@ class _LeadInformationCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _InfoItem(label: 'EMAIL', value: lead.displayEmail),
-                    const SizedBox(height: 12),
-                    _InfoItem(label: 'COMPANY', value: lead.displayCompany),
-                    const SizedBox(height: 12),
-                    _InfoItem(
-                      label: 'LEAD VALUE',
-                      value: lead.displayAmount.isEmpty
-                          ? 'N/A'
-                          : lead.displayAmount,
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoItem(
-                      label: 'CREATED DATE',
-                      value: _formatDate(lead.createdAt),
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoItem(
-                      label: 'CONVERTED AT',
-                      value: _formatDate(lead.convertedAt),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _InfoItem(label: 'PHONE', value: lead.displayPhone),
-                    const SizedBox(height: 12),
-                    _InfoItem(label: 'SOURCE', value: lead.displaySource),
-                    const SizedBox(height: 12),
-                    _InfoItem(
-                      label: 'PREVIOUS STATUS',
-                      value: lead.previousStatus ?? 'N/A',
-                    ),
-                    const SizedBox(height: 12),
-                    _InfoItem(
-                      label: 'LOST REASON',
-                      value: lead.lostReason ?? '-',
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _InfoRow(
+            left: _InfoItem(label: 'EMAIL', value: lead.displayEmail),
+            right: _InfoItem(label: 'PHONE', value: lead.displayPhone),
           ),
-          const SizedBox(height: 12),
+          _InfoRow(
+            left: _InfoItem(label: 'COMPANY', value: lead.displayCompany),
+            right: _InfoItem(label: 'SOURCE', value: lead.displaySource),
+          ),
+          _InfoRow(
+            left: _InfoItem(label: 'LEAD VALUE', value: lead.displayAmount),
+            right: _InfoItem(
+              label: 'PREVIOUS STATUS',
+              value: lead.previousStatus == null
+                  ? 'Not provided'
+                  : LeadFlow.label(lead.previousStatus!),
+            ),
+          ),
+          _InfoRow(
+            left: _InfoItem(
+              label: 'CREATED DATE',
+              value: _formatLeadDate(lead.createdAt),
+            ),
+            right: _InfoItem(
+              label: 'CONVERTED AT',
+              value: lead.convertedAt == null
+                  ? 'Not converted'
+                  : _formatLeadDate(lead.convertedAt),
+            ),
+          ),
+          if (lead.lostReason?.trim().isNotEmpty ?? false) ...[
+            _InfoItem(label: 'LOST REASON', value: lead.lostReason!),
+            const SizedBox(height: 16),
+          ],
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 16),
           _InfoItem(label: 'DESCRIPTION', value: lead.displayDescription),
         ],
       ),
     );
   }
+}
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    return DateFormat('dd MMM yyyy hh:mm a').format(date);
+String _formatLeadDate(Object? value) {
+  final raw = value?.toString().trim() ?? '';
+  if (raw.isEmpty || raw == '-' || raw == 'N/A') return 'Not provided';
+  final date = value is DateTime ? value : DateTime.tryParse(raw);
+  if (date == null) return raw;
+  return DateFormat('dd MMM yyyy, h:mm a').format(date.toLocal());
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.left, required this.right});
+  final Widget left;
+  final Widget right;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 340 ||
+              MediaQuery.textScalerOf(context).scale(13) > 18) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [left, const SizedBox(height: 16), right],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: left),
+              const SizedBox(width: 20),
+              Expanded(child: right),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 
@@ -1011,14 +1031,16 @@ class _InfoItem extends StatelessWidget {
         Text(
           label,
           style: AppTextStyles.style(
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF94A3B8),
+            color: const Color(0xFF64748B),
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          value,
+          value.trim().isEmpty || value == 'N/A' || value == '-'
+              ? 'Not provided'
+              : value,
           style: AppTextStyles.style(
             fontSize: 12,
             fontWeight: FontWeight.w500,
@@ -1150,6 +1172,7 @@ class _TimelineTabs extends StatelessWidget {
       labelColor: const Color(0xFF3F51B5),
       unselectedLabelColor: const Color(0xFF64748B),
       indicatorColor: const Color(0xFF3F51B5),
+      dividerColor: const Color(0xFFE2E8F0),
       labelStyle: AppTextStyles.style(
         fontSize: 13,
         fontWeight: FontWeight.w700,
@@ -1320,6 +1343,7 @@ class _TimelineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -1327,41 +1351,44 @@ class _TimelineTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.title,
-                  style: AppTextStyles.style(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF0F172A),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
+          Text(
+            LeadFlow.label(data.title),
+            style: AppTextStyles.style(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Text(
                   data.description,
                   style: AppTextStyles.style(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                    color: const Color(0xFF334155),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  _formatLeadDate(data.time),
+                  textAlign: TextAlign.right,
+                  style: AppTextStyles.style(
+                    fontSize: 11,
                     color: const Color(0xFF64748B),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            data.time,
-            style: AppTextStyles.style(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF64748B),
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1411,7 +1438,8 @@ class _FollowupList extends StatelessWidget {
                     .toString();
             return _SimpleInfoCard(
               title: type,
-              subtitle: '$time | Outcome: $outcome',
+              subtitle:
+                  '${_formatLeadDate(time)} | Outcome: ${LeadFlow.label(outcome)}',
               description: notes,
             );
           })
@@ -1554,7 +1582,7 @@ class _NotesSection extends StatelessWidget {
                         .trim();
                   })();
                   final subtitleParts = <String>[
-                    createdAt,
+                    _formatLeadDate(createdAt),
                     if (author.isNotEmpty) 'By: $author',
                     if (isPrivateNote) 'Private',
                   ];
@@ -1739,8 +1767,8 @@ class _ReminderSection extends StatelessWidget {
                               '-')
                           .toString();
                   final subtitle = status.isEmpty
-                      ? remindAtText
-                      : '$remindAtText | Status: $status';
+                      ? _formatLeadDate(remindAtText)
+                      : '${_formatLeadDate(remindAtText)} | Status: ${LeadFlow.label(status)}';
                   return _SimpleInfoCard(
                     title: type,
                     subtitle: subtitle,
@@ -1809,7 +1837,7 @@ class _AssignmentList extends StatelessWidget {
                     .toString();
             return _SimpleInfoCard(
               title: assignee,
-              subtitle: 'Assigned at: $assignedAt',
+              subtitle: 'Assigned at: ${_formatLeadDate(assignedAt)}',
               description: note,
             );
           })
@@ -1854,7 +1882,7 @@ class _StatusHistoryList extends StatelessWidget {
                     .toString();
             return _SimpleInfoCard(
               title: '$fromStatus -> $toStatus',
-              subtitle: changedAt,
+              subtitle: _formatLeadDate(changedAt),
               description: reason,
             );
           })
@@ -1954,89 +1982,399 @@ class _ErrorView extends StatelessWidget {
 class _LeadFlowSummary extends StatelessWidget {
   const _LeadFlowSummary({required this.lead});
   final LeadModel lead;
+
   @override
   Widget build(BuildContext context) {
     final stages = lead.statusOptions.isNotEmpty
         ? lead.statusOptions.keys.toList()
         : LeadFlow.statuses;
-    final current = stages.indexOf(lead.status ?? '');
-    final next = DateTime.tryParse(lead.nextFollowupDate ?? '');
+    // Lost and junk are alternative outcomes, not steps after conversion.
+    final journey = stages
+        .where((stage) => stage != 'lost' && stage != 'junk')
+        .toList();
+    final outcomes = stages
+        .where((stage) => stage == 'lost' || stage == 'junk')
+        .toList();
+    final current = journey.indexOf(lead.status ?? '');
+    final next = DateTime.tryParse(lead.nextFollowupDate ?? '')?.toLocal();
     final overdue =
         !lead.isClosed && next != null && next.isBefore(DateTime.now());
     final latest = lead.latestConversation;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Lead Pipeline',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 10),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (var i = 0; i < stages.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Chip(
-                        avatar: Icon(
-                          i == current
-                              ? Icons.radio_button_checked
-                              : Icons.circle_outlined,
-                          size: 16,
-                        ),
-                        backgroundColor: i == current
-                            ? const Color(0xFFDBEAFE)
-                            : null,
-                        label: Text(
-                          lead.statusOptions[stages[i]] ??
-                              LeadFlow.label(stages[i]),
+    final statusColor = switch (lead.status) {
+      'converted' => const Color(0xFF15803D),
+      'lost' => const Color(0xFFB91C1C),
+      'junk' => const Color(0xFF64748B),
+      _ => const Color(0xFF3F51B5),
+    };
+    final conversationSummary = [
+      if ((latest['followup_type'] ?? '').toString().trim().isNotEmpty)
+        LeadFlow.label(latest['followup_type'].toString()),
+      if ((latest['outcome'] ?? '').toString().trim().isNotEmpty)
+        LeadFlow.label(latest['outcome'].toString()),
+    ].join(' · ');
+
+    String label(String stage) =>
+        lead.statusOptions[stage] ?? LeadFlow.label(stage);
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.route_outlined,
+                      size: 19,
+                      color: Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Lead Pipeline',
+                        style: AppTextStyles.style(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF1E293B),
                         ),
                       ),
                     ),
+                    Text(
+                      lead.isClosed ? 'Closed' : 'Active',
+                      style: AppTextStyles.style(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.14),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          lead.status == 'converted'
+                              ? Icons.check_circle_outline_rounded
+                              : lead.isClosed
+                              ? Icons.flag_outlined
+                              : Icons.adjust_rounded,
+                          size: 22,
+                          color: statusColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'CURRENT STATUS',
+                              style: AppTextStyles.style(
+                                fontSize: 10,
+                                letterSpacing: 0.8,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              label(lead.displayStatus),
+                              style: AppTextStyles.style(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: statusColor,
+                              ),
+                            ),
+                            if (current >= 0) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Stage ${current + 1} of ${journey.length}',
+                                style: AppTextStyles.style(
+                                  fontSize: 12,
+                                  color: const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (current >= 0) ...[
+                  const SizedBox(height: 14),
+                  ExcludeSemantics(
+                    child: Row(
+                      children: [
+                        for (var i = 0; i < journey.length; i++)
+                          Expanded(
+                            child: Container(
+                              height: 4,
+                              margin: EdgeInsets.only(
+                                right: i == journey.length - 1 ? 0 : 4,
+                              ),
+                              decoration: BoxDecoration(
+                                // Only the current stage is highlighted: earlier
+                                // stages may have been skipped in status updates.
+                                color: i == current
+                                    ? statusColor
+                                    : const Color(0xFFE2E8F0),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ],
-              ),
+              ],
             ),
-            if (!lead.isClosed) ...[
-              const Divider(),
-              Text(
-                overdue ? 'Next Action - Overdue' : 'Next Action',
-                style: TextStyle(
+          ),
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              iconColor: const Color(0xFF64748B),
+              collapsedIconColor: const Color(0xFF64748B),
+              title: Text(
+                'View pipeline stages',
+                style: AppTextStyles.style(
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: overdue ? Colors.red : null,
+                  color: const Color(0xFF475569),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                next == null
-                    ? lead.nextFollowupDate ?? 'No next action scheduled'
-                    : DateFormat('dd MMM yyyy, hh:mm a').format(next),
-              ),
-            ],
-            const Divider(),
-            Text(
-              'Latest Conversation',
-              style: Theme.of(context).textTheme.titleSmall,
+              children: [
+                for (var i = 0; i < journey.length; i++)
+                  _PipelineStageRow(
+                    label: label(journey[i]),
+                    selected: journey[i] == lead.status,
+                    color: statusColor,
+                    last: i == journey.length - 1,
+                  ),
+                if (outcomes.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Other outcomes',
+                      style: AppTextStyles.style(
+                        fontSize: 11,
+                        color: const Color(0xFF64748B),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (final stage in outcomes)
+                    _PipelineStageRow(
+                      label: label(stage),
+                      selected: stage == lead.status,
+                      color: statusColor,
+                      last: true,
+                    ),
+                ],
+              ],
             ),
-            const SizedBox(height: 6),
-            if (latest.isEmpty)
-              const Text('No conversation recorded')
-            else ...[
-              Text(
-                '${LeadFlow.label((latest['followup_type'] ?? '').toString())} � ${LeadFlow.label((latest['outcome'] ?? '').toString())}',
-              ),
-              if (latest['followup_date'] != null)
-                Text(latest['followup_date'].toString()),
-              if (latest['discussion_notes'] != null)
-                Text(latest['discussion_notes'].toString()),
-            ],
-          ],
-        ),
+          ),
+          const Divider(height: 1, color: Color(0xFFEEF2F6)),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                if (!lead.isClosed) ...[
+                  _PipelineDetailRow(
+                    icon: Icons.event_outlined,
+                    title: overdue ? 'Next action · Overdue' : 'Next action',
+                    text: next == null
+                        ? 'No follow-up scheduled'
+                        : _formatLeadDate(next),
+                    color: overdue
+                        ? const Color(0xFFB91C1C)
+                        : const Color(0xFF64748B),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                _PipelineDetailRow(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  title: 'Latest conversation',
+                  text: latest.isEmpty
+                      ? 'No conversation recorded yet'
+                      : conversationSummary.isEmpty
+                      ? 'Conversation recorded'
+                      : conversationSummary,
+                  date: latest['followup_date'] == null
+                      ? null
+                      : _formatLeadDate(latest['followup_date']),
+                  notes: latest['discussion_notes']?.toString(),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _PipelineStageRow extends StatelessWidget {
+  const _PipelineStageRow({
+    required this.label,
+    required this.selected,
+    required this.color,
+    required this.last,
+  });
+  final String label;
+  final bool selected;
+  final Color color;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 24,
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+                Icon(
+                  selected ? Icons.radio_button_checked : Icons.circle_outlined,
+                  size: 16,
+                  color: selected ? color : const Color(0xFFCBD5E1),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Container(width: 1, color: const Color(0xFFE2E8F0)),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 14),
+              child: Text(
+                selected ? '$label · Current' : label,
+                style: AppTextStyles.style(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? color : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PipelineDetailRow extends StatelessWidget {
+  const _PipelineDetailRow({
+    required this.icon,
+    required this.title,
+    required this.text,
+    this.date,
+    this.notes,
+    this.color = const Color(0xFF64748B),
+  });
+  final IconData icon;
+  final String title;
+  final String text;
+  final String? date;
+  final String? notes;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(9),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.style(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                text,
+                style: AppTextStyles.style(
+                  fontSize: 13,
+                  color: const Color(0xFF334155),
+                  height: 1.4,
+                ),
+              ),
+              if (date != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  date!,
+                  style: AppTextStyles.style(
+                    fontSize: 12,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+              if (notes?.trim().isNotEmpty ?? false) ...[
+                const SizedBox(height: 6),
+                Text(
+                  notes!,
+                  style: AppTextStyles.style(
+                    fontSize: 13,
+                    color: const Color(0xFF475569),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

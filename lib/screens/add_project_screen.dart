@@ -121,9 +121,10 @@ class _AddProjectScreenState extends State<AddProjectScreen> {
           final currentUserName =
               currentUser?.name.toString().trim().toLowerCase() ?? '';
           for (final member in _memberOptions) {
-            final matchesId = currentUserId.isNotEmpty &&
-                member.id.trim() == currentUserId;
-            final matchesName = currentUserName.isNotEmpty &&
+            final matchesId =
+                currentUserId.isNotEmpty && member.id.trim() == currentUserId;
+            final matchesName =
+                currentUserName.isNotEmpty &&
                 member.name.trim().toLowerCase() == currentUserName;
             if (matchesId || matchesName) {
               if (!_selectedMemberIds.contains(member.id)) {
