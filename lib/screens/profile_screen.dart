@@ -32,6 +32,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     //   accentColor: Color(0xFF1D6FEA),
     // ),
     _ProfileAction(
+      title: 'Social',
+      subtitle: 'Plan, review and publish social posts',
+      icon: Icons.campaign_rounded,
+      routeName: AppRoutes.socialMedia,
+      accentColor: Color(0xFF176EE2),
+    ),
+    _ProfileAction(
       title: 'Renewal Master',
       subtitle: 'Manage renewals and reminders',
       icon: Icons.autorenew_rounded,
@@ -186,6 +193,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = await PermissionService.getCurrentUser();
     final visible = <_ProfileAction>[];
     for (final action in _actions) {
+      if (action.routeName == AppRoutes.socialMedia) {
+        if (PermissionService.canOpenRouteForUser(user, action.routeName)) {
+          visible.add(action);
+        }
+        continue;
+      }
       if (action.routeName == AppRoutes.renewalMaster) {
         final canOpenRenewal = PermissionService.userHasAny(user, const [
           AppPermission.viewRenewals,

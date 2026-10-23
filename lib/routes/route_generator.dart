@@ -39,6 +39,7 @@ import '../screens/add_client_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/social_media_screen.dart';
 import '../models/client_issue_model.dart';
 import '../models/renewal_model.dart';
 
@@ -277,6 +278,11 @@ class RouteGenerator {
         );
       case AppRoutes.settings:
         return _protectedRoute(AppRoutes.settings, const SettingsScreen());
+      case AppRoutes.socialMedia:
+        return _protectedRoute(
+          AppRoutes.socialMedia,
+          const SocialMediaScreen(),
+        );
       default:
         return _errorRoute();
     }

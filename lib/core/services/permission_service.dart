@@ -89,6 +89,7 @@ class AppPermission {
   static const deleteUsers = 'delete_users';
   static const viewMetaLead = 'view_meta_lead';
   static const viewGoogleAdsLeads = 'view_google_ads_leads';
+  static const viewSocialMedia = 'view_social_media';
   static const createVendorsService = 'create_vendors_service';
   static const deleteVendorServices = 'delete_vendor_services';
   static const viewVendorsServices = 'view_vendors_services';
@@ -206,6 +207,12 @@ class PermissionService {
   }
 
   static bool canOpenRouteForUser(UserModel? user, String routeName) {
+    if (routeName == AppRoutes.socialMedia) {
+      // All authenticated user types have a social queue in the API contract.
+      // Do not require an undocumented module permission to reach that queue;
+      // the API authorizes which posts and actions each user can access.
+      return user != null;
+    }
     if (routeName == AppRoutes.dashboard) {
       return userHasAny(user, const [
         AppPermission.viewDashboard,
@@ -345,6 +352,8 @@ class PermissionService {
         return AppPermission.viewRoles;
       case AppRoutes.settings:
         return AppPermission.manageSettings;
+      case AppRoutes.socialMedia:
+        return AppPermission.viewSocialMedia;
       default:
         return null;
     }

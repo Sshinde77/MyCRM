@@ -223,4 +223,19 @@ class ApiConstants {
   static const String metaLeads = '$baseUrl/meta-leads';
   static const String metaLeadDetail = '$baseUrl/meta-leads/{id}';
   static const String deleteMetaLead = '$baseUrl/meta-leads/{id}';
+
+  // Social media post management
+  static const String socialMedia = '$baseUrl/social-media';
+  static const String socialMediaOptions = '$socialMedia/options';
+  static const String socialMediaPosts = '$socialMedia/posts';
+  static const String socialMediaPost = '$socialMedia/posts/{id}';
+  static const String socialMediaStart = '$socialMedia/posts/{id}/start';
+  static const String socialMediaVersions = '$socialMedia/posts/{id}/versions';
+  static const String socialMediaInternalDecision =
+      '$socialMedia/posts/{id}/internal-decision';
+  static const String socialMediaClientDecision =
+      '$socialMedia/posts/{id}/client-decision';
+  static const String socialMediaComments = '$socialMedia/posts/{id}/comments';
+  static const String socialMediaSchedule = '$socialMedia/posts/{id}/schedule';
+  static const String socialMediaPublish = '$socialMedia/posts/{id}/publish';
 }
