@@ -142,6 +142,22 @@ class ApiConstants {
   static const String updateVendor = '$baseUrl/vendors/{id}';
   static const String deleteVendor = '$baseUrl/vendors/{id}';
 
+  // Orders
+  static const String orders = '$baseUrl/orders';
+  static const String ordersFormOptions = '$baseUrl/orders/form-options';
+  static const String orderDetail = '$baseUrl/orders/{id}';
+  static const String orderUpdate = '$baseUrl/orders/{id}';
+  static const String orderDelete = '$baseUrl/orders/{id}';
+  static const String orderStatus = '$baseUrl/orders/{id}/status';
+  static const String orderPurchaseOrder = '$baseUrl/orders/{id}/purchase/order';
+  static const String orderPurchaseReceipt = '$baseUrl/orders/{id}/purchase/receipt';
+  static const String orderPurchaseReceive = '$baseUrl/orders/{id}/purchase/receive';
+  static const String orderDeliveryReady = '$baseUrl/orders/{id}/delivery/ready';
+  static const String orderDeliveryDispatch = '$baseUrl/orders/{id}/delivery/dispatch';
+  static const String orderDeliveryDeliver = '$baseUrl/orders/{id}/delivery/deliver';
+  static const String orderHold = '$baseUrl/orders/{id}/hold';
+  static const String orderCancel = '$baseUrl/orders/{id}/cancel';
+
   //vendor renewals
   static const String vendorRenewals = '$baseUrl/vendor-renewals';
   static const String createvendorRenewals = '$baseUrl/vendor-renewals';

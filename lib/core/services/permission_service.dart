@@ -62,6 +62,10 @@ class AppPermission {
   static const createVendors = 'create_vendors';
   static const editVendors = 'edit_vendors';
   static const deleteVendors = 'delete_vendors';
+  static const viewOrders = 'view_orders';
+  static const createOrders = 'create_orders';
+  static const editOrders = 'edit_orders';
+  static const deleteOrders = 'delete_orders';
   static const createDashboard = 'create_dashboard';
   static const editDashboard = 'edit_dashboard';
   static const deleteDashboard = 'delete_dashboard';
@@ -318,6 +322,11 @@ class PermissionService {
       case AppRoutes.projects:
       case AppRoutes.projectDetail:
         return AppPermission.viewProjects;
+      case AppRoutes.orders:
+      case AppRoutes.orderDetail:
+        return AppPermission.viewOrders;
+      case AppRoutes.createOrder:
+        return AppPermission.createOrders;
       case AppRoutes.addProject:
         return AppPermission.createProjects;
       case AppRoutes.renewalMaster:

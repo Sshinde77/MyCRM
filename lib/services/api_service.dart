@@ -379,6 +379,14 @@ class ApiService {
           options.headers['Authorization'] = 'Bearer $token';
         }
 
+        // Avoid sending Content-Type on body-less requests (GET/HEAD) which triggers CORS preflight warnings in web
+        final method = options.method.toUpperCase();
+        if (method == 'GET' || method == 'HEAD' || options.data == null) {
+          options.headers.remove('Content-Type');
+        } else if (options.data != null && options.data is! FormData) {
+          options.headers.putIfAbsent('Content-Type', () => 'application/json');
+        }
+
         handler.next(options);
       },
       onError: (error, handler) async {
@@ -2000,11 +2008,17 @@ class ApiService {
       return List<StaffMemberModel>.from(_staffListCache!);
     }
 
-    final response = await get(ApiConstants.liststaff);
-    final records = _normalizeList(response.data);
-    final parsed = records
-        .map(StaffMemberModel.fromJson)
-        .toList(growable: false);
+    final collected = <StaffMemberModel>[];
+    var page = 1;
+    var lastPage = 1;
+    do {
+      final result = await getStaffListPage(page: page);
+      collected.addAll(result.items);
+      lastPage = result.lastPage < 1 ? 1 : result.lastPage;
+      page += 1;
+    } while (page <= lastPage);
+
+    final parsed = collected.toList(growable: false);
     _staffListCache = parsed;
     _staffListCacheAt = DateTime.now();
     return List<StaffMemberModel>.from(parsed);
@@ -2144,8 +2158,16 @@ class ApiService {
 
   /// Loads the client list for the authenticated user.
   Future<List<ClientModel>> getClientsList() async {
-    final page = await getClientsListPage(page: 1);
-    return page.items;
+    final collected = <ClientModel>[];
+    var page = 1;
+    var lastPage = 1;
+    do {
+      final result = await getClientsListPage(page: page);
+      collected.addAll(result.items);
+      lastPage = result.lastPage < 1 ? 1 : result.lastPage;
+      page += 1;
+    } while (page <= lastPage);
+    return collected;
   }
 
   /// Loads a single paginated clients page from clients index endpoint.

@@ -79,6 +79,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       accentColor: Color(0xFF2563EB),
     ),
     _ProfileAction(
+      title: 'Orders',
+      subtitle: 'Track purchases and deliveries',
+      icon: Icons.shopping_bag_outlined,
+      routeName: AppRoutes.orders,
+      permission: AppPermission.viewOrders,
+      accentColor: Color(0xFF7C3AED),
+    ),
+    _ProfileAction(
       title: 'Role',
       subtitle: 'Manage user roles & permissions',
       icon: Icons.person,

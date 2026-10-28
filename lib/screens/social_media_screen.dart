@@ -2,12 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../core/constants/api_constants.dart';
+import '../core/constants/app_colors.dart';
 import '../core/constants/app_text_styles.dart';
 import '../core/utils/app_snackbar.dart';
 import '../core/utils/app_error_handler.dart';
 import '../services/api_service.dart';
 import '../widgets/app_bottom_navigation.dart';
 import '../widgets/common_screen_app_bar.dart';
+import 'social_post_detail_screen.dart';
 
 /// Social post workspace. The API deliberately remains map-based because the
 /// backend response contract includes nested, role-specific fields.
@@ -16,6 +18,8 @@ class SocialMediaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 360;
     const sections = [
       ('Overview', Icons.dashboard_outlined),
       ('All Posts', Icons.article_outlined),
@@ -29,57 +33,75 @@ class SocialMediaScreen extends StatelessWidget {
     ];
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8FC),
-      appBar: const CommonScreenAppBar(title: 'Social Media'),
       bottomNavigationBar: const PrimaryBottomNavigation(
         currentTab: AppBottomNavTab.profile,
       ),
       body: SafeArea(
-        child: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: sections.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            final section = sections[index];
-            return Material(
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: Color(0xFFE0E7F1)),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: compact ? 8 : 10),
+              CommonTopBar(
+                title: 'Social Media',
+                compact: compact,
               ),
-              clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                minTileHeight: 58,
-                leading: Icon(
-                  section.$2,
-                  color: const Color(0xFF176EE2),
-                  size: 21,
-                ),
-                title: Text(
-                  section.$1,
-                  style: const TextStyle(
-                    color: Color(0xFF172B4D),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                trailing: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFF94A3B8),
-                  size: 20,
-                ),
-                onTap: () => Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    settings: RouteSettings(
-                      name: '/profile/social-media/$index',
-                    ),
-                    builder: (_) =>
-                        _SocialSectionScreen(index: index, title: section.$1),
-                  ),
+              SizedBox(height: compact ? 12 : 16),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  itemCount: sections.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final section = sections[index];
+                    return Material(
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: const BorderSide(color: Color(0xFFE0E7F1)),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListTile(
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 16),
+                        minTileHeight: 58,
+                        leading: Icon(
+                          section.$2,
+                          color: const Color(0xFF176EE2),
+                          size: 21,
+                        ),
+                        title: Text(
+                          section.$1,
+                          style: const TextStyle(
+                            color: Color(0xFF172B4D),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFF94A3B8),
+                          size: 20,
+                        ),
+                        onTap: () => Navigator.of(context).push<void>(
+                          MaterialPageRoute(
+                            settings: RouteSettings(
+                              name: '/profile/social-media/$index',
+                            ),
+                            builder: (_) => _SocialSectionScreen(
+                              index: index,
+                              title: section.$1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            );
-          },
+            ],
+          ),
         ),
       ),
     );
@@ -195,36 +217,75 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
       _value(p, ['status', 'post_status'], 'planned');
   String _titleOf(Map<String, dynamic> p) =>
       _value(p, ['title', 'name'], 'Untitled post');
-  String _dateOf(Map<String, dynamic> p) =>
-      _value(p, ['planned_at', 'planned_date', 'scheduled_at'], 'Date not set');
+  String _dateOf(Map<String, dynamic> p) {
+    final raw = _value(
+      p,
+      ['actual_published_at', 'planned_at', 'planned_date', 'scheduled_at'],
+      'Date not set',
+    );
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+
+    final date = parsed.toLocal();
+    final month = const [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ][date.month - 1];
+    final hour = date.hour == 0
+        ? 12
+        : date.hour > 12
+        ? date.hour - 12
+        : date.hour;
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+    return '${date.day.toString().padLeft(2, '0')} $month ${date.year}, '
+        '${hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} $period';
+  }
+
+  String _clientOf(Map<String, dynamic> p) {
+    final client = p['client'];
+    if (client is Map) {
+      final first = client['first_name']?.toString().trim() ?? '';
+      final last = client['last_name']?.toString().trim() ?? '';
+      final name = '$first $last'.trim();
+      if (name.isNotEmpty) return name;
+      final nestedName = client['name']?.toString().trim() ?? '';
+      if (nestedName.isNotEmpty) return nestedName;
+    }
+    return _value(p, ['client_name', 'client_id'], 'No client');
+  }
+
+  String _statusLabel(String value) => value
+      .split('_')
+      .map(
+        (part) => part.isEmpty
+            ? part
+            : '${part[0].toUpperCase()}${part.substring(1)}',
+      )
+      .join(' ');
 
   Future<void> _openPost(Map<String, dynamic> post) async {
     final id = _value(post, ['id', 'post_id']);
     if (id.isEmpty) return;
-    try {
-      final response = await _api.get(
-        ApiConstants.socialMediaPost.replaceFirst('{id}', id),
-      );
-      if (!mounted) return;
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => _PostDetailSheet(
-          post: _map(response.data)['data'] ?? response.data,
-          api: _api,
-          onChanged: _load,
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        settings: RouteSettings(name: '/profile/social-media/posts/$id'),
+        builder: (_) => SocialPostDetailScreen(
+          postId: id,
+          initialData: post,
         ),
-      );
-      _load();
-    } catch (_) {
-      if (mounted)
-        AppSnackbar.show(
-          'Social Media',
-          'Could not open this post.',
-          isError: true,
-        );
-    }
+      ),
+    );
+    _load();
   }
 
   Future<void> _createPost() async {
@@ -270,9 +331,10 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 360;
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FD),
-      appBar: CommonScreenAppBar(title: widget.title),
       bottomNavigationBar: const PrimaryBottomNavigation(
         currentTab: AppBottomNavTab.profile,
       ),
@@ -290,12 +352,29 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    compact ? 12 : 16,
+                    compact ? 8 : 10,
+                    compact ? 12 : 16,
+                    0,
+                  ),
+                  child: CommonTopBar(
+                    title: widget.title,
+                    compact: compact,
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: IconButton(
-                    tooltip: 'Refresh',
-                    onPressed: _load,
-                    icon: const Icon(Icons.refresh_rounded),
+                  child: Padding(
+                    padding: EdgeInsets.only(right: compact ? 12 : 16),
+                    child: IconButton(
+                      tooltip: 'Refresh',
+                      onPressed: _load,
+                      icon: const Icon(Icons.refresh_rounded),
+                    ),
                   ),
                 ),
               ),
@@ -335,106 +414,326 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
 
   Widget _overview() {
     final counts = <String, int>{};
-    for (final p in _posts)
+    for (final p in _posts) {
       counts[_statusOf(p)] = (counts[_statusOf(p)] ?? 0) + 1;
+    }
     final cards = [
-      ('Planned', 'planned', Colors.blueGrey),
-      ('In Design', 'in_progress', Colors.blue),
-      ('Internal Review', 'internal_review', Colors.orange),
-      ('Client Approvals', 'pending_client_approval', Colors.cyan),
-      ('Scheduled', 'scheduled', Colors.deepPurple),
-      ('Published', 'published', Colors.green),
+      ('Planned', 'planned', const Color(0xFF64748B), Icons.event_note_rounded),
+      ('In Design', 'in_progress', const Color(0xFF2563EB), Icons.palette_rounded),
+      ('Internal Review', 'internal_review', const Color(0xFFF59E0B), Icons.rate_review_rounded),
+      ('Client Approval', 'pending_client_approval', const Color(0xFF0891B2), Icons.verified_user_rounded),
+      ('Scheduled', 'scheduled', const Color(0xFF7C3AED), Icons.schedule_send_rounded),
+      ('Published', 'published', const Color(0xFF16A34A), Icons.check_circle_rounded),
     ];
+    final published = counts['published'] ?? 0;
+    final scheduled = counts['scheduled'] ?? 0;
+    final completion = _posts.isEmpty
+        ? 0.0
+        : (published / _posts.length).clamp(0.0, 1.0).toDouble();
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: () {
-                  setState(
-                    () => _month = DateTime(_month.year, _month.month - 1),
-                  );
-                  _load();
-                },
-                icon: const Icon(Icons.chevron_left),
-              ),
-              Text(
-                '${_month.year}-${_month.month.toString().padLeft(2, '0')}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(
-                    () => _month = DateTime(_month.year, _month.month + 1),
-                  );
-                  _load();
-                },
-                icon: const Icon(Icons.chevron_right),
-              ),
-              const Spacer(),
-              Text(
-                '${_posts.length} posts',
-                style: const TextStyle(color: Color(0xFF6C7A91)),
-              ),
-            ],
+          _overviewHero(
+            completion: completion,
+            scheduled: scheduled,
           ),
+          const SizedBox(height: 18),
+          const Text(
+            'Content pipeline',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.darkNavy,
+            ),
+          ),
+          const SizedBox(height: 10),
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            childAspectRatio: 1.8,
+            childAspectRatio: 1.55,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
             children: cards
-                .map((c) => _metric(c.$1, counts[c.$2] ?? 0, c.$3))
+                .map((c) => _metric(c.$1, counts[c.$2] ?? 0, c.$3, c.$4))
                 .toList(),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Recent posts',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF172B4D),
-            ),
+          const SizedBox(height: 22),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                'Recent posts',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.darkNavy,
+                ),
+              ),
+              Text(
+                '${_posts.length} total',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.secondaryText,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          ..._posts.take(5).map(_postCard),
+          const SizedBox(height: 10),
+          if (_posts.isEmpty)
+            _empty('No recent posts for this month.', Icons.article_outlined)
+          else
+            ..._posts.take(5).map(
+              (post) => _postCard(post, interactive: false),
+            ),
         ],
       ),
     );
   }
 
-  Widget _metric(String label, int count, Color color) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: const Color(0xFFE8EEF7)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.circle, size: 10, color: color),
-        const Spacer(),
-        Text(
-          '$count',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF172B4D),
+  Widget _overviewHero({required double completion, required int scheduled}) {
+    final monthLabel = _monthName(_month.month);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF122B52), Color(0xFF1D4F91)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryBlue.withValues(alpha: .18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Social media overview',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              _monthButton(
+                Icons.chevron_left,
+                () {
+                  setState(() => _month = DateTime(_month.year, _month.month - 1));
+                  _load();
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  '$monthLabel ${_month.year}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _monthButton(
+                Icons.chevron_right,
+                () {
+                  setState(() => _month = DateTime(_month.year, _month.month + 1));
+                  _load();
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Text(
+                '${_posts.length}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  height: 1,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'posts in your\ncontent pipeline',
+                style: TextStyle(
+                  color: Color(0xFFD7E7FF),
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              const Spacer(),
+              _heroStat(Icons.schedule_rounded, '$scheduled', 'scheduled'),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Published progress',
+                  style: TextStyle(
+                    color: Color(0xFFD7E7FF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '${(completion * 100).round()}%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: completion,
+              minHeight: 7,
+              backgroundColor: Colors.white24,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF7DD3FC),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _monthButton(IconData icon, VoidCallback onPressed) => InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .14),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: Colors.white, size: 18),
         ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: Color(0xFF6C7A91)),
+      );
+
+  Widget _heroStat(IconData icon, String value, String label) => Row(
+        children: [
+          Icon(icon, color: const Color(0xFF7DD3FC), size: 20),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                label,
+                style: const TextStyle(color: Color(0xFFD7E7FF), fontSize: 10),
+              ),
+            ],
+          ),
+        ],
+      );
+
+  Widget _metric(String label, int count, Color color, IconData icon) =>
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderColor),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x080F172A),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: color, size: 18),
+                ),
+                const Spacer(),
+                Text(
+                  '$count',
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.darkNavy,
+                  ),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryText,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Container(
+              height: 3,
+              width: 34,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  String _monthName(int month) => const [
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December',
+      ][month - 1];
 
   Widget _postsSliver() {
     final list = _visiblePosts;
@@ -450,7 +749,7 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
     );
   }
 
-  Widget _postCard(Map<String, dynamic> p) {
+  Widget _postCard(Map<String, dynamic> p, {bool interactive = true}) {
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       elevation: 0,
@@ -460,7 +759,7 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        onTap: () => _openPost(p),
+        onTap: interactive ? () => _openPost(p) : null,
         title: Text(
           _titleOf(p),
           style: const TextStyle(
@@ -469,7 +768,7 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
           ),
         ),
         subtitle: Text(
-          '${_dateOf(p)}\n${_value(p, ['client_name', 'client', 'client_id'], 'No client')}',
+          '${_dateOf(p)}\n${_clientOf(p)}',
           maxLines: 2,
         ),
         trailing: _badge(_statusOf(p)),
@@ -484,7 +783,7 @@ class _SocialSectionScreenState extends State<_SocialSectionScreen> {
       borderRadius: BorderRadius.circular(20),
     ),
     child: Text(
-      value.replaceAll('_', ' '),
+      _statusLabel(value),
       style: TextStyle(
         color: _statusColor(value),
         fontSize: 11,
@@ -666,221 +965,3 @@ class _CreatePostSheetState extends State<_CreatePostSheet> {
       );
 }
 
-class _PostDetailSheet extends StatefulWidget {
-  const _PostDetailSheet({
-    required this.post,
-    required this.api,
-    required this.onChanged,
-  });
-  final dynamic post;
-  final ApiService api;
-  final VoidCallback onChanged;
-  @override
-  State<_PostDetailSheet> createState() => _PostDetailSheetState();
-}
-
-class _PostDetailSheetState extends State<_PostDetailSheet> {
-  bool _working = false;
-  final _comment = TextEditingController();
-  Map<String, dynamic> get p =>
-      widget.post is Map ? Map<String, dynamic>.from(widget.post as Map) : {};
-  String v(List<String> keys, [String fallback = '']) {
-    for (final k in keys)
-      if (p[k] != null && p[k].toString().isNotEmpty) return p[k].toString();
-    return fallback;
-  }
-
-  Future<void> _action(String path, Map<String, dynamic> data) async {
-    setState(() => _working = true);
-    try {
-      await widget.api.post(
-        path.replaceFirst('{id}', v(['id', 'post_id'])),
-        data: data,
-      );
-      widget.onChanged();
-      if (mounted)
-        AppSnackbar.show('Social Media', 'Post updated.', isSuccess: true);
-    } catch (_) {
-      if (mounted)
-        AppSnackbar.show(
-          'Social Media',
-          'Action could not be completed.',
-          isError: true,
-        );
-    } finally {
-      if (mounted) setState(() => _working = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    _comment.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final status = v(['status'], 'planned');
-    return SafeArea(
-      child: Material(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      v(['title'], 'Post detail'),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF172B4D),
-                      ),
-                    ),
-                  ),
-                  _badge(status),
-                ],
-              ),
-              const SizedBox(height: 18),
-              _info('Client', v(['client_name', 'client', 'client_id'], '—')),
-              _info('Planned date', v(['planned_at', 'planned_date'], '—')),
-              _info('Caption', v(['caption'], 'No caption')),
-              _info('Creative brief', v(['creative_brief'], 'No brief')),
-              const Divider(height: 28),
-              Text(
-                'Workflow',
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _button(
-                    'Start work',
-                    status == 'assigned'
-                        ? () => _action(ApiConstants.socialMediaStart, {})
-                        : null,
-                  ),
-                  _button(
-                    'Internal approve',
-                    status == 'internal_review'
-                        ? () => _action(
-                            ApiConstants.socialMediaInternalDecision,
-                            {'decision': 'approved'},
-                          )
-                        : null,
-                  ),
-                  _button(
-                    'Request changes',
-                    status == 'internal_review' ||
-                            status == 'pending_client_approval'
-                        ? () => _action(
-                            status == 'internal_review'
-                                ? ApiConstants.socialMediaInternalDecision
-                                : ApiConstants.socialMediaClientDecision,
-                            {
-                              'decision': 'changes_requested',
-                              'comment': 'Please revise the creative.',
-                            },
-                          )
-                        : null,
-                  ),
-                  _button(
-                    'Client approve',
-                    status == 'pending_client_approval'
-                        ? () => _action(
-                            ApiConstants.socialMediaClientDecision,
-                            {'decision': 'approved'},
-                          )
-                        : null,
-                  ),
-                  _button(
-                    'Publish',
-                    status == 'scheduled'
-                        ? () => _action(ApiConstants.socialMediaPublish, {
-                            'actual_published_at': DateTime.now()
-                                .toIso8601String(),
-                          })
-                        : null,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _comment,
-                decoration: InputDecoration(
-                  labelText: 'Add comment',
-                  suffixIcon: IconButton(
-                    onPressed: _comment.text.trim().isEmpty
-                        ? null
-                        : () async {
-                            await _action(ApiConstants.socialMediaComments, {
-                              'comment': _comment.text.trim(),
-                              'is_internal': false,
-                            });
-                            _comment.clear();
-                          },
-                    icon: const Icon(Icons.send),
-                  ),
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              if (_working)
-                const Padding(
-                  padding: EdgeInsets.only(top: 12),
-                  child: LinearProgressIndicator(),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _info(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: RichText(
-        text: TextSpan(
-          style: const TextStyle(color: Color(0xFF6C7A91), fontSize: 13),
-          children: [
-            TextSpan(
-              text: '$label\n',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            TextSpan(
-              text: value,
-              style: const TextStyle(color: Color(0xFF172B4D)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _button(String label, VoidCallback? onTap) =>
-      FilledButton(onPressed: onTap, child: Text(label));
-  Widget _badge(String s) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.blue.withValues(alpha: .1),
-      borderRadius: BorderRadius.circular(18),
-    ),
-    child: Text(
-      s.replaceAll('_', ' '),
-      style: const TextStyle(
-        fontSize: 11,
-        color: Color(0xFF176EE2),
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
-}

@@ -39,6 +39,9 @@ import '../screens/add_client_screen.dart';
 import '../screens/roles_screen.dart';
 import '../screens/staff_detail_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/orders_screen.dart';
+import '../screens/create_order_screen.dart';
+import '../screens/order_detail_screen.dart';
 import '../screens/social_media_screen.dart';
 import '../models/client_issue_model.dart';
 import '../models/renewal_model.dart';
@@ -170,6 +173,12 @@ class RouteGenerator {
           AppRoutes.projectDetail,
           ProjectDetailScreen(projectId: _extractProjectId(settings.arguments)),
         );
+      case AppRoutes.orders:
+        return _protectedRoute(AppRoutes.orders, const OrdersScreen());
+      case AppRoutes.createOrder:
+        return _protectedRoute(AppRoutes.createOrder, const CreateOrderScreen());
+      case AppRoutes.orderDetail:
+        return _protectedRoute(AppRoutes.orderDetail, OrderDetailScreen(orderId: _extractOrderId(settings.arguments)));
       case AppRoutes.profile:
         return MaterialPageRoute(builder: (_) => const ProfileScreen());
       case AppRoutes.personalInformation:
@@ -394,6 +403,12 @@ class RouteGenerator {
 
   static String? _extractTaskId(dynamic args) {
     return _extractTaskString(args, const ['id', 'taskId', 'task_id']);
+  }
+
+  static String _extractOrderId(dynamic args) {
+    if (args is String || args is int) return args.toString();
+    if (args is Map) return (args['id'] ?? args['orderId'] ?? args['order_id'] ?? '').toString();
+    return '';
   }
 
   static String? _extractStaffId(dynamic args) {
