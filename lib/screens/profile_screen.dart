@@ -39,6 +39,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       accentColor: Color(0xFF176EE2),
     ),
     _ProfileAction(
+      title: 'SEO',
+      subtitle: 'Manage campaigns, rankings and SEO reports',
+      icon: Icons.travel_explore_rounded,
+      routeName: AppRoutes.seo,
+      accentColor: Color(0xFF0F766E),
+    ),
+    _ProfileAction(
       title: 'Renewal Master',
       subtitle: 'Manage renewals and reminders',
       icon: Icons.autorenew_rounded,

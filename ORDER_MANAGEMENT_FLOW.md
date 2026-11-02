@@ -237,10 +237,13 @@ Buttons:
    - Visible when purchase status is Draft.
    - Changes purchase status to Ordered.
 
-2. Record receipt
-   - Visible after the order is placed and before it is fully received.
-   - Opens a modal with one received quantity field per order item.
-   - Changes purchase status to Partially Received.
+2. Record / Update receipt
+   - Visible when purchase status is Ordered, Partially Received, or Received (to adjust or correct quantities).
+   - Opens a modal with cumulative received quantity fields per order item, receipt date, and optional audit remark.
+   - Automatically handles status progression:
+     * When all items reach 100% received quantity → purchase status automatically becomes **Received**.
+     * When at least one item has quantity > 0 → purchase status becomes/remains **Partially Received**.
+     * If all items are set back to 0 → purchase status reverts to **Ordered**.
 
 3. Mark all received
    - Visible while purchase status is not Received.
@@ -249,8 +252,9 @@ Buttons:
 
 Receipt quantity rules:
 
-- Received quantity cannot be negative.
-- Received quantity cannot exceed ordered quantity.
+- Cumulative received quantity cannot be negative ($\ge 0$).
+- Received quantity cannot exceed ordered quantity ($\le$ ordered quantity).
+- Received quantities can be updated, corrected, or adjusted at any time (the restriction preventing reduction in `Partially Received` status has been removed).
 - To mark the purchase fully received, every item must be received in full.
 
 ### Delivery workflow buttons
@@ -412,6 +416,7 @@ Generic status request:
 
 Record receipt request:
 
+    // Format A: Key-Value Map (Recommended)
     {
       "received": {
         "101": 5,
@@ -419,6 +424,16 @@ Record receipt request:
       },
       "date": "2026-10-30",
       "remark": "Partial shipment received."
+    }
+
+    // Format B: Array of Objects
+    {
+      "received": [
+        { "id": 101, "qty_received": 5 },
+        { "id": 102, "quantity": 2 }
+      ],
+      "date": "2026-10-30",
+      "remark": "Partial delivery received."
     }
 
 Hold/resume request:

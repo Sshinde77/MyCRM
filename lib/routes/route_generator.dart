@@ -43,6 +43,7 @@ import '../screens/orders_screen.dart';
 import '../screens/create_order_screen.dart';
 import '../screens/order_detail_screen.dart';
 import '../screens/social_media_screen.dart';
+import '../screens/seo_screen.dart';
 import '../models/client_issue_model.dart';
 import '../models/renewal_model.dart';
 
@@ -292,6 +293,8 @@ class RouteGenerator {
           AppRoutes.socialMedia,
           const SocialMediaScreen(),
         );
+      case AppRoutes.seo:
+        return _protectedRoute(AppRoutes.seo, const SeoScreen());
       default:
         return _errorRoute();
     }

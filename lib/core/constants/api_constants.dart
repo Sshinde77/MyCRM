@@ -254,4 +254,36 @@ class ApiConstants {
   static const String socialMediaComments = '$socialMedia/posts/{id}/comments';
   static const String socialMediaSchedule = '$socialMedia/posts/{id}/schedule';
   static const String socialMediaPublish = '$socialMedia/posts/{id}/publish';
+
+  // SEO campaign workspace
+  static const String seoCampaigns = '$baseUrl/seo/campaigns';
+  static const String seoCampaign = '$seoCampaigns/{campaign}';
+  static const String seoCampaignRestore = '$seoCampaigns/{campaignId}/restore';
+  static const String seoDashboard = '$seoCampaign/dashboard';
+  static const String seoWorkspace = '$seoCampaign/workspace';
+  static const String seoAudit = '$seoCampaign/audit';
+  static const String seoAuditFindings = '$seoCampaign/audit/findings';
+  static const String seoAuditFinding = '$seoCampaign/audit/findings/{finding}';
+  static const String seoAuditSubmit = '$seoCampaign/audit/submit';
+  static const String seoAuditReview = '$seoCampaign/audit/review';
+  static const String seoBaseline = '$seoCampaign/baseline';
+  static const String seoBaselineApprove = '$seoCampaign/baseline/approve';
+  static const String seoKeywords = '$seoCampaign/keywords';
+  static const String seoKeyword = '$seoCampaign/keywords/{keyword}';
+  static const String seoKeywordRankings = '$seoCampaign/keywords/{keyword}/rankings';
+  static const String seoKeywordTemplate = '$seoCampaign/keywords/template';
+  static const String seoKeywordImport = '$seoCampaign/keywords/import';
+  static const String seoCompetitors = '$seoCampaign/competitors';
+  static const String seoCycles = '$seoCampaign/cycles';
+  static const String seoActivities = '$seoCampaign/activities';
+  static const String seoActivity = '$seoCampaign/activities/{activity}';
+  static const String seoActivityReview = '$seoCampaign/activities/{activity}/review';
+  static const String seoTechnicalIssues = '$seoCampaign/technical-issues';
+  static const String seoTechnicalIssue = '$seoCampaign/technical-issues/{technicalIssue}';
+  static const String seoOnPage = '$seoCampaign/on-page';
+  static const String seoBacklinks = '$seoCampaign/backlinks';
+  static const String seoPerformance = '$seoCampaign/performance';
+  static const String seoReports = '$seoCampaign/reports';
+  static const String seoReportSubmit = '$seoCampaign/reports/{report}/submit';
+  static const String seoReportReview = '$seoCampaign/reports/{report}/review';
 }
